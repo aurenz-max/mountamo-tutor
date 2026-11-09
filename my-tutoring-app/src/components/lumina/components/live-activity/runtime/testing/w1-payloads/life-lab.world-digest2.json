@@ -1,0 +1,1668 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-digest2-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "The Digestive Journey",
+  "description": "Food travels through organs in sequence, where each organ breaks it down or absorbs nutrients and water.",
+  "gradeBand": "3-5",
+  "challengeType": "categorize",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "categorize",
+    "item": {
+     "id": "life-1",
+     "surface": "categorize",
+     "prompt": "Sort what happens to food in the mouth versus what happens in the stomach.",
+     "stimulus": [
+      {
+       "kind": "flow",
+       "steps": [
+        {
+         "label": "Mouth",
+         "icon": "\ud83d\udc44"
+        },
+        {
+         "label": "Esophagus",
+         "icon": "\ud83e\udd56"
+        },
+        {
+         "label": "Stomach",
+         "icon": "\ud83e\udd63"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "churn",
+       "label": "Churns food into a sour liquid mixture"
+      },
+      {
+       "id": "chew",
+       "label": "Grinds solid food into smaller pieces"
+      },
+      {
+       "id": "store",
+       "label": "Bathes food in powerful juices for hours"
+      },
+      {
+       "id": "taste",
+       "label": "Rolls wet bites into a ball to swallow"
+      }
+     ],
+     "categories": [
+      "Happens in Mouth",
+      "Happens in Stomach"
+     ],
+     "key": {
+      "chew": "Happens in Mouth",
+      "taste": "Happens in Mouth",
+      "churn": "Happens in Stomach",
+      "store": "Happens in Stomach"
+     },
+     "misconceptions": {
+      "chew": "Solid pieces are ground into small bits in the stomach rather than the mouth."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 1.55,
+      "reasons": [
+       "4 cards to sort +1",
+       "1 wrong option from a named misconception +0.25",
+       "following steps joined by arrows +0.3"
+      ]
+     }
+    },
+    "ask": "Sort what happens to food in the mouth versus what happens in the stomach.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.55,
+     "reasons": [
+      "4 cards to sort +1",
+      "1 wrong option from a named misconception +0.25",
+      "following steps joined by arrows +0.3"
+     ]
+    },
+    "teach": [
+     {
+      "says": "Digestion is the journey food takes so your body can get energy and nutrients.",
+      "show": [
+       {
+        "kind": "flow",
+        "title": "How Food Breaks Down",
+        "steps": [
+         {
+          "label": "Whole Apple",
+          "icon": "\ud83c\udf4e"
+         },
+         {
+          "label": "Chewed in Mouth",
+          "icon": "\ud83d\udc44"
+         },
+         {
+          "label": "Mashed in Stomach",
+          "icon": "\ud83e\udd63"
+         },
+         {
+          "label": "Nutrients Absorbed",
+          "icon": "\u2728"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "says": "In the mouth, teeth break solid bites down and moisture softens them so they can be swallowed.",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><circle cx='100' cy='60' r='40' fill='#ffdbac'/><path d='M85 70 Q100 85 115 70' stroke='#d32f2f' stroke-width='4' fill='white'/><rect x='92' y='100' width='16' height='80' fill='#f48fb1' rx='5'/><text x='120' y='145' font-size='12' fill='#333'>Esophagus</text></svg>",
+        "name": "Mouth and Esophagus"
+       }
+      ]
+     },
+     {
+      "says": "In the stomach, strong digestive juices and churning turn the pieces into a liquid soup.",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><path d='M70 60 C50 90 50 140 100 150 C140 160 160 120 140 80 C130 50 90 50 70 60 Z' fill='#ef9a9a' stroke='#c62828' stroke-width='3'/><path d='M75 110 Q100 135 125 115' stroke='#fbc02d' stroke-width='4' fill='none'/><text x='85' y='105' font-size='11' fill='#b71c1c'>Acid soup</text></svg>",
+        "name": "Stomach Churning"
+       }
+      ]
+     }
+    ],
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child confuses the two locations.",
+      "says": "I highlighted where the journey begins.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-1-help_1",
+        "surface": "categorize",
+        "prompt": "Sort what happens to food in the mouth versus what happens in the stomach.",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Mouth",
+            "icon": "\ud83d\udc44"
+           },
+           {
+            "label": "Esophagus",
+            "icon": "\ud83e\udd56"
+           },
+           {
+            "label": "Stomach",
+            "icon": "\ud83e\udd63"
+           }
+          ],
+          "highlight": "Mouth"
+         }
+        ],
+        "options": [
+         {
+          "id": "churn",
+          "label": "Churns food into a sour liquid mixture"
+         },
+         {
+          "id": "chew",
+          "label": "Grinds solid food into smaller pieces"
+         },
+         {
+          "id": "store",
+          "label": "Bathes food in powerful juices for hours"
+         },
+         {
+          "id": "taste",
+          "label": "Rolls wet bites into a ball to swallow"
+         }
+        ],
+        "categories": [
+         "Happens in Mouth",
+         "Happens in Stomach"
+        ],
+        "key": {
+         "chew": "Happens in Mouth",
+         "taste": "Happens in Mouth",
+         "churn": "Happens in Stomach",
+         "store": "Happens in Stomach"
+        },
+        "misconceptions": {
+         "chew": "Solid pieces are ground into small bits in the stomach rather than the mouth."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 1.55,
+         "reasons": [
+          "4 cards to sort +1",
+          "1 wrong option from a named misconception +0.25",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "Sort what happens to food in the mouth versus what happens in the stomach.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.55,
+        "reasons": [
+         "4 cards to sort +1",
+         "1 wrong option from a named misconception +0.25",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Digestion is the journey food takes so your body can get energy and nutrients.",
+         "show": [
+          {
+           "kind": "flow",
+           "title": "How Food Breaks Down",
+           "steps": [
+            {
+             "label": "Whole Apple",
+             "icon": "\ud83c\udf4e"
+            },
+            {
+             "label": "Chewed in Mouth",
+             "icon": "\ud83d\udc44"
+            },
+            {
+             "label": "Mashed in Stomach",
+             "icon": "\ud83e\udd63"
+            },
+            {
+             "label": "Nutrients Absorbed",
+             "icon": "\u2728"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "In the mouth, teeth break solid bites down and moisture softens them so they can be swallowed.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><circle cx='100' cy='60' r='40' fill='#ffdbac'/><path d='M85 70 Q100 85 115 70' stroke='#d32f2f' stroke-width='4' fill='white'/><rect x='92' y='100' width='16' height='80' fill='#f48fb1' rx='5'/><text x='120' y='145' font-size='12' fill='#333'>Esophagus</text></svg>",
+           "name": "Mouth and Esophagus"
+          }
+         ]
+        },
+        {
+         "says": "In the stomach, strong digestive juices and churning turn the pieces into a liquid soup.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><path d='M70 60 C50 90 50 140 100 150 C140 160 160 120 140 80 C130 50 90 50 70 60 Z' fill='#ef9a9a' stroke='#c62828' stroke-width='3'/><path d='M75 110 Q100 135 125 115' stroke='#fbc02d' stroke-width='4' fill='none'/><text x='85' y='105' font-size='11' fill='#b71c1c'>Acid soup</text></svg>",
+           "name": "Stomach Churning"
+          }
+         ]
+        }
+       ],
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds four cards tricky.",
+      "says": "Let's sort two actions first.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-1-simpler_1",
+        "surface": "categorize",
+        "prompt": "Sort what happens in the mouth versus in the stomach.",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Mouth",
+            "icon": "\ud83d\udc44"
+           },
+           {
+            "label": "Esophagus",
+            "icon": "\ud83e\udd56"
+           },
+           {
+            "label": "Stomach",
+            "icon": "\ud83e\udd63"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "chew",
+          "label": "Grinds solid bites into smaller pieces"
+         },
+         {
+          "id": "churn",
+          "label": "Churns food into a sour liquid mixture"
+         }
+        ],
+        "categories": [
+         "Happens in Mouth",
+         "Happens in Stomach"
+        ],
+        "key": {
+         "chew": "Happens in Mouth",
+         "churn": "Happens in Stomach"
+        },
+        "misconceptions": {
+         "chew": "Solid pieces are ground into small bits in the stomach rather than the mouth."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.05,
+         "reasons": [
+          "2 cards to sort +0.5",
+          "1 wrong option from a named misconception +0.25",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "Sort what happens in the mouth versus in the stomach.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.05,
+        "reasons": [
+         "2 cards to sort +0.5",
+         "1 wrong option from a named misconception +0.25",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Digestion is the journey food takes so your body can get energy and nutrients.",
+         "show": [
+          {
+           "kind": "flow",
+           "title": "How Food Breaks Down",
+           "steps": [
+            {
+             "label": "Whole Apple",
+             "icon": "\ud83c\udf4e"
+            },
+            {
+             "label": "Chewed in Mouth",
+             "icon": "\ud83d\udc44"
+            },
+            {
+             "label": "Mashed in Stomach",
+             "icon": "\ud83e\udd63"
+            },
+            {
+             "label": "Nutrients Absorbed",
+             "icon": "\u2728"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "In the mouth, teeth break solid bites down and moisture softens them so they can be swallowed.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><circle cx='100' cy='60' r='40' fill='#ffdbac'/><path d='M85 70 Q100 85 115 70' stroke='#d32f2f' stroke-width='4' fill='white'/><rect x='92' y='100' width='16' height='80' fill='#f48fb1' rx='5'/><text x='120' y='145' font-size='12' fill='#333'>Esophagus</text></svg>",
+           "name": "Mouth and Esophagus"
+          }
+         ]
+        },
+        {
+         "says": "In the stomach, strong digestive juices and churning turn the pieces into a liquid soup.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200'><path d='M70 60 C50 90 50 140 100 150 C140 160 160 120 140 80 C130 50 90 50 70 60 Z' fill='#ef9a9a' stroke='#c62828' stroke-width='3'/><path d='M75 110 Q100 135 125 115' stroke='#fbc02d' stroke-width='4' fill='none'/><text x='85' y='105' font-size='11' fill='#b71c1c'>Acid soup</text></svg>",
+           "name": "Stomach Churning"
+          }
+         ]
+        }
+       ],
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "order",
+    "item": {
+     "id": "life-2",
+     "surface": "order",
+     "prompt": "Put these digestive organs in order from where food starts to where nutrients enter the blood.",
+     "stimulus": [
+      {
+       "kind": "flow",
+       "steps": [
+        {
+         "label": "Organ 1",
+         "icon": "1\ufe0f\u20e3"
+        },
+        {
+         "label": "Organ 2",
+         "icon": "2\ufe0f\u20e3"
+        },
+        {
+         "label": "Organ 3",
+         "icon": "3\ufe0f\u20e3"
+        },
+        {
+         "label": "Organ 4",
+         "icon": "4\ufe0f\u20e3"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "esophagus",
+       "label": "Esophagus"
+      },
+      {
+       "id": "stomach",
+       "label": "Stomach"
+      },
+      {
+       "id": "mouth",
+       "label": "Mouth"
+      },
+      {
+       "id": "small_intestine",
+       "label": "Small intestine"
+      }
+     ],
+     "key": [
+      "mouth",
+      "esophagus",
+      "stomach",
+      "small_intestine"
+     ],
+     "misconceptions": {
+      "stomach": "Food enters the stomach before traveling through the esophagus."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 2.05,
+      "reasons": [
+       "4 to order +1.5",
+       "1 wrong option from a named misconception +0.25",
+       "following steps joined by arrows +0.3"
+      ]
+     }
+    },
+    "ask": "Put these digestive organs in order from where food starts to where nutrients enter the blood.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.05,
+     "reasons": [
+      "4 to order +1.5",
+      "1 wrong option from a named misconception +0.25",
+      "following steps joined by arrows +0.3"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child gets stuck on which organ begins the path.",
+      "says": "Look at the first number in the sequence above.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "order",
+       "item": {
+        "id": "life-2-help_1",
+        "surface": "order",
+        "prompt": "Put these digestive organs in order from where food starts to where nutrients enter the blood.",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Organ 1",
+            "icon": "1\ufe0f\u20e3"
+           },
+           {
+            "label": "Organ 2",
+            "icon": "2\ufe0f\u20e3"
+           },
+           {
+            "label": "Organ 3",
+            "icon": "3\ufe0f\u20e3"
+           },
+           {
+            "label": "Organ 4",
+            "icon": "4\ufe0f\u20e3"
+           }
+          ],
+          "highlight": "Organ 1"
+         }
+        ],
+        "options": [
+         {
+          "id": "esophagus",
+          "label": "Esophagus"
+         },
+         {
+          "id": "stomach",
+          "label": "Stomach"
+         },
+         {
+          "id": "mouth",
+          "label": "Mouth"
+         },
+         {
+          "id": "small_intestine",
+          "label": "Small intestine"
+         }
+        ],
+        "key": [
+         "mouth",
+         "esophagus",
+         "stomach",
+         "small_intestine"
+        ],
+        "misconceptions": {
+         "stomach": "Food enters the stomach before traveling through the esophagus."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 2.05,
+         "reasons": [
+          "4 to order +1.5",
+          "1 wrong option from a named misconception +0.25",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "Put these digestive organs in order from where food starts to where nutrients enter the blood.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.05,
+        "reasons": [
+         "4 to order +1.5",
+         "1 wrong option from a named misconception +0.25",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds four organs difficult.",
+      "says": "Let's put three organs in order first.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "order",
+       "item": {
+        "id": "life-2-simpler_1",
+        "surface": "order",
+        "prompt": "Put these three organs in order from first to last.",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "First",
+            "icon": "1\ufe0f\u20e3"
+           },
+           {
+            "label": "Middle",
+            "icon": "2\ufe0f\u20e3"
+           },
+           {
+            "label": "Last",
+            "icon": "3\ufe0f\u20e3"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "small_intestine",
+          "label": "Small intestine"
+         },
+         {
+          "id": "mouth",
+          "label": "Mouth"
+         },
+         {
+          "id": "stomach",
+          "label": "Stomach"
+         }
+        ],
+        "key": [
+         "mouth",
+         "stomach",
+         "small_intestine"
+        ],
+        "misconceptions": {
+         "stomach": "Food enters the stomach before traveling through the esophagus."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 1.55,
+         "reasons": [
+          "3 to order +1",
+          "1 wrong option from a named misconception +0.25",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "Put these three organs in order from first to last.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.55,
+        "reasons": [
+         "3 to order +1",
+         "1 wrong option from a named misconception +0.25",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "follow_the_path",
+    "world": {
+     "zones": [
+      {
+       "id": "body",
+       "label": "Inside the Body",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "person",
+       "zone": "body",
+       "name": "human",
+       "emoji": "\ud83e\uddd1",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "flows",
+       "being": "person",
+       "start": "whole apple",
+       "goal": "blood energy",
+       "parts": [
+        {
+         "id": "mouth",
+         "name": "mouth",
+         "emoji": "\ud83d\udc44",
+         "takes": {
+          "whole apple": "chewed bits"
+         }
+        },
+        {
+         "id": "esophagus",
+         "name": "esophagus",
+         "emoji": "\ud83e\udd56",
+         "takes": {
+          "chewed bits": "swallowed food"
+         }
+        },
+        {
+         "id": "stomach",
+         "name": "stomach",
+         "emoji": "\ud83e\udd63",
+         "takes": {
+          "swallowed food": "liquid soup"
+         }
+        },
+        {
+         "id": "small_intestine",
+         "name": "small intestine",
+         "emoji": "\u27b0",
+         "takes": {
+          "liquid soup": "blood energy"
+         }
+        },
+        {
+         "id": "lungs",
+         "name": "lungs",
+         "emoji": "\ud83e\udec1",
+         "takes": {
+          "air": "oxygen"
+         }
+        }
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 4,
+       "items": [
+        "lungs",
+        "mouth",
+        "stomach",
+        "small_intestine",
+        "esophagus"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "flow"
+     }
+    },
+    "ask": "Food gives this body energy. Build the path food takes through the organs to turn an apple into energy for the blood.",
+    "why": "Watch where the food gets stuck. Each organ must be able to take in what the last organ made.",
+    "standards": "4-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.9,
+     "reasons": [
+      "+1.6 205 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.3 parts on the bench that do not belong"
+     ]
+    },
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child includes organs from other body systems.",
+      "says": "Here is what happens at each step to help you choose the right organs.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "follow_the_path",
+       "world": {
+        "show": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Bite food",
+            "icon": "\ud83d\udc44"
+           },
+           {
+            "label": "Move down",
+            "icon": "\u2b07\ufe0f"
+           },
+           {
+            "label": "Break down",
+            "icon": "\ud83e\udd63"
+           },
+           {
+            "label": "Absorb nutrients",
+            "icon": "\ud83e\ude78"
+           }
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "body",
+          "label": "Inside the Body",
+          "cond": {}
+         }
+        ],
+        "beings": [
+         {
+          "id": "person",
+          "zone": "body",
+          "name": "human",
+          "emoji": "\ud83e\uddd1",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "flows",
+          "being": "person",
+          "start": "whole apple",
+          "goal": "blood energy",
+          "parts": [
+           {
+            "id": "mouth",
+            "name": "mouth",
+            "emoji": "\ud83d\udc44",
+            "takes": {
+             "whole apple": "chewed bits"
+            }
+           },
+           {
+            "id": "esophagus",
+            "name": "esophagus",
+            "emoji": "\ud83e\udd56",
+            "takes": {
+             "chewed bits": "swallowed food"
+            }
+           },
+           {
+            "id": "stomach",
+            "name": "stomach",
+            "emoji": "\ud83e\udd63",
+            "takes": {
+             "swallowed food": "liquid soup"
+            }
+           },
+           {
+            "id": "small_intestine",
+            "name": "small intestine",
+            "emoji": "\u27b0",
+            "takes": {
+             "liquid soup": "blood energy"
+            }
+           },
+           {
+            "id": "lungs",
+            "name": "lungs",
+            "emoji": "\ud83e\udec1",
+            "takes": {
+             "air": "oxygen"
+            }
+           }
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "order",
+          "slots": 4,
+          "items": [
+           "esophagus",
+           "stomach",
+           "small_intestine",
+           "lungs",
+           "mouth"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "flow"
+        }
+       },
+       "ask": "Food gives this body energy. Build the path food takes through the organs to turn an apple into energy for the blood.",
+       "why": "Watch where the food gets stuck. Each organ must be able to take in what the last organ made.",
+       "standards": "4-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.9,
+        "reasons": [
+         "+1.6 205 different things the child could try",
+         "+1 only 1 of them work",
+         "+0.3 parts on the bench that do not belong"
+        ]
+       }
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with four organs and a distractor.",
+      "says": "Let's build a shorter three-part path.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "follow_the_path",
+       "world": {
+        "zones": [
+         {
+          "id": "body",
+          "label": "Inside the Body",
+          "cond": {}
+         }
+        ],
+        "beings": [
+         {
+          "id": "person",
+          "zone": "body",
+          "name": "human",
+          "emoji": "\ud83e\uddd1",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "flows",
+          "being": "person",
+          "start": "chewed bits",
+          "goal": "blood energy",
+          "parts": [
+           {
+            "id": "esophagus",
+            "name": "esophagus",
+            "emoji": "\ud83e\udd56",
+            "takes": {
+             "chewed bits": "swallowed food"
+            }
+           },
+           {
+            "id": "stomach",
+            "name": "stomach",
+            "emoji": "\ud83e\udd63",
+            "takes": {
+             "swallowed food": "liquid soup"
+            }
+           },
+           {
+            "id": "small_intestine",
+            "name": "small intestine",
+            "emoji": "\u27b0",
+            "takes": {
+             "liquid soup": "blood energy"
+            }
+           }
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "order",
+          "slots": 3,
+          "items": [
+           "small_intestine",
+           "stomach",
+           "esophagus"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "flow"
+        }
+       },
+       "ask": "Build the path of three organs from chewed bits into energy.",
+       "why": "Watch where the food gets stuck. Each organ must be able to take in what the last organ made.",
+       "standards": "4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "+0.8 15 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "choose",
+    "item": {
+     "id": "life-4",
+     "surface": "choose",
+     "prompt": "After food leaves the small intestine, which organ soaks up leftover water?",
+     "stimulus": [
+      {
+       "kind": "flow",
+       "steps": [
+        {
+         "label": "Stomach",
+         "icon": "\ud83e\udd63"
+        },
+        {
+         "label": "Small intestine",
+         "icon": "\u27b0"
+        },
+        {
+         "label": "?",
+         "icon": "\u2753"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "large_intestine",
+       "label": "Large intestine"
+      },
+      {
+       "id": "small_intestine",
+       "label": "Small intestine"
+      },
+      {
+       "id": "mouth_cavity",
+       "label": "Mouth cavity"
+      },
+      {
+       "id": "stomach_pouch",
+       "label": "Stomach pouch"
+      }
+     ],
+     "key": "large_intestine",
+     "misconceptions": {
+      "small_intestine": "The small intestine absorbs water rather than mainly nutrients.",
+      "mouth_cavity": "The mouth removes leftover water from digested food."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 2,
+      "reasons": [
+       "4 options +1.2",
+       "2 wrong options from a named misconception +0.5",
+       "following steps joined by arrows +0.3"
+      ]
+     }
+    },
+    "ask": "After food leaves the small intestine, which organ soaks up leftover water?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "4 options +1.2",
+      "2 wrong options from a named misconception +0.5",
+      "following steps joined by arrows +0.3"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child is confused about the organ sequence.",
+      "says": "Look at the missing step that comes directly after the small intestine.",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-4-help_1",
+        "surface": "choose",
+        "prompt": "After food leaves the small intestine, which organ soaks up leftover water?",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Stomach",
+            "icon": "\ud83e\udd63"
+           },
+           {
+            "label": "Small intestine",
+            "icon": "\u27b0"
+           },
+           {
+            "label": "?",
+            "icon": "\u2753"
+           }
+          ],
+          "highlight": "?"
+         }
+        ],
+        "options": [
+         {
+          "id": "large_intestine",
+          "label": "Large intestine"
+         },
+         {
+          "id": "small_intestine",
+          "label": "Small intestine"
+         },
+         {
+          "id": "mouth_cavity",
+          "label": "Mouth cavity"
+         },
+         {
+          "id": "stomach_pouch",
+          "label": "Stomach pouch"
+         }
+        ],
+        "key": "large_intestine",
+        "misconceptions": {
+         "small_intestine": "The small intestine absorbs water rather than mainly nutrients.",
+         "mouth_cavity": "The mouth removes leftover water from digested food."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 2,
+         "reasons": [
+          "4 options +1.2",
+          "2 wrong options from a named misconception +0.5",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "After food leaves the small intestine, which organ soaks up leftover water?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "4 options +1.2",
+         "2 wrong options from a named misconception +0.5",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is overwhelmed by four options.",
+      "says": "Let's choose between the two intestines.",
+      "item": {
+       "id": "life-4-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-4-simpler_1",
+        "surface": "choose",
+        "prompt": "Which of these two intestines removes leftover water?",
+        "stimulus": [
+         {
+          "kind": "flow",
+          "steps": [
+           {
+            "label": "Stomach",
+            "icon": "\ud83e\udd63"
+           },
+           {
+            "label": "Small intestine",
+            "icon": "\u27b0"
+           },
+           {
+            "label": "?",
+            "icon": "\u2753"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "large_intestine",
+          "label": "Large intestine"
+         },
+         {
+          "id": "small_intestine",
+          "label": "Small intestine"
+         }
+        ],
+        "key": "large_intestine",
+        "misconceptions": {
+         "small_intestine": "The small intestine absorbs water rather than mainly nutrients.",
+         "mouth_cavity": "The mouth removes leftover water from digested food."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.85,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25",
+          "following steps joined by arrows +0.3"
+         ]
+        }
+       },
+       "ask": "Which of these two intestines removes leftover water?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.85,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "following steps joined by arrows +0.3"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 14,
+   "seconds": 108.9,
+   "objective": "How food moves through the digestive system",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: flow: 2-8 steps"
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card mouth's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, o"
+    },
+    {
+     "turn": 5,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: flow: every step has a label of at most 26 characters"
+    },
+    {
+     "turn": 9,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: flow: every step has a label of at most 26 characters"
+    },
+    {
+     "turn": 10,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: shortcut: the right option is drawn or written in much more detail than the others"
+    },
+    {
+     "turn": 11,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 12,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 13,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 14,
+     "name": "write_item",
+     "ok": true
+    }
+   ],
+   "advisories": [],
+   "costUsd": 0.1067,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 0 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 0",
+     "costUsd": 0.009
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.009
+    },
+    {
+     "seconds": 12,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 1 world(s) held, 6 blocking check(s). First: world 0: flow: 2-8 steps",
+     "costUsd": 0.0152
+    },
+    {
+     "seconds": 12,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0152
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 1 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 1",
+     "costUsd": 0.0228
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0228
+    },
+    {
+     "seconds": 33,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 2 world(s) held, 4 blocking check(s). First: world 1: card mouth's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or leave the card as words.",
+     "costUsd": 0.0334
+    },
+    {
+     "seconds": 33,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0334
+    },
+    {
+     "seconds": 43,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 5: 2 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 2",
+     "costUsd": 0.0386
+    },
+    {
+     "seconds": 43,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0386
+    },
+    {
+     "seconds": 50,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 6: 3 world(s) held, 1 blocking check(s). First: world 2: lever 1 (simplify): its item is blocked: flows: an order control of 1-4 slots whose bench is the declared parts",
+     "costUsd": 0.0451
+    },
+    {
+     "seconds": 50,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.0451
+    },
+    {
+     "seconds": 56,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.051
+    },
+    {
+     "seconds": 56,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.051
+    },
+    {
+     "seconds": 61,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 8: 4 world(s) held, 4 blocking check(s). First: world 3: flow: every step has a label of at most 26 characters",
+     "costUsd": 0.0558
+    },
+    {
+     "seconds": 61,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 9: the author is working",
+     "costUsd": 0.0558
+    },
+    {
+     "seconds": 66,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 9: 4 world(s) held, 4 blocking check(s). First: world 3: flow: every step has a label of at most 26 characters",
+     "costUsd": 0.0604
+    },
+    {
+     "seconds": 66,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 10: the author is working",
+     "costUsd": 0.0604
+    },
+    {
+     "seconds": 70,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 10: 4 world(s) held, 3 blocking check(s). First: world 3: shortcut: the right option is drawn or written in much more detail than the others",
+     "costUsd": 0.0658
+    },
+    {
+     "seconds": 70,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 11: the author is working",
+     "costUsd": 0.0658
+    },
+    {
+     "seconds": 76,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 11: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0714
+    },
+    {
+     "seconds": 76,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 12: the author is working",
+     "costUsd": 0.0714
+    },
+    {
+     "seconds": 78,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.0751
+    },
+    {
+     "seconds": 88,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: Keyword association: words like 'teeth' and 'tongue' obviously belong to the mouth, while 'acid' belongs to the sto\u2026",
+     "costUsd": 0.0878,
+     "item": 1
+    },
+    {
+     "seconds": 88,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The clue diagram at the top directly matches descriptions on each card ('Tube' matches 'tube food slides down', 'Bl\u2026",
+     "costUsd": 0.0878,
+     "item": 2
+    },
+    {
+     "seconds": 88,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0878,
+     "item": 3
+    },
+    {
+     "seconds": 88,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0878,
+     "item": 4
+    },
+    {
+     "seconds": 88,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 3 problem(s) from the look",
+     "costUsd": 0.0878
+    },
+    {
+     "seconds": 88,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 12: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0878
+    },
+    {
+     "seconds": 88,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 13: the author is working",
+     "costUsd": 0.0878
+    },
+    {
+     "seconds": 97,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 13: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0957
+    },
+    {
+     "seconds": 97,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 14: the author is working",
+     "costUsd": 0.0957
+    },
+    {
+     "seconds": 102,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 14: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1015
+    },
+    {
+     "seconds": 102,
+     "stage": "look",
+     "level": "info",
+     "text": "final read: reading 2 world(s) as the child meets them",
+     "costUsd": 0.1015
+    },
+    {
+     "seconds": 109,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.1067,
+     "item": 1
+    },
+    {
+     "seconds": 109,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.1067,
+     "item": 2
+    },
+    {
+     "seconds": 109,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 108.9s over 14 turn(s), about $0.11",
+     "costUsd": 0.1067
+    }
+   ],
+   "look": [
+    {
+     "answer": "Drag Card 2 and Card 4 to 'Starts in Mouth', and Card 1 and Card 3 to 'Starts in Stomach'.",
+     "difficulty": "easy",
+     "shortcut": "Keyword association: words like 'teeth' and 'tongue' obviously belong to the mouth, while 'acid' belongs to the stomach.",
+     "issues": "The bin labels 'Starts in Mouth' and 'Starts in Stomach' are confusingly phrased since the prompt asks what happens in the mouth versus the stomach.",
+     "offObjective": null,
+     "costUsd": 0.00443025,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Place Card 3, Card 1, Card 2, and Card 4 into slots 1 through 4.",
+     "difficulty": "easy",
+     "shortcut": "The clue diagram at the top directly matches descriptions on each card ('Tube' matches 'tube food slides down', 'Bloodstream' matches 'pass into blood').",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00311025,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Drag mouth to 1, esophagus to 2, stomach to 3, and small intestine to 4, then press 'I'm done!'.",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.002877,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select Card 1, Large intestine",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00225075,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Sort Cards 2 and 4 under 'Happens in Mouth', and Cards 1 and 3 under 'Happens in Stomach'.",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00317925,
+     "item": 0,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Drag Card 3 (Mouth), Card 1 (Esophagus), Card 2 (Stomach), and Card 4 (Small intestine) into slots 1 through 4 in order.",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00203625,
+     "item": 1,
+     "round": 2,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 108.9,
+    "costUsd": 0.1067,
+    "items": 4,
+    "rounds": 14,
+    "look": {
+     "ran": true,
+     "looked": 6,
+     "unread": 0,
+     "screenshots": 6,
+     "problems": 0
+    },
+    "displays": {
+     "offered": [
+      "svg",
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow",
+      "cell",
+      "zoom",
+      "food_web"
+     ],
+     "used": {
+      "flow": 4,
+      "svg": 2
+     }
+    }
+   }
+  }
+ }
+}

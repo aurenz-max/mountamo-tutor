@@ -1,0 +1,291 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-spread_the_seeds-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "How Seeds Travel",
+  "description": "Seeds have special shapes to travel by wind, animal fur, or floating on water.",
+  "gradeBand": "K-2",
+  "challengeType": "spread_the_seeds",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "spread_the_seeds",
+    "world": {
+     "zones": [
+      {
+       "id": "meadow_zone",
+       "label": "Breezy Meadow",
+       "kind": "meadow",
+       "cond": {
+        "carrier": "wind"
+       }
+      },
+      {
+       "id": "hill_zone",
+       "label": "Distant Hill",
+       "kind": "plain",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "s1",
+       "subject": "plant_seed",
+       "zone": "meadow_zone",
+       "traits": {
+        "seed": "plain"
+       }
+      },
+      {
+       "id": "b1",
+       "subject": "butterfly",
+       "zone": "meadow_zone"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "s1",
+       "part": "seed",
+       "moveTo": "hill_zone"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "s1",
+       "part": "seed",
+       "options": [
+        "plain",
+        "fluff",
+        "hooks"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "A breeze blows across this meadow towards the faraway hill. Choose a seed shape that can travel in the wind.",
+    "why": "Notice what helps things catch the air and float away.",
+    "standards": "2-LS2-2",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "spread_the_seeds",
+    "world": {
+     "zones": [
+      {
+       "id": "field_zone",
+       "label": "Weed Patch",
+       "kind": "field",
+       "cond": {
+        "carrier": "fur"
+       }
+      },
+      {
+       "id": "barn_zone",
+       "label": "Barn Meadow",
+       "kind": "meadow",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "s2",
+       "subject": "plant_seed",
+       "zone": "field_zone",
+       "traits": {
+        "seed": "plain"
+       }
+      },
+      {
+       "id": "pup",
+       "subject": "dog",
+       "zone": "field_zone"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "s2",
+       "part": "seed",
+       "moveTo": "barn_zone"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "s2",
+       "part": "seed",
+       "options": [
+        "plain",
+        "wings",
+        "hooks"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "A fluffy dog runs through the field toward the barn. Choose a seed that can hitch a ride on the dog's coat.",
+    "why": "Look for a seed feature that can catch onto fuzzy fur as an animal brushes past.",
+    "standards": "2-LS2-2",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "spread_the_seeds",
+    "world": {
+     "zones": [
+      {
+       "id": "river_zone",
+       "label": "Riverbank",
+       "kind": "river",
+       "cond": {
+        "carrier": "water"
+       }
+      },
+      {
+       "id": "lake_zone",
+       "label": "Quiet Lake",
+       "kind": "pond",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "s3",
+       "subject": "plant_seed",
+       "zone": "river_zone",
+       "traits": {
+        "seed": "plain"
+       }
+      },
+      {
+       "id": "d1",
+       "subject": "duck",
+       "zone": "river_zone"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "s3",
+       "part": "seed",
+       "moveTo": "lake_zone"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "s3",
+       "part": "seed",
+       "options": [
+        "plain",
+        "hooks",
+        "fluff",
+        "hollow"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "A gentle river flows down toward the lake. Choose a seed that can travel on water.",
+    "why": "Think about what shape keeps something floating instead of sinking.",
+    "standards": "2-LS2-2",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 5,
+   "seconds": 20.4,
+   "modes": [
+    "spread_the_seeds"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the ask says \"glide\", which tells the child the working part's shape or trick; say the job only (\"it lives where the food is hard seeds\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": false,
+     "note": "refused: two items use the same skill with the same living things"
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

@@ -126,6 +126,7 @@ import AdaptationInvestigator from '../primitives/visual-primitives/biology/Adap
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import BodyWorkshop from '../primitives/visual-primitives/biology/BodyWorkshop';
 import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
+import LifeLab from '../primitives/visual-primitives/biology/life-lab/LifeLab';
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
 import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
 import EnergyCycleEngine from '../primitives/visual-primitives/biology/EnergyCycleEngine';
@@ -1453,6 +1454,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   },
 
   'body-workshop': {
+  'life-lab': {
+    component: LifeLab,
+    sectionTitle: 'Life Lab',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
     component: BodyWorkshop,
     sectionTitle: 'Body Workshop',
     showDivider: true,

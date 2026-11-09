@@ -1,0 +1,266 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-survive_and_change-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Helpful Traits for Survival",
+  "description": "Traits like colors and body parts give animals advantages to survive in their habitats.",
+  "gradeBand": "3-5",
+  "challengeType": "survive_and_change",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "survive_and_change",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "moss_bark",
+       "label": "Mossy Bark",
+       "kind": "bark",
+       "cond": {
+        "color": "green"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bugs",
+       "subject": "beetle",
+       "zone": "moss_bark",
+       "variants": [
+        {
+         "value": "green",
+         "count": 6
+        },
+        {
+         "value": "brown",
+         "count": 6
+        }
+       ]
+      },
+      {
+       "id": "hunter",
+       "subject": "lizard",
+       "zone": "moss_bark"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "hunter",
+       "prey": "bugs"
+      }
+     ],
+     "controls": [
+      {
+       "type": "predict",
+       "of": "bugs"
+      }
+     ],
+     "goal": {
+      "kind": "prediction"
+     }
+    },
+    "ask": "A hungry lizard hunts beetles crawling on green mossy bark. Predict which beetle color will be more common after 3 families.",
+    "why": "Notice which beetle color blends into the green bark.",
+    "standards": "3-LS4-2 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "+0.2 2 different things the child could try",
+      "+0.8 the child predicts before seeing it happen",
+      "+1 the change happens over several families"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "survive_and_change",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "sand_plain",
+       "label": "Sandy Ground",
+       "kind": "bark",
+       "cond": {
+        "color": "sandy"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hoppers",
+       "subject": "grasshopper",
+       "zone": "sand_plain",
+       "variants": [
+        {
+         "value": "green",
+         "count": 6
+        },
+        {
+         "value": "sandy",
+         "count": 6
+        }
+       ]
+      },
+      {
+       "id": "hunter",
+       "subject": "finch",
+       "zone": "sand_plain"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "hunter",
+       "prey": "hoppers"
+      }
+     ],
+     "controls": [
+      {
+       "type": "predict",
+       "of": "hoppers"
+      }
+     ],
+     "goal": {
+      "kind": "prediction"
+     }
+    },
+    "ask": "A finch hunts grasshoppers in the dry sandy brush. Predict which grasshopper color will have more survivors after 4 families.",
+    "why": "Look at which hopper color matches the sandy ground.",
+    "standards": "3-LS4-2 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "+0.2 2 different things the child could try",
+      "+0.8 the child predicts before seeing it happen",
+      "+1 the change happens over several families"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "survive_and_change",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "brown_trunk",
+       "label": "Brown Trunk",
+       "kind": "bark",
+       "cond": {
+        "color": "brown"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "moth_group",
+       "subject": "moth",
+       "zone": "brown_trunk",
+       "variants": [
+        {
+         "value": "brown",
+         "count": 6
+        },
+        {
+         "value": "white",
+         "count": 6
+        }
+       ]
+      },
+      {
+       "id": "hunter",
+       "subject": "bird",
+       "zone": "brown_trunk"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "hunter",
+       "prey": "moth_group"
+      }
+     ],
+     "controls": [
+      {
+       "type": "predict",
+       "of": "moth_group"
+      }
+     ],
+     "goal": {
+      "kind": "prediction"
+     }
+    },
+    "ask": "A hungry bird searches for moths resting on deep brown tree bark. Predict which moth color will be more common after 3 families.",
+    "why": "Look at the dark brown trunk to see which moths stand out clearly to the hunter.",
+    "standards": "3-LS4-2 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "+0.2 2 different things the child could try",
+      "+0.8 the child predicts before seeing it happen",
+      "+1 the change happens over several families"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 13.2,
+   "modes": [
+    "survive_and_change"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: spots: a real hawk does not hunt beetles by sight; use lizard, bird, finch"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

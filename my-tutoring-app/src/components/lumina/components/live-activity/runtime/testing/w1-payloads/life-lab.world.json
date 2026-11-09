@@ -1,0 +1,1409 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Finding the Right Home",
+  "description": "Animals live in places where their needs for water, warmth, food, and shelter are met.",
+  "gradeBand": "K-2",
+  "challengeType": "where_it_lives",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "desert",
+       "label": "Sunny Desert",
+       "cond": {
+        "light": 2,
+        "water": 0,
+        "temp": 2
+       }
+      },
+      {
+       "id": "wetland",
+       "label": "Wet Marsh",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 1
+       }
+      },
+      {
+       "id": "forest",
+       "label": "Cool Woods",
+       "cond": {
+        "light": 1,
+        "water": 1,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "camel",
+       "zone": "wetland",
+       "subject": "camel",
+       "name": "Camel",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         0,
+         0
+        ],
+        "temp": [
+         2,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc2a"
+      },
+      {
+       "id": "frog",
+       "zone": "desert",
+       "subject": "frog",
+       "name": "Frog",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         2,
+         2
+        ],
+        "temp": [
+         1,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc38"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "camel",
+        "frog"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "desert",
+        "wetland",
+        "forest"
+       ],
+       "beings": [
+        "camel",
+        "frog"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These animals are in places that do not meet their needs. Move each animal to a home where it can live well.",
+    "why": "Check what each animal needs: dry warmth or lots of fresh water.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.2,
+     "reasons": [
+      "+0.7 9 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child places an animal in a habitat that does not meet its needs.",
+      "says": "Look at the water and temperature dials in each habitat.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "desert",
+          "label": "Sunny Desert",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         },
+         {
+          "id": "wetland",
+          "label": "Wet Marsh",
+          "emoji": "\ud83d\udca7",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         },
+         {
+          "id": "forest",
+          "label": "Cool Woods",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "camel",
+          "zone": "wetland",
+          "subject": "camel",
+          "name": "Camel",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            0,
+            0
+           ],
+           "temp": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc2a"
+         },
+         {
+          "id": "frog",
+          "zone": "desert",
+          "subject": "frog",
+          "name": "Frog",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            2,
+            2
+           ],
+           "temp": [
+            1,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc38"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "camel",
+           "frog"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "desert",
+           "wetland",
+           "forest"
+          ],
+          "beings": [
+           "camel",
+           "frog"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These animals are in places that do not meet their needs. Move each animal to a home where it can live well.",
+       "why": "Check what each animal needs: dry warmth or lots of fresh water.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.2,
+        "reasons": [
+         "+0.7 9 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "ice",
+       "label": "Icy Snow",
+       "cond": {
+        "light": 1,
+        "water": 1,
+        "temp": 0
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Hot Dunes",
+       "cond": {
+        "light": 2,
+        "water": 0,
+        "temp": 2
+       }
+      },
+      {
+       "id": "pond",
+       "label": "Cool Pond",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bear",
+       "zone": "desert",
+       "subject": "polar_bear",
+       "name": "Polar bear",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         0,
+         0
+        ],
+        "water": [
+         1,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f"
+      },
+      {
+       "id": "lizard",
+       "zone": "ice",
+       "subject": "lizard",
+       "name": "Lizard",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         0
+        ]
+       },
+       "emoji": "\ud83e\udd8e"
+      },
+      {
+       "id": "duck",
+       "zone": "desert",
+       "subject": "duck",
+       "name": "Duck",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         1,
+         1
+        ],
+        "water": [
+         2,
+         2
+        ]
+       },
+       "emoji": "\ud83e\udd86"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "bear",
+        "lizard",
+        "duck"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "ice",
+        "desert",
+        "pond"
+       ],
+       "beings": [
+        "bear",
+        "lizard",
+        "duck"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "Help these three animals find places that meet their needs for warmth and water.",
+    "why": "Think about whether each animal needs freezing cold, hot sun, or fresh pond water.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child puts an animal in the wrong temperature.",
+      "says": "Notice which place is freezing cold and which place is baking hot.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "ice",
+          "label": "Icy Snow",
+          "emoji": "\u2744\ufe0f",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 0
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Hot Dunes",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         },
+         {
+          "id": "pond",
+          "label": "Cool Pond",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bear",
+          "zone": "desert",
+          "subject": "polar_bear",
+          "name": "Polar bear",
+          "kind": "animal",
+          "needs": {
+           "temp": [
+            0,
+            0
+           ],
+           "water": [
+            1,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f"
+         },
+         {
+          "id": "lizard",
+          "zone": "ice",
+          "subject": "lizard",
+          "name": "Lizard",
+          "kind": "animal",
+          "needs": {
+           "temp": [
+            2,
+            2
+           ],
+           "water": [
+            0,
+            0
+           ]
+          },
+          "emoji": "\ud83e\udd8e"
+         },
+         {
+          "id": "duck",
+          "zone": "desert",
+          "subject": "duck",
+          "name": "Duck",
+          "kind": "animal",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "water": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83e\udd86"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "bear",
+           "lizard",
+           "duck"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "ice",
+           "desert",
+           "pond"
+          ],
+          "beings": [
+           "bear",
+           "lizard",
+           "duck"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "Help these three animals find places that meet their needs for warmth and water.",
+       "why": "Think about whether each animal needs freezing cold, hot sun, or fresh pond water.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "+1 27 different things the child could try",
+         "+1 only 1 of them work",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is overwhelmed by three animals and zones.",
+      "says": "Let us try with two animals first.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "ice",
+          "label": "Icy Snow",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 0
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Hot Dunes",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bear",
+          "zone": "desert",
+          "subject": "polar_bear",
+          "name": "Polar bear",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            1,
+            2
+           ],
+           "temp": [
+            0,
+            0
+           ]
+          },
+          "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f"
+         },
+         {
+          "id": "lizard",
+          "zone": "ice",
+          "subject": "lizard",
+          "name": "Lizard",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            0,
+            0
+           ],
+           "temp": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83e\udd8e"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "bear",
+           "lizard"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "ice",
+           "desert"
+          ],
+          "beings": [
+           "bear",
+           "lizard"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "Help these three animals find places that meet their needs for warmth and water.",
+       "why": "Think about whether each animal needs freezing cold, hot sun, or fresh pond water.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "meadow",
+       "label": "Grassy Meadow",
+       "cond": {
+        "light": 1,
+        "water": 1,
+        "temp": 1
+       }
+      },
+      {
+       "id": "ocean",
+       "label": "Blue Ocean",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 1
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Dry Desert",
+       "cond": {
+        "light": 2,
+        "water": 0,
+        "temp": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "rabbit",
+       "zone": "ocean",
+       "subject": "rabbit",
+       "name": "Rabbit",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         1,
+         1
+        ],
+        "temp": [
+         1,
+         1
+        ]
+       },
+       "emoji": "\ud83d\udc07"
+      },
+      {
+       "id": "fish",
+       "zone": "desert",
+       "subject": "fish",
+       "name": "Fish",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         2,
+         2
+        ],
+        "temp": [
+         1,
+         1
+        ]
+       },
+       "emoji": "\ud83d\udc1f"
+      },
+      {
+       "id": "camel",
+       "zone": "meadow",
+       "subject": "camel",
+       "name": "Camel",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         0,
+         0
+        ],
+        "temp": [
+         2,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc2a"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "rabbit",
+        "fish",
+        "camel"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "meadow",
+        "ocean",
+        "desert"
+       ],
+       "beings": [
+        "rabbit",
+        "fish",
+        "camel"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These three animals need homes where they can find water and the right temperature. Move each animal to a place where its needs are met.",
+    "why": "Look at how much water and warmth each animal needs to live and grow.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child puts an animal in the wrong habitat.",
+      "says": "Look closely at which place has water, grass, or dry sand.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Grassy Meadow",
+          "emoji": "\ud83c\udf3e",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 1
+          }
+         },
+         {
+          "id": "ocean",
+          "label": "Blue Ocean",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Dry Desert",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "rabbit",
+          "zone": "ocean",
+          "subject": "rabbit",
+          "name": "Rabbit",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            1,
+            1
+           ],
+           "temp": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc07"
+         },
+         {
+          "id": "fish",
+          "zone": "desert",
+          "subject": "fish",
+          "name": "Fish",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            2,
+            2
+           ],
+           "temp": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc1f"
+         },
+         {
+          "id": "camel",
+          "zone": "meadow",
+          "subject": "camel",
+          "name": "Camel",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            0,
+            0
+           ],
+           "temp": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc2a"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "rabbit",
+           "fish",
+           "camel"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "meadow",
+           "ocean",
+           "desert"
+          ],
+          "beings": [
+           "rabbit",
+           "fish",
+           "camel"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These three animals need homes where they can find water and the right temperature. Move each animal to a place where its needs are met.",
+       "why": "Look at how much water and warmth each animal needs to live and grow.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "+1 27 different things the child could try",
+         "+1 only 1 of them work",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds three animals challenging.",
+      "says": "Let us find homes for two animals first.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Grassy Meadow",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 1
+          }
+         },
+         {
+          "id": "ocean",
+          "label": "Blue Ocean",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "rabbit",
+          "zone": "ocean",
+          "subject": "rabbit",
+          "name": "Rabbit",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            1,
+            1
+           ],
+           "temp": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc07"
+         },
+         {
+          "id": "fish",
+          "zone": "meadow",
+          "subject": "fish",
+          "name": "Fish",
+          "kind": "animal",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "water": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc1f"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "rabbit",
+           "fish"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "meadow",
+           "ocean"
+          ],
+          "beings": [
+           "rabbit",
+           "fish"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These three animals need homes where they can find water and the right temperature. Move each animal to a place where its needs are met.",
+       "why": "Look at how much water and warmth each animal needs to live and grow.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 8,
+   "seconds": 71.8,
+   "objective": "Animals live where their needs are met",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the child can change only one thing, so there is nothing to work out; let it change two (light and water, or warmth)"
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "look: world 2: a reader who saw only the screen reports: Describing a Grassy Meadow as having 'dim light' is counterintuitive and scientifically questionable."
+   ],
+   "costUsd": 0.0652,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 0 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 0",
+     "costUsd": 0.0067
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0067
+    },
+    {
+     "seconds": 17,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0165
+    },
+    {
+     "seconds": 17,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0165
+    },
+    {
+     "seconds": 18,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.0194
+    },
+    {
+     "seconds": 27,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The instruction says both animals are in the wrong homes, and there are only two habitats, so the child just has to\u2026",
+     "costUsd": 0.0308,
+     "item": 1
+    },
+    {
+     "seconds": 27,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0308,
+     "item": 2
+    },
+    {
+     "seconds": 27,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: The option uses the word 'bill', which children commonly associate specifically with ducks.",
+     "costUsd": 0.0308,
+     "item": 3
+    },
+    {
+     "seconds": 27,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 3 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The prompt mentions a 'snowy field', directly cueing the color 'white'.",
+     "costUsd": 0.0308,
+     "item": 4
+    },
+    {
+     "seconds": 27,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 6 problem(s) from the look",
+     "costUsd": 0.0308
+    },
+    {
+     "seconds": 27,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0308
+    },
+    {
+     "seconds": 27,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0308
+    },
+    {
+     "seconds": 35,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 3 world(s) held, 3 blocking check(s). First: world 2: the child can change only one thing, so there is nothing to work out; let it change two (light and water, or warmth)",
+     "costUsd": 0.0375
+    },
+    {
+     "seconds": 35,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0375
+    },
+    {
+     "seconds": 43,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0436
+    },
+    {
+     "seconds": 43,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0436
+    },
+    {
+     "seconds": 45,
+     "stage": "look",
+     "level": "info",
+     "text": "round 2: reading 2 world(s) as the child meets them",
+     "costUsd": 0.0472
+    },
+    {
+     "seconds": 53,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0537,
+     "item": 1
+    },
+    {
+     "seconds": 53,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: The instruction text explicitly tells the child the pond is 'too warm and completely dry', so they can just invert \u2026",
+     "costUsd": 0.0537,
+     "item": 3
+    },
+    {
+     "seconds": 53,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 2 problem(s) from the look",
+     "costUsd": 0.0537
+    },
+    {
+     "seconds": 53,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0537
+    },
+    {
+     "seconds": 53,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.0537
+    },
+    {
+     "seconds": 60,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0593
+    },
+    {
+     "seconds": 60,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.0593
+    },
+    {
+     "seconds": 63,
+     "stage": "look",
+     "level": "info",
+     "text": "final read: reading 1 world(s) as the child meets them",
+     "costUsd": 0.0623
+    },
+    {
+     "seconds": 72,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 2: a reader who saw only the screen reports: Describing a Grassy Meadow as having 'dim light' is counterintuitive and scientifically questionable.",
+     "costUsd": 0.0652,
+     "item": 3
+    },
+    {
+     "seconds": 72,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 3 world(s) in 71.8s over 8 turn(s), about $0.07",
+     "costUsd": 0.0652
+    }
+   ],
+   "look": [
+    {
+     "answer": "Move the Frog to Wet Marsh and the Camel to Sandy Desert, then press I'm done!",
+     "difficulty": "easy",
+     "shortcut": "The instruction says both animals are in the wrong homes, and there are only two habitats, so the child just has to swap them without thinking about their needs.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0024855,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Move the polar bear to Icy Snow, the lizard to Hot Dunes, and the duck to Cool Pond.",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.002595,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'broad flat bill', then click 'Try it' and 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": "The option uses the word 'bill', which children commonly associate specifically with ducks.",
+     "issues": null,
+     "offObjective": "Selecting an anatomical adaptation (beak shape) to match food focuses on body structures/adaptations rather than identifying habitats where an animal's needs are met.",
+     "costUsd": 0.00334575,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'white', then click 'Try it' or 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": "The prompt mentions a 'snowy field', directly cueing the color 'white'.",
+     "issues": "The text 'Deep White Snow (white)' in the upper-left of the display box is printed in pale gray/white on a white background, making it very difficult to read due to poor contrast.",
+     "offObjective": "Selecting camouflage to hide from a predator focuses on protective coloration/adaptation rather than showing how a habitat provides an animal with food, water, or other survival needs.",
+     "costUsd": 0.002952,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Move the Camel to the Sunny Desert and the Frog to the Wet Marsh.",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0025155,
+     "item": 0,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Adjust the water setting to wet and the temperature setting to cool or cold, then test and submit.",
+     "difficulty": "medium",
+     "shortcut": "The instruction text explicitly tells the child the pond is 'too warm and completely dry', so they can just invert those two states without thinking about what trout need.",
+     "issues": "The dials or buttons referred to in the text ('Change the water and warmth dials', 'Buttons turn water and temp down or up') are not visible on the screen.",
+     "offObjective": null,
+     "costUsd": 0.00391275,
+     "item": 2,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Move the Camel to Dry Desert, the Rabbit to Grassy Meadow, and the Fish to Blue Ocean.",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": "Describing a Grassy Meadow as having 'dim light' is counterintuitive and scientifically questionable.",
+     "offObjective": null,
+     "costUsd": 0.0029415,
+     "item": 2,
+     "round": 3,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 71.8,
+    "costUsd": 0.0652,
+    "items": 3,
+    "rounds": 8,
+    "look": {
+     "ran": true,
+     "looked": 7,
+     "unread": 0,
+     "screenshots": 7,
+     "problems": 1
+    },
+    "displays": {
+     "offered": [
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow"
+     ],
+     "used": {}
+    }
+   }
+  }
+ }
+}

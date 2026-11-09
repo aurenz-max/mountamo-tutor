@@ -1,0 +1,1377 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-fair_test-kitdisplay-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Testing What Plants Need",
+  "description": "In a fair test, keep everything the same except the one condition being tested.",
+  "gradeBand": "3-5",
+  "challengeType": "fair_test",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "fair_test",
+    "world": {
+     "steps": 5,
+     "zones": [
+      {
+       "id": "pot1",
+       "label": "Pot 1",
+       "kind": "pot",
+       "emoji": "\ud83e\udeb4",
+       "cond": {
+        "light": 2,
+        "water": 1
+       }
+      },
+      {
+       "id": "pot2",
+       "label": "Pot 2",
+       "kind": "pot",
+       "emoji": "\ud83e\udeb4",
+       "cond": {
+        "light": 2,
+        "water": 0
+       }
+      },
+      {
+       "id": "pot3",
+       "label": "Pot 3",
+       "kind": "pot",
+       "emoji": "\ud83e\udeb4",
+       "cond": {
+        "light": 0,
+        "water": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bean1",
+       "zone": "pot1",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "bean2",
+       "zone": "pot2",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "bean3",
+       "zone": "pot3",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "bean1",
+        "bean2",
+        "bean3"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot1",
+        "pot2",
+        "pot3"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "light"
+     }
+    },
+    "ask": "Do bean plants need light to grow? Test light by changing only that one thing between the two pots.",
+    "why": "A fair test changes only the thing you want to test. Keep all other conditions matching!",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.5,
+     "reasons": [
+      "+2 729 different things the child could try",
+      "+0.5 180 of them work",
+      "+1.5 the child designs a fair test (change one thing only)",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child changes water as well as light.",
+      "says": "Look at the water tracker to check that all pots get matching water.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Pot",
+           "Water"
+          ],
+          "rows": [
+           [
+            "Pot 1",
+            "1 cup"
+           ],
+           [
+            "Pot 2",
+            "1 cup"
+           ],
+           [
+            "Pot 3",
+            "1 cup"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "pot1",
+          "label": "Pot 1",
+          "kind": "pot",
+          "emoji": "\ud83e\udeb4",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         },
+         {
+          "id": "pot2",
+          "label": "Pot 2",
+          "kind": "pot",
+          "emoji": "\ud83e\udeb4",
+          "cond": {
+           "light": 2,
+           "water": 0
+          }
+         },
+         {
+          "id": "pot3",
+          "label": "Pot 3",
+          "kind": "pot",
+          "emoji": "\ud83e\udeb4",
+          "cond": {
+           "light": 0,
+           "water": 0
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bean1",
+          "zone": "pot1",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "bean2",
+          "zone": "pot2",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "bean3",
+          "zone": "pot3",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "bean1",
+           "bean2",
+           "bean3"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "pot1",
+           "pot2",
+           "pot3"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "light"
+        }
+       },
+       "ask": "Do bean plants need light to grow? Test light by changing only that one thing between the two pots.",
+       "why": "A fair test changes only the thing you want to test. Keep all other conditions matching!",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.5,
+        "reasons": [
+         "+2 729 different things the child could try",
+         "+0.5 180 of them work",
+         "+1.5 the child designs a fair test (change one thing only)",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles managing three pots.",
+      "says": "Let us try with two pots instead of three!",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "zones": [
+         {
+          "id": "pot1",
+          "label": "Pot 1",
+          "kind": "pot",
+          "emoji": "\ud83e\udeb4",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         },
+         {
+          "id": "pot2",
+          "label": "Pot 2",
+          "kind": "pot",
+          "emoji": "\ud83e\udeb4",
+          "cond": {
+           "light": 2,
+           "water": 0
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bean1",
+          "zone": "pot1",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "bean2",
+          "zone": "pot2",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "bean1",
+           "bean2"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "pot1",
+           "pot2"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "light"
+        }
+       },
+       "ask": "Do bean plants need light to grow? Test light by changing only that one thing between the two pots.",
+       "why": "A fair test changes only the thing you want to test. Keep all other conditions matching!",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 3.3,
+        "reasons": [
+         "+1.3 81 different things the child could try",
+         "+0.5 8 of them work",
+         "+1.5 the child designs a fair test (change one thing only)"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "fair_test",
+    "world": {
+     "steps": 5,
+     "zones": [
+      {
+       "id": "potA",
+       "label": "Pot A",
+       "kind": "pot",
+       "emoji": "\ud83c\udf3b",
+       "cond": {
+        "light": 1,
+        "water": 1
+       }
+      },
+      {
+       "id": "potB",
+       "label": "Pot B",
+       "kind": "pot",
+       "emoji": "\ud83c\udf3b",
+       "cond": {
+        "light": 2,
+        "water": 1
+       }
+      },
+      {
+       "id": "potC",
+       "label": "Pot C",
+       "kind": "pot",
+       "emoji": "\ud83c\udf3b",
+       "cond": {
+        "light": 0,
+        "water": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "sun1",
+       "zone": "potA",
+       "subject": "sunflower",
+       "name": "sunflower",
+       "emoji": "\ud83c\udf3b",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         2,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "sun2",
+       "zone": "potB",
+       "subject": "sunflower",
+       "name": "sunflower",
+       "emoji": "\ud83c\udf3b",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         2,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "sun3",
+       "zone": "potC",
+       "subject": "sunflower",
+       "name": "sunflower",
+       "emoji": "\ud83c\udf3b",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         2,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "sun1",
+        "sun2",
+        "sun3"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "potA",
+        "potB",
+        "potC"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "water"
+     }
+    },
+    "ask": "Do sunflower plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+    "why": "To test water fairly, water must be different between pots while light stays exactly equal.",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.5,
+     "reasons": [
+      "+2 729 different things the child could try",
+      "+0.5 90 of them work",
+      "+1.5 the child designs a fair test (change one thing only)",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child changes light instead of just water.",
+      "says": "Check the light chart to make sure all pots get equal sunlight.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Pot",
+           "Light"
+          ],
+          "rows": [
+           [
+            "Pot A",
+            "Bright"
+           ],
+           [
+            "Pot B",
+            "Bright"
+           ],
+           [
+            "Pot C",
+            "Bright"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "potA",
+          "label": "Pot A",
+          "kind": "pot",
+          "emoji": "\ud83c\udf3b",
+          "cond": {
+           "light": 1,
+           "water": 1
+          }
+         },
+         {
+          "id": "potB",
+          "label": "Pot B",
+          "kind": "pot",
+          "emoji": "\ud83c\udf3b",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         },
+         {
+          "id": "potC",
+          "label": "Pot C",
+          "kind": "pot",
+          "emoji": "\ud83c\udf3b",
+          "cond": {
+           "light": 0,
+           "water": 2
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "sun1",
+          "zone": "potA",
+          "subject": "sunflower",
+          "name": "sunflower",
+          "emoji": "\ud83c\udf3b",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            2,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "sun2",
+          "zone": "potB",
+          "subject": "sunflower",
+          "name": "sunflower",
+          "emoji": "\ud83c\udf3b",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            2,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "sun3",
+          "zone": "potC",
+          "subject": "sunflower",
+          "name": "sunflower",
+          "emoji": "\ud83c\udf3b",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            2,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "sun1",
+           "sun2",
+           "sun3"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "potA",
+           "potB",
+           "potC"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "water"
+        }
+       },
+       "ask": "Do sunflower plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+       "why": "To test water fairly, water must be different between pots while light stays exactly equal.",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.5,
+        "reasons": [
+         "+2 729 different things the child could try",
+         "+0.5 90 of them work",
+         "+1.5 the child designs a fair test (change one thing only)",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds managing three pots overwhelming.",
+      "says": "Let us test with just two pots!",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "zones": [
+         {
+          "id": "potA",
+          "label": "Pot A",
+          "kind": "pot",
+          "emoji": "\ud83c\udf3b",
+          "cond": {
+           "light": 1,
+           "water": 1
+          }
+         },
+         {
+          "id": "potB",
+          "label": "Pot B",
+          "kind": "pot",
+          "emoji": "\ud83c\udf3b",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "sun1",
+          "zone": "potA",
+          "subject": "sunflower",
+          "name": "sunflower",
+          "emoji": "\ud83c\udf3b",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            2,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "sun2",
+          "zone": "potB",
+          "subject": "sunflower",
+          "name": "sunflower",
+          "emoji": "\ud83c\udf3b",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            2,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "sun1",
+           "sun2"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "potA",
+           "potB"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "water"
+        }
+       },
+       "ask": "Do sunflower plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+       "why": "To test water fairly, water must be different between pots while light stays exactly equal.",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 3.8,
+        "reasons": [
+         "+1.3 81 different things the child could try",
+         "+1 only 4 of them work",
+         "+1.5 the child designs a fair test (change one thing only)"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "fair_test",
+    "world": {
+     "steps": 5,
+     "zones": [
+      {
+       "id": "potA",
+       "label": "Pot A",
+       "kind": "pot",
+       "emoji": "\ud83c\udf31",
+       "cond": {
+        "light": 2,
+        "water": 1
+       }
+      },
+      {
+       "id": "potB",
+       "label": "Pot B",
+       "kind": "pot",
+       "emoji": "\ud83c\udf31",
+       "cond": {
+        "light": 0,
+        "water": 1
+       }
+      },
+      {
+       "id": "potC",
+       "label": "Pot C",
+       "kind": "pot",
+       "emoji": "\ud83c\udf31",
+       "cond": {
+        "light": 1,
+        "water": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "beanA",
+       "zone": "potA",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "beanB",
+       "zone": "potB",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "id": "beanC",
+       "zone": "potC",
+       "subject": "bean",
+       "name": "bean plant",
+       "emoji": "\ud83c\udf31",
+       "kind": "plant",
+       "needs": {
+        "light": [
+         1,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "beanA",
+        "beanB",
+        "beanC"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "potA",
+        "potB",
+        "potC"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "water"
+     }
+    },
+    "ask": "Do bean plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+    "why": "In a fair test, keep light matching and change only the water.",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.5,
+     "reasons": [
+      "+2 729 different things the child could try",
+      "+0.5 180 of them work",
+      "+1.5 the child designs a fair test (change one thing only)",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child changes light as well as water.",
+      "says": "Check the light tracker so all pots have matching light.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Pot",
+           "Light"
+          ],
+          "rows": [
+           [
+            "Pot A",
+            "Bright"
+           ],
+           [
+            "Pot B",
+            "Bright"
+           ],
+           [
+            "Pot C",
+            "Bright"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "potA",
+          "label": "Pot A",
+          "kind": "pot",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         },
+         {
+          "id": "potB",
+          "label": "Pot B",
+          "kind": "pot",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "light": 0,
+           "water": 1
+          }
+         },
+         {
+          "id": "potC",
+          "label": "Pot C",
+          "kind": "pot",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "light": 1,
+           "water": 0
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "beanA",
+          "zone": "potA",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "beanB",
+          "zone": "potB",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "beanC",
+          "zone": "potC",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "beanA",
+           "beanB",
+           "beanC"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "potA",
+           "potB",
+           "potC"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "water"
+        }
+       },
+       "ask": "Do bean plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+       "why": "In a fair test, keep light matching and change only the water.",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.5,
+        "reasons": [
+         "+2 729 different things the child could try",
+         "+0.5 180 of them work",
+         "+1.5 the child designs a fair test (change one thing only)",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child has trouble setting three pots at once.",
+      "says": "Let us test with two pots instead!",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "fair_test",
+       "world": {
+        "steps": 5,
+        "zones": [
+         {
+          "id": "potA",
+          "label": "Pot A",
+          "kind": "pot",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "light": 2,
+           "water": 1
+          }
+         },
+         {
+          "id": "potB",
+          "label": "Pot B",
+          "kind": "pot",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "light": 0,
+           "water": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "beanA",
+          "zone": "potA",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         },
+         {
+          "id": "beanB",
+          "zone": "potB",
+          "subject": "bean",
+          "name": "bean plant",
+          "emoji": "\ud83c\udf31",
+          "kind": "plant",
+          "needs": {
+           "light": [
+            1,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "beanA",
+           "beanB"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "condition",
+          "zones": [
+           "potA",
+           "potB"
+          ],
+          "keys": [
+           "light",
+           "water"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "fair_test",
+         "variable": "water"
+        }
+       },
+       "ask": "Do bean plants need water to grow? Test water by keeping light the same while water is different across the pots.",
+       "why": "In a fair test, keep light matching and change only the water.",
+       "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 3.3,
+        "reasons": [
+         "+1.3 81 different things the child could try",
+         "+0.5 8 of them work",
+         "+1.5 the child designs a fair test (change one thing only)"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 7,
+   "seconds": 67.6,
+   "modes": [
+    "fair_test"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: condition: 1-3 places and 1-2 of light, water, temp"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: condition: 1-3 places and 1-2 of light, water, temp"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: no setting the child can make reaches the goal"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

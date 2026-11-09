@@ -16,6 +16,7 @@ import AdaptationInvestigator from '../primitives/visual-primitives/biology/Adap
 import FoodWebBuilder from '../primitives/visual-primitives/biology/FoodWebBuilder';
 import CellBuilder from '../primitives/visual-primitives/biology/CellBuilder';
 import BodyWorkshop from '../primitives/visual-primitives/biology/BodyWorkshop';
+import LifeLab from '../primitives/visual-primitives/biology/life-lab/LifeLab';
 import InheritanceLab from '../primitives/visual-primitives/biology/InheritanceLab';
 import DnaExplorer from '../primitives/visual-primitives/biology/DnaExplorer';
 import ProteinFolder from '../primitives/visual-primitives/biology/ProteinFolder';
@@ -33,7 +34,7 @@ interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'body-workshop' | 'inheritance-lab' | 'dna-explorer' | 'protein-folder' | 'energy-cycle-engine' | 'ecosystem-diorama';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'body-workshop' | 'life-lab' | 'inheritance-lab' | 'dna-explorer' | 'protein-folder' | 'energy-cycle-engine' | 'ecosystem-diorama';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -50,6 +51,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'food-web-builder', label: 'Food Web Builder', icon: '🕸️', topic: 'Ecosystem energy flow' },
   { value: 'cell-builder', label: 'Cell Builder', icon: '🧫', topic: 'Cell structure and organelles' },
   { value: 'body-workshop', label: 'Body Workshop (K-5)', icon: '🫁', topic: 'How animals get oxygen to their bodies' },
+  { value: 'life-lab', label: 'Life Lab (K-5 canvas)', icon: '🌱', topic: 'Animals live where their needs are met' },
   { value: 'inheritance-lab', label: 'Inheritance Lab', icon: '🧬', topic: 'Flower color inheritance' },
   { value: 'dna-explorer', label: 'DNA Explorer', icon: '🔬', topic: 'DNA structure and base pairing' },
   { value: 'protein-folder', label: 'Protein Folder', icon: '🧪', topic: 'Protein folding and structure' },
@@ -192,6 +194,15 @@ const PrimitiveRenderer: React.FC<{
             ...(data as Parameters<typeof BodyWorkshop>[0]['data']),
             instanceId: (data as { instanceId: string }).instanceId,
             // Don't pass onEvaluationSubmit - the usePrimitiveEvaluation hook already handles context submission
+          }}
+        />
+      );
+    case 'life-lab':
+      return (
+        <LifeLab
+          data={{
+            ...(data as Parameters<typeof LifeLab>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
           }}
         />
       );

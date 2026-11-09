@@ -1,0 +1,308 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-where_it_lives-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Finding the Right Home",
+  "description": "Animals live in places that give them the warmth and water they need to survive.",
+  "gradeBand": "K-2",
+  "challengeType": "where_it_lives",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "snow",
+       "label": "Snowy land",
+       "kind": "snow",
+       "cond": {
+        "water": 1,
+        "temp": 0
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Sunny desert",
+       "kind": "desert",
+       "cond": {
+        "temp": 2,
+        "water": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bear",
+       "subject": "polar_bear",
+       "zone": "desert"
+      },
+      {
+       "id": "camel",
+       "subject": "camel",
+       "zone": "snow"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "bear",
+        "camel"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "snow",
+        "desert"
+       ],
+       "beings": [
+        "bear",
+        "camel"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "Each animal needs a home that fits its body. Move each one where it can live.",
+    "why": "Think about whether each animal likes freezing cold or hot dry sun.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "ice",
+       "label": "Icy coast",
+       "kind": "ice",
+       "cond": {
+        "temp": 0,
+        "water": 2
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Dry desert",
+       "kind": "desert",
+       "cond": {
+        "temp": 2,
+        "water": 0
+       }
+      },
+      {
+       "id": "pond",
+       "label": "Cool pond",
+       "kind": "pond",
+       "cond": {
+        "temp": 1,
+        "water": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "penguin",
+       "subject": "penguin",
+       "zone": "desert"
+      },
+      {
+       "id": "lizard",
+       "subject": "lizard",
+       "zone": "pond"
+      },
+      {
+       "id": "frog",
+       "subject": "frog",
+       "zone": "ice"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "penguin",
+        "lizard",
+        "frog"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "ice",
+        "desert",
+        "pond"
+       ],
+       "beings": [
+        "penguin",
+        "lizard",
+        "frog"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These animals need the right home to stay healthy. Move each animal to a place where it thrives.",
+    "why": "Look closely at how wet and warm each place is. Match each animal to its needs.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "river",
+       "label": "Mild river",
+       "kind": "river",
+       "cond": {
+        "temp": 1,
+        "water": 2
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Warm dunes",
+       "kind": "desert",
+       "cond": {
+        "water": 0,
+        "temp": 2
+       }
+      },
+      {
+       "id": "ice",
+       "label": "Frozen ice",
+       "kind": "ice",
+       "cond": {
+        "water": 2,
+        "temp": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "duck",
+       "subject": "duck",
+       "zone": "desert"
+      },
+      {
+       "id": "camel",
+       "subject": "camel",
+       "zone": "ice"
+      },
+      {
+       "id": "bear",
+       "subject": "polar_bear",
+       "zone": "river"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "duck",
+        "camel",
+        "bear"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "river",
+        "desert",
+        "ice"
+       ],
+       "beings": [
+        "duck",
+        "camel",
+        "bear"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "All three animals are lost in the wrong places. Move each one to a habitat where it can live.",
+    "why": "Check what each animal needs to stay alive and comfortable.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 2,
+   "seconds": 10.4,
+   "modes": [
+    "where_it_lives"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,301 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-fair_test-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Fair Tests with Plants",
+  "description": "Test whether plants need light or water by changing only one variable at a time.",
+  "gradeBand": "K-2",
+  "challengeType": "fair_test",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "fair_test",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot1",
+       "label": "Pot A",
+       "kind": "pot",
+       "cond": {
+        "water": 0,
+        "light": 1
+       }
+      },
+      {
+       "id": "pot2",
+       "label": "Pot B",
+       "kind": "pot",
+       "cond": {
+        "light": 2,
+        "water": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "b1",
+       "subject": "bean",
+       "zone": "pot1"
+      },
+      {
+       "id": "b2",
+       "subject": "bean",
+       "zone": "pot2"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "b1",
+        "b2"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot1",
+        "pot2"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "water"
+     }
+    },
+    "ask": "Do bean plants need water to grow? Set up two pots so that water is the only difference between them.",
+    "why": "In a fair test, keep light the same in both pots and change only the water.",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.3,
+     "reasons": [
+      "+1.3 81 different things the child could try",
+      "+0.5 8 of them work",
+      "+1.5 the child designs a fair test (change one thing only)"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "fair_test",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot1",
+       "label": "Pot 1",
+       "kind": "pot",
+       "cond": {
+        "light": 2,
+        "water": 0
+       }
+      },
+      {
+       "id": "pot2",
+       "label": "Pot 2",
+       "kind": "pot",
+       "cond": {
+        "water": 1,
+        "light": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "s1",
+       "subject": "sunflower",
+       "zone": "pot1"
+      },
+      {
+       "id": "s2",
+       "subject": "sunflower",
+       "zone": "pot2"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "s1",
+        "s2"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot1",
+        "pot2"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "light"
+     }
+    },
+    "ask": "Do sunflowers need light to grow? Change the conditions so that light is the only difference between the two pots.",
+    "why": "Check both light and water. Make sure only light is different and water stays the same in both pots.",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 3.3,
+     "reasons": [
+      "+1.3 81 different things the child could try",
+      "+0.5 8 of them work",
+      "+1.5 the child designs a fair test (change one thing only)"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "fair_test",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot1",
+       "label": "Pot X",
+       "kind": "pot",
+       "cond": {
+        "light": 0,
+        "water": 0
+       }
+      },
+      {
+       "id": "pot2",
+       "label": "Pot Y",
+       "kind": "pot",
+       "cond": {
+        "water": 0,
+        "light": 1
+       }
+      },
+      {
+       "id": "pot3",
+       "label": "Pot Z",
+       "kind": "pot",
+       "cond": {
+        "light": 2,
+        "water": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "b1",
+       "subject": "bean",
+       "zone": "pot1"
+      },
+      {
+       "id": "b2",
+       "subject": "bean",
+       "zone": "pot2"
+      },
+      {
+       "id": "b3",
+       "subject": "bean",
+       "zone": "pot3"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "b1",
+        "b2",
+        "b3"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot1",
+        "pot2",
+        "pot3"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "fair_test",
+      "variable": "light"
+     }
+    },
+    "ask": "Test if bean plants need light to grow. Set up a fair test across the pots so only light changes.",
+    "why": "Find two pots to compare: give them the exact same amount of water, but different light.",
+    "standards": "2-LS2-1 \u00b7 3-5-ETS1-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.5,
+     "reasons": [
+      "+2 729 different things the child could try",
+      "+0.5 180 of them work",
+      "+1.5 the child designs a fair test (change one thing only)",
+      "+0.5 3 living things to look after"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 12.4,
+   "modes": [
+    "fair_test"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the child can change only the thing being tested, so any change is fair; let it change another condition too"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

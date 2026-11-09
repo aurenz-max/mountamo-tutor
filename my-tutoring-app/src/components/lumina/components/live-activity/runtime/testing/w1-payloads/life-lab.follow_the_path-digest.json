@@ -1,0 +1,324 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-follow_the_path-digest-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "The Path of Food",
+  "description": "Food moves through organs that break it down and absorb nutrients into the body",
+  "gradeBand": "3-5",
+  "challengeType": "follow_the_path",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "follow_the_path",
+    "world": {
+     "zones": [
+      {
+       "id": "kitchen",
+       "label": "Dining Table",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "child",
+       "zone": "kitchen",
+       "name": "Sam",
+       "kind": "animal",
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "flows",
+       "being": "child",
+       "start": "food",
+       "goal": "chyme",
+       "parts": [
+        {
+         "id": "mouth",
+         "name": "Mouth",
+         "emoji": "\ud83d\udc44",
+         "takes": {
+          "food": "bolus"
+         }
+        },
+        {
+         "id": "esophagus",
+         "name": "Esophagus",
+         "emoji": "\ud83e\udd62",
+         "takes": {
+          "bolus": "swallowed_food"
+         }
+        },
+        {
+         "id": "stomach",
+         "name": "Stomach",
+         "emoji": "\ud83e\udd63",
+         "takes": {
+          "swallowed_food": "chyme"
+         }
+        }
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 3,
+       "items": [
+        "esophagus",
+        "mouth",
+        "stomach"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "flow"
+     }
+    },
+    "ask": "Line up the organs to guide the bite from chewing to the belly.",
+    "why": "Check which organ receives the meal first and where it travels next.",
+    "standards": "4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "+0.8 15 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-2",
+    "type": "follow_the_path",
+    "world": {
+     "zones": [
+      {
+       "id": "room",
+       "label": "Home",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "child",
+       "zone": "room",
+       "name": "Alex",
+       "kind": "animal",
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "flows",
+       "being": "child",
+       "start": "swallowed_food",
+       "goal": "nutrients",
+       "parts": [
+        {
+         "id": "esophagus",
+         "name": "Esophagus",
+         "emoji": "\ud83e\udd62",
+         "takes": {
+          "swallowed_food": "acid_mix"
+         }
+        },
+        {
+         "id": "stomach",
+         "name": "Stomach",
+         "emoji": "\ud83e\udd63",
+         "takes": {
+          "acid_mix": "liquid_food"
+         }
+        },
+        {
+         "id": "small_intestine",
+         "name": "Small Intestine",
+         "emoji": "\u27b0",
+         "takes": {
+          "liquid_food": "nutrients"
+         }
+        },
+        {
+         "id": "lungs",
+         "name": "Lungs",
+         "emoji": "\ud83e\udec1",
+         "takes": {
+          "air": "oxygen"
+         }
+        }
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 3,
+       "items": [
+        "stomach",
+        "lungs",
+        "small_intestine",
+        "esophagus"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "flow"
+     }
+    },
+    "ask": "Arrange the organs to carry the meal from swallow through digestion and nutrient intake.",
+    "why": "Follow the meal after swallowing. Which organ breaks it down before nutrients absorb?",
+    "standards": "4-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.4,
+     "reasons": [
+      "+1.1 40 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.3 parts on the bench that do not belong"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-3",
+    "type": "follow_the_path",
+    "world": {
+     "zones": [
+      {
+       "id": "park",
+       "label": "Picnic Spot",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "child",
+       "zone": "park",
+       "name": "Jordan",
+       "kind": "animal",
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "flows",
+       "being": "child",
+       "start": "apple",
+       "goal": "waste",
+       "parts": [
+        {
+         "id": "mouth",
+         "name": "Mouth",
+         "emoji": "\ud83d\udc44",
+         "takes": {
+          "apple": "crushed_bite"
+         }
+        },
+        {
+         "id": "stomach",
+         "name": "Stomach",
+         "emoji": "\ud83e\udd63",
+         "takes": {
+          "crushed_bite": "liquid_pulp"
+         }
+        },
+        {
+         "id": "small_intestine",
+         "name": "Small Intestine",
+         "emoji": "\u27b0",
+         "takes": {
+          "liquid_pulp": "watery_remains"
+         }
+        },
+        {
+         "id": "large_intestine",
+         "name": "Large Intestine",
+         "emoji": "\ud83e\udeb1",
+         "takes": {
+          "watery_remains": "waste"
+         }
+        }
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 4,
+       "items": [
+        "stomach",
+        "small_intestine",
+        "mouth",
+        "large_intestine"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "flow"
+     }
+    },
+    "ask": "Build the complete journey from the first bite to absorbing nutrients and soaking up water.",
+    "why": "Track the journey step by step. Which tube absorbs water after nutrients are absorbed?",
+    "standards": "4-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.3,
+     "reasons": [
+      "+1.3 64 different things the child could try",
+      "+1 only 1 of them work"
+     ]
+    },
+    "respond": "show"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 17,
+   "modes": [
+    "follow_the_path"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: flows: an order control of 1-4 slots whose bench is the declared parts"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: flows: an order control of 1-4 slots whose bench is the declared parts"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,449 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-whose_baby-monarch-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Monarch Family Traits",
+  "description": "Young butterflies inherit traits from their parents, showing patterns of variation and resemblance.",
+  "gradeBand": "K-2",
+  "challengeType": "whose_baby",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "parents_zone",
+       "label": "Parent Butterflies",
+       "emoji": "\ud83c\udf3f",
+       "cond": {}
+      },
+      {
+       "id": "young_zone",
+       "label": "Young Butterflies",
+       "emoji": "\ud83c\udf38",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "mom",
+       "zone": "parents_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_pattern": "heavy_veins",
+        "wing_color": "bright_orange",
+        "spot_size": "large_white_dots"
+       }
+      },
+      {
+       "id": "dad",
+       "zone": "parents_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_pattern": "thin_veins",
+        "wing_color": "pale_orange",
+        "spot_size": "tiny_white_dots"
+       }
+      },
+      {
+       "id": "young1",
+       "zone": "young_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_pattern": "heavy_veins",
+        "wing_color": "pale_orange",
+        "spot_size": "large_white_dots"
+       }
+      },
+      {
+       "id": "young2",
+       "zone": "young_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_pattern": "polka_dots",
+        "wing_color": "bright_orange",
+        "spot_size": "tiny_white_dots"
+       }
+      },
+      {
+       "id": "young3",
+       "zone": "young_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_pattern": "thin_veins",
+        "wing_color": "yellow",
+        "spot_size": "large_white_dots"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "mom",
+        "dad"
+       ],
+       "traits": [
+        "wing_pattern",
+        "wing_color",
+        "spot_size"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "young1",
+        "young2",
+        "young3"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "Which young butterfly could belong to these monarch butterfly parents? Choose the butterfly that shares traits from both parents.",
+    "why": "Look at the wing pattern, wing color, and spot size on each parent and match them one by one.",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.2,
+     "reasons": [
+      "+0.3 3 different things the child could try",
+      "+0.9 3 traits to check against both parents"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-2",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "cat_parents_zone",
+       "label": "Parent Caterpillars",
+       "emoji": "\ud83c\udf31",
+       "cond": {}
+      },
+      {
+       "id": "cat_young_zone",
+       "label": "Young Caterpillars",
+       "emoji": "\ud83c\udf43",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "cat_mom",
+       "zone": "cat_parents_zone",
+       "name": "Monarch Caterpillar",
+       "emoji": "\ud83d\udc1b",
+       "kind": "animal",
+       "traits": {
+        "stripe_width": "wide_stripes",
+        "stripe_color": "yellow_and_black",
+        "antennae_length": "long_antennae"
+       }
+      },
+      {
+       "id": "cat_dad",
+       "zone": "cat_parents_zone",
+       "name": "Monarch Caterpillar",
+       "emoji": "\ud83d\udc1b",
+       "kind": "animal",
+       "traits": {
+        "stripe_width": "narrow_stripes",
+        "stripe_color": "white_and_black",
+        "antennae_length": "short_antennae"
+       }
+      },
+      {
+       "id": "cat_a",
+       "zone": "cat_young_zone",
+       "name": "Monarch Caterpillar",
+       "emoji": "\ud83d\udc1b",
+       "kind": "animal",
+       "traits": {
+        "stripe_width": "narrow_stripes",
+        "stripe_color": "yellow_and_black",
+        "antennae_length": "long_antennae"
+       }
+      },
+      {
+       "id": "cat_b",
+       "zone": "cat_young_zone",
+       "name": "Monarch Caterpillar",
+       "emoji": "\ud83d\udc1b",
+       "kind": "animal",
+       "traits": {
+        "stripe_width": "zigzag_stripes",
+        "stripe_color": "yellow_and_black",
+        "antennae_length": "short_antennae"
+       }
+      },
+      {
+       "id": "cat_c",
+       "zone": "cat_young_zone",
+       "name": "Monarch Caterpillar",
+       "emoji": "\ud83d\udc1b",
+       "kind": "animal",
+       "traits": {
+        "stripe_width": "wide_stripes",
+        "stripe_color": "green_and_black",
+        "antennae_length": "long_antennae"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "cat_mom",
+        "cat_dad"
+       ],
+       "traits": [
+        "stripe_width",
+        "stripe_color",
+        "antennae_length"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "cat_a",
+        "cat_b",
+        "cat_c"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "Which caterpillar could belong to these monarch parents? Check each caterpillar's stripes and antennae to find the match.",
+    "why": "Check each feature carefully: the stripe width, stripe color, and antennae must come from one of the parents.",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.2,
+     "reasons": [
+      "+0.3 3 different things the child could try",
+      "+0.9 3 traits to check against both parents"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-3",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "p_zone",
+       "label": "Parents",
+       "emoji": "\ud83c\udf3a",
+       "cond": {}
+      },
+      {
+       "id": "o_zone",
+       "label": "Offspring Choices",
+       "emoji": "\ud83c\udf3b",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "par_mom",
+       "zone": "p_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "deep_amber",
+        "border_dots": "double_row",
+        "wing_edge": "smooth_edge",
+        "body_color": "velvet_black"
+       }
+      },
+      {
+       "id": "par_dad",
+       "zone": "p_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "golden_orange",
+        "border_dots": "single_row",
+        "wing_edge": "wavy_edge",
+        "body_color": "striped_body"
+       }
+      },
+      {
+       "id": "off_1",
+       "zone": "o_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "deep_amber",
+        "border_dots": "single_row",
+        "wing_edge": "smooth_edge",
+        "body_color": "striped_body"
+       }
+      },
+      {
+       "id": "off_2",
+       "zone": "o_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "deep_amber",
+        "border_dots": "no_dots",
+        "wing_edge": "wavy_edge",
+        "body_color": "velvet_black"
+       }
+      },
+      {
+       "id": "off_3",
+       "zone": "o_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "golden_orange",
+        "border_dots": "double_row",
+        "wing_edge": "serrated_edge",
+        "body_color": "striped_body"
+       }
+      },
+      {
+       "id": "off_4",
+       "zone": "o_zone",
+       "name": "Monarch Butterfly",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "wing_shade": "lemon_yellow",
+        "border_dots": "single_row",
+        "wing_edge": "smooth_edge",
+        "body_color": "velvet_black"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "par_mom",
+        "par_dad"
+       ],
+       "traits": [
+        "wing_shade",
+        "border_dots",
+        "wing_edge",
+        "body_color"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "off_1",
+        "off_2",
+        "off_3",
+        "off_4"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "Which butterfly is the offspring of these two parent butterflies? Compare four traits to find the one that inherited from both.",
+    "why": "Look at all four traits one by one to see which young gets every trait from either the mother or father.",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.1,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+1.2 4 traits to check against both parents"
+     ]
+    },
+    "respond": "show"
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 29.4,
+   "modes": [
+    "whose_baby"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: inherits: parents and young are the same kind of living thing (same name)"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: inherits: parents and young are the same kind of living thing (same name)"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: inherits: parents and young are the same kind of living thing (same name)"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

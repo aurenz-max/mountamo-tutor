@@ -13,6 +13,7 @@ import { bossEntry } from '../../../components/live-activity/boss';
 import { adaptationInvestigatorCard } from '../../../primitives/visual-primitives/biology/adaptationInvestigator.card';
 import { cellBuilderCard } from '../../../primitives/visual-primitives/biology/cellBuilder.card';
 import { bodyWorkshopCard } from '../../../primitives/visual-primitives/biology/bodyWorkshop.card';
+import { LIFE_EVAL_MODE, LIFE_MODES, lifeLabCard } from '../../../primitives/visual-primitives/biology/life-lab/lifeLab.card';
 import { habitatDioramaCard } from '../../../primitives/visual-primitives/biology/habitatDiorama.card';
 import { ecosystemDioramaCard } from '../../../primitives/visual-primitives/biology/ecosystemDiorama.card';
 import { foodWebBuilderCard } from '../../../primitives/visual-primitives/biology/foodWebBuilder.card';
@@ -448,6 +449,18 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // How it is wired to the live tutor: `bodyWorkshop.card.ts` (behavior: `bodyWorkshop.boss.ts`).
     ...bossEntry(bodyWorkshopCard),
+  },
+  {
+    id: 'life-lab',
+    description: 'Life lab: a 2D living world the learner changes until a goal holds, built for each lesson by an author agent from places (an icy sea, a desert, a pond, a pot on a windowsill, tree bark, a river) and real living things (polar bear, camel, frog, duck, fish, whale, dog, bean plant, sunflower, cactus, fern, butterfly, chicken, moths). Code knows what each one needs, what each body part is good for, each life cycle and each real breathing path, runs the world and judges it. One world can ask the learner to move animals to homes where their needs are met, turn the light and water for a plant up or down until it thrives, give a bird the beak for its food or an animal the feet for snow, water, trees or sand, pick a seed shape the wind, a fox or a stream will carry, color a moth so a hunting bird cannot see it, pick the puppy whose ears, coat and fur all come from its parents, order the stages of a butterfly, frog, chicken or bean plant life cycle, predict which moth color a population will have more of after several families on dark or light bark, build the path oxygen takes into the blood of a fish or a whale, or set up a fair test with two pots that differ in one thing only. Perfect for lessons on what plants and animals need to live, habitats and where animals live, body parts and what they do, structure and function, seed dispersal, inheritance and traits from parents, life cycles, camouflage, survival and natural selection, internal structures and breathing, and fair tests about plant growth. ESSENTIAL for K-5 life science: K-LS1-1, K-ESS3-1, 1-LS1-1, 1-LS3-1, 2-LS2-1, 2-LS2-2, 3-LS1-1, 3-LS3-1, 3-LS4-2, 3-LS4-3, 4-LS1-1.',
+    constraints: 'Grades K-5. Each session is 3-5 worlds; the author agent composes them for the lesson and code checks each one (it must be reachable, not already solved, and must not name its answer) and names its skill. config.difficulty is a target the author aims at by structure (how many things to try and how few work, distractor parts, more living things, a prediction or a fair test). The manifest must NOT supply worlds, animals, parts or answers. Cells, food webs and ecosystems are other primitives.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate', 'spoken'], role: ['apply'], minutes: 8 },
+    evalModes: [
+      { evalMode: LIFE_EVAL_MODE, label: 'Living world', beta: 0.8, scaffoldingMode: 2, challengeTypes: [...LIFE_MODES], description: 'A living world the author agent builds for the objective: the learner changes it until the goal holds, at the tier the lesson asks for' },
+    ],
+    supportsEvaluation: true,
+    // How it is wired to the live tutor: `life-lab/lifeLab.card.ts` (behavior: `life-lab/lifeLab.boss.ts`).
+    ...bossEntry(lifeLabCard),
   },
   {
     id: 'cell-builder',

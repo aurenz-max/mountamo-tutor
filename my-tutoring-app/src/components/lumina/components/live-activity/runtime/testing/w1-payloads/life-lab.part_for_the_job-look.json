@@ -1,0 +1,1445 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-part_for_the_job-look-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Body Parts for Eating",
+  "description": "Animals have specialized body parts that match the food they eat.",
+  "gradeBand": "K-2",
+  "challengeType": "part_for_the_job",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "flower_garden",
+       "label": "Flower Garden",
+       "cond": {
+        "food": "deep nectar"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hummer",
+       "zone": "flower_garden",
+       "name": "hummingbird",
+       "emoji": "\ud83d\udc26",
+       "kind": "animal",
+       "traits": {
+        "beak": "hooked beak"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "hummer",
+       "part": "beak",
+       "on": "food",
+       "job": "drink"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "hummer",
+       "part": "beak",
+       "options": [
+        {
+         "value": "hooked beak",
+         "label": "hooked beak",
+         "emoji": "\ud83e\ude9d",
+         "works": [
+          "meat"
+         ]
+        },
+        {
+         "value": "long thin beak",
+         "label": "long thin beak",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "deep nectar"
+         ]
+        },
+        {
+         "value": "short thick beak",
+         "label": "short thick beak",
+         "emoji": "\ud83c\udf30",
+         "works": [
+          "hard seeds"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This bird lives where food is hidden deep inside flowers. Choose a beak shape so it can drink nectar.",
+    "why": "Think about how to reach all the way down into a long tube. Which shape can probe inside?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a beak meant for crushing or tearing.",
+      "says": "Look closely at the tube shape of the deep blossom.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "flower_garden",
+          "label": "Flower Garden",
+          "emoji": "\ud83c\udf3a",
+          "cond": {
+           "food": "deep nectar"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hummer",
+          "zone": "flower_garden",
+          "name": "hummingbird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal",
+          "traits": {
+           "beak": "hooked beak"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hummer",
+          "part": "beak",
+          "on": "food",
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hummer",
+          "part": "beak",
+          "options": [
+           {
+            "value": "hooked beak",
+            "label": "hooked beak",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "meat"
+            ]
+           },
+           {
+            "value": "long thin beak",
+            "label": "long thin beak",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "deep nectar"
+            ]
+           },
+           {
+            "value": "short thick beak",
+            "label": "short thick beak",
+            "emoji": "\ud83c\udf30",
+            "works": [
+             "hard seeds"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This bird lives where food is hidden deep inside flowers. Choose a beak shape so it can drink nectar.",
+       "why": "Think about how to reach all the way down into a long tube. Which shape can probe inside?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.3,
+        "reasons": [
+         "+0.3 3 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is unsure which beak can reach into blossoms.",
+      "says": "Let us test between two beak shapes.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "flower_garden",
+          "label": "Flower Garden",
+          "cond": {
+           "food": "deep nectar"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hummer",
+          "zone": "flower_garden",
+          "name": "hummingbird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal",
+          "traits": {
+           "beak": "hooked beak"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hummer",
+          "part": "beak",
+          "on": "food",
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hummer",
+          "part": "beak",
+          "options": [
+           {
+            "value": "long thin beak",
+            "label": "long thin beak",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "deep nectar"
+            ]
+           },
+           {
+            "value": "short thick beak",
+            "label": "short thick beak",
+            "emoji": "\ud83c\udf30",
+            "works": [
+             "hard seeds"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This bird lives where food is hidden deep inside flowers. Choose a beak shape so it can drink nectar.",
+       "why": "Think about how to reach all the way down into a long tube. Which shape can probe inside?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "meadow",
+       "label": "Meadow",
+       "cond": {
+        "food": "fresh meat"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "fox",
+       "zone": "meadow",
+       "name": "fox",
+       "emoji": "\ud83e\udd8a",
+       "kind": "animal",
+       "traits": {
+        "teeth": "flat grinding teeth"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "fox",
+       "part": "teeth",
+       "on": "food",
+       "job": "eat"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "fox",
+       "part": "teeth",
+       "options": [
+        {
+         "value": "flat grinding teeth",
+         "label": "flat grinding teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "tough grass"
+         ]
+        },
+        {
+         "value": "sharp pointed teeth",
+         "label": "sharp pointed teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "fresh meat"
+         ]
+        },
+        {
+         "value": "wide chisel teeth",
+         "label": "wide chisel teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "tree bark"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This predator hunts mice in the meadow. Choose teeth that help it catch and tear meat.",
+    "why": "Think about what happens when an animal bites into meat. Which tooth shape cuts and pierces?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child chooses teeth shaped for plants.",
+      "says": "Notice the kind of meal this hunter needs to bite into.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Meadow",
+          "emoji": "\ud83e\udd69",
+          "cond": {
+           "food": "fresh meat"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "fox",
+          "zone": "meadow",
+          "name": "fox",
+          "emoji": "\ud83e\udd8a",
+          "kind": "animal",
+          "traits": {
+           "teeth": "flat grinding teeth"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "fox",
+          "part": "teeth",
+          "on": "food",
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "fox",
+          "part": "teeth",
+          "options": [
+           {
+            "value": "flat grinding teeth",
+            "label": "flat grinding teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "tough grass"
+            ]
+           },
+           {
+            "value": "sharp pointed teeth",
+            "label": "sharp pointed teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "fresh meat"
+            ]
+           },
+           {
+            "value": "wide chisel teeth",
+            "label": "wide chisel teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "tree bark"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This predator hunts mice in the meadow. Choose teeth that help it catch and tear meat.",
+       "why": "Think about what happens when an animal bites into meat. Which tooth shape cuts and pierces?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.3,
+        "reasons": [
+         "+0.3 3 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child gets confused among three shapes.",
+      "says": "Let us look at just two tooth shapes.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Meadow",
+          "cond": {
+           "food": "fresh meat"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "fox",
+          "zone": "meadow",
+          "name": "fox",
+          "emoji": "\ud83e\udd8a",
+          "kind": "animal",
+          "traits": {
+           "teeth": "flat grinding teeth"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "fox",
+          "part": "teeth",
+          "on": "food",
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "fox",
+          "part": "teeth",
+          "options": [
+           {
+            "value": "flat grinding teeth",
+            "label": "flat grinding teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "tough grass"
+            ]
+           },
+           {
+            "value": "sharp pointed teeth",
+            "label": "sharp pointed teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "fresh meat"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This predator hunts mice in the meadow. Choose teeth that help it catch and tear meat.",
+       "why": "Think about what happens when an animal bites into meat. Which tooth shape cuts and pierces?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "oak_grove",
+       "label": "Oak Grove",
+       "cond": {
+        "food": "tough nut shells"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "squirrel",
+       "zone": "oak_grove",
+       "name": "squirrel",
+       "emoji": "\ud83d\udc3f\ufe0f",
+       "kind": "animal",
+       "traits": {
+        "teeth": "soft tiny teeth"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "squirrel",
+       "part": "teeth",
+       "on": "food",
+       "job": "eat"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "squirrel",
+       "part": "teeth",
+       "options": [
+        {
+         "value": "soft tiny teeth",
+         "label": "soft tiny teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "soft berries"
+         ]
+        },
+        {
+         "value": "strong gnawing teeth",
+         "label": "strong gnawing teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "tough nut shells"
+         ]
+        },
+        {
+         "value": "pointed fangs",
+         "label": "pointed fangs",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "flying insects"
+         ]
+        },
+        {
+         "value": "flat scoop teeth",
+         "label": "flat scoop teeth",
+         "emoji": "\ud83e\uddb7",
+         "works": [
+          "floating duckweed"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This squirrel feeds in an oak forest full of acorns. Give it the right teeth to break into hard nuts.",
+    "why": "Think about cracking a sturdy woody shell. Which mouth parts can scrape and gnaw through hard wood?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks teeth suited for insects or berries.",
+      "says": "Look at how tough and woody an acorn shell is.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "oak_grove",
+          "label": "Oak Grove",
+          "emoji": "\ud83c\udf30",
+          "cond": {
+           "food": "tough nut shells"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "squirrel",
+          "zone": "oak_grove",
+          "name": "squirrel",
+          "emoji": "\ud83d\udc3f\ufe0f",
+          "kind": "animal",
+          "traits": {
+           "teeth": "soft tiny teeth"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "squirrel",
+          "part": "teeth",
+          "on": "food",
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "squirrel",
+          "part": "teeth",
+          "options": [
+           {
+            "value": "soft tiny teeth",
+            "label": "soft tiny teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "soft berries"
+            ]
+           },
+           {
+            "value": "strong gnawing teeth",
+            "label": "strong gnawing teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "tough nut shells"
+            ]
+           },
+           {
+            "value": "pointed fangs",
+            "label": "pointed fangs",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "flying insects"
+            ]
+           },
+           {
+            "value": "flat scoop teeth",
+            "label": "flat scoop teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "floating duckweed"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This squirrel feeds in an oak forest full of acorns. Give it the right teeth to break into hard nuts.",
+       "why": "Think about cracking a sturdy woody shell. Which mouth parts can scrape and gnaw through hard wood?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds four options tricky.",
+      "says": "Let us compare two tooth styles.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "oak_grove",
+          "label": "Oak Grove",
+          "cond": {
+           "food": "tough nut shells"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "squirrel",
+          "zone": "oak_grove",
+          "name": "squirrel",
+          "emoji": "\ud83d\udc3f\ufe0f",
+          "kind": "animal",
+          "traits": {
+           "teeth": "soft tiny teeth"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "squirrel",
+          "part": "teeth",
+          "on": "food",
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "squirrel",
+          "part": "teeth",
+          "options": [
+           {
+            "value": "soft tiny teeth",
+            "label": "soft tiny teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "soft berries"
+            ]
+           },
+           {
+            "value": "strong gnawing teeth",
+            "label": "strong gnawing teeth",
+            "emoji": "\ud83e\uddb7",
+            "works": [
+             "tough nut shells"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This squirrel feeds in an oak forest full of acorns. Give it the right teeth to break into hard nuts.",
+       "why": "Think about cracking a sturdy woody shell. Which mouth parts can scrape and gnaw through hard wood?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "marsh",
+       "label": "Shallow Marsh",
+       "cond": {
+        "food": "quick slippery fish"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "heron",
+       "zone": "marsh",
+       "name": "heron",
+       "emoji": "\ud83e\udeb6",
+       "kind": "animal",
+       "traits": {
+        "bill": "wide flat strainer"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "heron",
+       "part": "bill",
+       "on": "food",
+       "job": "catch"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "heron",
+       "part": "bill",
+       "options": [
+        {
+         "value": "long spear bill",
+         "label": "long spear bill",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "quick slippery fish"
+         ]
+        },
+        {
+         "value": "tiny curved bill",
+         "label": "tiny curved bill",
+         "emoji": "\ud83c\udf30",
+         "works": [
+          "grass seeds"
+         ]
+        },
+        {
+         "value": "wide flat strainer",
+         "label": "wide flat strainer",
+         "emoji": "\ud83e\udd44",
+         "works": [
+          "tiny water plants"
+         ]
+        },
+        {
+         "value": "short hooked bill",
+         "label": "short hooked bill",
+         "emoji": "\ud83e\ude9d",
+         "works": [
+          "large land prey"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This heron wades in a shallow marsh looking for swimming minnows. Choose a bill so it can grab slippery fish.",
+    "why": "Think about reaching down into water to strike something fast and slippery. Which shape acts like a fishing spear?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child selects a bill made for straining plants or cracking seeds.",
+      "says": "Watch how fast and slick a fish swims through the water.",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "marsh",
+          "label": "Shallow Marsh",
+          "emoji": "\ud83d\udc1f",
+          "cond": {
+           "food": "quick slippery fish"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "heron",
+          "zone": "marsh",
+          "name": "heron",
+          "emoji": "\ud83e\udeb6",
+          "kind": "animal",
+          "traits": {
+           "bill": "wide flat strainer"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "heron",
+          "part": "bill",
+          "on": "food",
+          "job": "catch"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "heron",
+          "part": "bill",
+          "options": [
+           {
+            "value": "long spear bill",
+            "label": "long spear bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "quick slippery fish"
+            ]
+           },
+           {
+            "value": "tiny curved bill",
+            "label": "tiny curved bill",
+            "emoji": "\ud83c\udf30",
+            "works": [
+             "grass seeds"
+            ]
+           },
+           {
+            "value": "wide flat strainer",
+            "label": "wide flat strainer",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "tiny water plants"
+            ]
+           },
+           {
+            "value": "short hooked bill",
+            "label": "short hooked bill",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "large land prey"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This heron wades in a shallow marsh looking for swimming minnows. Choose a bill so it can grab slippery fish.",
+       "why": "Think about reaching down into water to strike something fast and slippery. Which shape acts like a fishing spear?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child gets overwhelmed by four choices.",
+      "says": "Let us narrow it down to two bills.",
+      "item": {
+       "id": "life-4-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "marsh",
+          "label": "Shallow Marsh",
+          "cond": {
+           "food": "quick slippery fish"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "heron",
+          "zone": "marsh",
+          "name": "heron",
+          "emoji": "\ud83e\udeb6",
+          "kind": "animal",
+          "traits": {
+           "bill": "wide flat strainer"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "heron",
+          "part": "bill",
+          "on": "food",
+          "job": "catch"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "heron",
+          "part": "bill",
+          "options": [
+           {
+            "value": "long spear bill",
+            "label": "long spear bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "quick slippery fish"
+            ]
+           },
+           {
+            "value": "wide flat strainer",
+            "label": "wide flat strainer",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "tiny water plants"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This heron wades in a shallow marsh looking for swimming minnows. Choose a bill so it can grab slippery fish.",
+       "why": "Think about reaching down into water to strike something fast and slippery. Which shape acts like a fishing spear?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 10,
+   "seconds": 67.5,
+   "modes": [
+    "part_for_the_job"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 9,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "write_world",
+     "ok": true
+    }
+   ],
+   "advisories": [],
+   "costUsd": 0.0574,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 2,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 0 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 0",
+     "costUsd": 0.0049
+    },
+    {
+     "seconds": 2,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0049
+    },
+    {
+     "seconds": 9,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 1 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 1",
+     "costUsd": 0.0088
+    },
+    {
+     "seconds": 9,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0088
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 2 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 2",
+     "costUsd": 0.0132
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0132
+    },
+    {
+     "seconds": 25,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0178
+    },
+    {
+     "seconds": 25,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0178
+    },
+    {
+     "seconds": 30,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0222
+    },
+    {
+     "seconds": 30,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0222
+    },
+    {
+     "seconds": 35,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.0247
+    },
+    {
+     "seconds": 44,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0356,
+     "item": 1
+    },
+    {
+     "seconds": 44,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen reports: The icons used for the options are inconsistent and confusing: an axe emoji is used for sharp teeth and a tree log emoji for chisel teeth, while a real\u2026",
+     "costUsd": 0.0356,
+     "item": 2
+    },
+    {
+     "seconds": 44,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 2: a reader who saw only the screen reports: The icons represent household tools (toothbrush, saw, needle, spoon) rather than actual teeth, which may confuse young learners if taken literally.",
+     "costUsd": 0.0356,
+     "item": 3
+    },
+    {
+     "seconds": 44,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0356,
+     "item": 4
+    },
+    {
+     "seconds": 44,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 2 problem(s) from the look",
+     "costUsd": 0.0356
+    },
+    {
+     "seconds": 44,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0356
+    },
+    {
+     "seconds": 44,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.0356
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0401
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.0401
+    },
+    {
+     "seconds": 54,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.045
+    },
+    {
+     "seconds": 54,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 9: the author is working",
+     "costUsd": 0.045
+    },
+    {
+     "seconds": 56,
+     "stage": "look",
+     "level": "info",
+     "text": "round 2: reading 2 world(s) as the child meets them",
+     "costUsd": 0.0481
+    },
+    {
+     "seconds": 62,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0527,
+     "item": 2
+    },
+    {
+     "seconds": 62,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 2: a reader who saw only the screen reports: The word 'chisel' may be unfamiliar to a typical grade 2 student.",
+     "costUsd": 0.0527,
+     "item": 3
+    },
+    {
+     "seconds": 62,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 1 problem(s) from the look",
+     "costUsd": 0.0527
+    },
+    {
+     "seconds": 62,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 9: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0527
+    },
+    {
+     "seconds": 62,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 10: the author is working",
+     "costUsd": 0.0527
+    },
+    {
+     "seconds": 67,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 10: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0574
+    },
+    {
+     "seconds": 67,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 67.5s over 10 turn(s), about $0.06",
+     "costUsd": 0.0574
+    }
+   ],
+   "look": [
+    {
+     "answer": "Select \"long thin beak\" and click \"I'm done!\".",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "costUsd": 0.0021405,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'sharp pointed teeth' and then click 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": "The icons used for the options are inconsistent and confusing: an axe emoji is used for sharp teeth and a tree log emoji for chisel teeth, while a real tooth emoji is used for grinding teeth.",
+     "costUsd": 0.0030045,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'chisel front teeth' and press 'I'm done!'",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": "The icons represent household tools (toothbrush, saw, needle, spoon) rather than actual teeth, which may confuse young learners if taken literally.",
+     "costUsd": 0.00264825,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'long spear bill' and then 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "costUsd": 0.0031365,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'sharp pointed teeth' and click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "costUsd": 0.0019995,
+     "item": 1,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'chisel front teeth' and then click 'I'm done!'",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": "The word 'chisel' may be unfamiliar to a typical grade 2 student.",
+     "costUsd": 0.00262875,
+     "item": 2,
+     "round": 2,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 67.5,
+    "costUsd": 0.0574,
+    "items": 4,
+    "rounds": 10,
+    "look": {
+     "ran": true,
+     "looked": 6,
+     "screenshots": 6,
+     "problems": 0
+    },
+    "displays": {
+     "offered": [
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow"
+     ],
+     "used": {}
+    }
+   }
+  }
+ }
+}

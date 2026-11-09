@@ -1,0 +1,256 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-life_cycle-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Growing and Changing",
+  "description": "Plants and animals grow and change through unique life cycles, each starting, growing, and becoming an adult.",
+  "gradeBand": "3-5",
+  "challengeType": "life_cycle",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "life_cycle",
+    "world": {
+     "zones": [
+      {
+       "id": "garden",
+       "label": "Meadow",
+       "kind": "meadow",
+       "cond": {
+        "light": 2,
+        "water": 1,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "b1",
+       "subject": "butterfly",
+       "zone": "garden"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "stages",
+       "subject": "butterfly"
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 4,
+       "items": [
+        "caterpillar",
+        "egg",
+        "butterfly",
+        "chrysalis"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "order"
+     }
+    },
+    "ask": "A butterfly goes through big changes as it grows. Put its stages in order from the beginning.",
+    "why": "What comes out of the egg first, and what does it rest inside before growing wings?",
+    "standards": "3-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "+1 24 different things the child could try",
+      "+1 only 1 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "life_cycle",
+    "world": {
+     "zones": [
+      {
+       "id": "patch",
+       "label": "Garden Patch",
+       "kind": "field",
+       "cond": {
+        "light": 2,
+        "water": 1,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "p1",
+       "subject": "bean",
+       "zone": "patch"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "stages",
+       "subject": "bean"
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 5,
+       "items": [
+        "flower",
+        "seedling",
+        "sprout",
+        "seed",
+        "pod"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "order"
+     }
+    },
+    "ask": "These stages show how a bean plant grows. Put them into order from beginning to end.",
+    "why": "What must be planted first in the dirt, and what appears as the tiny green shoot starts growing?",
+    "standards": "3-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1.5 120 different things the child could try",
+      "+1 only 1 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "life_cycle",
+    "world": {
+     "zones": [],
+     "beings": [],
+     "rules": [
+      {
+       "kind": "stages",
+       "subject": "frog"
+      }
+     ],
+     "controls": [
+      {
+       "type": "order",
+       "slots": 4,
+       "items": [
+        "tadpole",
+        "frog",
+        "egg",
+        "froglet"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "order"
+     }
+    },
+    "ask": "Put the stages of a frog's life cycle in order from start to adult.",
+    "why": "Think about how an amphibian begins in water and changes shape as it grows up.",
+    "standards": "3-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "+1 24 different things the child could try",
+      "+1 only 1 of them work"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 10,
+   "seconds": 31,
+   "modes": [
+    "life_cycle"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 2,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "finish",
+     "ok": false,
+     "note": "refused: two items use the same skill with the same living things"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this world is what_it_needs, which this lesson does not ask for; open: life_cycle"
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 9,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

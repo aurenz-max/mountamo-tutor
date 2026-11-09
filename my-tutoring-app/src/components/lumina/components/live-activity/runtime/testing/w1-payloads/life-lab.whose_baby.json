@@ -1,0 +1,470 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-whose_baby-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Whose Baby?",
+  "description": "Young animals look like their parents, inheriting traits from mother and father.",
+  "gradeBand": "K-2",
+  "challengeType": "whose_baby",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "nest",
+       "label": "Cat Parents",
+       "kind": "meadow",
+       "cond": {}
+      },
+      {
+       "id": "basket",
+       "label": "Kittens",
+       "kind": "meadow",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "cat_mom",
+       "subject": "cat",
+       "zone": "nest",
+       "traits": {
+        "color": "white",
+        "ears": "pointy",
+        "coat": "plain"
+       }
+      },
+      {
+       "id": "cat_dad",
+       "subject": "cat",
+       "zone": "nest",
+       "traits": {
+        "coat": "stripes",
+        "ears": "floppy",
+        "color": "golden"
+       }
+      },
+      {
+       "id": "kitA",
+       "subject": "cat",
+       "zone": "basket",
+       "traits": {
+        "ears": "floppy",
+        "color": "brown",
+        "coat": "stripes"
+       }
+      },
+      {
+       "id": "kitB",
+       "subject": "cat",
+       "zone": "basket",
+       "traits": {
+        "coat": "stripes",
+        "ears": "floppy",
+        "color": "white"
+       }
+      },
+      {
+       "id": "kitC",
+       "subject": "cat",
+       "zone": "basket",
+       "traits": {
+        "coat": "spots",
+        "ears": "pointy",
+        "color": "golden"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "cat_mom",
+        "cat_dad"
+       ],
+       "traits": [
+        "ears",
+        "coat",
+        "color"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "kitA",
+        "kitB",
+        "kitC"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "Look at the mother and father cats. Which kitten could be theirs?",
+    "why": "Look closely at each kitten's coat pattern, color, and ears to see if each one matches one of the parents.",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.2,
+     "reasons": [
+      "+0.3 3 different things the child could try",
+      "+0.9 3 traits to check against both parents"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "rug",
+       "label": "Parent Cats",
+       "kind": "meadow",
+       "cond": {}
+      },
+      {
+       "id": "cushion",
+       "label": "Kittens",
+       "kind": "meadow",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "mom_cat",
+       "subject": "cat",
+       "zone": "rug",
+       "traits": {
+        "coat": "spots",
+        "ears": "floppy",
+        "color": "brown"
+       }
+      },
+      {
+       "id": "dad_cat",
+       "subject": "cat",
+       "zone": "rug",
+       "traits": {
+        "ears": "pointy",
+        "coat": "plain",
+        "color": "black"
+       }
+      },
+      {
+       "id": "kitten1",
+       "subject": "cat",
+       "zone": "cushion",
+       "traits": {
+        "color": "black",
+        "coat": "spots",
+        "ears": "floppy"
+       }
+      },
+      {
+       "id": "kitten2",
+       "subject": "cat",
+       "zone": "cushion",
+       "traits": {
+        "color": "brown",
+        "coat": "stripes",
+        "ears": "pointy"
+       }
+      },
+      {
+       "id": "kitten3",
+       "subject": "cat",
+       "zone": "cushion",
+       "traits": {
+        "ears": "pointy",
+        "color": "white",
+        "coat": "spots"
+       }
+      },
+      {
+       "id": "kitten4",
+       "subject": "cat",
+       "zone": "cushion",
+       "traits": {
+        "color": "golden",
+        "coat": "plain",
+        "ears": "floppy"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "mom_cat",
+        "dad_cat"
+       ],
+       "traits": [
+        "ears",
+        "coat",
+        "color"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "kitten1",
+        "kitten2",
+        "kitten3",
+        "kitten4"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "These two parent cats have four kittens to check. Which kitten could be theirs?",
+    "why": "Check the kitten's coat, color, and ears. Does every single feature come from one of the parents?",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.8,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+0.9 3 traits to check against both parents"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "whose_baby",
+    "world": {
+     "zones": [
+      {
+       "id": "pen_one",
+       "label": "Dog Parents",
+       "kind": "plain",
+       "cond": {}
+      },
+      {
+       "id": "pen_two",
+       "label": "Puppies",
+       "kind": "plain",
+       "cond": {}
+      }
+     ],
+     "beings": [
+      {
+       "id": "parent_one",
+       "subject": "dog",
+       "zone": "pen_one",
+       "traits": {
+        "coat": "stripes",
+        "ears": "floppy",
+        "color": "black"
+       }
+      },
+      {
+       "id": "parent_two",
+       "subject": "dog",
+       "zone": "pen_one",
+       "traits": {
+        "coat": "spots",
+        "ears": "pointy",
+        "color": "white"
+       }
+      },
+      {
+       "id": "pup_a",
+       "subject": "dog",
+       "zone": "pen_two",
+       "traits": {
+        "color": "black",
+        "coat": "stripes",
+        "ears": "pointy"
+       }
+      },
+      {
+       "id": "pup_b",
+       "subject": "dog",
+       "zone": "pen_two",
+       "traits": {
+        "coat": "plain",
+        "ears": "floppy",
+        "color": "white"
+       }
+      },
+      {
+       "id": "pup_c",
+       "subject": "dog",
+       "zone": "pen_two",
+       "traits": {
+        "coat": "spots",
+        "ears": "pointy",
+        "color": "brown"
+       }
+      },
+      {
+       "id": "pup_d",
+       "subject": "dog",
+       "zone": "pen_two",
+       "traits": {
+        "color": "black",
+        "coat": "plain",
+        "ears": "pointy"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "inherits",
+       "parents": [
+        "parent_one",
+        "parent_two"
+       ],
+       "traits": [
+        "ears",
+        "coat",
+        "color"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "choose",
+       "among": [
+        "pup_a",
+        "pup_b",
+        "pup_c",
+        "pup_d"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "choose"
+     }
+    },
+    "ask": "Here are a mother dog and father dog. Which puppy has traits from both parents?",
+    "why": "A puppy gets each feature from mother or father. Look closely at coat, color, and ears!",
+    "standards": "1-LS3-1 \u00b7 3-LS3-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.8,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+0.9 3 traits to check against both parents"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 10,
+   "seconds": 46.3,
+   "modes": [
+    "whose_baby"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: 2 young could belong to these parents; exactly one may"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 4,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: 2 young could belong to these parents; exactly one may"
+    },
+    {
+     "turn": 5,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: inherits: two parents and 1-3 traits (ears, coat, color)"
+    },
+    {
+     "turn": 6,
+     "name": "remove_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": false,
+     "note": "refused: a session has 3-5 items; it has 2"
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 9,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: 2 young could belong to these parents; exactly one may"
+    },
+    {
+     "turn": 10,
+     "name": "write_world",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

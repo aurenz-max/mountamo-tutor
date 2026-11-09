@@ -1,0 +1,1638 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-beak-hard-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Beaks and Food",
+  "description": "A bird's beak shape matches what it eats and where it finds food.",
+  "gradeBand": "3-5",
+  "challengeType": "part_for_the_job",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "mudflat",
+       "label": "Tidal shore",
+       "emoji": "\ud83c\udf0a",
+       "cond": {
+        "food": "small crabs",
+        "ground": "wet sand"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bird1",
+       "zone": "mudflat",
+       "name": "shorebird",
+       "emoji": "\ud83e\udda9",
+       "kind": "animal",
+       "traits": {
+        "beak": "short cone beak"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "bird1",
+       "part": "beak",
+       "on": "food",
+       "also": [
+        "ground"
+       ],
+       "job": "eat"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "bird1",
+       "part": "beak",
+       "options": [
+        {
+         "value": "pointed tweezers bill",
+         "label": "pointed tweezers bill",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "wet sand",
+          "small crabs"
+         ]
+        },
+        {
+         "value": "short cone beak",
+         "label": "short cone beak",
+         "emoji": "\ud83e\udd5c",
+         "works": [
+          "dry seeds"
+         ]
+        },
+        {
+         "value": "sharp curved hook",
+         "label": "sharp curved hook",
+         "emoji": "\ud83e\ude9d",
+         "works": [
+          "meat chunks"
+         ]
+        },
+        {
+         "value": "broad flat strainer",
+         "label": "broad flat strainer",
+         "emoji": "\ud83e\udd44",
+         "works": [
+          "floating plants",
+          "wet sand"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This shorebird hunts small crabs crawling below the tide line. Pick a beak so it can eat.",
+    "why": "Small crabs must be snatched from wet sand. Which beak works like tweezers to pluck them?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.4,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+1 the choice must fit 2 things about the place",
+      "+0.5 1 option(s) fit only some of them"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks an unsuitable beak.",
+      "says": "Look at the tiny prey walking in the wet sand.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "mudflat",
+          "label": "Tidal shore",
+          "emoji": "\ud83e\udd80",
+          "cond": {
+           "food": "small crabs",
+           "ground": "wet sand"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bird1",
+          "zone": "mudflat",
+          "name": "shorebird",
+          "emoji": "\ud83e\udda9",
+          "kind": "animal",
+          "traits": {
+           "beak": "short cone beak"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "bird1",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "ground"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "bird1",
+          "part": "beak",
+          "options": [
+           {
+            "value": "pointed tweezers bill",
+            "label": "pointed tweezers bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "wet sand",
+             "small crabs"
+            ]
+           },
+           {
+            "value": "short cone beak",
+            "label": "short cone beak",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "dry seeds"
+            ]
+           },
+           {
+            "value": "sharp curved hook",
+            "label": "sharp curved hook",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "meat chunks"
+            ]
+           },
+           {
+            "value": "broad flat strainer",
+            "label": "broad flat strainer",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "floating plants",
+             "wet sand"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This shorebird hunts small crabs crawling below the tide line. Pick a beak so it can eat.",
+       "why": "Small crabs must be snatched from wet sand. Which beak works like tweezers to pluck them?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.4,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work",
+         "+1 the choice must fit 2 things about the place",
+         "+0.5 1 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with four options.",
+      "says": "Let's try these two beaks.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "mudflat",
+          "label": "Tidal shore",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "food": "small crabs",
+           "ground": "wet sand"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bird1",
+          "zone": "mudflat",
+          "name": "shorebird",
+          "emoji": "\ud83e\udda9",
+          "kind": "animal",
+          "traits": {
+           "beak": "short cone beak"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "bird1",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "ground"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "bird1",
+          "part": "beak",
+          "options": [
+           {
+            "value": "pointed tweezers bill",
+            "label": "pointed tweezers bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "wet sand",
+             "small crabs"
+            ]
+           },
+           {
+            "value": "short cone beak",
+            "label": "short cone beak",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "dry seeds"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This shorebird hunts small crabs crawling below the tide line. Pick a beak so it can eat.",
+       "why": "Small crabs must be snatched from wet sand. Which beak works like tweezers to pluck them?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.2,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+1 the choice must fit 2 things about the place"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "grassland",
+       "label": "Tall grassland",
+       "emoji": "\ud83c\udf3e",
+       "cond": {
+        "cover": "tall grass",
+        "food": "tough meat",
+        "grip": "slippery prey"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hawk",
+       "zone": "grassland",
+       "name": "hawk",
+       "emoji": "\ud83e\udd85",
+       "kind": "animal",
+       "traits": {
+        "beak": "slender straw bill"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "hawk",
+       "part": "beak",
+       "on": "food",
+       "also": [
+        "cover",
+        "grip"
+       ],
+       "job": "eat"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "hawk",
+       "part": "beak",
+       "options": [
+        {
+         "value": "sharp hooked beak",
+         "label": "sharp hooked beak",
+         "emoji": "\ud83e\ude9d",
+         "works": [
+          "tough meat",
+          "tall grass",
+          "slippery prey"
+         ]
+        },
+        {
+         "value": "long probing bill",
+         "label": "long probing bill",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "deep mud",
+          "tall grass"
+         ]
+        },
+        {
+         "value": "thick cone bill",
+         "label": "thick cone bill",
+         "emoji": "\ud83e\udd5c",
+         "works": [
+          "tough meat",
+          "hard seeds"
+         ]
+        },
+        {
+         "value": "slender straw bill",
+         "label": "slender straw bill",
+         "emoji": "\ud83c\udf38",
+         "works": [
+          "flower nectar",
+          "slippery prey"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This hawk hunts small animals with tough meat hiding in tall grass. Pick a beak so it can eat.",
+    "why": "Think about how a hunting bird tears tough meat and holds slippery prey. Which beak shape curves into a sharp hook for tearing?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.4,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+2 the choice must fit 3 things about the place",
+      "+1.5 3 option(s) fit only some of them"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a beak that cannot tear meat.",
+      "says": "Look closely at what kind of food the hawk needs to tear apart.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "grassland",
+          "label": "Tall grassland",
+          "emoji": "\ud83d\udc01",
+          "cond": {
+           "cover": "tall grass",
+           "food": "tough meat",
+           "grip": "slippery prey"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hawk",
+          "zone": "grassland",
+          "name": "hawk",
+          "emoji": "\ud83e\udd85",
+          "kind": "animal",
+          "traits": {
+           "beak": "slender straw bill"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hawk",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "cover",
+           "grip"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hawk",
+          "part": "beak",
+          "options": [
+           {
+            "value": "sharp hooked beak",
+            "label": "sharp hooked beak",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "tough meat",
+             "tall grass",
+             "slippery prey"
+            ]
+           },
+           {
+            "value": "long probing bill",
+            "label": "long probing bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "deep mud",
+             "tall grass"
+            ]
+           },
+           {
+            "value": "thick cone bill",
+            "label": "thick cone bill",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "tough meat",
+             "hard seeds"
+            ]
+           },
+           {
+            "value": "slender straw bill",
+            "label": "slender straw bill",
+            "emoji": "\ud83c\udf38",
+            "works": [
+             "flower nectar",
+             "slippery prey"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This hawk hunts small animals with tough meat hiding in tall grass. Pick a beak so it can eat.",
+       "why": "Think about how a hunting bird tears tough meat and holds slippery prey. Which beak shape curves into a sharp hook for tearing?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.4,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work",
+         "+2 the choice must fit 3 things about the place",
+         "+1.5 3 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck.",
+      "says": "Let's look at two very different beaks.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "grassland",
+          "label": "Tall grassland",
+          "emoji": "\ud83c\udf3e",
+          "cond": {
+           "cover": "tall grass",
+           "food": "tough meat",
+           "grip": "slippery prey"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hawk",
+          "zone": "grassland",
+          "name": "hawk",
+          "emoji": "\ud83e\udd85",
+          "kind": "animal",
+          "traits": {
+           "beak": "slender straw bill"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hawk",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "cover",
+           "grip"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hawk",
+          "part": "beak",
+          "options": [
+           {
+            "value": "sharp hooked beak",
+            "label": "sharp hooked beak",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "tough meat",
+             "tall grass",
+             "slippery prey"
+            ]
+           },
+           {
+            "value": "slender straw bill",
+            "label": "slender straw bill",
+            "emoji": "\ud83c\udf38",
+            "works": [
+             "flower nectar",
+             "slippery prey"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This hawk hunts small animals with tough meat hiding in tall grass. Pick a beak so it can eat.",
+       "why": "Think about how a hunting bird tears tough meat and holds slippery prey. Which beak shape curves into a sharp hook for tearing?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.7,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+2 the choice must fit 3 things about the place",
+         "+0.5 1 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "flowerbed",
+       "label": "Flower patch",
+       "emoji": "\ud83c\udf31",
+       "cond": {
+        "access": "narrow opening",
+        "depth": "deep base",
+        "food": "sweet liquid"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hummingbird",
+       "zone": "flowerbed",
+       "name": "hummingbird",
+       "emoji": "\ud83d\udc26",
+       "kind": "animal",
+       "traits": {
+        "beak": "thick nutcracker bill"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "hummingbird",
+       "part": "beak",
+       "on": "food",
+       "also": [
+        "access",
+        "depth"
+       ],
+       "job": "drink"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "hummingbird",
+       "part": "beak",
+       "options": [
+        {
+         "value": "slender probe bill",
+         "label": "slender probe bill",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "sweet liquid",
+          "narrow opening",
+          "deep base"
+         ]
+        },
+        {
+         "value": "stout chisel beak",
+         "label": "stout chisel beak",
+         "emoji": "\ud83d\udd28",
+         "works": [
+          "sweet liquid",
+          "hard wood"
+         ]
+        },
+        {
+         "value": "thick nutcracker bill",
+         "label": "thick nutcracker bill",
+         "emoji": "\ud83e\udd5c",
+         "works": [
+          "hard nuts",
+          "narrow opening"
+         ]
+        },
+        {
+         "value": "flat filtering bill",
+         "label": "flat filtering bill",
+         "emoji": "\ud83e\udd44",
+         "works": [
+          "water plants",
+          "deep base"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This hummingbird feeds on sweet liquid at the bottom of tube flowers. Pick a beak so it can drink.",
+    "why": "The sweet liquid is deep inside a narrow bloom. Which beak is slim enough to slide inside?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.4,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+2 the choice must fit 3 things about the place",
+      "+1.5 3 option(s) fit only some of them"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a beak that is too thick.",
+      "says": "Look at how narrow and deep the flower blooms are.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "flowerbed",
+          "label": "Flower patch",
+          "emoji": "\ud83c\udf3a",
+          "cond": {
+           "access": "narrow opening",
+           "depth": "deep base",
+           "food": "sweet liquid"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hummingbird",
+          "zone": "flowerbed",
+          "name": "hummingbird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal",
+          "traits": {
+           "beak": "thick nutcracker bill"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hummingbird",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "access",
+           "depth"
+          ],
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hummingbird",
+          "part": "beak",
+          "options": [
+           {
+            "value": "slender probe bill",
+            "label": "slender probe bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "sweet liquid",
+             "narrow opening",
+             "deep base"
+            ]
+           },
+           {
+            "value": "stout chisel beak",
+            "label": "stout chisel beak",
+            "emoji": "\ud83d\udd28",
+            "works": [
+             "sweet liquid",
+             "hard wood"
+            ]
+           },
+           {
+            "value": "thick nutcracker bill",
+            "label": "thick nutcracker bill",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "hard nuts",
+             "narrow opening"
+            ]
+           },
+           {
+            "value": "flat filtering bill",
+            "label": "flat filtering bill",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "water plants",
+             "deep base"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This hummingbird feeds on sweet liquid at the bottom of tube flowers. Pick a beak so it can drink.",
+       "why": "The sweet liquid is deep inside a narrow bloom. Which beak is slim enough to slide inside?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.4,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work",
+         "+2 the choice must fit 3 things about the place",
+         "+1.5 3 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck.",
+      "says": "Let's compare these two beaks.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "flowerbed",
+          "label": "Flower patch",
+          "emoji": "\ud83c\udf31",
+          "cond": {
+           "access": "narrow opening",
+           "depth": "deep base",
+           "food": "sweet liquid"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "hummingbird",
+          "zone": "flowerbed",
+          "name": "hummingbird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal",
+          "traits": {
+           "beak": "thick nutcracker bill"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "hummingbird",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "access",
+           "depth"
+          ],
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "hummingbird",
+          "part": "beak",
+          "options": [
+           {
+            "value": "slender probe bill",
+            "label": "slender probe bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "sweet liquid",
+             "narrow opening",
+             "deep base"
+            ]
+           },
+           {
+            "value": "thick nutcracker bill",
+            "label": "thick nutcracker bill",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "hard nuts",
+             "narrow opening"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This hummingbird feeds on sweet liquid at the bottom of tube flowers. Pick a beak so it can drink.",
+       "why": "The sweet liquid is deep inside a narrow bloom. Which beak is slim enough to slide inside?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.7,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+2 the choice must fit 3 things about the place",
+         "+0.5 1 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "tree_trunk",
+       "label": "Pine tree trunk",
+       "emoji": "\ud83c\udf32",
+       "cond": {
+        "food": "hidden grubs",
+        "material": "solid wood",
+        "surface": "tough tree bark"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "woodpecker",
+       "zone": "tree_trunk",
+       "name": "woodpecker",
+       "emoji": "\ud83e\udd9c",
+       "kind": "animal",
+       "traits": {
+        "beak": "flat strainer scoop"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "woodpecker",
+       "part": "beak",
+       "on": "food",
+       "also": [
+        "surface",
+        "material"
+       ],
+       "job": "eat"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "woodpecker",
+       "part": "beak",
+       "options": [
+        {
+         "value": "pointed heavy beak",
+         "label": "pointed heavy beak",
+         "emoji": "\u26cf\ufe0f",
+         "works": [
+          "hidden grubs",
+          "tough tree bark",
+          "solid wood"
+         ]
+        },
+        {
+         "value": "long thin bill",
+         "label": "long thin bill",
+         "emoji": "\ud83e\udd62",
+         "works": [
+          "hidden grubs",
+          "soft leaves"
+         ]
+        },
+        {
+         "value": "short cone bill",
+         "label": "short cone bill",
+         "emoji": "\ud83e\udd5c",
+         "works": [
+          "hard seeds",
+          "tough tree bark"
+         ]
+        },
+        {
+         "value": "flat strainer scoop",
+         "label": "flat strainer scoop",
+         "emoji": "\ud83e\udd44",
+         "works": [
+          "pond weed",
+          "solid wood"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This woodpecker feeds on grubs burrowed inside a pine trunk. Pick a beak so it can eat.",
+    "why": "The grubs are behind solid wood and thick bark. Look for a sturdy, pointed beak that can chop into wood.",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "hard",
+     "score": 4.4,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+2 the choice must fit 3 things about the place",
+      "+1.5 3 option(s) fit only some of them"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a beak that cannot peck into wood.",
+      "says": "Look at the solid wood covering the insects.",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "tree_trunk",
+          "label": "Pine tree trunk",
+          "emoji": "\ud83e\udeb5",
+          "cond": {
+           "food": "hidden grubs",
+           "material": "solid wood",
+           "surface": "tough tree bark"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "woodpecker",
+          "zone": "tree_trunk",
+          "name": "woodpecker",
+          "emoji": "\ud83e\udd9c",
+          "kind": "animal",
+          "traits": {
+           "beak": "flat strainer scoop"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "woodpecker",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "surface",
+           "material"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "woodpecker",
+          "part": "beak",
+          "options": [
+           {
+            "value": "pointed heavy beak",
+            "label": "pointed heavy beak",
+            "emoji": "\u26cf\ufe0f",
+            "works": [
+             "hidden grubs",
+             "tough tree bark",
+             "solid wood"
+            ]
+           },
+           {
+            "value": "long thin bill",
+            "label": "long thin bill",
+            "emoji": "\ud83e\udd62",
+            "works": [
+             "hidden grubs",
+             "soft leaves"
+            ]
+           },
+           {
+            "value": "short cone bill",
+            "label": "short cone bill",
+            "emoji": "\ud83e\udd5c",
+            "works": [
+             "hard seeds",
+             "tough tree bark"
+            ]
+           },
+           {
+            "value": "flat strainer scoop",
+            "label": "flat strainer scoop",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "pond weed",
+             "solid wood"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This woodpecker feeds on grubs burrowed inside a pine trunk. Pick a beak so it can eat.",
+       "why": "The grubs are behind solid wood and thick bark. Look for a sturdy, pointed beak that can chop into wood.",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "hard",
+        "score": 4.4,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work",
+         "+2 the choice must fit 3 things about the place",
+         "+1.5 3 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck.",
+      "says": "Let's choose between two beaks.",
+      "item": {
+       "id": "life-4-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "tree_trunk",
+          "label": "Pine tree trunk",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "food": "hidden grubs",
+           "material": "solid wood",
+           "surface": "tough tree bark"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "woodpecker",
+          "zone": "tree_trunk",
+          "name": "woodpecker",
+          "emoji": "\ud83e\udd9c",
+          "kind": "animal",
+          "traits": {
+           "beak": "flat strainer scoop"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "woodpecker",
+          "part": "beak",
+          "on": "food",
+          "also": [
+           "surface",
+           "material"
+          ],
+          "job": "eat"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "woodpecker",
+          "part": "beak",
+          "options": [
+           {
+            "value": "pointed heavy beak",
+            "label": "pointed heavy beak",
+            "emoji": "\u26cf\ufe0f",
+            "works": [
+             "hidden grubs",
+             "tough tree bark",
+             "solid wood"
+            ]
+           },
+           {
+            "value": "flat strainer scoop",
+            "label": "flat strainer scoop",
+            "emoji": "\ud83e\udd44",
+            "works": [
+             "pond weed",
+             "solid wood"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This woodpecker feeds on grubs burrowed inside a pine trunk. Pick a beak so it can eat.",
+       "why": "The grubs are behind solid wood and thick bark. Look for a sturdy, pointed beak that can chop into wood.",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.7,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+2 the choice must fit 3 things about the place",
+         "+0.5 1 option(s) fit only some of them"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 8,
+   "seconds": 83.4,
+   "objective": "A bird's beak shape matches what it eats and where it finds food",
+   "tier": "hard",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: part_enables: 2-4 options, each with a distinct value and a label (what it looks like)"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: part_enables: 2-4 options, each with a distinct value and a label (what it looks like)"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: part_enables: 2-4 options, each with a distinct value and a label (what it looks like)"
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [],
+   "costUsd": 0.0828,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 0 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 0",
+     "costUsd": 0.0067
+    },
+    {
+     "seconds": 3,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0067
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 1 world(s) held, 1 blocking check(s). First: a session has 3-5 items; it has 1",
+     "costUsd": 0.0112
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0112
+    },
+    {
+     "seconds": 26,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 4 world(s) held, 9 blocking check(s). First: world 1: part_enables: 2-4 options, each with a distinct value and a label (what it looks like)",
+     "costUsd": 0.0223
+    },
+    {
+     "seconds": 26,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0223
+    },
+    {
+     "seconds": 38,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 4 world(s) held, 3 blocking check(s). First: item 1 scores medium; this session is hard",
+     "costUsd": 0.0327
+    },
+    {
+     "seconds": 38,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0327
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0434
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0434
+    },
+    {
+     "seconds": 51,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.0467
+    },
+    {
+     "seconds": 61,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The clue says 'deep in the wet mud', matching directly with 'long' in 'long probing bill'.",
+     "costUsd": 0.0574,
+     "item": 1
+    },
+    {
+     "seconds": 61,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0574,
+     "item": 2
+    },
+    {
+     "seconds": 61,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: The correct option has a flower emoji matching the flower garden, and the word 'straw' gives away how to drink nect\u2026",
+     "costUsd": 0.0574,
+     "item": 3
+    },
+    {
+     "seconds": 61,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The clue bubble explicitly says 'action need: hard drilling', which directly points to the hammer icon and 'strong \u2026",
+     "costUsd": 0.0574,
+     "item": 4
+    },
+    {
+     "seconds": 61,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 3 problem(s) from the look",
+     "costUsd": 0.0574
+    },
+    {
+     "seconds": 61,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0574
+    },
+    {
+     "seconds": 61,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.0574
+    },
+    {
+     "seconds": 71,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0688
+    },
+    {
+     "seconds": 71,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.0688
+    },
+    {
+     "seconds": 75,
+     "stage": "look",
+     "level": "info",
+     "text": "round 2: reading 3 world(s) as the child meets them",
+     "costUsd": 0.0725
+    },
+    {
+     "seconds": 83,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0828,
+     "item": 1
+    },
+    {
+     "seconds": 83,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0828,
+     "item": 3
+    },
+    {
+     "seconds": 83,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0828,
+     "item": 4
+    },
+    {
+     "seconds": 83,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 83.4s over 8 turn(s), about $0.08",
+     "costUsd": 0.0828
+    }
+   ],
+   "look": [
+    {
+     "answer": "Click 'long probing bill', then 'Try it', then 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": "The clue says 'deep in the wet mud', matching directly with 'long' in 'long probing bill'.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.003021,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'sharp hooked beak' and click 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.002553,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'slender straw bill' and click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": "The correct option has a flower emoji matching the flower garden, and the word 'straw' gives away how to drink nectar.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0024375,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'strong chisel beak' and click 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": "The clue bubble explicitly says 'action need: hard drilling', which directly points to the hammer icon and 'strong chisel beak'.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00263625,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'pointed tweezers bill' and click 'I'm done!'.",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.003876,
+     "item": 0,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'slender probe bill' and click 'Try it' or 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00281925,
+     "item": 2,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'pointed heavy beak', then click 'Try it' or 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00360375,
+     "item": 3,
+     "round": 2,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 83.4,
+    "costUsd": 0.0828,
+    "items": 4,
+    "rounds": 8,
+    "look": {
+     "ran": true,
+     "looked": 7,
+     "unread": 0,
+     "screenshots": 7,
+     "problems": 0
+    },
+    "displays": {
+     "offered": [
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow"
+     ],
+     "used": {}
+    }
+   }
+  }
+ }
+}

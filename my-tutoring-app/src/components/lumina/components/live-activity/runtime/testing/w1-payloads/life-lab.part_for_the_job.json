@@ -1,0 +1,308 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-part_for_the_job-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Built for the Job",
+  "description": "Animals have special body parts like beaks and feet that help them get food and move in their homes.",
+  "gradeBand": "K-2",
+  "challengeType": "part_for_the_job",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "flower_meadow",
+       "label": "Flower Meadow",
+       "kind": "meadow",
+       "cond": {
+        "food": "nectar"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hummingbird_1",
+       "subject": "hummingbird",
+       "zone": "flower_meadow",
+       "traits": {
+        "beak": "thick"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "hummingbird_1",
+       "part": "beak"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "hummingbird_1",
+       "part": "beak",
+       "options": [
+        "thick",
+        "long",
+        "hook"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This bird visits flowers for food. Give it a beak so it can drink nectar.",
+    "why": "Think about flower blossoms. Which beak can sip sweet nectar?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "river_bank",
+       "label": "River Bank",
+       "kind": "river",
+       "cond": {
+        "food": "fish"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "heron_1",
+       "subject": "heron",
+       "zone": "river_bank",
+       "traits": {
+        "beak": "thick"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "heron_1",
+       "part": "beak"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "heron_1",
+       "part": "beak",
+       "options": [
+        "thick",
+        "long",
+        "hook",
+        "spear"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This bird is hunting for fish in the water. Pick a beak that helps it catch fish!",
+    "why": "Fish swim quickly in the water. Which beak shape can stab and grab slippery fish?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "duck_pond",
+       "label": "Pond",
+       "kind": "pond",
+       "cond": {
+        "ground": "water"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "duck_1",
+       "subject": "duck",
+       "zone": "duck_pond",
+       "traits": {
+        "feet": "claws"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "duck_1",
+       "part": "feet"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "duck_1",
+       "part": "feet",
+       "options": [
+        "claws",
+        "webbed",
+        "snowshoe",
+        "pads"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This duck lives on a pond. Give it feet so it can swim across the water.",
+    "why": "Think about moving through water. Which feet push water the best?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-4",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "snowy_hill",
+       "label": "Snowy Field",
+       "kind": "snow",
+       "cond": {
+        "ground": "snow"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "feet_1",
+       "subject": "animal_feet",
+       "zone": "snowy_hill",
+       "traits": {
+        "feet": "webbed"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "feet_1",
+       "part": "feet"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "feet_1",
+       "part": "feet",
+       "options": [
+        "webbed",
+        "snowshoe",
+        "claws",
+        "pads"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This animal lives on cold snow. Give it feet so it can travel across the snow.",
+    "why": "Snow is soft and deep. Which feet help an animal walk over snow?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 13.4,
+   "modes": [
+    "part_for_the_job"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the ask says \"deep inside\", which tells the child the working part's shape or trick; say the job only (\"it lives where the food is hard seeds\")"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the ask says \"paddle\", which tells the child the working part's shape or trick; say the job only (\"it lives where the food is hard seeds\")"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the ask says \"sink\", which tells the child the working part's shape or trick; say the job only (\"it lives where the food is hard seeds\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

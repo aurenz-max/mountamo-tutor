@@ -1,0 +1,305 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-part_for_the_job-desert-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Desert Plant Superpowers",
+  "description": "Desert plants have special parts like thick stems to hold water, sharp spines to save water, and deep or wide roots to collect water.",
+  "gradeBand": "K-2",
+  "challengeType": "part_for_the_job",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "desert",
+       "label": "Sunny Desert",
+       "emoji": "\ud83c\udfdc\ufe0f",
+       "cond": {
+        "weather": "dry_sun"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "cactus",
+       "zone": "desert",
+       "name": "Cactus",
+       "emoji": "\ud83c\udf35",
+       "kind": "plant",
+       "traits": {
+        "covering": "thin_leaf"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "cactus",
+       "part": "covering",
+       "on": "weather",
+       "job": "save water"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "cactus",
+       "part": "covering",
+       "options": [
+        {
+         "value": "wide_leaf",
+         "label": "wide green leaves",
+         "emoji": "\ud83c\udf43",
+         "works": [
+          "wet_shade"
+         ]
+        },
+        {
+         "value": "sharp_spines",
+         "label": "sharp protective spines",
+         "emoji": "\ud83c\udf35",
+         "works": [
+          "dry_sun"
+         ]
+        },
+        {
+         "value": "soft_petals",
+         "label": "soft petals",
+         "emoji": "\ud83c\udf38",
+         "works": [
+          "gentle_garden"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "In the dry desert sun, plants lose water through broad thin leaves. Choose a part that helps this cactus keep its water inside.",
+    "why": "Think about which plant covering stops water from escaping under the hot sun.",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say"
+   },
+   {
+    "id": "life-2",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "desert_ground",
+       "label": "Desert Soil",
+       "emoji": "\ud83c\udfdc\ufe0f",
+       "cond": {
+        "water_source": "deep_water"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "mesquite",
+       "zone": "desert_ground",
+       "name": "Mesquite Shrub",
+       "emoji": "\ud83c\udf3f",
+       "kind": "plant",
+       "traits": {
+        "roots": "short_roots"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "mesquite",
+       "part": "roots",
+       "on": "water_source",
+       "job": "drink water"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "mesquite",
+       "part": "roots",
+       "options": [
+        {
+         "value": "shallow_roots",
+         "label": "tiny shallow roots",
+         "emoji": "\ud83c\udf31",
+         "works": [
+          "surface_puddle"
+         ]
+        },
+        {
+         "value": "deep_taproot",
+         "label": "long taproots",
+         "emoji": "\ud83c\udf3e",
+         "works": [
+          "deep_water"
+         ]
+        },
+        {
+         "value": "air_roots",
+         "label": "curly air roots",
+         "emoji": "\ud83e\udeb4",
+         "works": [
+          "humid_air"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "Rain is rare in the desert, but far underground there is hidden moisture. Choose roots that can reach down to drink water.",
+    "why": "Look where the water is located. Which roots can reach all the way down to it?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say"
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "desert_plain",
+       "label": "Desert Plain",
+       "emoji": "\ud83c\udfdc\ufe0f",
+       "cond": {
+        "rain_type": "rare_rain"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "saguaro",
+       "zone": "desert_plain",
+       "name": "Saguaro",
+       "emoji": "\ud83c\udf35",
+       "kind": "plant",
+       "traits": {
+        "stem": "woody_twig"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "saguaro",
+       "part": "stem",
+       "on": "rain_type",
+       "job": "store water"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "saguaro",
+       "part": "stem",
+       "options": [
+        {
+         "value": "hollow_stem",
+         "label": "thin hollow straw",
+         "emoji": "\ud83c\udf3e",
+         "works": [
+          "pond_water"
+         ]
+        },
+        {
+         "value": "woody_twig",
+         "label": "hard woody twig",
+         "emoji": "\ud83e\udeb5",
+         "works": [
+          "forest_soil"
+         ]
+        },
+        {
+         "value": "fleshy_stem",
+         "label": "thick fleshy stem",
+         "emoji": "\ud83c\udf35",
+         "works": [
+          "rare_rain"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "Desert plants must hold plenty of water after rare rain showers. Choose a stem that can store lots of moisture inside.",
+    "why": "Think about which stem has room to expand and hold extra water like a sponge.",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say"
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 47.4,
+   "modes": [
+    "part_for_the_job"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the ask says \"deep\", which only the working option has; say the job only"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

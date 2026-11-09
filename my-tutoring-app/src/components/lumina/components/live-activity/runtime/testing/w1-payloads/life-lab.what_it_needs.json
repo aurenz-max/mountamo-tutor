@@ -1,0 +1,326 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-what_it_needs-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "What Plants Need to Grow",
+  "description": "Plants need water and light to live and grow.",
+  "gradeBand": "K-2",
+  "challengeType": "what_it_needs",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "what_it_needs",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot1",
+       "label": "Bean Pot",
+       "kind": "pot",
+       "cond": {
+        "light": 0,
+        "water": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "b1",
+       "subject": "bean",
+       "zone": "pot1"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "b1"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot1"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "This bean plant is not growing well. Change the light and water in the pot so it can thrive.",
+    "why": "Plants need sunlight and water to stay green and grow.",
+    "standards": "K-LS1-1 \u00b7 2-LS2-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.7,
+     "reasons": [
+      "+0.7 9 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "what_it_needs",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "meadow1",
+       "label": "Shady Meadow",
+       "kind": "meadow",
+       "cond": {
+        "water": 0,
+        "light": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "fern1",
+       "subject": "fern",
+       "zone": "meadow1"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "fern1"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "meadow1"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "This meadow fern is struggling. Change its light and water so it can grow green and healthy.",
+    "why": "Ferns grow best in shady, damp places. Look at the light and water again.",
+    "standards": "K-LS1-1 \u00b7 2-LS2-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.2,
+     "reasons": [
+      "+0.7 9 different things the child could try",
+      "+0.5 2 of them work"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "what_it_needs",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot3",
+       "label": "Cactus Pot",
+       "kind": "pot",
+       "cond": {
+        "light": 2,
+        "water": 2,
+        "temp": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "c1",
+       "subject": "cactus",
+       "zone": "pot3"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "c1"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot3"
+       ],
+       "keys": [
+        "temp",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "This desert cactus is not doing well in this spot. Change its warmth and water so it stays healthy.",
+    "why": "Think about what desert plants like to stay healthy and strong.",
+    "standards": "K-LS1-1 \u00b7 2-LS2-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.7,
+     "reasons": [
+      "+0.7 9 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-4",
+    "type": "what_it_needs",
+    "world": {
+     "steps": 4,
+     "zones": [
+      {
+       "id": "pot_fern",
+       "label": "Fern Pot",
+       "kind": "pot",
+       "cond": {
+        "light": 2,
+        "water": 0
+       }
+      },
+      {
+       "id": "pot_sun",
+       "label": "Sunny Pot",
+       "kind": "pot",
+       "cond": {
+        "light": 0,
+        "water": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "f1",
+       "subject": "fern",
+       "zone": "pot_fern"
+      },
+      {
+       "id": "s2",
+       "subject": "sunflower",
+       "zone": "pot_sun"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "f1",
+        "s2"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "condition",
+       "zones": [
+        "pot_fern",
+        "pot_sun"
+       ],
+       "keys": [
+        "light",
+        "water"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "Help both of these garden pots! Adjust the conditions so the fern and the sunflower both thrive.",
+    "why": "Remember that some plants like shady spots with lots of water, while others love bright sunshine.",
+    "standards": "K-LS1-1 \u00b7 2-LS2-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.3,
+     "reasons": [
+      "+1.3 81 different things the child could try",
+      "+1 only 4 of them work"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 16.3,
+   "modes": [
+    "what_it_needs"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the child can change only one thing, so there is nothing to work out; let it change two (light and water, or warmth)"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: the child can change only one thing, so there is nothing to work out; let it change two (light and water, or warmth)"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,249 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-hide_from_the_hunter-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Hide in Plain Sight",
+  "description": "Animals use colors that match their background to hide from hungry hunters.",
+  "gradeBand": "K-2",
+  "challengeType": "hide_from_the_hunter",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "hide_from_the_hunter",
+    "world": {
+     "zones": [
+      {
+       "id": "sand_1",
+       "label": "Desert floor",
+       "kind": "bark",
+       "cond": {
+        "color": "sandy"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "beetle_1",
+       "subject": "beetle",
+       "zone": "sand_1",
+       "traits": {
+        "color": "dark"
+       }
+      },
+      {
+       "id": "lizard_2",
+       "subject": "lizard",
+       "zone": "sand_1"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "lizard_2",
+       "prey": "beetle_1"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "beetle_1",
+       "part": "color",
+       "options": [
+        "dark",
+        "sandy"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "survives"
+     }
+    },
+    "ask": "A hungry lizard searches for food on this sandy ground. Help the beetle blend in so it stays hidden.",
+    "why": "The hunter watches the ground closely. Match the beetle to the surface beneath it.",
+    "standards": "1-LS1-1 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.2,
+     "reasons": [
+      "+0.2 2 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-2",
+    "type": "hide_from_the_hunter",
+    "world": {
+     "zones": [
+      {
+       "id": "branch_2",
+       "label": "Mossy branch",
+       "kind": "bark",
+       "cond": {
+        "color": "green"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "moth_2",
+       "subject": "moth",
+       "zone": "branch_2",
+       "traits": {
+        "color": "brown"
+       }
+      },
+      {
+       "id": "lizard_1",
+       "subject": "lizard",
+       "zone": "branch_2"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "lizard_1",
+       "prey": "moth_2"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "moth_2",
+       "part": "color",
+       "options": [
+        "brown",
+        "white",
+        "green"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "survives"
+     }
+    },
+    "ask": "A lizard hunts insects on this green branch. Give the moth colors that keep it safe from sight.",
+    "why": "The lizard hunts with sharp eyes. Choose a pattern that blends into the background.",
+    "standards": "1-LS1-1 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    }
+   },
+   {
+    "id": "life-3",
+    "type": "hide_from_the_hunter",
+    "world": {
+     "zones": [
+      {
+       "id": "ground_3",
+       "label": "Woodland floor",
+       "kind": "bark",
+       "cond": {
+        "color": "brown"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "hopper_1",
+       "subject": "grasshopper",
+       "zone": "ground_3",
+       "traits": {
+        "color": "green"
+       }
+      },
+      {
+       "id": "finch_1",
+       "subject": "finch",
+       "zone": "ground_3"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "finch_1",
+       "prey": "hopper_1"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "hopper_1",
+       "part": "color",
+       "options": [
+        "green",
+        "white",
+        "sandy",
+        "brown"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "survives"
+     }
+    },
+    "ask": "A finch hunts for bugs across this brown forest ground. Give the grasshopper a shade that lets it hide.",
+    "why": "Compare the insect's shade to the woodland floor. Which shade makes it hard to spot?",
+    "standards": "1-LS1-1 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    }
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 11.6,
+   "modes": [
+    "hide_from_the_hunter"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: this is the example world; build one for this lesson"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ]
+  }
+ }
+}

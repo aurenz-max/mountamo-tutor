@@ -1,0 +1,1743 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-mito-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "The Cell's Power Plants: Mitochondria",
+  "description": "Mitochondria are tiny bean-shaped parts inside cells that turn food and oxygen into usable energy for the cell to work and grow.",
+  "gradeBand": "3-5",
+  "challengeType": "choose",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "choose",
+    "item": {
+     "id": "life-1",
+     "surface": "choose",
+     "prompt": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+     "stimulus": [
+      {
+       "kind": "cell",
+       "cell": "animal",
+       "parts": [
+        {
+         "shape": "bean",
+         "label": "?",
+         "count": 3
+        },
+        {
+         "shape": "round",
+         "label": "nucleus"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "d",
+       "label": "Cell organelle D",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "sac",
+          "label": "?"
+         }
+        ]
+       }
+      },
+      {
+       "id": "c",
+       "label": "Cell organelle C",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "bean",
+          "label": "?"
+         }
+        ]
+       }
+      },
+      {
+       "id": "a",
+       "label": "Cell organelle A",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "folds",
+          "label": "?"
+         }
+        ]
+       }
+      },
+      {
+       "id": "b",
+       "label": "Cell organelle B",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "round",
+          "label": "?"
+         }
+        ]
+       }
+      }
+     ],
+     "key": "c",
+     "misconceptions": {
+      "a": "Confuses the mitochondrion with folded transport canals.",
+      "b": "Confuses the mitochondrion with the round nucleus.",
+      "d": "Confuses the mitochondrion with the water sac."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "hard",
+      "score": 2.65,
+      "reasons": [
+       "4 options +1.2",
+       "3 wrong options from a named misconception +0.75",
+       "reading a drawing of a cell +0.3",
+       "comparing representations +0.4"
+      ]
+     }
+    },
+    "ask": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "hard",
+     "score": 2.65,
+     "reasons": [
+      "4 options +1.2",
+      "3 wrong options from a named misconception +0.75",
+      "reading a drawing of a cell +0.3",
+      "comparing representations +0.4"
+     ]
+    },
+    "teach": [
+     {
+      "says": "Every living thing is built of tiny living units called cells.",
+      "show": [
+       {
+        "kind": "zoom",
+        "levels": [
+         {
+          "label": "Runner",
+          "icon": "\ud83c\udfc3"
+         },
+         {
+          "label": "Muscle",
+          "icon": "\ud83e\uddb5"
+         },
+         {
+          "label": "Cell",
+          "icon": "\ud83d\udd2c"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "says": "Inside each cell are tiny bean-shaped parts called mitochondria.",
+      "show": [
+       {
+        "kind": "cell",
+        "cell": "animal",
+        "parts": [
+         {
+          "shape": "bean",
+          "label": "mitochondria",
+          "count": 3
+         },
+         {
+          "shape": "round",
+          "label": "nucleus"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "says": "Mitochondria turn nutrients from food into usable energy for the cell.",
+      "show": [
+       {
+        "kind": "flow",
+        "steps": [
+         {
+          "label": "Nutrients",
+          "icon": "\ud83c\udf4e"
+         },
+         {
+          "label": "Mitochondria",
+          "icon": "\ud83e\uded8"
+         },
+         {
+          "label": "Energy",
+          "icon": "\u26a1"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "respond": "say",
+    "levers": [
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck between four parts.",
+      "says": "Look at these two cell organelles. Which one is the bean-shaped mitochondrion?",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-simpler_1",
+        "surface": "choose",
+        "prompt": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+        "stimulus": [
+         {
+          "kind": "cell",
+          "cell": "animal",
+          "parts": [
+           {
+            "shape": "bean",
+            "label": "?",
+            "count": 3
+           },
+           {
+            "shape": "round",
+            "label": "nucleus"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "c",
+          "label": "Cell organelle C",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?"
+            }
+           ]
+          }
+         },
+         {
+          "id": "b",
+          "label": "Cell organelle B",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "round",
+             "label": "?"
+            }
+           ]
+          }
+         }
+        ],
+        "key": "c",
+        "misconceptions": {
+         "a": "Confuses the mitochondrion with folded transport canals.",
+         "b": "Confuses the mitochondrion with the round nucleus.",
+         "d": "Confuses the mitochondrion with the water sac."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.25,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25",
+          "reading a drawing of a cell +0.3",
+          "comparing representations +0.4"
+         ]
+        }
+       },
+       "ask": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.25,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "reading a drawing of a cell +0.3",
+         "comparing representations +0.4"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Every living thing is built of tiny living units called cells.",
+         "show": [
+          {
+           "kind": "zoom",
+           "levels": [
+            {
+             "label": "Runner",
+             "icon": "\ud83c\udfc3"
+            },
+            {
+             "label": "Muscle",
+             "icon": "\ud83e\uddb5"
+            },
+            {
+             "label": "Cell",
+             "icon": "\ud83d\udd2c"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "Inside each cell are tiny bean-shaped parts called mitochondria.",
+         "show": [
+          {
+           "kind": "cell",
+           "cell": "animal",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "mitochondria",
+             "count": 3
+            },
+            {
+             "shape": "round",
+             "label": "nucleus"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "Mitochondria turn nutrients from food into usable energy for the cell.",
+         "show": [
+          {
+           "kind": "flow",
+           "steps": [
+            {
+             "label": "Nutrients",
+             "icon": "\ud83c\udf4e"
+            },
+            {
+             "label": "Mitochondria",
+             "icon": "\ud83e\uded8"
+            },
+            {
+             "label": "Energy",
+             "icon": "\u26a1"
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "respond": "say"
+      }
+     },
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child confuses the shapes.",
+      "says": "Look at the highlighted bean-shaped organelle in the cell drawing.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-help_1",
+        "surface": "choose",
+        "prompt": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+        "stimulus": [
+         {
+          "kind": "cell",
+          "cell": "animal",
+          "parts": [
+           {
+            "shape": "bean",
+            "label": "mitochondria",
+            "count": 3
+           },
+           {
+            "shape": "round",
+            "label": "nucleus"
+           }
+          ],
+          "highlight": "mitochondria"
+         }
+        ],
+        "options": [
+         {
+          "id": "d",
+          "label": "Cell organelle D",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "sac",
+             "label": "?"
+            }
+           ]
+          }
+         },
+         {
+          "id": "c",
+          "label": "Cell organelle C",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?"
+            }
+           ]
+          }
+         },
+         {
+          "id": "a",
+          "label": "Cell organelle A",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "folds",
+             "label": "?"
+            }
+           ]
+          }
+         },
+         {
+          "id": "b",
+          "label": "Cell organelle B",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "round",
+             "label": "?"
+            }
+           ]
+          }
+         }
+        ],
+        "key": "c",
+        "misconceptions": {
+         "a": "Confuses the mitochondrion with folded transport canals.",
+         "b": "Confuses the mitochondrion with the round nucleus.",
+         "d": "Confuses the mitochondrion with the water sac."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "hard",
+         "score": 2.65,
+         "reasons": [
+          "4 options +1.2",
+          "3 wrong options from a named misconception +0.75",
+          "reading a drawing of a cell +0.3",
+          "comparing representations +0.4"
+         ]
+        }
+       },
+       "ask": "A runner needs lots of energy to sprint. Which organelle pictured here makes that energy from food?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "hard",
+        "score": 2.65,
+        "reasons": [
+         "4 options +1.2",
+         "3 wrong options from a named misconception +0.75",
+         "reading a drawing of a cell +0.3",
+         "comparing representations +0.4"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Every living thing is built of tiny living units called cells.",
+         "show": [
+          {
+           "kind": "zoom",
+           "levels": [
+            {
+             "label": "Runner",
+             "icon": "\ud83c\udfc3"
+            },
+            {
+             "label": "Muscle",
+             "icon": "\ud83e\uddb5"
+            },
+            {
+             "label": "Cell",
+             "icon": "\ud83d\udd2c"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "Inside each cell are tiny bean-shaped parts called mitochondria.",
+         "show": [
+          {
+           "kind": "cell",
+           "cell": "animal",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "mitochondria",
+             "count": 3
+            },
+            {
+             "shape": "round",
+             "label": "nucleus"
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "says": "Mitochondria turn nutrients from food into usable energy for the cell.",
+         "show": [
+          {
+           "kind": "flow",
+           "steps": [
+            {
+             "label": "Nutrients",
+             "icon": "\ud83c\udf4e"
+            },
+            {
+             "label": "Mitochondria",
+             "icon": "\ud83e\uded8"
+            },
+            {
+             "label": "Energy",
+             "icon": "\u26a1"
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "categorize",
+    "item": {
+     "id": "life-2",
+     "surface": "categorize",
+     "prompt": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+     "stimulus": [
+      {
+       "kind": "zoom",
+       "levels": [
+        {
+         "label": "Active Body",
+         "icon": "\ud83c\udfc3"
+        },
+        {
+         "label": "Energy Demand",
+         "icon": "\u26a1"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "fat",
+       "label": "Fat storage cell: holds quiet droplets of oil"
+      },
+      {
+       "id": "muscle",
+       "label": "Leg muscle cell: moves you when you sprint"
+      },
+      {
+       "id": "heart",
+       "label": "Heart muscle cell: pumps blood day and night"
+      },
+      {
+       "id": "skin",
+       "label": "Top layer skin cell: sits still to form a barrier"
+      }
+     ],
+     "categories": [
+      "Needs Many Mitochondria",
+      "Needs Few Mitochondria"
+     ],
+     "key": {
+      "muscle": "Needs Many Mitochondria",
+      "heart": "Needs Many Mitochondria",
+      "skin": "Needs Few Mitochondria",
+      "fat": "Needs Few Mitochondria"
+     },
+     "misconceptions": {
+      "fat": "Thinks fat cells need the most mitochondria because fat is linked to diet.",
+      "heart": "Thinks heart cells do not need energy because pumping is automatic.",
+      "muscle": "Thinks muscle cells do not need extra energy power plants.",
+      "skin": "Thinks protective outer cells use the most energy."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 2.2,
+      "reasons": [
+       "4 cards to sort +1",
+       "4 wrong options from a named misconception +1",
+       "following a zoom through sizes +0.2"
+      ]
+     }
+    },
+    "ask": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.2,
+     "reasons": [
+      "4 cards to sort +1",
+      "4 wrong options from a named misconception +1",
+      "following a zoom through sizes +0.2"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles to sort four cells.",
+      "says": "Compare two cells: one that works hard sprinting, and one that rests and stores droplets.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-2-simpler_1",
+        "surface": "categorize",
+        "prompt": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+        "stimulus": [
+         {
+          "kind": "zoom",
+          "levels": [
+           {
+            "label": "Active Body",
+            "icon": "\ud83c\udfc3"
+           },
+           {
+            "label": "Energy Demand",
+            "icon": "\u26a1"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "muscle",
+          "label": "Leg muscle cell: moves you when you sprint"
+         },
+         {
+          "id": "fat",
+          "label": "Fat cell: stores resting droplets of oil"
+         }
+        ],
+        "categories": [
+         "Needs Many Mitochondria",
+         "Needs Few Mitochondria"
+        ],
+        "key": {
+         "muscle": "Needs Many Mitochondria",
+         "fat": "Needs Few Mitochondria"
+        },
+        "misconceptions": {
+         "fat": "Thinks fat cells need the most mitochondria because fat is linked to diet.",
+         "heart": "Thinks heart cells do not need energy because pumping is automatic.",
+         "muscle": "Thinks muscle cells do not need extra energy power plants.",
+         "skin": "Thinks protective outer cells use the most energy."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.2,
+         "reasons": [
+          "2 cards to sort +0.5",
+          "2 wrong options from a named misconception +0.5",
+          "following a zoom through sizes +0.2"
+         ]
+        }
+       },
+       "ask": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.2,
+        "reasons": [
+         "2 cards to sort +0.5",
+         "2 wrong options from a named misconception +0.5",
+         "following a zoom through sizes +0.2"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child puts active cells into the few mitochondria group.",
+      "says": "Look at which cells have a very high energy demand to do hard work.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-2-help_1",
+        "surface": "categorize",
+        "prompt": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+        "stimulus": [
+         {
+          "kind": "table",
+          "headers": [
+           "Cell Type",
+           "Daily Activity",
+           "Energy Demand"
+          ],
+          "rows": [
+           [
+            "Leg muscle",
+            "Sprints, climbs, and jumps",
+            "Very high"
+           ],
+           [
+            "Heart muscle",
+            "Pumps continuously",
+            "Very high"
+           ],
+           [
+            "Top layer skin",
+            "Stays still as a barrier",
+            "Very low"
+           ],
+           [
+            "Fat storage",
+            "Holds quiet droplets",
+            "Very low"
+           ]
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "fat",
+          "label": "Fat storage cell: holds quiet droplets of oil"
+         },
+         {
+          "id": "muscle",
+          "label": "Leg muscle cell: moves you when you sprint"
+         },
+         {
+          "id": "heart",
+          "label": "Heart muscle cell: pumps blood day and night"
+         },
+         {
+          "id": "skin",
+          "label": "Top layer skin cell: sits still to form a barrier"
+         }
+        ],
+        "categories": [
+         "Needs Many Mitochondria",
+         "Needs Few Mitochondria"
+        ],
+        "key": {
+         "muscle": "Needs Many Mitochondria",
+         "heart": "Needs Many Mitochondria",
+         "skin": "Needs Few Mitochondria",
+         "fat": "Needs Few Mitochondria"
+        },
+        "misconceptions": {
+         "fat": "Thinks fat cells need the most mitochondria because fat is linked to diet.",
+         "heart": "Thinks heart cells do not need energy because pumping is automatic.",
+         "muscle": "Thinks muscle cells do not need extra energy power plants.",
+         "skin": "Thinks protective outer cells use the most energy."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 2.4,
+         "reasons": [
+          "4 cards to sort +1",
+          "4 wrong options from a named misconception +1",
+          "reading a graph, number line or table +0.4"
+         ]
+        }
+       },
+       "ask": "Think about how hard each cell works. Sort each cell by how many mitochondria it needs.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.4,
+        "reasons": [
+         "4 cards to sort +1",
+         "4 wrong options from a named misconception +1",
+         "reading a graph, number line or table +0.4"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "choose",
+    "item": {
+     "id": "life-3",
+     "surface": "choose",
+     "prompt": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+     "stimulus": [
+      {
+       "kind": "table",
+       "headers": [
+        "Cell Organelle",
+        "Function"
+       ],
+       "rows": [
+        [
+         "Mitochondrion (pink bean)",
+         "Produces usable energy"
+        ]
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "cell_a",
+       "label": "Cell A",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "bean",
+          "label": "?",
+          "count": 2
+         }
+        ]
+       }
+      },
+      {
+       "id": "cell_b",
+       "label": "Cell B",
+       "display": {
+        "kind": "cell",
+        "parts": [
+         {
+          "shape": "bean",
+          "label": "?",
+          "count": 8
+         }
+        ]
+       }
+      }
+     ],
+     "key": "cell_b",
+     "misconceptions": {
+      "cell_a": "Thinks fewer mitochondria means more power because the cell has extra empty space."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1.35,
+      "reasons": [
+       "2 options +0.3",
+       "1 wrong option from a named misconception +0.25",
+       "reading a graph, number line or table +0.4",
+       "comparing representations +0.4"
+      ]
+     }
+    },
+    "ask": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.35,
+     "reasons": [
+      "2 options +0.3",
+      "1 wrong option from a named misconception +0.25",
+      "reading a graph, number line or table +0.4",
+      "comparing representations +0.4"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child is unsure which cell makes more energy.",
+      "says": "Look at the table: which organelle count gives high energy output?",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-3-help_1",
+        "surface": "choose",
+        "prompt": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+        "stimulus": [
+         {
+          "kind": "table",
+          "headers": [
+           "Organelle Count",
+           "Energy Capacity"
+          ],
+          "rows": [
+           [
+            "Few (1-2)",
+            "Low energy output"
+           ],
+           [
+            "Many (6-10)",
+            "High energy output"
+           ]
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "cell_a",
+          "label": "Cell A",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?",
+             "count": 2
+            }
+           ]
+          }
+         },
+         {
+          "id": "cell_b",
+          "label": "Cell B",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?",
+             "count": 8
+            }
+           ]
+          }
+         }
+        ],
+        "key": "cell_b",
+        "misconceptions": {
+         "cell_a": "Thinks fewer mitochondria means more power because the cell has extra empty space."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.35,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25",
+          "reading a graph, number line or table +0.4",
+          "comparing representations +0.4"
+         ]
+        }
+       },
+       "ask": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.35,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25",
+         "reading a graph, number line or table +0.4",
+         "comparing representations +0.4"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles to choose.",
+      "says": "Look at the energy bar graph. The cell with more mitochondria produces much higher energy.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-3-simpler_1",
+        "surface": "choose",
+        "prompt": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+        "stimulus": [
+         {
+          "kind": "bar_graph",
+          "title": "Energy Output Comparison",
+          "y_label": "Energy Output",
+          "labels": [
+           "Low",
+           "High"
+          ],
+          "values": [
+           2,
+           8
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "cell_a",
+          "label": "Cell A",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?",
+             "count": 2
+            }
+           ]
+          }
+         },
+         {
+          "id": "cell_b",
+          "label": "Cell B",
+          "display": {
+           "kind": "cell",
+           "parts": [
+            {
+             "shape": "bean",
+             "label": "?",
+             "count": 8
+            }
+           ]
+          }
+         }
+        ],
+        "key": "cell_b",
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.1,
+         "reasons": [
+          "2 options +0.3",
+          "reading a graph, number line or table +0.4",
+          "comparing representations +0.4"
+         ]
+        }
+       },
+       "ask": "A scientist examines two muscle cells under a microscope. Which cell can generate more energy for tough exercise?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.1,
+        "reasons": [
+         "2 options +0.3",
+         "reading a graph, number line or table +0.4",
+         "comparing representations +0.4"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "order",
+    "item": {
+     "id": "life-4",
+     "surface": "order",
+     "prompt": "Put the steps in order to show how a living cell creates usable energy.",
+     "stimulus": [
+      {
+       "kind": "zoom",
+       "levels": [
+        {
+         "label": "Cell Interior",
+         "icon": "\ud83d\udd2c"
+        },
+        {
+         "label": "Working System",
+         "icon": "\u2699\ufe0f"
+        }
+       ]
+      }
+     ],
+     "options": [
+      {
+       "id": "fuel",
+       "label": "Nutrients and oxygen enter the cell"
+      },
+      {
+       "id": "power",
+       "label": "Usable energy is released for cell work"
+      },
+      {
+       "id": "engine",
+       "label": "Mitochondria convert nutrients"
+      }
+     ],
+     "key": [
+      "fuel",
+      "engine",
+      "power"
+     ],
+     "misconceptions": {
+      "engine": "Thinks mitochondria can convert nutrients before any nutrients enter the cell.",
+      "power": "Thinks energy is released before mitochondria process anything."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 1.7,
+      "reasons": [
+       "3 to order +1",
+       "2 wrong options from a named misconception +0.5",
+       "following a zoom through sizes +0.2"
+      ]
+     }
+    },
+    "ask": "Put the steps in order to show how a living cell creates usable energy.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.7,
+     "reasons": [
+      "3 to order +1",
+      "2 wrong options from a named misconception +0.5",
+      "following a zoom through sizes +0.2"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child reverses the flow.",
+      "says": "Check the table to see which stage comes first, second, and third.",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "order",
+       "item": {
+        "id": "life-4-help_1",
+        "surface": "order",
+        "prompt": "Put the steps in order to show how a living cell creates usable energy.",
+        "stimulus": [
+         {
+          "kind": "table",
+          "headers": [
+           "Order",
+           "Stage"
+          ],
+          "rows": [
+           [
+            "1st",
+            "Ingestion of nutrients"
+           ],
+           [
+            "2nd",
+            "Processing in mitochondria"
+           ],
+           [
+            "3rd",
+            "Delivery of power"
+           ]
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "fuel",
+          "label": "Nutrients and oxygen enter the cell"
+         },
+         {
+          "id": "power",
+          "label": "Usable energy is released for cell work"
+         },
+         {
+          "id": "engine",
+          "label": "Mitochondria convert nutrients"
+         }
+        ],
+        "key": [
+         "fuel",
+         "engine",
+         "power"
+        ],
+        "misconceptions": {
+         "engine": "Thinks mitochondria can convert nutrients before any nutrients enter the cell.",
+         "power": "Thinks energy is released before mitochondria process anything."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 1.9,
+         "reasons": [
+          "3 to order +1",
+          "2 wrong options from a named misconception +0.5",
+          "reading a graph, number line or table +0.4"
+         ]
+        }
+       },
+       "ask": "Put the steps in order to show how a living cell creates usable energy.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.9,
+        "reasons": [
+         "3 to order +1",
+         "2 wrong options from a named misconception +0.5",
+         "reading a graph, number line or table +0.4"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck on the order.",
+      "says": "Look at the two steps of entering and processing inside the cell.",
+      "item": {
+       "id": "life-4-simpler_1",
+       "type": "order",
+       "item": {
+        "id": "life-4-simpler_1",
+        "surface": "order",
+        "prompt": "Put the steps in order to show how a living cell creates usable energy.",
+        "stimulus": [
+         {
+          "kind": "zoom",
+          "levels": [
+           {
+            "label": "Cell",
+            "icon": "\ud83d\udd2c"
+           },
+           {
+            "label": "Inside",
+            "icon": "\u2699\ufe0f"
+           }
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "fuel",
+          "label": "Nutrients and oxygen enter the cell"
+         },
+         {
+          "id": "power",
+          "label": "Usable energy is released for cell work"
+         },
+         {
+          "id": "engine",
+          "label": "Mitochondria convert nutrients"
+         }
+        ],
+        "key": [
+         "fuel",
+         "engine",
+         "power"
+        ],
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.2,
+         "reasons": [
+          "3 to order +1",
+          "following a zoom through sizes +0.2"
+         ]
+        }
+       },
+       "ask": "Put the steps in order to show how a living cell creates usable energy.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.2,
+        "reasons": [
+         "3 to order +1",
+         "following a zoom through sizes +0.2"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 7,
+   "seconds": 87.3,
+   "objective": "Mitochondria",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card power's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, o"
+    },
+    {
+     "turn": 1,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: shortcut: one option is drawn as \"cell\" and the others are not: an odd one out"
+    },
+    {
+     "turn": 2,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "look: world 0: a reader who saw only the screen says a child could succeed without the idea: The question mark in the diagram points to the pink squiggly shape, which only appears in Card 2.",
+    "look: world 1: a reader who saw only the screen says a child could succeed without the idea: The descriptions give it away directly through action words: cells that 'move' or 'pump' need many, while cells described as 'quiet' or 'sits still' need few.",
+    "look: world 2: a reader who saw only the screen says a child could succeed without the idea: Choose the cell with more pink shapes inside",
+    "look: world 2: a reader who saw only the screen reports: There appears to be a stray, tiny pink bean with a question mark floating outside each cell illustration.",
+    "look: world 3: a reader who saw only the screen says a child could succeed without the idea: The words 'enter' suggests the beginning step, and 'usable energy is released' describes the final outcome, giving away the order without understanding cellular biology."
+   ],
+   "costUsd": 0.0983,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 4 world(s) held, 7 blocking check(s). First: world 3: card power's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or leave the card as words.",
+     "costUsd": 0.0191
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0191
+    },
+    {
+     "seconds": 36,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 4 world(s) held, 3 blocking check(s). First: world 3: shortcut: one option is drawn as \"cell\" and the others are not: an odd one out",
+     "costUsd": 0.0325
+    },
+    {
+     "seconds": 36,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0325
+    },
+    {
+     "seconds": 41,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.038
+    },
+    {
+     "seconds": 49,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The question asks 'Which part inside the cell turns food into cell fuel?', and Card 2 explicitly says 'turns food i\u2026",
+     "costUsd": 0.0502,
+     "item": 1
+    },
+    {
+     "seconds": 49,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The illustrations literally depict the number of mitochondria: Cards 1 and 4 have only 1 drawn inside, while Cards \u2026",
+     "costUsd": 0.0502,
+     "item": 2
+    },
+    {
+     "seconds": 49,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: Choose the cell with more pink shapes inside",
+     "costUsd": 0.0502,
+     "item": 3
+    },
+    {
+     "seconds": 49,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The guide at the top labels 'Start: Food in' and 'End: Fuel released', matching the exact words 'Food' in Card 1 an\u2026",
+     "costUsd": 0.0502,
+     "item": 4
+    },
+    {
+     "seconds": 49,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 4 problem(s) from the look",
+     "costUsd": 0.0502
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0502
+    },
+    {
+     "seconds": 49,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0502
+    },
+    {
+     "seconds": 64,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 4 world(s) held, 3 blocking check(s). First: item 0: only the right card's label uses a word the lesson taught (\"power\"), so the child can match the word. Let the drawings differ and label the cards plainly, or give the wrong cards \u2026",
+     "costUsd": 0.0642
+    },
+    {
+     "seconds": 64,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0642
+    },
+    {
+     "seconds": 75,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 5: 4 world(s) held, 1 blocking check(s). First: world 3: lever 1 (simplify): its item is blocked: zoom: 2-5 levels",
+     "costUsd": 0.0751
+    },
+    {
+     "seconds": 75,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0751
+    },
+    {
+     "seconds": 79,
+     "stage": "look",
+     "level": "info",
+     "text": "round 2: reading 4 world(s) as the child meets them",
+     "costUsd": 0.0808
+    },
+    {
+     "seconds": 86,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The question mark in the diagram points to the pink squiggly shape, which only appears in Card 2.",
+     "costUsd": 0.092,
+     "item": 1
+    },
+    {
+     "seconds": 86,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The descriptions give it away directly through action words: cells that 'move' or 'pump' need many, while cells des\u2026",
+     "costUsd": 0.092,
+     "item": 2
+    },
+    {
+     "seconds": 86,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: Choose the cell with more pink shapes inside",
+     "costUsd": 0.092,
+     "item": 3
+    },
+    {
+     "seconds": 86,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The words 'enter' suggests the beginning step, and 'usable energy is released' describes the final outcome, giving \u2026",
+     "costUsd": 0.092,
+     "item": 4
+    },
+    {
+     "seconds": 86,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 5 problem(s) from the look",
+     "costUsd": 0.092
+    },
+    {
+     "seconds": 86,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.092
+    },
+    {
+     "seconds": 86,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.092
+    },
+    {
+     "seconds": 87,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 87.3s over 7 turn(s), about $0.10",
+     "costUsd": 0.0983
+    }
+   ],
+   "look": [
+    {
+     "answer": "Select Card 2",
+     "difficulty": "easy",
+     "shortcut": "The question asks 'Which part inside the cell turns food into cell fuel?', and Card 2 explicitly says 'turns food into cell fuel', allowing an exact word match.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00312075,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Drag Card 2 and Card 3 to 'Needs Many Mitochondria', and Card 1 and Card 4 to 'Needs Few Mitochondria'.",
+     "difficulty": "easy",
+     "shortcut": "The illustrations literally depict the number of mitochondria: Cards 1 and 4 have only 1 drawn inside, while Cards 2 and 3 show many drawn inside, allowing the child to just count the shapes.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0035745,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click Card 2",
+     "difficulty": "easy",
+     "shortcut": "Choose the cell with more pink shapes inside",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00241725,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Drag Card 1 to slot 1, Card 3 to slot 2, and Card 2 to slot 3",
+     "difficulty": "easy",
+     "shortcut": "The guide at the top labels 'Start: Food in' and 'End: Fuel released', matching the exact words 'Food' in Card 1 and 'released' in Card 2, leaving Card 3 for the middle.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0030465,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Identify the pink bean-shaped organelle that produces energy and select Card 2",
+     "difficulty": "easy",
+     "shortcut": "The question mark in the diagram points to the pink squiggly shape, which only appears in Card 2.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0030885,
+     "item": 0,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Drag Card 2 and Card 3 to 'Needs Many Mitochondria', and Card 1 and Card 4 to 'Needs Few Mitochondria'.",
+     "difficulty": "easy",
+     "shortcut": "The descriptions give it away directly through action words: cells that 'move' or 'pump' need many, while cells described as 'quiet' or 'sits still' need few.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00295275,
+     "item": 1,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Click Card 2",
+     "difficulty": "easy",
+     "shortcut": "Choose the cell with more pink shapes inside",
+     "issues": "There appears to be a stray, tiny pink bean with a question mark floating outside each cell illustration.",
+     "offObjective": null,
+     "costUsd": 0.002574,
+     "item": 2,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Place Card 1 into slot 1, Card 3 into slot 2, and Card 2 into slot 3",
+     "difficulty": "hard",
+     "shortcut": "The words 'enter' suggests the beginning step, and 'usable energy is released' describes the final outcome, giving away the order without understanding cellular biology.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00261675,
+     "item": 3,
+     "round": 2,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 87.3,
+    "costUsd": 0.0983,
+    "items": 4,
+    "rounds": 7,
+    "look": {
+     "ran": true,
+     "looked": 8,
+     "unread": 0,
+     "screenshots": 8,
+     "problems": 5
+    },
+    "displays": {
+     "offered": [
+      "svg",
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow",
+      "cell",
+      "zoom",
+      "food_web"
+     ],
+     "used": {
+      "cell": 8,
+      "zoom": 3,
+      "flow": 1,
+      "table": 1
+     }
+    }
+   }
+  }
+ }
+}

@@ -33,6 +33,7 @@ import { generateFoodWebBuilder } from '../../biology/gemini-food-web-builder';
 import { generateAdaptationInvestigator } from '../../biology/gemini-adaptation-investigator';
 import { generateCellBuilder } from '../../biology/gemini-cell-builder';
 import { generateBodyWorkshop } from '../../biology/body-workshop-generator';
+import { generateLifeLab } from '../../biology/life-lab/agent-life-lab';
 import { generateInheritanceLab } from '../../biology/gemini-inheritance-lab';
 import { generateDnaExplorer } from '../../biology/gemini-dna-explorer';
 import { generateProteinFolder } from '../../biology/gemini-protein-folder';
@@ -471,6 +472,14 @@ registerContextGenerator('body-workshop', async (ctx) => ({
   type: 'body-workshop',
   instanceId: ctx.instanceId,
   data: await generateBodyWorkshop(ctx),
+}));
+
+// Life Lab - the K-5 biology canvas: an author agent composes living worlds (places, living things, one rule, one thing
+// the child changes, a goal); code runs each world, solves it, names its eval mode and scores its difficulty.
+registerContextGenerator('life-lab', async (ctx) => ({
+  type: 'life-lab',
+  instanceId: ctx.instanceId,
+  data: await generateLifeLab(ctx),
 }));
 
 registerContextGenerator('cell-builder', async (ctx) => ({

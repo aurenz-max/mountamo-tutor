@@ -33,6 +33,7 @@ import { diLetterSoundsBoss } from '../../primitives/visual-primitives/direct-in
 import { diWordReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diWordReading.boss';
 import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
 import { bodyWorkshopBoss } from '../../primitives/visual-primitives/biology/bodyWorkshop.boss';
+import { lifeLabBoss } from '../../primitives/visual-primitives/biology/life-lab/lifeLab.boss';
 import { shapeSorterBoss } from '../../primitives/visual-primitives/math/shapeSorter.boss';
 import { countingBoardBoss } from '../../primitives/visual-primitives/math/countingBoard.boss';
 import { tenFrameBoss } from '../../primitives/visual-primitives/math/tenFrame.boss';
@@ -469,6 +470,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'body-workshop': bossJourney(bodyWorkshopBoss),
   'food-web-builder': bossJourney(foodWebBuilderBoss),
   'gear-train-builder': bossJourney(gearTrainBuilderBoss),
+  'life-lab': bossJourney(lifeLabBoss),
   'tower-stacker': bossJourney(towerStackerBoss),
   'matter-explorer': bossJourney(matterExplorerBoss),
   'molecule-constructor': bossJourney(moleculeConstructorBoss),

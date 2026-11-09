@@ -1,0 +1,1359 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-camo-hard-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Hide in Plain Sight",
+  "description": "Camouflage helps prey animals blend into their surroundings to avoid predators.",
+  "gradeBand": "3-5",
+  "challengeType": "hide_from_the_hunter",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "hide_from_the_hunter",
+    "world": {
+     "zones": [
+      {
+       "id": "canyon",
+       "label": "Canyon Floor",
+       "kind": "desert",
+       "emoji": "\ud83c\udfdc\ufe0f",
+       "cond": {
+        "color": "tan",
+        "texture": "bumpy"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "lizard",
+       "zone": "canyon",
+       "subject": "lizard",
+       "name": "lizard",
+       "emoji": "\ud83e\udd8e",
+       "kind": "animal",
+       "traits": {
+        "color": "bright green"
+       },
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         1
+        ]
+       }
+      },
+      {
+       "id": "hawk",
+       "zone": "canyon",
+       "subject": "hawk",
+       "name": "hawk",
+       "emoji": "\ud83e\udd85",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "also": [
+        "texture"
+       ],
+       "predator": "hawk",
+       "prey": "lizard"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "lizard",
+       "part": "color",
+       "options": [
+        {
+         "value": "tan",
+         "label": "pebbled tan",
+         "emoji": "\ud83d\udfeb",
+         "works": [
+          "bumpy"
+         ]
+        },
+        {
+         "value": "green",
+         "label": "smooth green",
+         "emoji": "\ud83d\udfe9",
+         "works": [
+          "smooth"
+         ]
+        },
+        {
+         "value": "smooth tan",
+         "label": "smooth tan",
+         "emoji": "\ud83d\udfe8",
+         "works": [
+          "smooth"
+         ]
+        },
+        {
+         "value": "slate",
+         "label": "rough slate",
+         "emoji": "\u2b1b",
+         "works": [
+          "rough"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "survives"
+     }
+    },
+    "ask": "A hawk circles high above stony dry soil. Choose the lizard scales that will help it stay hidden.",
+    "why": "The hawk looks for colors and patterns that do not match the ground. Match both color and texture!",
+    "standards": "1-LS1-1 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work",
+      "+1 the choice must fit 2 things about the place"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks smooth tan or green.",
+      "says": "Look at the table showing the ground features.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "hide_from_the_hunter",
+       "world": {
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Ground Color",
+           "Surface"
+          ],
+          "rows": [
+           [
+            "tan",
+            "bumpy"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "canyon",
+          "label": "Canyon Floor",
+          "kind": "desert",
+          "emoji": "\ud83c\udfdc\ufe0f",
+          "cond": {
+           "color": "tan",
+           "texture": "bumpy"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "lizard",
+          "zone": "canyon",
+          "subject": "lizard",
+          "name": "lizard",
+          "emoji": "\ud83e\udd8e",
+          "kind": "animal",
+          "traits": {
+           "color": "bright green"
+          },
+          "needs": {
+           "temp": [
+            2,
+            2
+           ],
+           "water": [
+            0,
+            1
+           ]
+          }
+         },
+         {
+          "id": "hawk",
+          "zone": "canyon",
+          "subject": "hawk",
+          "name": "hawk",
+          "emoji": "\ud83e\udd85",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "also": [
+           "texture"
+          ],
+          "predator": "hawk",
+          "prey": "lizard"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "lizard",
+          "part": "color",
+          "options": [
+           {
+            "value": "tan",
+            "label": "pebbled tan",
+            "emoji": "\ud83d\udfeb",
+            "works": [
+             "bumpy"
+            ]
+           },
+           {
+            "value": "green",
+            "label": "smooth green",
+            "emoji": "\ud83d\udfe9",
+            "works": [
+             "smooth"
+            ]
+           },
+           {
+            "value": "smooth tan",
+            "label": "smooth tan",
+            "emoji": "\ud83d\udfe8",
+            "works": [
+             "smooth"
+            ]
+           },
+           {
+            "value": "slate",
+            "label": "rough slate",
+            "emoji": "\u2b1b",
+            "works": [
+             "rough"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "survives"
+        }
+       },
+       "ask": "A hawk circles high above stony dry soil. Choose the lizard scales that will help it stay hidden.",
+       "why": "The hawk looks for colors and patterns that do not match the ground. Match both color and texture!",
+       "standards": "1-LS1-1 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work",
+         "+1 the choice must fit 2 things about the place"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is overwhelmed by the options.",
+      "says": "Let's look at just two choices.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "hide_from_the_hunter",
+       "world": {
+        "zones": [
+         {
+          "id": "canyon",
+          "label": "Canyon Floor",
+          "kind": "desert",
+          "emoji": "\ud83c\udfdc\ufe0f",
+          "cond": {
+           "color": "tan",
+           "texture": "bumpy"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "lizard",
+          "zone": "canyon",
+          "subject": "lizard",
+          "name": "lizard",
+          "emoji": "\ud83e\udd8e",
+          "kind": "animal",
+          "traits": {
+           "color": "bright green"
+          },
+          "needs": {
+           "temp": [
+            2,
+            2
+           ],
+           "water": [
+            0,
+            1
+           ]
+          }
+         },
+         {
+          "id": "hawk",
+          "zone": "canyon",
+          "subject": "hawk",
+          "name": "hawk",
+          "emoji": "\ud83e\udd85",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "also": [
+           "texture"
+          ],
+          "predator": "hawk",
+          "prey": "lizard"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "lizard",
+          "part": "color",
+          "options": [
+           {
+            "value": "tan",
+            "label": "pebbled tan",
+            "emoji": "\ud83d\udfeb",
+            "works": [
+             "bumpy"
+            ]
+           },
+           {
+            "value": "green",
+            "label": "smooth green",
+            "emoji": "\ud83d\udfe9",
+            "works": [
+             "smooth"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "survives"
+        }
+       },
+       "ask": "A hawk circles high above stony dry soil. Choose the lizard scales that will help it stay hidden.",
+       "why": "The hawk looks for colors and patterns that do not match the ground. Match both color and texture!",
+       "standards": "1-LS1-1 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.2,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+1 the choice must fit 2 things about the place"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "survive_and_change",
+    "world": {
+     "steps": 5,
+     "zones": [
+      {
+       "id": "swamp",
+       "label": "Clay Pond Floor",
+       "kind": "pond",
+       "emoji": "\ud83e\udeb5",
+       "cond": {
+        "color": "brown"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bugs",
+       "zone": "swamp",
+       "name": "water bugs",
+       "emoji": "\ud83e\udeb2",
+       "kind": "animal",
+       "variants": [
+        {
+         "value": "green",
+         "count": 8
+        },
+        {
+         "value": "brown",
+         "count": 2
+        }
+       ]
+      },
+      {
+       "id": "bass",
+       "zone": "swamp",
+       "subject": "fish",
+       "name": "bass",
+       "emoji": "\ud83d\udc1f",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         2,
+         2
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "bass",
+       "prey": "bugs"
+      }
+     ],
+     "controls": [
+      {
+       "type": "predict",
+       "of": "bugs"
+      }
+     ],
+     "goal": {
+      "kind": "prediction"
+     }
+    },
+    "ask": "In a murky pond, bass hunt water bugs resting on clay. Over 5 generations, which color will have more survivors?",
+    "why": "Against the brown clay bottom, green shells stand out while brown shells hide from sight.",
+    "standards": "3-LS4-2 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "+0.2 2 different things the child could try",
+      "+0.8 the child predicts before seeing it happen",
+      "+1 the change happens over 5 families",
+      "+1 the coloring that starts with more ends with fewer"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child predicts green bugs will be more common.",
+      "says": "Look at the table comparing which bugs the fish caught first.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "survive_and_change",
+       "world": {
+        "steps": 5,
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Generation",
+           "Green Eaten",
+           "Brown Eaten"
+          ],
+          "rows": [
+           [
+            "1",
+            "5",
+            "1"
+           ],
+           [
+            "2",
+            "5",
+            "1"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "swamp",
+          "label": "Clay Pond Floor",
+          "kind": "pond",
+          "emoji": "\ud83e\udeb5",
+          "cond": {
+           "color": "brown"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bugs",
+          "zone": "swamp",
+          "name": "water bugs",
+          "emoji": "\ud83e\udeb2",
+          "kind": "animal",
+          "variants": [
+           {
+            "value": "green",
+            "count": 8
+           },
+           {
+            "value": "brown",
+            "count": 2
+           }
+          ]
+         },
+         {
+          "id": "bass",
+          "zone": "swamp",
+          "subject": "fish",
+          "name": "bass",
+          "emoji": "\ud83d\udc1f",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            2,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "predator": "bass",
+          "prey": "bugs"
+         }
+        ],
+        "controls": [
+         {
+          "type": "predict",
+          "of": "bugs"
+         }
+        ],
+        "goal": {
+         "kind": "prediction"
+        }
+       },
+       "ask": "In a murky pond, bass hunt water bugs resting on clay. Over 5 generations, which color will have more survivors?",
+       "why": "Against the brown clay bottom, green shells stand out while brown shells hide from sight.",
+       "standards": "3-LS4-2 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 3,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+0.8 the child predicts before seeing it happen",
+         "+1 the change happens over 5 families",
+         "+1 the coloring that starts with more ends with fewer"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with 5 generations.",
+      "says": "Let's see what happens over 2 generations first.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "survive_and_change",
+       "world": {
+        "steps": 2,
+        "zones": [
+         {
+          "id": "swamp",
+          "label": "Clay Pond Floor",
+          "kind": "pond",
+          "emoji": "\ud83e\udeb5",
+          "cond": {
+           "color": "brown"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bugs",
+          "zone": "swamp",
+          "name": "water bugs",
+          "emoji": "\ud83e\udeb2",
+          "kind": "animal",
+          "variants": [
+           {
+            "value": "green",
+            "count": 8
+           },
+           {
+            "value": "brown",
+            "count": 2
+           }
+          ]
+         },
+         {
+          "id": "bass",
+          "zone": "swamp",
+          "subject": "fish",
+          "name": "bass",
+          "emoji": "\ud83d\udc1f",
+          "kind": "animal",
+          "needs": {
+           "water": [
+            2,
+            2
+           ]
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "predator": "bass",
+          "prey": "bugs"
+         }
+        ],
+        "controls": [
+         {
+          "type": "predict",
+          "of": "bugs"
+         }
+        ],
+        "goal": {
+         "kind": "prediction"
+        }
+       },
+       "ask": "In a murky pond, bass hunt water bugs resting on clay. Over 5 generations, which color will have more survivors?",
+       "why": "Against the brown clay bottom, green shells stand out while brown shells hide from sight.",
+       "standards": "3-LS4-2 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+0.8 the child predicts before seeing it happen",
+         "+0.3 the change happens over 2 families"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "survive_and_change",
+    "world": {
+     "steps": 5,
+     "zones": [
+      {
+       "id": "woods",
+       "label": "Burnt Woods",
+       "kind": "forest",
+       "emoji": "\ud83c\udf32",
+       "cond": {
+        "color": "black"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "moths",
+       "zone": "woods",
+       "name": "moths",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "variants": [
+        {
+         "value": "white",
+         "count": 8
+        },
+        {
+         "value": "black",
+         "count": 2
+        }
+       ]
+      },
+      {
+       "id": "bird",
+       "zone": "woods",
+       "subject": "bird",
+       "name": "bird",
+       "emoji": "\ud83d\udc26",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "spots",
+       "predator": "bird",
+       "prey": "moths"
+      }
+     ],
+     "controls": [
+      {
+       "type": "predict",
+       "of": "moths"
+      }
+     ],
+     "goal": {
+      "kind": "prediction"
+     }
+    },
+    "ask": "Ash covered the forest birch trees. Birds hunt moths resting on the trunks. Over 5 generations, which wing coloring will become more common?",
+    "why": "Hungry birds easily spot wings that clash with black trunks. Which wings hide best?",
+    "standards": "3-LS4-2 \u00b7 3-LS4-3",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "+0.2 2 different things the child could try",
+      "+0.8 the child predicts before seeing it happen",
+      "+1 the change happens over 5 families",
+      "+1 the coloring that starts with more ends with fewer"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child predicts white moths will be more common.",
+      "says": "Look at how many white moths were captured compared to black ones.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "survive_and_change",
+       "world": {
+        "steps": 5,
+        "show": [
+         {
+          "kind": "table",
+          "headers": [
+           "Generation",
+           "White Eaten",
+           "Black Eaten"
+          ],
+          "rows": [
+           [
+            "1",
+            "5",
+            "1"
+           ],
+           [
+            "2",
+            "5",
+            "1"
+           ]
+          ]
+         }
+        ],
+        "zones": [
+         {
+          "id": "woods",
+          "label": "Burnt Woods",
+          "kind": "forest",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "color": "black"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "moths",
+          "zone": "woods",
+          "name": "moths",
+          "emoji": "\ud83e\udd8b",
+          "kind": "animal",
+          "variants": [
+           {
+            "value": "white",
+            "count": 8
+           },
+           {
+            "value": "black",
+            "count": 2
+           }
+          ]
+         },
+         {
+          "id": "bird",
+          "zone": "woods",
+          "subject": "bird",
+          "name": "bird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "predator": "bird",
+          "prey": "moths"
+         }
+        ],
+        "controls": [
+         {
+          "type": "predict",
+          "of": "moths"
+         }
+        ],
+        "goal": {
+         "kind": "prediction"
+        }
+       },
+       "ask": "Ash covered the forest birch trees. Birds hunt moths resting on the trunks. Over 5 generations, which wing coloring will become more common?",
+       "why": "Hungry birds easily spot wings that clash with black trunks. Which wings hide best?",
+       "standards": "3-LS4-2 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "hard",
+        "score": 3,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+0.8 the child predicts before seeing it happen",
+         "+1 the change happens over 5 families",
+         "+1 the coloring that starts with more ends with fewer"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with 5 generations.",
+      "says": "Let's see what happens over 2 generations first.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "survive_and_change",
+       "world": {
+        "steps": 2,
+        "zones": [
+         {
+          "id": "woods",
+          "label": "Burnt Woods",
+          "kind": "forest",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "color": "black"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "moths",
+          "zone": "woods",
+          "name": "moths",
+          "emoji": "\ud83e\udd8b",
+          "kind": "animal",
+          "variants": [
+           {
+            "value": "white",
+            "count": 8
+           },
+           {
+            "value": "black",
+            "count": 2
+           }
+          ]
+         },
+         {
+          "id": "bird",
+          "zone": "woods",
+          "subject": "bird",
+          "name": "bird",
+          "emoji": "\ud83d\udc26",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "spots",
+          "predator": "bird",
+          "prey": "moths"
+         }
+        ],
+        "controls": [
+         {
+          "type": "predict",
+          "of": "moths"
+         }
+        ],
+        "goal": {
+         "kind": "prediction"
+        }
+       },
+       "ask": "Ash covered the forest birch trees. Birds hunt moths resting on the trunks. Over 5 generations, which wing coloring will become more common?",
+       "why": "Hungry birds easily spot wings that clash with black trunks. Which wings hide best?",
+       "standards": "3-LS4-2 \u00b7 3-LS4-3",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "+0.2 2 different things the child could try",
+         "+0.8 the child predicts before seeing it happen",
+         "+0.3 the change happens over 2 families"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 9,
+   "seconds": 101.2,
+   "objective": "Camouflage helps animals hide from hunters",
+   "tier": "hard",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true,
+     "note": "blocked: spots (one animal): 2-4 colorings, one of them the background's color"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 9,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "look: world 1: a reader who saw only the screen says a child could succeed without the idea: The floor is labeled 'brown', directly matching the choice 'more brown'.",
+    "look: world 1: a reader who saw only the screen reports: The beetle emoji shown for '2 brown' is visually identical/green instead of brown, which could confuse the child.",
+    "look: world 2: a reader who saw only the screen says a child could succeed without the idea: The environment header explicitly says '(black)', directly matching the option 'more black'.",
+    "look: world 2: a reader who saw only the screen reports: The moths are both depicted with identical orange/purple butterfly emojis rather than white and black moth graphics."
+   ],
+   "costUsd": 0.0814,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 13,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 3 world(s) held, 4 blocking check(s). First: item 1 scores medium; this session is hard",
+     "costUsd": 0.013
+    },
+    {
+     "seconds": 13,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.013
+    },
+    {
+     "seconds": 24,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 3 world(s) held, 3 blocking check(s). First: world 1: spots (one animal): 2-4 colorings, one of them the background's color",
+     "costUsd": 0.0222
+    },
+    {
+     "seconds": 24,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0222
+    },
+    {
+     "seconds": 29,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0266
+    },
+    {
+     "seconds": 29,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0266
+    },
+    {
+     "seconds": 30,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 3 world(s) as the child meets them",
+     "costUsd": 0.0296
+    },
+    {
+     "seconds": 40,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The option \"pebbly sand\" exactly matches the words in the environment title \"Desert Ground (pebbly sand)\" and promp\u2026",
+     "costUsd": 0.0397,
+     "item": 1
+    },
+    {
+     "seconds": 40,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen reports: The text labels inside the white box have very low contrast against the white background, and the icon shown above '2 white' is a green grasshopper rat\u2026",
+     "costUsd": 0.0397,
+     "item": 2
+    },
+    {
+     "seconds": 40,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: Word matching: the question states the bark is 'dark', matching the option 'more dark speckled'.",
+     "costUsd": 0.0397,
+     "item": 3
+    },
+    {
+     "seconds": 40,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 4 problem(s) from the look",
+     "costUsd": 0.0397
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0397
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0397
+    },
+    {
+     "seconds": 52,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 5: 3 world(s) held, 1 blocking check(s). First: item 1 scores medium; this session is hard",
+     "costUsd": 0.0495
+    },
+    {
+     "seconds": 52,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0495
+    },
+    {
+     "seconds": 58,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0542
+    },
+    {
+     "seconds": 58,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.0542
+    },
+    {
+     "seconds": 77,
+     "stage": "look",
+     "level": "info",
+     "text": "round 2: reading 3 world(s) as the child meets them",
+     "costUsd": 0.0577
+    },
+    {
+     "seconds": 85,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.0657,
+     "item": 1
+    },
+    {
+     "seconds": 85,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The child can just match the words 'muddy brown' in 'Swamp Waters (muddy brown)' to the button 'more muddy brown'.",
+     "costUsd": 0.0657,
+     "item": 2
+    },
+    {
+     "seconds": 85,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: The text repeats the word \"charcoal\" (\"charcoal soot\", \"Sooty Birch Woods (charcoal)\"), matching the option \"more c\u2026",
+     "costUsd": 0.0657,
+     "item": 3
+    },
+    {
+     "seconds": 85,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 4 problem(s) from the look",
+     "costUsd": 0.0657
+    },
+    {
+     "seconds": 85,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0657
+    },
+    {
+     "seconds": 85,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.0657
+    },
+    {
+     "seconds": 91,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: 3 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.0722
+    },
+    {
+     "seconds": 91,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 9: the author is working",
+     "costUsd": 0.0722
+    },
+    {
+     "seconds": 95,
+     "stage": "look",
+     "level": "info",
+     "text": "final read: reading 2 world(s) as the child meets them",
+     "costUsd": 0.0758
+    },
+    {
+     "seconds": 101,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The floor is labeled 'brown', directly matching the choice 'more brown'.",
+     "costUsd": 0.0814,
+     "item": 2
+    },
+    {
+     "seconds": 101,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 2: a reader who saw only the screen says a child could succeed without the idea: The environment header explicitly says '(black)', directly matching the option 'more black'.",
+     "costUsd": 0.0814,
+     "item": 3
+    },
+    {
+     "seconds": 101,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 3 world(s) in 101.2s over 9 turn(s), about $0.08",
+     "costUsd": 0.0814
+    }
+   ],
+   "look": [
+    {
+     "answer": "Select \"pebbly sand\" and click \"I'm done!\".",
+     "difficulty": "easy",
+     "shortcut": "The option \"pebbly sand\" exactly matches the words in the environment title \"Desert Ground (pebbly sand)\" and prompt.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0023265,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'more white', click 'Try it' to test, then click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": "The text labels inside the white box have very low contrast against the white background, and the icon shown above '2 white' is a green grasshopper rather than a white one.",
+     "offObjective": null,
+     "costUsd": 0.0035175,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'more dark speckled'",
+     "difficulty": "easy",
+     "shortcut": "Word matching: the question states the bark is 'dark', matching the option 'more dark speckled'.",
+     "issues": "The emoji for 'pale white' is colorful and not white. '5 families of moths' is awkward phrasing for generations of moths.",
+     "offObjective": null,
+     "costUsd": 0.0042255,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'pebbled tan', then click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00241875,
+     "item": 0,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'more muddy brown' and click 'I'm done!' (or run 'Try it' first).",
+     "difficulty": "easy",
+     "shortcut": "The child can just match the words 'muddy brown' in 'Swamp Waters (muddy brown)' to the button 'more muddy brown'.",
+     "issues": "The icon representing 'muddy brown' beetles is visually identical and green, rather than brown.",
+     "offObjective": null,
+     "costUsd": 0.00281325,
+     "item": 1,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Select \"more charcoal\", optionally click \"Try it\" to watch, then click \"I'm done!\".",
+     "difficulty": "easy",
+     "shortcut": "The text repeats the word \"charcoal\" (\"charcoal soot\", \"Sooty Birch Woods (charcoal)\"), matching the option \"more charcoal\".",
+     "issues": "Both moth icons are identical purple/orange butterfly emojis; neither looks cream or charcoal.",
+     "offObjective": null,
+     "costUsd": 0.00277575,
+     "item": 2,
+     "round": 2,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'more brown', test with 'Try it', then click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": "The floor is labeled 'brown', directly matching the choice 'more brown'.",
+     "issues": "The beetle emoji shown for '2 brown' is visually identical/green instead of brown, which could confuse the child.",
+     "offObjective": null,
+     "costUsd": 0.00298875,
+     "item": 1,
+     "round": 3,
+     "screenshot": true
+    },
+    {
+     "answer": "Select 'more black' and press 'Try it' to test, then 'I'm done!'.",
+     "difficulty": "easy",
+     "shortcut": "The environment header explicitly says '(black)', directly matching the option 'more black'.",
+     "issues": "The moths are both depicted with identical orange/purple butterfly emojis rather than white and black moth graphics.",
+     "offObjective": null,
+     "costUsd": 0.002631,
+     "item": 2,
+     "round": 3,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 101.2,
+    "costUsd": 0.0814,
+    "items": 3,
+    "rounds": 9,
+    "look": {
+     "ran": true,
+     "looked": 8,
+     "unread": 0,
+     "screenshots": 8,
+     "problems": 4
+    },
+    "displays": {
+     "offered": [
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow"
+     ],
+     "used": {}
+    }
+   }
+  }
+ }
+}

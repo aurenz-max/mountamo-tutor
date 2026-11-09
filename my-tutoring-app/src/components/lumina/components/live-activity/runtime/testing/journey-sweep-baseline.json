@@ -468,5 +468,35 @@
   },
   "wonder-walk.rhyme-respond": {
     "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
+  },
+  "life-lab.fair_test": {
+    "J12-item-miss-answered": "pre-lever payload; life-lab.fair_test-kitdisplay carries the levers (11-08)"
+  },
+  "life-lab.where_it_lives": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
+  },
+  "life-lab.follow_the_path": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.follow_the_path-digest": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.life_cycle": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.life_cycle-sunflower": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.what_it_needs": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.where_it_lives-kit": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.whose_baby": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
+  },
+  "life-lab.whose_baby-monarch": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07); since one mode (11-08) every miss needs a lever. A regeneration clears it"
   }
 }

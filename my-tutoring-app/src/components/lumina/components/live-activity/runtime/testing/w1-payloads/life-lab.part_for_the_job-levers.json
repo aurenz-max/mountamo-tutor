@@ -1,0 +1,840 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-part_for_the_job-levers-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Animal Parts in Different Homes",
+  "description": "Animals have body parts adapted to live and get food in their habitats.",
+  "gradeBand": "K-2",
+  "challengeType": "part_for_the_job",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "pond",
+       "label": "pond",
+       "emoji": "\ud83d\udca7",
+       "cond": {
+        "ground": "water"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "duck_1",
+       "zone": "pond",
+       "name": "duck",
+       "kind": "animal",
+       "traits": {
+        "feet": "sharp claws"
+       },
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "duck_1",
+       "part": "feet",
+       "on": "ground",
+       "job": "swim"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "duck_1",
+       "part": "feet",
+       "options": [
+        {
+         "value": "webbed feet",
+         "label": "webbed feet",
+         "emoji": "\ud83e\udd86",
+         "works": [
+          "water"
+         ]
+        },
+        {
+         "value": "sharp claws",
+         "label": "sharp claws",
+         "emoji": "\ud83e\udd85",
+         "works": [
+          "tree branches"
+         ]
+        },
+        {
+         "value": "padded paws",
+         "label": "padded paws",
+         "emoji": "\ud83d\udc3e",
+         "works": [
+          "forest ground"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This duck lives in a pond where it must paddle through water. Choose the feet that help it swim, then test them.",
+    "why": "Look at how animals push water to swim. Which shape pushes water like an oar?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks feet meant for climbing or walking.",
+      "says": "Look closely at what kind of ground the duck moves across.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "pond",
+          "label": "pond",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "ground": "water"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "duck_1",
+          "zone": "pond",
+          "name": "duck",
+          "kind": "animal",
+          "traits": {
+           "feet": "sharp claws"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "duck_1",
+          "part": "feet",
+          "on": "ground",
+          "job": "swim"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "duck_1",
+          "part": "feet",
+          "options": [
+           {
+            "value": "webbed feet",
+            "label": "webbed feet",
+            "emoji": "\ud83e\udd86",
+            "works": [
+             "water"
+            ]
+           },
+           {
+            "value": "sharp claws",
+            "label": "sharp claws",
+            "emoji": "\ud83e\udd85",
+            "works": [
+             "tree branches"
+            ]
+           },
+           {
+            "value": "padded paws",
+            "label": "padded paws",
+            "emoji": "\ud83d\udc3e",
+            "works": [
+             "forest ground"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This duck lives in a pond where it must paddle through water. Choose the feet that help it swim, then test them.",
+       "why": "Look at how animals push water to swim. Which shape pushes water like an oar?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.3,
+        "reasons": [
+         "+0.3 3 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with multiple options.",
+      "says": "Let's look at two kinds of feet.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "pond",
+          "label": "pond",
+          "emoji": "\ud83d\udca7",
+          "cond": {
+           "ground": "water"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "duck_1",
+          "zone": "pond",
+          "name": "duck",
+          "kind": "animal",
+          "traits": {
+           "feet": "sharp claws"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "duck_1",
+          "part": "feet",
+          "on": "ground",
+          "job": "swim"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "duck_1",
+          "part": "feet",
+          "options": [
+           {
+            "value": "webbed feet",
+            "label": "webbed feet",
+            "emoji": "\ud83e\udd86",
+            "works": [
+             "water"
+            ]
+           },
+           {
+            "value": "sharp claws",
+            "label": "sharp claws",
+            "emoji": "\ud83e\udd85",
+            "works": [
+             "tree branches"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This duck lives in a pond where it must paddle through water. Choose the feet that help it swim, then test them.",
+       "why": "Look at how animals push water to swim. Which shape pushes water like an oar?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "wetland",
+       "label": "wetland",
+       "emoji": "\ud83c\udf3e",
+       "cond": {
+        "ground": "deep water"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "heron_1",
+       "zone": "wetland",
+       "name": "heron",
+       "kind": "animal",
+       "traits": {
+        "legs": "short legs"
+       },
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "heron_1",
+       "part": "legs",
+       "on": "ground",
+       "job": "wade"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "heron_1",
+       "part": "legs",
+       "options": [
+        {
+         "value": "long stilt legs",
+         "label": "long stilt legs",
+         "emoji": "\ud83e\udda9",
+         "works": [
+          "deep water"
+         ]
+        },
+        {
+         "value": "short legs",
+         "label": "short legs",
+         "emoji": "\ud83e\udd86",
+         "works": [
+          "meadow grass"
+         ]
+        },
+        {
+         "value": "hopping legs",
+         "label": "hopping legs",
+         "emoji": "\ud83d\udc30",
+         "works": [
+          "dry ground"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This heron wades in deep wetland mud to catch small fish. Pick the legs that help it hunt in deep water, then test them.",
+    "why": "Notice how deep the water is. Which legs keep the bird above water while wading?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks legs that keep the body low.",
+      "says": "Look at how deep the water is where the heron stands.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "wetland",
+          "label": "wetland",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "ground": "deep water"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "heron_1",
+          "zone": "wetland",
+          "name": "heron",
+          "kind": "animal",
+          "traits": {
+           "legs": "short legs"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "heron_1",
+          "part": "legs",
+          "on": "ground",
+          "job": "wade"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "heron_1",
+          "part": "legs",
+          "options": [
+           {
+            "value": "long stilt legs",
+            "label": "long stilt legs",
+            "emoji": "\ud83e\udda9",
+            "works": [
+             "deep water"
+            ]
+           },
+           {
+            "value": "short legs",
+            "label": "short legs",
+            "emoji": "\ud83e\udd86",
+            "works": [
+             "meadow grass"
+            ]
+           },
+           {
+            "value": "hopping legs",
+            "label": "hopping legs",
+            "emoji": "\ud83d\udc30",
+            "works": [
+             "dry ground"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This heron wades in deep wetland mud to catch small fish. Pick the legs that help it hunt in deep water, then test them.",
+       "why": "Notice how deep the water is. Which legs keep the bird above water while wading?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.3,
+        "reasons": [
+         "+0.3 3 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child tries different legs without success.",
+      "says": "Let's choose between two kinds of legs.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "wetland",
+          "label": "wetland",
+          "emoji": "\ud83c\udf3e",
+          "cond": {
+           "ground": "deep water"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "heron_1",
+          "zone": "wetland",
+          "name": "heron",
+          "kind": "animal",
+          "traits": {
+           "legs": "short legs"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "heron_1",
+          "part": "legs",
+          "on": "ground",
+          "job": "wade"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "heron_1",
+          "part": "legs",
+          "options": [
+           {
+            "value": "long stilt legs",
+            "label": "long stilt legs",
+            "emoji": "\ud83e\udda9",
+            "works": [
+             "deep water"
+            ]
+           },
+           {
+            "value": "short legs",
+            "label": "short legs",
+            "emoji": "\ud83e\udd86",
+            "works": [
+             "meadow grass"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This heron wades in deep wetland mud to catch small fish. Pick the legs that help it hunt in deep water, then test them.",
+       "why": "Notice how deep the water is. Which legs keep the bird above water while wading?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "forest",
+       "label": "forest tree",
+       "emoji": "\ud83c\udf32",
+       "cond": {
+        "food": "wood bark"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "woodpecker_1",
+       "zone": "forest",
+       "name": "woodpecker",
+       "kind": "animal",
+       "traits": {
+        "beak": "wide scoop beak"
+       },
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "woodpecker_1",
+       "part": "beak",
+       "on": "food",
+       "job": "peck"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "woodpecker_1",
+       "part": "beak",
+       "options": [
+        {
+         "value": "chisel beak",
+         "label": "chisel beak",
+         "emoji": "\ud83e\udeb5",
+         "works": [
+          "wood bark"
+         ]
+        },
+        {
+         "value": "thin straw beak",
+         "label": "thin straw beak",
+         "emoji": "\ud83c\udf38",
+         "works": [
+          "flower nectar"
+         ]
+        },
+        {
+         "value": "wide scoop beak",
+         "label": "wide scoop beak",
+         "emoji": "\ud83d\udc1f",
+         "works": [
+          "pond fish"
+         ]
+        },
+        {
+         "value": "short cone beak",
+         "label": "short cone beak",
+         "emoji": "\ud83c\udf3e",
+         "works": [
+          "tiny seeds"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This woodpecker lives on tree trunks and eats insects hidden inside bark. Choose the beak that lets it peck through wood, then watch it feed.",
+    "why": "Think about what tool can pierce into tough wood. Which beak acts like a sturdy tool?",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a beak meant for nectar or seeds.",
+      "says": "Look at what the bird needs to drill into to find food.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "forest",
+          "label": "tree trunk",
+          "emoji": "\ud83e\udeb5",
+          "cond": {
+           "food": "wood bark"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "woodpecker_1",
+          "zone": "forest",
+          "name": "woodpecker",
+          "kind": "animal",
+          "traits": {
+           "beak": "wide scoop beak"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "woodpecker_1",
+          "part": "beak",
+          "on": "food",
+          "job": "peck"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "woodpecker_1",
+          "part": "beak",
+          "options": [
+           {
+            "value": "chisel beak",
+            "label": "chisel beak",
+            "emoji": "\ud83e\udeb5",
+            "works": [
+             "wood bark"
+            ]
+           },
+           {
+            "value": "thin straw beak",
+            "label": "thin straw beak",
+            "emoji": "\ud83c\udf38",
+            "works": [
+             "flower nectar"
+            ]
+           },
+           {
+            "value": "wide scoop beak",
+            "label": "wide scoop beak",
+            "emoji": "\ud83d\udc1f",
+            "works": [
+             "pond fish"
+            ]
+           },
+           {
+            "value": "short cone beak",
+            "label": "short cone beak",
+            "emoji": "\ud83c\udf3e",
+            "works": [
+             "tiny seeds"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This woodpecker lives on tree trunks and eats insects hidden inside bark. Choose the beak that lets it peck through wood, then watch it feed.",
+       "why": "Think about what tool can pierce into tough wood. Which beak acts like a sturdy tool?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with four beak shapes.",
+      "says": "Let's compare two beaks.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "forest",
+          "label": "forest tree",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "food": "wood bark"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "woodpecker_1",
+          "zone": "forest",
+          "name": "woodpecker",
+          "kind": "animal",
+          "traits": {
+           "beak": "wide scoop beak"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "woodpecker_1",
+          "part": "beak",
+          "on": "food",
+          "job": "peck"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "woodpecker_1",
+          "part": "beak",
+          "options": [
+           {
+            "value": "chisel beak",
+            "label": "chisel beak",
+            "emoji": "\ud83e\udeb5",
+            "works": [
+             "wood bark"
+            ]
+           },
+           {
+            "value": "thin straw beak",
+            "label": "thin straw beak",
+            "emoji": "\ud83c\udf38",
+            "works": [
+             "flower nectar"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This woodpecker lives on tree trunks and eats insects hidden inside bark. Choose the beak that lets it peck through wood, then watch it feed.",
+       "why": "Think about what tool can pierce into tough wood. Which beak acts like a sturdy tool?",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 2,
+   "seconds": 15.5,
+   "modes": [
+    "part_for_the_job"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

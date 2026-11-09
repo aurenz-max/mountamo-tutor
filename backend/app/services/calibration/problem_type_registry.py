@@ -1087,6 +1087,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "bio-process-animator":       {"default": PriorConfig(3.5, "Animate and comprehend biological process")},
     "microscope-viewer":          {"default": PriorConfig(4.0, "Label structures under microscope")},
     "adaptation-investigator":    {"default": PriorConfig(3.5, "Connect trait to function to environment")},
+    "life-lab": {
+        "world": PriorConfig(0.8, "K-5: a living world an agent builds for the objective; the learner changes it until the goal holds"),
+    },
     "body-workshop": {
         "deliver_oxygen": PriorConfig(0.2, "K-5: tap body parts into the path oxygen takes through a real animal (into the body K-3; on to a muscle 4-5)"),
         "fuel_the_body": PriorConfig(0.4, "K-5: tap body parts into the path food takes through a real animal: mouth, stomach or gizzard, intestines, blood (heart to a muscle at 4-5)"),

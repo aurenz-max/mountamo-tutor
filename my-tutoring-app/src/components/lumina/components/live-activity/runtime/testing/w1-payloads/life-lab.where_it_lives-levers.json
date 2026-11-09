@@ -1,0 +1,1112 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-where_it_lives-levers-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Animals and Where They Live",
+  "description": "Animals live in habitats that meet their needs for warmth and water.",
+  "gradeBand": "K-2",
+  "challengeType": "where_it_lives",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "ice",
+       "label": "Icy Coast",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 0
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Sandy Desert",
+       "cond": {
+        "light": 2,
+        "water": 0,
+        "temp": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "bear",
+       "zone": "desert",
+       "subject": "polar_bear",
+       "name": "Polar Bear",
+       "needs": {
+        "temp": [
+         0,
+         0
+        ],
+        "light": [
+         0,
+         2
+        ],
+        "water": [
+         1,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f",
+       "kind": "animal"
+      },
+      {
+       "id": "camel",
+       "zone": "ice",
+       "subject": "camel",
+       "name": "Camel",
+       "needs": {
+        "light": [
+         0,
+         2
+        ],
+        "water": [
+         0,
+         0
+        ],
+        "temp": [
+         2,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc2a",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "bear",
+        "camel"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "ice",
+        "desert"
+       ],
+       "beings": [
+        "bear",
+        "camel"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These animals are in places where they cannot live. Move each animal to a home where it thrives.",
+    "why": "Notice how cold or hot each animal likes its home to be.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child swaps an animal into another wrong place.",
+      "says": "Check the weather in each place to see what feels cold or hot.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "ice",
+          "label": "Icy Coast",
+          "emoji": "\u2744\ufe0f",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 0
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Sandy Desert",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "bear",
+          "zone": "desert",
+          "subject": "polar_bear",
+          "name": "Polar Bear",
+          "needs": {
+           "temp": [
+            0,
+            0
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f",
+          "kind": "animal"
+         },
+         {
+          "id": "camel",
+          "zone": "ice",
+          "subject": "camel",
+          "name": "Camel",
+          "needs": {
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            0,
+            0
+           ],
+           "temp": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc2a",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "bear",
+           "camel"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "ice",
+           "desert"
+          ],
+          "beings": [
+           "bear",
+           "camel"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These animals are in places where they cannot live. Move each animal to a home where it thrives.",
+       "why": "Notice how cold or hot each animal likes its home to be.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "ice",
+       "label": "Snowy Ice",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 0
+       }
+      },
+      {
+       "id": "desert",
+       "label": "Sunny Desert",
+       "cond": {
+        "light": 2,
+        "water": 0,
+        "temp": 2
+       }
+      },
+      {
+       "id": "pond",
+       "label": "Fresh Pond",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "penguin",
+       "zone": "pond",
+       "subject": "penguin",
+       "name": "Penguin",
+       "needs": {
+        "water": [
+         1,
+         2
+        ],
+        "light": [
+         0,
+         2
+        ],
+        "temp": [
+         0,
+         0
+        ]
+       },
+       "emoji": "\ud83d\udc27",
+       "kind": "animal"
+      },
+      {
+       "id": "lizard",
+       "zone": "ice",
+       "subject": "lizard",
+       "name": "Lizard",
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         0
+        ],
+        "light": [
+         0,
+         2
+        ]
+       },
+       "emoji": "\ud83e\udd8e",
+       "kind": "animal"
+      },
+      {
+       "id": "frog",
+       "zone": "desert",
+       "subject": "frog",
+       "name": "Frog",
+       "needs": {
+        "light": [
+         0,
+         2
+        ],
+        "water": [
+         2,
+         2
+        ],
+        "temp": [
+         1,
+         1
+        ]
+       },
+       "emoji": "\ud83d\udc38",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "penguin",
+        "lizard",
+        "frog"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "ice",
+        "desert",
+        "pond"
+       ],
+       "beings": [
+        "penguin",
+        "lizard",
+        "frog"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These three animals are in the wrong homes. Move each animal to a place where it thrives.",
+    "why": "Check whether each animal needs freezing cold, dry heat, or wet water.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child places an animal in a habitat that does not meet its needs.",
+      "says": "Look at the weather symbols to see which home is freezing, hot, or wet.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "ice",
+          "label": "Snowy Ice",
+          "emoji": "\u2744\ufe0f",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 0
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Sunny Desert",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         },
+         {
+          "id": "pond",
+          "label": "Fresh Pond",
+          "emoji": "\ud83d\udca7",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "penguin",
+          "zone": "pond",
+          "subject": "penguin",
+          "name": "Penguin",
+          "needs": {
+           "water": [
+            1,
+            2
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "temp": [
+            0,
+            0
+           ]
+          },
+          "emoji": "\ud83d\udc27",
+          "kind": "animal"
+         },
+         {
+          "id": "lizard",
+          "zone": "ice",
+          "subject": "lizard",
+          "name": "Lizard",
+          "needs": {
+           "temp": [
+            2,
+            2
+           ],
+           "water": [
+            0,
+            0
+           ],
+           "light": [
+            0,
+            2
+           ]
+          },
+          "emoji": "\ud83e\udd8e",
+          "kind": "animal"
+         },
+         {
+          "id": "frog",
+          "zone": "desert",
+          "subject": "frog",
+          "name": "Frog",
+          "needs": {
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            2,
+            2
+           ],
+           "temp": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc38",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "penguin",
+           "lizard",
+           "frog"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "ice",
+           "desert",
+           "pond"
+          ],
+          "beings": [
+           "penguin",
+           "lizard",
+           "frog"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These three animals are in the wrong homes. Move each animal to a place where it thrives.",
+       "why": "Check whether each animal needs freezing cold, dry heat, or wet water.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "+1 27 different things the child could try",
+         "+1 only 1 of them work",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused sorting three animals at once.",
+      "says": "Let us try with two animals first.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "ice",
+          "label": "Snowy Ice",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 0
+          }
+         },
+         {
+          "id": "desert",
+          "label": "Sunny Desert",
+          "cond": {
+           "light": 2,
+           "water": 0,
+           "temp": 2
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "penguin",
+          "zone": "desert",
+          "subject": "penguin",
+          "name": "Penguin",
+          "needs": {
+           "temp": [
+            0,
+            0
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            1,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc27",
+          "kind": "animal"
+         },
+         {
+          "id": "lizard",
+          "zone": "ice",
+          "subject": "lizard",
+          "name": "Lizard",
+          "needs": {
+           "water": [
+            0,
+            0
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "temp": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83e\udd8e",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "penguin",
+           "lizard"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "ice",
+           "desert"
+          ],
+          "beings": [
+           "penguin",
+           "lizard"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "These three animals are in the wrong homes. Move each animal to a place where it thrives.",
+       "why": "Check whether each animal needs freezing cold, dry heat, or wet water.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "stream",
+       "label": "Fresh Stream",
+       "cond": {
+        "light": 1,
+        "water": 2,
+        "temp": 1
+       }
+      },
+      {
+       "id": "woods",
+       "label": "Grassy Woods",
+       "cond": {
+        "light": 1,
+        "water": 1,
+        "temp": 1
+       }
+      },
+      {
+       "id": "ice",
+       "label": "Frozen Shore",
+       "cond": {
+        "light": 1,
+        "water": 1,
+        "temp": 0
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "fish",
+       "zone": "woods",
+       "subject": "fish",
+       "name": "Fish",
+       "needs": {
+        "temp": [
+         1,
+         1
+        ],
+        "light": [
+         0,
+         2
+        ],
+        "water": [
+         2,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc1f",
+       "kind": "animal"
+      },
+      {
+       "id": "rabbit",
+       "zone": "ice",
+       "subject": "rabbit",
+       "name": "Rabbit",
+       "needs": {
+        "temp": [
+         1,
+         1
+        ],
+        "light": [
+         0,
+         2
+        ],
+        "water": [
+         1,
+         1
+        ]
+       },
+       "emoji": "\ud83d\udc07",
+       "kind": "animal"
+      },
+      {
+       "id": "polar_bear",
+       "zone": "stream",
+       "subject": "polar_bear",
+       "name": "Polar Bear",
+       "needs": {
+        "temp": [
+         0,
+         0
+        ],
+        "water": [
+         1,
+         2
+        ],
+        "light": [
+         0,
+         2
+        ]
+       },
+       "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f",
+       "kind": "animal"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "fish",
+        "rabbit",
+        "polar_bear"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "stream",
+        "woods",
+        "ice"
+       ],
+       "beings": [
+        "fish",
+        "rabbit",
+        "polar_bear"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "Find a home where each creature can live and thrive. Move them to the right places.",
+    "why": "Think about which animal must swim in water, which likes grassy land, and which needs deep cold.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child leaves a water animal on dry land.",
+      "says": "Notice which habitat is in the water, in the grass, or on the ice.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "stream",
+          "label": "Fresh Stream",
+          "emoji": "\ud83c\udf0a",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         },
+         {
+          "id": "woods",
+          "label": "Grassy Woods",
+          "emoji": "\ud83c\udf32",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 1
+          }
+         },
+         {
+          "id": "ice",
+          "label": "Frozen Shore",
+          "emoji": "\u2744\ufe0f",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 0
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "fish",
+          "zone": "woods",
+          "subject": "fish",
+          "name": "Fish",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            2,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc1f",
+          "kind": "animal"
+         },
+         {
+          "id": "rabbit",
+          "zone": "ice",
+          "subject": "rabbit",
+          "name": "Rabbit",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc07",
+          "kind": "animal"
+         },
+         {
+          "id": "polar_bear",
+          "zone": "stream",
+          "subject": "polar_bear",
+          "name": "Polar Bear",
+          "needs": {
+           "temp": [
+            0,
+            0
+           ],
+           "water": [
+            1,
+            2
+           ],
+           "light": [
+            0,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "fish",
+           "rabbit",
+           "polar_bear"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "stream",
+           "woods",
+           "ice"
+          ],
+          "beings": [
+           "fish",
+           "rabbit",
+           "polar_bear"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "Find a home where each creature can live and thrive. Move them to the right places.",
+       "why": "Think about which animal must swim in water, which likes grassy land, and which needs deep cold.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "+1 27 different things the child could try",
+         "+1 only 1 of them work",
+         "+0.5 3 living things to look after"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles to balance three different environments.",
+      "says": "Let us match just two animals to land and water.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "where_it_lives",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "stream",
+          "label": "Fresh Stream",
+          "cond": {
+           "light": 1,
+           "water": 2,
+           "temp": 1
+          }
+         },
+         {
+          "id": "woods",
+          "label": "Grassy Woods",
+          "cond": {
+           "light": 1,
+           "water": 1,
+           "temp": 1
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "fish",
+          "zone": "woods",
+          "subject": "fish",
+          "name": "Fish",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "water": [
+            2,
+            2
+           ],
+           "light": [
+            0,
+            2
+           ]
+          },
+          "emoji": "\ud83d\udc1f",
+          "kind": "animal"
+         },
+         {
+          "id": "rabbit",
+          "zone": "stream",
+          "subject": "rabbit",
+          "name": "Rabbit",
+          "needs": {
+           "temp": [
+            1,
+            1
+           ],
+           "light": [
+            0,
+            2
+           ],
+           "water": [
+            1,
+            1
+           ]
+          },
+          "emoji": "\ud83d\udc07",
+          "kind": "animal"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "needs",
+          "beings": [
+           "fish",
+           "rabbit"
+          ]
+         }
+        ],
+        "controls": [
+         {
+          "type": "move",
+          "zones": [
+           "stream",
+           "woods"
+          ],
+          "beings": [
+           "fish",
+           "rabbit"
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "all_thrive"
+        }
+       },
+       "ask": "Find a home where each creature can live and thrive. Move them to the right places.",
+       "why": "Think about which animal must swim in water, which likes grassy land, and which needs deep cold.",
+       "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.9,
+        "reasons": [
+         "+0.4 4 different things the child could try",
+         "+0.5 1 of them work"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 3,
+   "seconds": 19.2,
+   "modes": [
+    "where_it_lives"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

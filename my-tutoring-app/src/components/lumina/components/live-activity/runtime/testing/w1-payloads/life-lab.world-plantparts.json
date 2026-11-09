@@ -1,0 +1,1199 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-plantparts-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Plant Parts and Their Jobs",
+  "description": "Plants have different parts (roots, stem, leaves, flower) and each part has a special job to help the plant live and grow.",
+  "gradeBand": "K-2",
+  "challengeType": "choose",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "choose",
+    "item": {
+     "id": "life-1",
+     "surface": "choose",
+     "prompt": "Which part grows down into the soil to drink water?",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"120\" width=\"200\" height=\"80\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"120\" x2=\"100\" y2=\"60\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"50\" r=\"18\" fill=\"#FF69B4\"/><path d=\"M100 90 Q70 80 60 70 Q80 100 100 95\" fill=\"#32CD32\"/><rect x=\"30\" y=\"125\" width=\"140\" height=\"70\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"4\" stroke-dasharray=\"6,4\"/><path d=\"M100 120 Q80 150 50 170 M100 120 Q100 160 100 190 M100 120 Q120 150 150 170\" stroke=\"#D2B48C\" stroke-width=\"5\" fill=\"none\"/><text x=\"145\" y=\"150\" font-size=\"28\" fill=\"#FFD700\" font-weight=\"bold\">?</text></svg>",
+       "name": "plant in soil with underground section highlighted"
+      }
+     ],
+     "options": [
+      {
+       "id": "part_a",
+       "label": "Part A",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"30\" width=\"100\" height=\"70\" fill=\"#8B5A2B\"/><path d=\"M50 30 Q40 60 25 85 M50 30 Q50 65 50 95 M50 30 Q60 60 75 85 M40 50 Q20 65 15 80 M60 50 Q80 65 85 80\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/><circle cx=\"25\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"95\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"75\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/></svg>",
+        "name": "plant underground parts branching into dirt"
+       }
+      },
+      {
+       "id": "part_c",
+       "label": "Part C",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><line x1=\"50\" y1=\"50\" x2=\"50\" y2=\"100\" stroke=\"#228B22\" stroke-width=\"5\"/><circle cx=\"50\" cy=\"50\" r=\"14\" fill=\"#FFD700\"/><circle cx=\"50\" cy=\"25\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"50\" cy=\"75\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"25\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"75\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/></svg>",
+        "name": "bright bloom with colorful petals"
+       }
+      },
+      {
+       "id": "part_b",
+       "label": "Part B",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><path d=\"M50 90 C15 70 15 25 50 10 C85 25 85 70 50 90 Z\" fill=\"#2E8B57\"/><line x1=\"50\" y1=\"90\" x2=\"50\" y2=\"10\" stroke=\"#ADFF2F\" stroke-width=\"3\"/><path d=\"M50 70 Q30 55 25 45 M50 50 Q30 40 25 30 M50 70 Q70 55 75 45 M50 50 Q70 40 75 30\" stroke=\"#ADFF2F\" stroke-width=\"2\" fill=\"none\"/></svg>",
+        "name": "green leaf with veins"
+       }
+      }
+     ],
+     "key": "part_a",
+     "misconceptions": {
+      "part_b": "Flat green parts catch sunlight in the air, not underground water.",
+      "part_c": "Bright blooms attract bees to make seeds, not drink from soil."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1.3,
+      "reasons": [
+       "3 options +0.8",
+       "2 wrong options from a named misconception +0.5"
+      ]
+     }
+    },
+    "ask": "Which part grows down into the soil to drink water?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "teach": [
+     {
+      "says": "Every plant has different parts that help it live and grow.",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"130\" width=\"200\" height=\"70\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"130\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"40\" r=\"16\" fill=\"#FF69B4\"/><path d=\"M100 80 Q60 65 50 55 Q70 95 100 90\" fill=\"#32CD32\"/><path d=\"M100 130 Q80 155 60 180 M100 130 Q100 165 100 195 M100 130 Q120 155 140 180\" stroke=\"#D2B48C\" stroke-width=\"4\" fill=\"none\"/></svg>",
+        "name": "plant with all main parts"
+       }
+      ]
+     },
+     {
+      "says": "The underground parts drink water from deep in the dirt and anchor the plant.",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"100\" width=\"200\" height=\"100\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"100\" x2=\"100\" y2=\"30\" stroke=\"#228B22\" stroke-width=\"6\"/><path d=\"M100 100 Q75 140 45 170 M100 100 Q100 150 100 190 M100 100 Q125 140 155 170\" stroke=\"#FFE4B5\" stroke-width=\"6\" fill=\"none\"/><circle cx=\"45\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"100\" cy=\"185\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"155\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><path d=\"M45 165 L60 140 M100 185 L100 150 M155 165 L140 140\" stroke=\"#00BFFF\" stroke-width=\"3\" stroke-dasharray=\"3,3\"/></svg>",
+        "name": "underground parts taking up water droplets"
+       }
+      ]
+     }
+    ],
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs a closer look at where water is found.",
+      "says": "Look inside the glowing ring under the dirt.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-help_1",
+        "surface": "choose",
+        "prompt": "Which part grows down into the soil to drink water?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"120\" width=\"200\" height=\"80\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"120\" x2=\"100\" y2=\"60\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"50\" r=\"18\" fill=\"#FF69B4\"/><path d=\"M100 90 Q70 80 60 70 Q80 100 100 95\" fill=\"#32CD32\"/><ellipse cx=\"100\" cy=\"155\" rx=\"55\" ry=\"30\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"5\"/><path d=\"M100 120 Q80 150 50 170 M100 120 Q100 160 100 190 M100 120 Q120 150 150 170\" stroke=\"#D2B48C\" stroke-width=\"5\" fill=\"none\"/></svg>",
+          "name": "plant with glowing yellow ring around roots in dirt"
+         }
+        ],
+        "options": [
+         {
+          "id": "part_a",
+          "label": "Part A",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"30\" width=\"100\" height=\"70\" fill=\"#8B5A2B\"/><path d=\"M50 30 Q40 60 25 85 M50 30 Q50 65 50 95 M50 30 Q60 60 75 85 M40 50 Q20 65 15 80 M60 50 Q80 65 85 80\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/><circle cx=\"25\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"95\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"75\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/></svg>",
+           "name": "plant underground parts branching into dirt"
+          }
+         },
+         {
+          "id": "part_c",
+          "label": "Part C",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><line x1=\"50\" y1=\"50\" x2=\"50\" y2=\"100\" stroke=\"#228B22\" stroke-width=\"5\"/><circle cx=\"50\" cy=\"50\" r=\"14\" fill=\"#FFD700\"/><circle cx=\"50\" cy=\"25\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"50\" cy=\"75\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"25\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"75\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/></svg>",
+           "name": "bright bloom with colorful petals"
+          }
+         },
+         {
+          "id": "part_b",
+          "label": "Part B",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><path d=\"M50 90 C15 70 15 25 50 10 C85 25 85 70 50 90 Z\" fill=\"#2E8B57\"/><line x1=\"50\" y1=\"90\" x2=\"50\" y2=\"10\" stroke=\"#ADFF2F\" stroke-width=\"3\"/><path d=\"M50 70 Q30 55 25 45 M50 50 Q30 40 25 30 M50 70 Q70 55 75 45 M50 50 Q70 40 75 30\" stroke=\"#ADFF2F\" stroke-width=\"2\" fill=\"none\"/></svg>",
+           "name": "green leaf with veins"
+          }
+         }
+        ],
+        "key": "part_a",
+        "misconceptions": {
+         "part_b": "Flat green parts catch sunlight in the air, not underground water.",
+         "part_c": "Bright blooms attract bees to make seeds, not drink from soil."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.3,
+         "reasons": [
+          "3 options +0.8",
+          "2 wrong options from a named misconception +0.5"
+         ]
+        }
+       },
+       "ask": "Which part grows down into the soil to drink water?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Every plant has different parts that help it live and grow.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"130\" width=\"200\" height=\"70\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"130\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"40\" r=\"16\" fill=\"#FF69B4\"/><path d=\"M100 80 Q60 65 50 55 Q70 95 100 90\" fill=\"#32CD32\"/><path d=\"M100 130 Q80 155 60 180 M100 130 Q100 165 100 195 M100 130 Q120 155 140 180\" stroke=\"#D2B48C\" stroke-width=\"4\" fill=\"none\"/></svg>",
+           "name": "plant with all main parts"
+          }
+         ]
+        },
+        {
+         "says": "The underground parts drink water from deep in the dirt and anchor the plant.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"100\" width=\"200\" height=\"100\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"100\" x2=\"100\" y2=\"30\" stroke=\"#228B22\" stroke-width=\"6\"/><path d=\"M100 100 Q75 140 45 170 M100 100 Q100 150 100 190 M100 100 Q125 140 155 170\" stroke=\"#FFE4B5\" stroke-width=\"6\" fill=\"none\"/><circle cx=\"45\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"100\" cy=\"185\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"155\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><path d=\"M45 165 L60 140 M100 185 L100 150 M155 165 L140 140\" stroke=\"#00BFFF\" stroke-width=\"3\" stroke-dasharray=\"3,3\"/></svg>",
+           "name": "underground parts taking up water droplets"
+          }
+         ]
+        }
+       ],
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is unsure which part drinks underground.",
+      "says": "Look closely at these two drawings.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-simpler_1",
+        "surface": "choose",
+        "prompt": "Which part grows down into the soil to drink water?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"120\" width=\"200\" height=\"80\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"120\" x2=\"100\" y2=\"60\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"50\" r=\"18\" fill=\"#FF69B4\"/><path d=\"M100 90 Q70 80 60 70 Q80 100 100 95\" fill=\"#32CD32\"/><rect x=\"30\" y=\"125\" width=\"140\" height=\"70\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"4\" stroke-dasharray=\"6,4\"/><path d=\"M100 120 Q80 150 50 170 M100 120 Q100 160 100 190 M100 120 Q120 150 150 170\" stroke=\"#D2B48C\" stroke-width=\"5\" fill=\"none\"/><text x=\"145\" y=\"150\" font-size=\"28\" fill=\"#FFD700\" font-weight=\"bold\">?</text></svg>",
+          "name": "plant in soil with underground section highlighted"
+         }
+        ],
+        "options": [
+         {
+          "id": "part_c",
+          "label": "Part B",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><line x1=\"50\" y1=\"50\" x2=\"50\" y2=\"100\" stroke=\"#228B22\" stroke-width=\"5\"/><circle cx=\"50\" cy=\"50\" r=\"14\" fill=\"#FFD700\"/><circle cx=\"50\" cy=\"25\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"50\" cy=\"75\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"25\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/><circle cx=\"75\" cy=\"50\" r=\"12\" fill=\"#FF69B4\"/></svg>",
+           "name": "bright bloom with colorful petals"
+          }
+         },
+         {
+          "id": "part_a",
+          "label": "Part A",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"30\" width=\"100\" height=\"70\" fill=\"#8B5A2B\"/><path d=\"M50 30 Q40 60 25 85 M50 30 Q50 65 50 95 M50 30 Q60 60 75 85 M40 50 Q20 65 15 80 M60 50 Q80 65 85 80\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/><circle cx=\"25\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"95\" r=\"4\" fill=\"#00BFFF\"/><circle cx=\"75\" cy=\"85\" r=\"4\" fill=\"#00BFFF\"/></svg>",
+           "name": "plant underground parts branching into dirt"
+          }
+         }
+        ],
+        "key": "part_a",
+        "misconceptions": {
+         "part_b": "Flat green parts catch sunlight in the air, not underground water.",
+         "part_c": "Bright blooms attract bees to make seeds, not drink from soil."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.55,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25"
+         ]
+        }
+       },
+       "ask": "Which part grows down into the soil to drink water?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Every plant has different parts that help it live and grow.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"130\" width=\"200\" height=\"70\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"130\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"40\" r=\"16\" fill=\"#FF69B4\"/><path d=\"M100 80 Q60 65 50 55 Q70 95 100 90\" fill=\"#32CD32\"/><path d=\"M100 130 Q80 155 60 180 M100 130 Q100 165 100 195 M100 130 Q120 155 140 180\" stroke=\"#D2B48C\" stroke-width=\"4\" fill=\"none\"/></svg>",
+           "name": "plant with all main parts"
+          }
+         ]
+        },
+        {
+         "says": "The underground parts drink water from deep in the dirt and anchor the plant.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"100\" width=\"200\" height=\"100\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"100\" x2=\"100\" y2=\"30\" stroke=\"#228B22\" stroke-width=\"6\"/><path d=\"M100 100 Q75 140 45 170 M100 100 Q100 150 100 190 M100 100 Q125 140 155 170\" stroke=\"#FFE4B5\" stroke-width=\"6\" fill=\"none\"/><circle cx=\"45\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"100\" cy=\"185\" r=\"6\" fill=\"#00BFFF\"/><circle cx=\"155\" cy=\"165\" r=\"6\" fill=\"#00BFFF\"/><path d=\"M45 165 L60 140 M100 185 L100 150 M155 165 L140 140\" stroke=\"#00BFFF\" stroke-width=\"3\" stroke-dasharray=\"3,3\"/></svg>",
+           "name": "underground parts taking up water droplets"
+          }
+         ]
+        }
+       ],
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "choose",
+    "item": {
+     "id": "life-2",
+     "surface": "choose",
+     "prompt": "Which part spreads out wide to catch sunlight and make food?",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox=\"0 0 200 200\"><circle cx=\"40\" cy=\"40\" r=\"20\" fill=\"#FFD700\"/><line x1=\"60\" y1=\"40\" x2=\"90\" y2=\"50\" stroke=\"#FFD700\" stroke-width=\"3\"/><rect x=\"0\" y=\"160\" width=\"200\" height=\"40\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"160\" x2=\"100\" y2=\"70\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"60\" r=\"16\" fill=\"#FF69B4\"/><circle cx=\"140\" cy=\"100\" r=\"25\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"4\" stroke-dasharray=\"5,4\"/><path d=\"M100 110 Q130 95 155 90 Q145 120 100 120\" fill=\"#32CD32\"/><text x=\"133\" y=\"108\" font-size=\"24\" fill=\"#FFD700\" font-weight=\"bold\">?</text></svg>",
+       "name": "plant in the sun with question mark on leaf"
+      }
+     ],
+     "options": [
+      {
+       "id": "leaf_opt",
+       "label": "Broad leaf",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><circle cx=\"20\" cy=\"20\" r=\"10\" fill=\"#FFD700\"/><line x1=\"20\" y1=\"35\" x2=\"40\" y2=\"55\" stroke=\"#FFD700\" stroke-width=\"3\" stroke-dasharray=\"2,2\"/><path d=\"M50 90 C15 70 15 25 50 10 C85 25 85 70 50 90 Z\" fill=\"#2E8B57\"/><line x1=\"50\" y1=\"90\" x2=\"50\" y2=\"10\" stroke=\"#ADFF2F\" stroke-width=\"3\"/></svg>",
+        "name": "broad green leaf catching sunlight rays"
+       }
+      },
+      {
+       "id": "stem_opt",
+       "label": "Upright stalk",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"85\" width=\"100\" height=\"15\" fill=\"#8B5A2B\"/><line x1=\"50\" y1=\"85\" x2=\"50\" y2=\"15\" stroke=\"#228B22\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"30\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"55\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"75\" r=\"3\" fill=\"#00BFFF\"/></svg>",
+        "name": "tall upright stalk carrying water with leaves attached"
+       }
+      },
+      {
+       "id": "root_opt",
+       "label": "Underground strands",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"20\" width=\"100\" height=\"80\" fill=\"#8B5A2B\"/><line x1=\"50\" y1=\"20\" x2=\"50\" y2=\"90\" stroke=\"#FFE4B5\" stroke-width=\"4\"/><path d=\"M50 40 Q30 55 15 75 M50 60 Q70 70 85 85 M50 30 Q70 45 80 60 M50 70 Q35 80 20 90\" stroke=\"#FFE4B5\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"15\" cy=\"75\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"85\" cy=\"85\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"90\" r=\"3\" fill=\"#00BFFF\"/></svg>",
+        "name": "underground root system with fine hairs in dark soil"
+       }
+      }
+     ],
+     "key": "leaf_opt",
+     "misconceptions": {
+      "stem_opt": "The stalk stands up and carries water, while the broad flat parts trap sunshine.",
+      "root_opt": "Underground strands drink water in the dark dirt where no sunlight shines."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1.3,
+      "reasons": [
+       "3 options +0.8",
+       "2 wrong options from a named misconception +0.5"
+      ]
+     }
+    },
+    "ask": "Which part spreads out wide to catch sunlight and make food?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs help seeing which part catches sun.",
+      "says": "Look where the yellow ring catches the sunlight rays.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-2-help_1",
+        "surface": "choose",
+        "prompt": "Which part spreads out wide to catch sunlight and make food?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><circle cx=\"40\" cy=\"40\" r=\"20\" fill=\"#FFD700\"/><line x1=\"60\" y1=\"40\" x2=\"130\" y2=\"80\" stroke=\"#FFD700\" stroke-width=\"4\"/><rect x=\"0\" y=\"160\" width=\"200\" height=\"40\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"160\" x2=\"100\" y2=\"70\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"60\" r=\"16\" fill=\"#FF69B4\"/><ellipse cx=\"135\" cy=\"100\" rx=\"30\" ry=\"20\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"5\"/><path d=\"M100 110 Q130 95 155 90 Q145 120 100 120\" fill=\"#32CD32\"/></svg>",
+          "name": "plant in the sun with bright yellow spotlight on leaf"
+         }
+        ],
+        "options": [
+         {
+          "id": "leaf_opt",
+          "label": "Broad leaf",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><circle cx=\"20\" cy=\"20\" r=\"10\" fill=\"#FFD700\"/><line x1=\"20\" y1=\"35\" x2=\"40\" y2=\"55\" stroke=\"#FFD700\" stroke-width=\"3\" stroke-dasharray=\"2,2\"/><path d=\"M50 90 C15 70 15 25 50 10 C85 25 85 70 50 90 Z\" fill=\"#2E8B57\"/><line x1=\"50\" y1=\"90\" x2=\"50\" y2=\"10\" stroke=\"#ADFF2F\" stroke-width=\"3\"/></svg>",
+           "name": "broad green leaf catching sunlight rays"
+          }
+         },
+         {
+          "id": "stem_opt",
+          "label": "Upright stalk",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"85\" width=\"100\" height=\"15\" fill=\"#8B5A2B\"/><line x1=\"50\" y1=\"85\" x2=\"50\" y2=\"15\" stroke=\"#228B22\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"30\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"55\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"75\" r=\"3\" fill=\"#00BFFF\"/></svg>",
+           "name": "tall upright stalk carrying water with leaves attached"
+          }
+         },
+         {
+          "id": "root_opt",
+          "label": "Underground strands",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"20\" width=\"100\" height=\"80\" fill=\"#8B5A2B\"/><line x1=\"50\" y1=\"20\" x2=\"50\" y2=\"90\" stroke=\"#FFE4B5\" stroke-width=\"4\"/><path d=\"M50 40 Q30 55 15 75 M50 60 Q70 70 85 85 M50 30 Q70 45 80 60 M50 70 Q35 80 20 90\" stroke=\"#FFE4B5\" stroke-width=\"3\" fill=\"none\"/><circle cx=\"15\" cy=\"75\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"85\" cy=\"85\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"90\" r=\"3\" fill=\"#00BFFF\"/></svg>",
+           "name": "underground root system with fine hairs in dark soil"
+          }
+         }
+        ],
+        "key": "leaf_opt",
+        "misconceptions": {
+         "stem_opt": "The stalk stands up and carries water, while the broad flat parts trap sunshine.",
+         "root_opt": "Underground strands drink water in the dark dirt where no sunlight shines."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.3,
+         "reasons": [
+          "3 options +0.8",
+          "2 wrong options from a named misconception +0.5"
+         ]
+        }
+       },
+       "ask": "Which part spreads out wide to catch sunlight and make food?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is unsure between the parts.",
+      "says": "Look at these two parts: which one spreads out wide to soak up light?",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-2-simpler_1",
+        "surface": "choose",
+        "prompt": "Which part spreads out wide to catch sunlight and make food?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><circle cx=\"40\" cy=\"40\" r=\"20\" fill=\"#FFD700\"/><line x1=\"60\" y1=\"40\" x2=\"90\" y2=\"50\" stroke=\"#FFD700\" stroke-width=\"3\"/><rect x=\"0\" y=\"160\" width=\"200\" height=\"40\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"160\" x2=\"100\" y2=\"70\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"60\" r=\"16\" fill=\"#FF69B4\"/><circle cx=\"140\" cy=\"100\" r=\"25\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"4\" stroke-dasharray=\"5,4\"/><path d=\"M100 110 Q130 95 155 90 Q145 120 100 120\" fill=\"#32CD32\"/><text x=\"133\" y=\"108\" font-size=\"24\" fill=\"#FFD700\" font-weight=\"bold\">?</text></svg>",
+          "name": "plant in the sun with question mark on leaf"
+         }
+        ],
+        "options": [
+         {
+          "id": "leaf_opt",
+          "label": "Broad leaf",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><circle cx=\"20\" cy=\"20\" r=\"10\" fill=\"#FFD700\"/><line x1=\"20\" y1=\"35\" x2=\"40\" y2=\"55\" stroke=\"#FFD700\" stroke-width=\"3\" stroke-dasharray=\"2,2\"/><path d=\"M50 90 C15 70 15 25 50 10 C85 25 85 70 50 90 Z\" fill=\"#2E8B57\"/><line x1=\"50\" y1=\"90\" x2=\"50\" y2=\"10\" stroke=\"#ADFF2F\" stroke-width=\"3\"/></svg>",
+           "name": "broad green leaf catching sunlight rays"
+          }
+         },
+         {
+          "id": "stem_opt",
+          "label": "Upright stalk",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"85\" width=\"100\" height=\"15\" fill=\"#8B5A2B\"/><line x1=\"50\" y1=\"85\" x2=\"50\" y2=\"15\" stroke=\"#228B22\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"30\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"55\" r=\"3\" fill=\"#00BFFF\"/><circle cx=\"50\" cy=\"75\" r=\"3\" fill=\"#00BFFF\"/></svg>",
+           "name": "tall upright stalk carrying water with leaves attached"
+          }
+         }
+        ],
+        "key": "leaf_opt",
+        "misconceptions": {
+         "stem_opt": "The stalk stands up and carries water, while the broad flat parts trap sunshine.",
+         "root_opt": "Underground strands drink water in the dark dirt where no sunlight shines."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.55,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25"
+         ]
+        }
+       },
+       "ask": "Which part spreads out wide to catch sunlight and make food?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "categorize",
+    "item": {
+     "id": "life-3",
+     "surface": "categorize",
+     "prompt": "Match each job to the plant part that does it.",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"140\" width=\"200\" height=\"60\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"140\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"40\" r=\"16\" fill=\"#FF69B4\"/><path d=\"M100 90 Q140 75 150 70 Q135 110 100 105\" fill=\"#32CD32\"/><path d=\"M100 140 Q80 165 50 185 M100 140 Q100 170 100 195 M100 140 Q120 165 150 185\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/></svg>",
+       "name": "diagram of plant parts labeled"
+      }
+     ],
+     "options": [
+      {
+       "id": "hold_up",
+       "label": "Holds the plant tall and carries water"
+      },
+      {
+       "id": "catch_sun",
+       "label": "Catches sunlight to make food"
+      },
+      {
+       "id": "drink_water",
+       "label": "Takes in water from the soil"
+      }
+     ],
+     "categories": [
+      "Roots",
+      "Stem",
+      "Leaves"
+     ],
+     "key": {
+      "drink_water": "Roots",
+      "catch_sun": "Leaves",
+      "hold_up": "Stem"
+     },
+     "misconceptions": {
+      "hold_up": "The stalk holds up the plant so leaves can reach the sun."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "medium",
+      "score": 1.5,
+      "reasons": [
+       "3 cards to sort +0.75",
+       "3 categories +0.5",
+       "1 wrong option from a named misconception +0.25"
+      ]
+     }
+    },
+    "ask": "Match each job to the plant part that does it.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "3 cards to sort +0.75",
+      "3 categories +0.5",
+      "1 wrong option from a named misconception +0.25"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs a visual hint on the parts.",
+      "says": "Look at where each part sits on the plant: underground, in the middle, or reaching out.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-3-help_1",
+        "surface": "categorize",
+        "prompt": "Match each job to the plant part that does it.",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"140\" width=\"200\" height=\"60\" fill=\"#8B5A2B\"/><circle cx=\"100\" cy=\"170\" r=\"20\" fill=\"none\" stroke=\"#00BFFF\" stroke-width=\"4\"/><circle cx=\"100\" cy=\"115\" r=\"16\" fill=\"none\" stroke=\"#FFD700\" stroke-width=\"4\"/><circle cx=\"140\" cy=\"90\" r=\"18\" fill=\"none\" stroke=\"#32CD32\" stroke-width=\"4\"/><line x1=\"100\" y1=\"140\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><path d=\"M100 90 Q140 75 150 70 Q135 110 100 105\" fill=\"#32CD32\"/><path d=\"M100 140 Q80 165 50 185 M100 140 Q100 170 100 195 M100 140 Q120 165 150 185\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/></svg>",
+          "name": "plant with glowing colored circles on roots, stem, and leaves"
+         }
+        ],
+        "options": [
+         {
+          "id": "hold_up",
+          "label": "Holds the plant tall and carries water"
+         },
+         {
+          "id": "catch_sun",
+          "label": "Catches sunlight to make food"
+         },
+         {
+          "id": "drink_water",
+          "label": "Takes in water from the soil"
+         }
+        ],
+        "categories": [
+         "Roots",
+         "Stem",
+         "Leaves"
+        ],
+        "key": {
+         "drink_water": "Roots",
+         "catch_sun": "Leaves",
+         "hold_up": "Stem"
+        },
+        "misconceptions": {
+         "hold_up": "The stalk holds up the plant so leaves can reach the sun."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "medium",
+         "score": 1.5,
+         "reasons": [
+          "3 cards to sort +0.75",
+          "3 categories +0.5",
+          "1 wrong option from a named misconception +0.25"
+         ]
+        }
+       },
+       "ask": "Match each job to the plant part that does it.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "3 cards to sort +0.75",
+         "3 categories +0.5",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck sorting three parts.",
+      "says": "Let us sort just two jobs first: roots and leaves.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-3-simpler_1",
+        "surface": "categorize",
+        "prompt": "Match each job to the plant part that does it.",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox=\"0 0 200 200\"><rect x=\"0\" y=\"140\" width=\"200\" height=\"60\" fill=\"#8B5A2B\"/><line x1=\"100\" y1=\"140\" x2=\"100\" y2=\"50\" stroke=\"#228B22\" stroke-width=\"6\"/><circle cx=\"100\" cy=\"40\" r=\"16\" fill=\"#FF69B4\"/><path d=\"M100 90 Q140 75 150 70 Q135 110 100 105\" fill=\"#32CD32\"/><path d=\"M100 140 Q80 165 50 185 M100 140 Q100 170 100 195 M100 140 Q120 165 150 185\" stroke=\"#FFE4B5\" stroke-width=\"4\" fill=\"none\"/></svg>",
+          "name": "diagram of plant parts labeled"
+         }
+        ],
+        "options": [
+         {
+          "id": "catch_sun",
+          "label": "Catches sunlight to make food"
+         },
+         {
+          "id": "drink_water",
+          "label": "Takes in water from the soil"
+         }
+        ],
+        "categories": [
+         "Roots",
+         "Leaves"
+        ],
+        "key": {
+         "drink_water": "Roots",
+         "catch_sun": "Leaves"
+        },
+        "misconceptions": {
+         "hold_up": "The stalk holds up the plant so leaves can reach the sun."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.5,
+         "reasons": [
+          "2 cards to sort +0.5"
+         ]
+        }
+       },
+       "ask": "Match each job to the plant part that does it.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "2 cards to sort +0.5"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "part_for_the_job",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "garden",
+       "label": "Sunny Garden",
+       "cond": {
+        "ground_type": "sun_high"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "plant1",
+       "zone": "garden",
+       "name": "Tall flower",
+       "kind": "plant",
+       "traits": {
+        "stem": "weak"
+       },
+       "emoji": "\u2754"
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "plant1",
+       "part": "stem",
+       "on": "ground_type",
+       "job": "reach_sun"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "plant1",
+       "part": "stem",
+       "options": [
+        {
+         "value": "tall_stem",
+         "label": "strong tall stem",
+         "emoji": "\ud83c\udf8b",
+         "works": [
+          "sun_high"
+         ]
+        },
+        {
+         "value": "tiny_curl",
+         "label": "soft tiny curl",
+         "emoji": "\ud83c\udf43",
+         "works": [
+          "ground"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "This flower wants to reach high toward the sunshine. Give the plant a part that can hold it tall.",
+    "why": "A strong stem stands up tall to lift the leaves and flower toward the sun.",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.2,
+     "reasons": [
+      "+0.2 2 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks the tiny curl on the ground.",
+      "says": "Look up at the bright warm sun in the sky!",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "steps": 3,
+        "zones": [
+         {
+          "id": "garden",
+          "label": "Sunny Garden",
+          "emoji": "\u2600\ufe0f",
+          "cond": {
+           "ground_type": "sun_high"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "plant1",
+          "zone": "garden",
+          "name": "Tall flower",
+          "kind": "plant",
+          "traits": {
+           "stem": "weak"
+          },
+          "emoji": "\u2754"
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "plant1",
+          "part": "stem",
+          "on": "ground_type",
+          "job": "reach_sun"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "plant1",
+          "part": "stem",
+          "options": [
+           {
+            "value": "tall_stem",
+            "label": "strong tall stem",
+            "emoji": "\ud83c\udf8b",
+            "works": [
+             "sun_high"
+            ]
+           },
+           {
+            "value": "tiny_curl",
+            "label": "soft tiny curl",
+            "emoji": "\ud83c\udf43",
+            "works": [
+             "ground"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "This flower wants to reach high toward the sunshine. Give the plant a part that can hold it tall.",
+       "why": "A strong stem stands up tall to lift the leaves and flower toward the sun.",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 7,
+   "seconds": 128,
+   "objective": "Parts of a plant and what each part does",
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: choose: the key is one option id"
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: the prompt or a display names \"Roots\", which is the answer"
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card stem's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or"
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card root_opt's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display"
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: shortcut: one option is drawn as \"none\" and the others are not: an odd one out"
+    },
+    {
+     "turn": 5,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "look: world 0: a reader who saw only the screen says a child could succeed without the idea: The yellow dotted box in the prompt image directly highlights the underground part, which visually matches only Card 1 with its brown soil.",
+    "look: world 1: a reader who saw only the screen says a child could succeed without the idea: The plant leaf is already circled with a question mark in the top picture, which matches the leaf shape on Card 1.",
+    "look: world 3: a reader who saw only the screen says a child could succeed without the idea: The instruction asks for a part to hold it \"tall\", which matches the word \"tall\" in \"strong tall stem\"."
+   ],
+   "costUsd": 0.1259,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 1 world(s) held, 4 blocking check(s). First: world 0: choose: the key is one option id",
+     "costUsd": 0.0169
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0169
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 4 world(s) held, 9 blocking check(s). First: world 0: the prompt or a display names \"Roots\", which is the answer",
+     "costUsd": 0.037
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.037
+    },
+    {
+     "seconds": 72,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 4 world(s) held, 2 blocking check(s). First: world 1: card root_opt's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or leave the card as word\u2026",
+     "costUsd": 0.0624
+    },
+    {
+     "seconds": 72,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0624
+    },
+    {
+     "seconds": 95,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 4 world(s) held, 1 blocking check(s). First: world 1: shortcut: one option is drawn as \"none\" and the others are not: an odd one out",
+     "costUsd": 0.0839
+    },
+    {
+     "seconds": 95,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0839
+    },
+    {
+     "seconds": 107,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 5: 4 world(s) held, 1 blocking check(s). First: world 1: no help lever: add one (see \"Levers\")",
+     "costUsd": 0.0954
+    },
+    {
+     "seconds": 107,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0954
+    },
+    {
+     "seconds": 119,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.108
+    },
+    {
+     "seconds": 125,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 0: a reader who saw only the screen says a child could succeed without the idea: The yellow dotted box in the prompt image directly highlights the underground part, which visually matches only Car\u2026",
+     "costUsd": 0.1184,
+     "item": 1
+    },
+    {
+     "seconds": 125,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The plant leaf is already circled with a question mark in the top picture, which matches the leaf shape on Card 1.",
+     "costUsd": 0.1184,
+     "item": 2
+    },
+    {
+     "seconds": 125,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.1184,
+     "item": 3
+    },
+    {
+     "seconds": 125,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The instruction asks for a part to hold it \"tall\", which matches the word \"tall\" in \"strong tall stem\".",
+     "costUsd": 0.1184,
+     "item": 4
+    },
+    {
+     "seconds": 125,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 4 problem(s) from the look",
+     "costUsd": 0.1184
+    },
+    {
+     "seconds": 125,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1184
+    },
+    {
+     "seconds": 125,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.1184
+    },
+    {
+     "seconds": 128,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 128s over 7 turn(s), about $0.13",
+     "costUsd": 0.1259
+    }
+   ],
+   "look": [
+    {
+     "answer": "Select Card 1",
+     "difficulty": "easy",
+     "shortcut": "The yellow dotted box in the prompt image directly highlights the underground part, which visually matches only Card 1 with its brown soil.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00298725,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click Card 1",
+     "difficulty": "easy",
+     "shortcut": "The plant leaf is already circled with a question mark in the top picture, which matches the leaf shape on Card 1.",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00266625,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Match Card 1 to Stem, Card 2 to Leaves, and Card 3 to Roots.",
+     "difficulty": "medium",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.0022815,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Select \"strong tall stem\" and click \"I'm done!\".",
+     "difficulty": "easy",
+     "shortcut": "The instruction asks for a part to hold it \"tall\", which matches the word \"tall\" in \"strong tall stem\".",
+     "issues": null,
+     "offObjective": null,
+     "costUsd": 0.00243,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 128,
+    "costUsd": 0.1259,
+    "items": 4,
+    "rounds": 7,
+    "look": {
+     "ran": true,
+     "looked": 4,
+     "unread": 0,
+     "screenshots": 4,
+     "problems": 3
+    },
+    "displays": {
+     "offered": [
+      "svg",
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow",
+      "cell",
+      "zoom",
+      "food_web"
+     ],
+     "used": {
+      "svg": 11
+     }
+    }
+   }
+  }
+ }
+}

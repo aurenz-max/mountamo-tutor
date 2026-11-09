@@ -1,0 +1,398 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-where_it_lives-kit-payload-2026-11-07.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Homes for Animals",
+  "description": "Animals live in habitats that meet their needs for water, warmth, and shelter.",
+  "gradeBand": "K-2",
+  "challengeType": "where_it_lives",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "cold_ice",
+       "label": "Icy Coast",
+       "emoji": "\u2744\ufe0f",
+       "cond": {
+        "water": 2,
+        "temp": 0
+       }
+      },
+      {
+       "id": "hot_sand",
+       "label": "Hot Sand",
+       "emoji": "\u2600\ufe0f",
+       "cond": {
+        "water": 0,
+        "temp": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "penguin",
+       "zone": "hot_sand",
+       "subject": "penguin",
+       "name": "penguin",
+       "emoji": "\ud83d\udc27",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         0,
+         0
+        ],
+        "water": [
+         2,
+         2
+        ]
+       }
+      },
+      {
+       "id": "desert_lizard",
+       "zone": "cold_ice",
+       "subject": "lizard",
+       "name": "lizard",
+       "emoji": "\ud83e\udd8e",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         1
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "penguin",
+        "desert_lizard"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "cold_ice",
+        "hot_sand"
+       ],
+       "beings": [
+        "penguin",
+        "desert_lizard"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These animals are in places that do not fit them. Move each one so its needs are met!",
+    "why": "Check each place. One is icy cold, and one is sunny and hot. Which place does each animal need?",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.9,
+     "reasons": [
+      "+0.4 4 different things the child could try",
+      "+0.5 1 of them work"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-2",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "cool_pond",
+       "label": "Cool Pond",
+       "emoji": "\ud83d\udca7",
+       "cond": {
+        "water": 2,
+        "temp": 1
+       }
+      },
+      {
+       "id": "dry_desert",
+       "label": "Dry Desert",
+       "emoji": "\ud83c\udfdc\ufe0f",
+       "cond": {
+        "water": 0,
+        "temp": 2
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "freshwater_fish",
+       "zone": "dry_desert",
+       "subject": "fish",
+       "name": "fish",
+       "emoji": "\ud83d\udc1f",
+       "kind": "animal",
+       "needs": {
+        "water": [
+         2,
+         2
+        ]
+       }
+      },
+      {
+       "id": "camel",
+       "zone": "cool_pond",
+       "subject": "camel",
+       "name": "camel",
+       "emoji": "\ud83d\udc2a",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         1
+        ]
+       }
+      },
+      {
+       "id": "frog",
+       "zone": "dry_desert",
+       "subject": "frog",
+       "name": "frog",
+       "emoji": "\ud83d\udc38",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         1,
+         1
+        ],
+        "water": [
+         2,
+         2
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "freshwater_fish",
+        "camel",
+        "frog"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "cool_pond",
+        "dry_desert"
+       ],
+       "beings": [
+        "freshwater_fish",
+        "camel",
+        "frog"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "These three animals are in the wrong places. Move each animal to a home where it can thrive.",
+    "why": "Look at how much water each animal needs to stay alive.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.6,
+     "reasons": [
+      "+0.6 8 different things the child could try",
+      "+0.5 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show"
+   },
+   {
+    "id": "life-3",
+    "type": "where_it_lives",
+    "world": {
+     "steps": 3,
+     "zones": [
+      {
+       "id": "arctic_snow",
+       "label": "Arctic Snow",
+       "emoji": "\ud83c\udfd4\ufe0f",
+       "cond": {
+        "water": 1,
+        "temp": 0
+       }
+      },
+      {
+       "id": "sunny_desert",
+       "label": "Sunny Desert",
+       "emoji": "\ud83c\udf35",
+       "cond": {
+        "water": 0,
+        "temp": 2
+       }
+      },
+      {
+       "id": "shady_forest",
+       "label": "Shady Forest",
+       "emoji": "\ud83c\udf32",
+       "cond": {
+        "water": 1,
+        "temp": 1
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "polar_bear",
+       "zone": "sunny_desert",
+       "subject": "polar_bear",
+       "name": "polar bear",
+       "emoji": "\ud83d\udc3b\u200d\u2744\ufe0f",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         0,
+         0
+        ]
+       }
+      },
+      {
+       "id": "desert_camel",
+       "zone": "shady_forest",
+       "subject": "camel",
+       "name": "camel",
+       "emoji": "\ud83d\udc2a",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         2,
+         2
+        ],
+        "water": [
+         0,
+         1
+        ]
+       }
+      },
+      {
+       "id": "forest_rabbit",
+       "zone": "arctic_snow",
+       "subject": "rabbit",
+       "name": "rabbit",
+       "emoji": "\ud83d\udc07",
+       "kind": "animal",
+       "needs": {
+        "temp": [
+         1,
+         1
+        ],
+        "water": [
+         1,
+         1
+        ]
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "needs",
+       "beings": [
+        "polar_bear",
+        "desert_camel",
+        "forest_rabbit"
+       ]
+      }
+     ],
+     "controls": [
+      {
+       "type": "move",
+       "zones": [
+        "arctic_snow",
+        "sunny_desert",
+        "shady_forest"
+       ],
+       "beings": [
+        "polar_bear",
+        "desert_camel",
+        "forest_rabbit"
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "all_thrive"
+     }
+    },
+    "ask": "Each animal needs the right warmth and water. Move every animal to a home where it can thrive.",
+    "why": "Think about what each animal's body needs to stay warm, cool, or dry.",
+    "standards": "K-ESS3-1 \u00b7 K-LS1-1",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "+1 27 different things the child could try",
+      "+1 only 1 of them work",
+      "+0.5 3 living things to look after"
+     ]
+    },
+    "respond": "show"
+   }
+  ],
+  "agentDebug": {
+   "turns": 2,
+   "seconds": 9,
+   "modes": [
+    "where_it_lives"
+   ],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}
