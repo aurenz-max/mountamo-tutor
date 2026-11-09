@@ -1,0 +1,1039 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-first-sound-levers-payload-2026-11-07.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "first-sound",
+ "data": {
+  "title": "Catch the First Sound",
+  "bigIdea": "Words start with sounds we can hear and match.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "first-sound",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "You can listen to the very first sound in a word.",
+    "narration": "Listen to the start of each word. We can hear its first sound!",
+    "ask": "Which one starts with sss?",
+    "why": "Say each word slowly. Listen to the very first sound.",
+    "respond": "say",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "cup",
+       "emoji": "\ud83e\udd64",
+       "phones": [
+        "K",
+        "AH",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "c",
+        "u",
+        "p"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "sound",
+       "at": "first",
+       "is": "S"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "other",
+       "t3": "other"
+      }
+     },
+     "say": "sss"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "three choices (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs to hear another example of the starting sound.",
+      "says": "Sock starts with this sound too!",
+      "item": {
+       "id": "stop-1-help_1",
+       "idea": "You can listen to the very first sound in a word.",
+       "narration": "Listen to the start of each word. We can hear its first sound!",
+       "ask": "Which one starts with sss?",
+       "why": "Say each word slowly. Listen to the very first sound.",
+       "respond": "say",
+       "challengeType": "first-sound",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "sock",
+          "emoji": "\ud83e\udde6",
+          "phones": [
+           "S",
+           "AA",
+           "K"
+          ],
+          "syllables": 1,
+          "category": "clothing"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "sun",
+          "emoji": "\u2600\ufe0f",
+          "phones": [
+           "S",
+           "AH",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "nature",
+          "letters": [
+           "s",
+           "u",
+           "n"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "dog",
+          "emoji": "\ud83d\udc36",
+          "phones": [
+           "D",
+           "AO",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "d",
+           "o",
+           "g"
+          ]
+         },
+         {
+          "id": "t3",
+          "word": "cup",
+          "emoji": "\ud83e\udd64",
+          "phones": [
+           "K",
+           "AH",
+           "P"
+          ],
+          "syllables": 1,
+          "category": "home",
+          "letters": [
+           "c",
+           "u",
+           "p"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "sound",
+          "at": "first",
+          "is": "S"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "other",
+          "t3": "other"
+         }
+        },
+        "say": "sss"
+       },
+       "standards": "RF.K.2d",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "three choices (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "sock"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udde6"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child has trouble choosing from three pictures.",
+      "says": "Look at these two cards.",
+      "item": {
+       "id": "stop-1-simpler_1",
+       "idea": "You can listen to the very first sound in a word.",
+       "narration": "Listen to the start of each word. We can hear its first sound!",
+       "ask": "Which one starts with sss?",
+       "why": "Say each word slowly. Listen to the very first sound.",
+       "respond": "say",
+       "challengeType": "first-sound",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "word": "sun",
+          "emoji": "\u2600\ufe0f",
+          "phones": [
+           "S",
+           "AH",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "nature",
+          "letters": [
+           "s",
+           "u",
+           "n"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "dog",
+          "emoji": "\ud83d\udc36",
+          "phones": [
+           "D",
+           "AO",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "d",
+           "o",
+           "g"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "sound",
+          "at": "first",
+          "is": "S"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "other"
+         }
+        },
+        "say": "sss"
+       },
+       "standards": "RF.K.2d",
+       "difficulty": {
+        "band": "easy",
+        "score": 0,
+        "reasons": [
+         "two choices, a first sound, recognise only"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-2",
+    "idea": "Different words can start with the same sound.",
+    "narration": "Look at the moon. Moon starts with the m sound.",
+    "ask": "Can you think of a word that starts like moon?",
+    "why": "Say moon slowly. Think of a word with that same first sound.",
+    "respond": "say-any",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "moon",
+       "emoji": "\ud83c\udf19",
+       "phones": [
+        "M",
+        "UW",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "mop",
+       "emoji": "\ud83e\uddf9",
+       "phones": [
+        "M",
+        "AA",
+        "P"
+       ],
+       "syllables": 1,
+       "category": "tool",
+       "letters": [
+        "m",
+        "o",
+        "p"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "same-sound",
+       "at": "first",
+       "as": "r1"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "other",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "find the sound in a heard word first (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "moon"
+    ],
+    "sceneEmoji": [
+     "\ud83c\udf19"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3",
+    "sayAny": [
+     "mad",
+     "made",
+     "magic",
+     "magical",
+     "mail",
+     "mailbox",
+     "mailman",
+     "make"
+    ],
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs to hear another example of the starting sound.",
+      "says": "Moon and mug both start the same!",
+      "item": {
+       "id": "stop-2-help_1",
+       "idea": "Different words can start with the same sound.",
+       "narration": "Look at the moon. Moon starts with the m sound.",
+       "ask": "Can you think of a word that starts like moon?",
+       "why": "Say moon slowly. Think of a word with that same first sound.",
+       "respond": "say-any",
+       "challengeType": "first-sound",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "moon",
+          "emoji": "\ud83c\udf19",
+          "phones": [
+           "M",
+           "UW",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "nature"
+         },
+         {
+          "id": "r2",
+          "word": "mug",
+          "emoji": "\u2615",
+          "phones": [
+           "M",
+           "AH",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "home",
+          "letters": [
+           "m",
+           "u",
+           "g"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "mop",
+          "emoji": "\ud83e\uddf9",
+          "phones": [
+           "M",
+           "AA",
+           "P"
+          ],
+          "syllables": 1,
+          "category": "tool",
+          "letters": [
+           "m",
+           "o",
+           "p"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "fox",
+          "emoji": "\ud83e\udd8a",
+          "phones": [
+           "F",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         },
+         {
+          "id": "t3",
+          "word": "bed",
+          "emoji": "\ud83d\udecf\ufe0f",
+          "phones": [
+           "B",
+           "EH",
+           "D"
+          ],
+          "syllables": 1,
+          "category": "home",
+          "letters": [
+           "b",
+           "e",
+           "d"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "same-sound",
+          "at": "first",
+          "as": "r1"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "other",
+          "t3": "other"
+         }
+        }
+       },
+       "standards": "RF.K.2d",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "three choices (+0.5)",
+         "find the sound in a heard word first (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "moon",
+        "mug"
+       ],
+       "sceneEmoji": [
+        "\ud83c\udf19",
+        "\u2615"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1",
+       "sayAny": [
+        "mad",
+        "made",
+        "magic",
+        "magical",
+        "mail",
+        "mailbox",
+        "mailman",
+        "make"
+       ]
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with three pictures.",
+      "says": "Let's try with fewer pictures.",
+      "item": {
+       "id": "stop-2-simpler_1",
+       "idea": "Different words can start with the same sound.",
+       "narration": "Look at the moon. Moon starts with the m sound.",
+       "ask": "Can you think of a word that starts like moon?",
+       "why": "Say moon slowly. Think of a word with that same first sound.",
+       "respond": "say-any",
+       "challengeType": "first-sound",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "moon",
+          "emoji": "\ud83c\udf19",
+          "phones": [
+           "M",
+           "UW",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "nature"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "mop",
+          "emoji": "\ud83e\uddf9",
+          "phones": [
+           "M",
+           "AA",
+           "P"
+          ],
+          "syllables": 1,
+          "category": "tool",
+          "letters": [
+           "m",
+           "o",
+           "p"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "fox",
+          "emoji": "\ud83e\udd8a",
+          "phones": [
+           "F",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "same-sound",
+          "at": "first",
+          "as": "r1"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "other"
+         }
+        }
+       },
+       "standards": "RF.K.2d",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "find the sound in a heard word first (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "moon"
+       ],
+       "sceneEmoji": [
+        "\ud83c\udf19"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1",
+       "sayAny": [
+        "mad",
+        "made",
+        "magic",
+        "magical",
+        "mail",
+        "mailbox",
+        "mailman",
+        "make"
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can sort words into groups by their first sound.",
+    "narration": "We have two baskets. One basket is for f. One basket is for r.",
+    "ask": "Can you sort the pictures by their first sound?",
+    "why": "Say each word out loud. Put it with its first sound.",
+    "respond": "show",
+    "challengeType": "first-sound",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "letter": "f",
+       "sounds": [
+        "F"
+       ]
+      },
+      {
+       "id": "r2",
+       "letter": "r",
+       "sounds": [
+        "R"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "rabbit",
+       "emoji": "\ud83d\udc30",
+       "phones": [
+        "R",
+        "AE",
+        "B",
+        "AH",
+        "T"
+       ],
+       "syllables": 2,
+       "category": "animal"
+      },
+      {
+       "id": "t2",
+       "word": "fork",
+       "emoji": "\ud83c\udf74",
+       "phones": [
+        "F",
+        "AO",
+        "R",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "home"
+      },
+      {
+       "id": "t3",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t4",
+       "word": "rose",
+       "emoji": "\ud83c\udf39",
+       "phones": [
+        "R",
+        "OW",
+        "Z"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b1",
+        "label": "r1",
+        "rule": {
+         "type": "sound",
+         "at": "first",
+         "is": "F"
+        }
+       },
+       {
+        "id": "b2",
+        "label": "r2",
+        "rule": {
+         "type": "sound",
+         "at": "first",
+         "is": "R"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     },
+     "say": "fff"
+    },
+    "standards": "RF.K.2d",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.5,
+     "reasons": [
+      "4 things to sort (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "f",
+     "r"
+    ],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child struggles to connect letter labels to the initial sound.",
+      "says": "Here is a picture on each basket to help you hear the sound.",
+      "item": {
+       "id": "stop-3-help_1",
+       "idea": "We can sort words into groups by their first sound.",
+       "narration": "We have two baskets. One basket is for f. One basket is for r.",
+       "ask": "Can you sort the pictures by their first sound?",
+       "why": "Say each word out loud. Put it with its first sound.",
+       "respond": "show",
+       "challengeType": "first-sound",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "fish",
+          "emoji": "\ud83d\udc1f",
+          "phones": [
+           "F",
+           "IH",
+           "SH"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         },
+         {
+          "id": "r2",
+          "word": "ring",
+          "emoji": "\ud83d\udc8d",
+          "phones": [
+           "R",
+           "IH",
+           "NG"
+          ],
+          "syllables": 1,
+          "category": "clothing"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "fork",
+          "emoji": "\ud83c\udf74",
+          "phones": [
+           "F",
+           "AO",
+           "R",
+           "K"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "t2",
+          "word": "fox",
+          "emoji": "\ud83e\udd8a",
+          "phones": [
+           "F",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         },
+         {
+          "id": "t3",
+          "word": "rabbit",
+          "emoji": "\ud83d\udc30",
+          "phones": [
+           "R",
+           "AE",
+           "B",
+           "AH",
+           "T"
+          ],
+          "syllables": 2,
+          "category": "animal"
+         },
+         {
+          "id": "t4",
+          "word": "rose",
+          "emoji": "\ud83c\udf39",
+          "phones": [
+           "R",
+           "OW",
+           "Z"
+          ],
+          "syllables": 1,
+          "category": "nature"
+         }
+        ],
+        "answer": {
+         "kind": "sort",
+         "baskets": [
+          {
+           "id": "b1",
+           "label": "r1",
+           "rule": {
+            "type": "sound",
+            "at": "first",
+            "is": "F"
+           }
+          },
+          {
+           "id": "b2",
+           "label": "r2",
+           "rule": {
+            "type": "sound",
+            "at": "first",
+            "is": "R"
+           }
+          }
+         ],
+         "things": [
+          "t1",
+          "t2",
+          "t3",
+          "t4"
+         ]
+        },
+        "say": "fff"
+       },
+       "standards": "RF.K.2d",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "4 things to sort (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "fish",
+        "ring"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc1f",
+        "\ud83d\udc8d"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 6,
+   "seconds": 29.8,
+   "modes": [
+    "first-sound"
+   ],
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: begin, special, closely; use everyday words"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: narration: a sentence over 12 words (\"One basket is for words that start with buh, and one is for words that start with puh.\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: t4: no picture for \"mud\"; pick a word from the picture list"
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

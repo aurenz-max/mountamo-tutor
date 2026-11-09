@@ -1,0 +1,913 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-add-take-levers-payload-2026-11-07.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "add-take",
+ "data": {
+  "title": "Ducks at the Pond",
+  "bigIdea": "When friends join, we have more, and when friends leave, we have fewer!",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "add-take",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "When more ducks swim over, we add them together.",
+    "narration": "Three ducks splash in the cool pond. Look, two more ducks swim over!",
+    "ask": "How many ducks are swimming now?",
+    "why": "Count all the ducks swimming together in the pond.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "scattered",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-pond-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.327,
+        0.124
+       ]
+      },
+      {
+       "id": "s0-pond-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.864,
+        0.582
+       ]
+      },
+      {
+       "id": "s0-pond-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.407,
+        0.356
+       ]
+      },
+      {
+       "id": "s0-pond-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "join",
+       "position": [
+        0.085,
+        0.148
+       ]
+      },
+      {
+       "id": "s0-pond-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "join",
+       "position": [
+        0.143,
+        0.889
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       6,
+       5,
+       4
+      ],
+      "answer": 5
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "a scattered group (+1)",
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-5",
+    "sceneImage": null,
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child struggles to count the ducks in scattered arrangement.",
+      "says": "Let's put the ducks in a straight line to count them easily!",
+      "item": {
+       "id": "stop-1-help_1",
+       "idea": "When more ducks swim over, we add them together.",
+       "narration": "Three ducks splash in the cool pond. Look, two more ducks swim over!",
+       "ask": "How many ducks are swimming now?",
+       "why": "Count all the ducks swimming together in the pond.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-3",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         },
+         {
+          "id": "s0-pond-4",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          5,
+          6,
+          4
+         ],
+         "answer": 5
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "a story: some join (+1)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-5",
+       "sceneImage": null
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is overwhelmed by adding two ducks.",
+      "says": "Let's try with fewer ducks!",
+      "item": {
+       "id": "stop-1-simpler_1",
+       "idea": "When more ducks swim over, we add them together.",
+       "narration": "Two ducks splash in the cool pond. One more duck swims over!",
+       "ask": "How many ducks are swimming now?",
+       "why": "Count all the ducks swimming together in the pond.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          3,
+          4,
+          2
+         ],
+         "answer": 3
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "a story: some join (+1)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-3",
+       "sceneImage": null
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-2",
+    "idea": "When some ducks fly away, we take them away.",
+    "narration": "Five ducks rest by the grass. Flap flap! Two ducks fly away up high.",
+    "ask": "How many ducks are left in the pond?",
+    "why": "Count the ducks that stay in the pond.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "scattered",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-pond-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.378,
+        0.13
+       ]
+      },
+      {
+       "id": "s1-pond-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.872,
+        0.877
+       ]
+      },
+      {
+       "id": "s1-pond-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "position": [
+        0.121,
+        0.615
+       ]
+      },
+      {
+       "id": "s1-pond-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "leave",
+       "position": [
+        0.108,
+        0.367
+       ]
+      },
+      {
+       "id": "s1-pond-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "leave",
+       "position": [
+        0.618,
+        0.326
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       4,
+       2,
+       3
+      ],
+      "answer": 3
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "a scattered group (+1)",
+      "a story: some leave (+1.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-3",
+    "sceneImage": null,
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child has difficulty tracking leavers in scattered arrangement.",
+      "says": "Let's line up the ducks so we can see who flies away!",
+      "item": {
+       "id": "stop-2-help_1",
+       "idea": "When some ducks fly away, we take them away.",
+       "narration": "Five ducks rest by the grass. Flap flap! Two ducks fly away up high.",
+       "ask": "How many ducks are left in the pond?",
+       "why": "Count the ducks that stay in the pond.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-3",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "leave"
+         },
+         {
+          "id": "s0-pond-4",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "leave"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          3,
+          4,
+          2
+         ],
+         "answer": 3
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "a story: some leave (+1.5)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-3",
+       "sceneImage": null
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles taking away two ducks.",
+      "says": "Let's try when just one duck flies away!",
+      "item": {
+       "id": "stop-2-simpler_1",
+       "idea": "When some ducks fly away, we take them away.",
+       "narration": "Three ducks rest by the grass. Flap flap! One duck flies away up high.",
+       "ask": "How many ducks are left in the pond?",
+       "why": "Count the ducks that stay in the pond.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "leave"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          2,
+          3,
+          1
+         ],
+         "answer": 2
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "a story: some leave (+1.5)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-2",
+       "sceneImage": null
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can count to see how many ducks are left.",
+    "narration": "Four ducks sit in the water. Quack quack! Three ducks splash in to play!",
+    "ask": "How many ducks are splashing now?",
+    "why": "Touch each duck as you count them all.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "rows",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-pond-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond"
+      },
+      {
+       "id": "s2-pond-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond"
+      },
+      {
+       "id": "s2-pond-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond"
+      },
+      {
+       "id": "s2-pond-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond"
+      },
+      {
+       "id": "s2-pond-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "join"
+      },
+      {
+       "id": "s2-pond-5",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "join"
+      },
+      {
+       "id": "s2-pond-6",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "event": "join"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       7,
+       6,
+       8
+      ],
+      "answer": 7
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-7",
+    "sceneImage": null,
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child loses track while counting in rows.",
+      "says": "Let's line the ducks up neatly to count them all!",
+      "item": {
+       "id": "stop-3-help_1",
+       "idea": "We can count to see how many ducks are left.",
+       "narration": "Four ducks sit in the water. Quack quack! Three ducks splash in to play!",
+       "ask": "How many ducks are splashing now?",
+       "why": "Touch each duck as you count them all.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-3",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-4",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         },
+         {
+          "id": "s0-pond-5",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         },
+         {
+          "id": "s0-pond-6",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          7,
+          8,
+          6
+         ],
+         "answer": 7
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "numbers to 7 (+1)",
+         "a story: some join (+1)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-7",
+       "sceneImage": null
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child finds adding three ducks too challenging.",
+      "says": "Let's see what happens if only one duck joins!",
+      "item": {
+       "id": "stop-3-simpler_1",
+       "idea": "We can count to see how many ducks are left.",
+       "narration": "Three ducks sit in the water. Quack quack! One duck splashes in to play!",
+       "ask": "How many ducks are splashing now?",
+       "why": "Touch each duck as you count them all.",
+       "respond": "say",
+       "challengeType": "add-take",
+       "world": {
+        "places": [
+         {
+          "id": "pond",
+          "kind": "group",
+          "arrangement": "line",
+          "choosable": false,
+          "droppable": false
+         }
+        ],
+        "objects": [
+         {
+          "id": "s0-pond-0",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-2",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond"
+         },
+         {
+          "id": "s0-pond-3",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "place": "pond",
+          "event": "join"
+         }
+        ],
+        "answer": {
+         "kind": "number",
+         "countPlaces": [
+          "pond"
+         ],
+         "choices": [
+          4,
+          5,
+          3
+         ],
+         "answer": 4
+        }
+       },
+       "standards": "K.OA.A.1-2",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "a story: some join (+1)",
+         "say the number (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "options": [],
+       "correctOptionId": "num-4",
+       "sceneImage": null
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 24.8,
+   "modes": [
+    "add-take"
+   ],
+   "countMax": 10,
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: lily, into, only, behind; use everyday words"
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true,
+     "note": "blocked: why: a sentence over 12 words (\"Start with the ducks who were there, and count the new friends too.\")"
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}

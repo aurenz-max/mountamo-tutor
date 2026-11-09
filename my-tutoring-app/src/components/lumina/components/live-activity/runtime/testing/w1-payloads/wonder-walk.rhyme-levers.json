@@ -1,0 +1,1288 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-rhyme-levers-payload-2026-11-07.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "rhyme",
+ "data": {
+  "title": "Rhyme Time",
+  "bigIdea": "Rhyming words end with the very same sound.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "rhyme",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Rhyming words end with the same sound.",
+    "narration": "Listen to the word cat. Words that rhyme end with the same sound!",
+    "ask": "Which picture rhymes with cat?",
+    "why": "Say each word slowly and listen to the end. Find the word that ends like cat.",
+    "respond": "say",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "sun",
+       "emoji": "\u2600\ufe0f",
+       "phones": [
+        "S",
+        "AH",
+        "N"
+       ],
+       "syllables": 1,
+       "category": "nature",
+       "letters": [
+        "s",
+        "u",
+        "n"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "dog",
+       "emoji": "\ud83d\udc36",
+       "phones": [
+        "D",
+        "AO",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "d",
+        "o",
+        "g"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "hat",
+       "emoji": "\ud83c\udfa9",
+       "phones": [
+        "HH",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "clothing",
+       "letters": [
+        "h",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": "other",
+       "t2": "meaning",
+       "t3": null
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice goes with the word (+0.5)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks a word that does not rhyme.",
+      "says": "Listen: cat, bat. They rhyme! Now find one more.",
+      "item": {
+       "id": "stop-1-help_1",
+       "idea": "Rhyming words end with the same sound.",
+       "narration": "Listen to the word cat. Words that rhyme end with the same sound!",
+       "ask": "Which picture rhymes with cat?",
+       "why": "Say each word slowly and listen to the end. Find the word that ends like cat.",
+       "respond": "say",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "cat",
+          "emoji": "\ud83d\udc31",
+          "phones": [
+           "K",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "c",
+           "a",
+           "t"
+          ]
+         },
+         {
+          "id": "r2",
+          "word": "bat",
+          "emoji": "\ud83e\udd87",
+          "phones": [
+           "B",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "b",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "sun",
+          "emoji": "\u2600\ufe0f",
+          "phones": [
+           "S",
+           "AH",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "nature",
+          "letters": [
+           "s",
+           "u",
+           "n"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "dog",
+          "emoji": "\ud83d\udc36",
+          "phones": [
+           "D",
+           "AO",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "d",
+           "o",
+           "g"
+          ]
+         },
+         {
+          "id": "t3",
+          "word": "hat",
+          "emoji": "\ud83c\udfa9",
+          "phones": [
+           "HH",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "clothing",
+          "letters": [
+           "h",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "rhymes",
+          "with": "r1"
+         },
+         "traps": {
+          "t1": "other",
+          "t2": "meaning",
+          "t3": null
+         }
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "three choices (+0.5)",
+         "a wrong choice goes with the word (+0.5)",
+         "hear the ending (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "cat",
+        "bat"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc31",
+        "\ud83e\udd87"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused by three choices.",
+      "says": "Let's look at just two pictures.",
+      "item": {
+       "id": "stop-1-simpler_1",
+       "idea": "Rhyming words end with the same sound.",
+       "narration": "Listen to the word cat. Words that rhyme end with the same sound!",
+       "ask": "Which picture rhymes with cat?",
+       "why": "Say each word slowly and listen to the end. Find the word that ends like cat.",
+       "respond": "say",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "cat",
+          "emoji": "\ud83d\udc31",
+          "phones": [
+           "K",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "c",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "dog",
+          "emoji": "\ud83d\udc36",
+          "phones": [
+           "D",
+           "AO",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "d",
+           "o",
+           "g"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "hat",
+          "emoji": "\ud83c\udfa9",
+          "phones": [
+           "HH",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "clothing",
+          "letters": [
+           "h",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "rhymes",
+          "with": "r1"
+         },
+         "traps": {
+          "t1": "meaning",
+          "t2": null
+         }
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "a wrong choice goes with the word (+0.5)",
+         "hear the ending (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "cat"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc31"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-2",
+    "idea": "We can sort words into rhyming groups.",
+    "narration": "Look at the box and the star. Rhyming words have the same ending sound! One picture goes in neither basket.",
+    "ask": "Which basket does each rhyming picture go into?",
+    "why": "Say each word, then listen to the end. Match the one that rhymes.",
+    "respond": "show",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "box",
+       "emoji": "\ud83d\udce6",
+       "phones": [
+        "B",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "home"
+      },
+      {
+       "id": "r2",
+       "word": "star",
+       "emoji": "\u2b50",
+       "phones": [
+        "S",
+        "T",
+        "AA",
+        "R"
+       ],
+       "syllables": 1,
+       "category": "nature"
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "jar",
+       "emoji": "\ud83e\uded9",
+       "phones": [
+        "JH",
+        "AA",
+        "R"
+       ],
+       "syllables": 1,
+       "category": "home"
+      },
+      {
+       "id": "t2",
+       "word": "lock",
+       "emoji": "\ud83d\udd12",
+       "phones": [
+        "L",
+        "AA",
+        "K"
+       ],
+       "syllables": 1,
+       "category": "home"
+      },
+      {
+       "id": "t3",
+       "word": "fox",
+       "emoji": "\ud83e\udd8a",
+       "phones": [
+        "F",
+        "AA",
+        "K",
+        "S"
+       ],
+       "syllables": 1,
+       "category": "animal"
+      },
+      {
+       "id": "t4",
+       "word": "car",
+       "emoji": "\ud83d\ude97",
+       "phones": [
+        "K",
+        "AA",
+        "R"
+       ],
+       "syllables": 1,
+       "category": "vehicle"
+      }
+     ],
+     "answer": {
+      "kind": "sort",
+      "baskets": [
+       {
+        "id": "b_box",
+        "label": "r1",
+        "rule": {
+         "type": "rhymes",
+         "with": "r1"
+        }
+       },
+       {
+        "id": "b_star",
+        "label": "r2",
+        "rule": {
+         "type": "rhymes",
+         "with": "r2"
+        }
+       }
+      ],
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "hear the ending (+0.5)",
+      "4 things to sort (+0.5)",
+      "one fits no basket (+1)"
+     ]
+    },
+    "sceneWords": [
+     "box",
+     "star"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udce6",
+     "\u2b50"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child puts a card into the wrong basket.",
+      "says": "Say box, then say star. Listen to each ending sound.",
+      "item": {
+       "id": "stop-2-help_1",
+       "idea": "We can sort words into rhyming groups.",
+       "narration": "Look at the box and the star. Rhyming words have the same ending sound! One picture goes in neither basket.",
+       "ask": "Which basket does each rhyming picture go into?",
+       "why": "Say each word, then listen to the end. Match the one that rhymes.",
+       "respond": "show",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "box",
+          "emoji": "\ud83d\udce6",
+          "phones": [
+           "B",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "r2",
+          "word": "star",
+          "emoji": "\u2b50",
+          "phones": [
+           "S",
+           "T",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "nature"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "jar",
+          "emoji": "\ud83e\uded9",
+          "phones": [
+           "JH",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "t2",
+          "word": "lock",
+          "emoji": "\ud83d\udd12",
+          "phones": [
+           "L",
+           "AA",
+           "K"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "t3",
+          "word": "car",
+          "emoji": "\ud83d\ude97",
+          "phones": [
+           "K",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "vehicle"
+         },
+         {
+          "id": "t4",
+          "word": "fox",
+          "emoji": "\ud83e\udd8a",
+          "phones": [
+           "F",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         }
+        ],
+        "answer": {
+         "kind": "sort",
+         "baskets": [
+          {
+           "id": "b_box",
+           "label": "r1",
+           "rule": {
+            "type": "rhymes",
+            "with": "r1"
+           }
+          },
+          {
+           "id": "b_star",
+           "label": "r2",
+           "rule": {
+            "type": "rhymes",
+            "with": "r2"
+           }
+          }
+         ],
+         "things": [
+          "t1",
+          "t2",
+          "t3",
+          "t4"
+         ]
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "hear the ending (+0.5)",
+         "4 things to sort (+0.5)",
+         "one fits no basket (+1)"
+        ]
+       },
+       "sceneWords": [
+        "box",
+        "star"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udce6",
+        "\u2b50"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused by four cards.",
+      "says": "Let's sort with three cards first. One picture does not match box.",
+      "item": {
+       "id": "stop-2-simpler_1",
+       "idea": "We can sort words into rhyming groups.",
+       "narration": "Look at the box and the star. Rhyming words have the same ending sound! One picture goes in neither basket.",
+       "ask": "Which basket does each rhyming picture go into?",
+       "why": "Say each word, then listen to the end. Match the one that rhymes.",
+       "respond": "show",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "box",
+          "emoji": "\ud83d\udce6",
+          "phones": [
+           "B",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "r2",
+          "word": "star",
+          "emoji": "\u2b50",
+          "phones": [
+           "S",
+           "T",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "nature"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "car",
+          "emoji": "\ud83d\ude97",
+          "phones": [
+           "K",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "vehicle"
+         },
+         {
+          "id": "t2",
+          "word": "jar",
+          "emoji": "\ud83e\uded9",
+          "phones": [
+           "JH",
+           "AA",
+           "R"
+          ],
+          "syllables": 1,
+          "category": "home"
+         },
+         {
+          "id": "t3",
+          "word": "fox",
+          "emoji": "\ud83e\udd8a",
+          "phones": [
+           "F",
+           "AA",
+           "K",
+           "S"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         }
+        ],
+        "answer": {
+         "kind": "sort",
+         "baskets": [
+          {
+           "id": "b_box",
+           "label": "r1",
+           "rule": {
+            "type": "rhymes",
+            "with": "r1"
+           }
+          },
+          {
+           "id": "b_star",
+           "label": "r2",
+           "rule": {
+            "type": "rhymes",
+            "with": "r2"
+           }
+          }
+         ],
+         "things": [
+          "t1",
+          "t2",
+          "t3"
+         ]
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "hear the ending (+0.5)",
+         "3 things to sort (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "box",
+        "star"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udce6",
+        "\u2b50"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can think of our own rhyming words.",
+    "narration": "Listen to the word cat. Cat ends with the sound at!",
+    "ask": "Can you think of a word that rhymes with cat?",
+    "why": "Say the word cat slowly. Think of a word that ends with at.",
+    "respond": "say-any",
+    "challengeType": "rhyme",
+    "words": {
+     "refs": [
+      {
+       "id": "r1",
+       "word": "cat",
+       "emoji": "\ud83d\udc31",
+       "phones": [
+        "K",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "c",
+        "a",
+        "t"
+       ]
+      }
+     ],
+     "things": [
+      {
+       "id": "t1",
+       "word": "pig",
+       "emoji": "\ud83d\udc37",
+       "phones": [
+        "P",
+        "IH",
+        "G"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "p",
+        "i",
+        "g"
+       ]
+      },
+      {
+       "id": "t2",
+       "word": "bat",
+       "emoji": "\ud83e\udd87",
+       "phones": [
+        "B",
+        "AE",
+        "T"
+       ],
+       "syllables": 1,
+       "category": "animal",
+       "letters": [
+        "b",
+        "a",
+        "t"
+       ]
+      },
+      {
+       "id": "t3",
+       "word": "bed",
+       "emoji": "\ud83d\udecf\ufe0f",
+       "phones": [
+        "B",
+        "EH",
+        "D"
+       ],
+       "syllables": 1,
+       "category": "home",
+       "letters": [
+        "b",
+        "e",
+        "d"
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "rhymes",
+       "with": "r1"
+      },
+      "traps": {
+       "t1": "near_sound",
+       "t2": null,
+       "t3": "other"
+      }
+     }
+    },
+    "standards": "RF.K.2a",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "a wrong choice sounds close (+1)",
+      "hear the ending (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "cat"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc31"
+    ],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2",
+    "sayAny": [
+     "chat",
+     "fat",
+     "hat",
+     "pat",
+     "rat",
+     "sat"
+    ],
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child cannot think of a rhyming word.",
+      "says": "Listen: cat, hat. They both end in at! Can you think of another one?",
+      "item": {
+       "id": "stop-3-help_1",
+       "idea": "We can think of our own rhyming words.",
+       "narration": "Listen to the word cat. Cat ends with the sound at!",
+       "ask": "Can you think of a word that rhymes with cat?",
+       "why": "Say the word cat slowly. Think of a word that ends with at.",
+       "respond": "say-any",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "cat",
+          "emoji": "\ud83d\udc31",
+          "phones": [
+           "K",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "c",
+           "a",
+           "t"
+          ]
+         },
+         {
+          "id": "r2",
+          "word": "hat",
+          "emoji": "\ud83c\udfa9",
+          "phones": [
+           "HH",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "clothing",
+          "letters": [
+           "h",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "bed",
+          "emoji": "\ud83d\udecf\ufe0f",
+          "phones": [
+           "B",
+           "EH",
+           "D"
+          ],
+          "syllables": 1,
+          "category": "home",
+          "letters": [
+           "b",
+           "e",
+           "d"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "pig",
+          "emoji": "\ud83d\udc37",
+          "phones": [
+           "P",
+           "IH",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "p",
+           "i",
+           "g"
+          ]
+         },
+         {
+          "id": "t3",
+          "word": "bat",
+          "emoji": "\ud83e\udd87",
+          "phones": [
+           "B",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "b",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "rhymes",
+          "with": "r1"
+         },
+         "traps": {
+          "t1": "other",
+          "t2": "near_sound",
+          "t3": null
+         }
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "three choices (+0.5)",
+         "a wrong choice sounds close (+1)",
+         "hear the ending (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "cat",
+        "hat"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc31",
+        "\ud83c\udfa9"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3",
+       "sayAny": [
+        "chat",
+        "fat",
+        "pat",
+        "rat",
+        "sat"
+       ]
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is stuck.",
+      "says": "Look at these two pictures to help you find one.",
+      "item": {
+       "id": "stop-3-simpler_1",
+       "idea": "We can think of our own rhyming words.",
+       "narration": "Listen to the word cat. Cat ends with the sound at!",
+       "ask": "Can you think of a word that rhymes with cat?",
+       "why": "Say the word cat slowly. Think of a word that ends with at.",
+       "respond": "say-any",
+       "challengeType": "rhyme",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "cat",
+          "emoji": "\ud83d\udc31",
+          "phones": [
+           "K",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "c",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "word": "pig",
+          "emoji": "\ud83d\udc37",
+          "phones": [
+           "P",
+           "IH",
+           "G"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "p",
+           "i",
+           "g"
+          ]
+         },
+         {
+          "id": "t2",
+          "word": "bat",
+          "emoji": "\ud83e\udd87",
+          "phones": [
+           "B",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "b",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "rhymes",
+          "with": "r1"
+         },
+         "traps": {
+          "t1": "near_sound",
+          "t2": null
+         }
+        }
+       },
+       "standards": "RF.K.2a",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "a wrong choice sounds close (+1)",
+         "hear the ending (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "cat"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc31"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2",
+       "sayAny": [
+        "chat",
+        "fat",
+        "hat",
+        "pat",
+        "rat",
+        "sat"
+       ]
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 6,
+   "seconds": 48.8,
+   "modes": [
+    "rhyme"
+   ],
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: t_ox: no picture for \"ox\"; pick a word from the picture list"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the right picture is the only animal like the dog: a child can pick what goes with it, not what sounds like it; make a wrong picture a animal too, or t"
+    },
+    {
+     "turn": 2,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "remove_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: one card fits no basket: say so in the narration or ask (\"one picture goes in neither basket\"), or the child will force it into one"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: ask has 2 sentences; at most 1"
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "stop 1: check these words are known at K: neither, into"
+   ]
+  }
+ }
+}

@@ -234,3 +234,42 @@ it('validate re-derives every math key from the world', () => {
   if (m.world!.answer.kind === 'move') m.world!.answer.goal = [{ places: [m.world!.places[0].id], atLeast: 1 }];
   expect(() => wonderWalkBoss.validate(mv)).toThrow(/goal holds before anything moves/);
 });
+
+it('authored levers: a help shows more of the same stop; a simplify opens ungraded practice; the stop comes back blank', () => {
+  const base = stop(1, ['frog', '🐸'], [['rock', '🪨', 'other'], ['car', '🚗', 'looks_like']]);
+  const lever = (id: string, kind: 'help' | 'simplify', item: WonderWalkStop) => ({ id, kind, when: 'after a wrong tap', says: kind === 'help' ? 'Here are two living things.' : 'Just two pictures.', item });
+  base.levers = [
+    lever('help_1', 'help', { ...base, id: 'stop-1-help_1', sceneWords: ['puppy', 'cow'], sceneEmoji: ['🐶', '🐮'] }),
+    lever('simpler_1', 'simplify', { ...base, id: 'stop-1-simpler_1', options: base.options.filter(o => o.word !== 'car') }),
+  ];
+  const d = walk();
+  d.challenges[0] = base;
+  expect(() => wonderWalkBoss.validate(d)).not.toThrow();
+  const h = mount(d);
+  const offered = h.state().task!.workspace!.levers!;
+  expect(offered.map(l => [l.id, l.kind, l.does])).toEqual([['help_1', 'help', 'Here are two living things.'], ['simpler_1', 'simplify', 'Just two pictures.']]);
+
+  h.touch('option-s1-b');
+  expect(h.dispatch('pull_lever', { lever: 'help_1' }).status).toBe('committed');
+  expect(h.view.container.querySelector('[data-pip-object="scene"]')!.textContent).toContain('🐮');
+  expect(h.state().task!.itemId).toBe('stop-1');
+
+  const r = h.dispatch('pull_lever', { lever: 'simpler_1' });
+  expect(r.status).toBe('committed');
+  expect(r.state.task!.itemId).toBe('stop-1~simpler_1');
+  expect(r.state.task!.workspace!.practice).toEqual({ returnsTo: 'stop-1' });
+  expect(h.view.container.querySelectorAll('[data-pip-object^="option-"]')).toHaveLength(2);
+  h.touch('option-s1-a');
+  expect(h.state().task!.workspace!.lastResponse).toMatchObject({ correct: true });
+  h.dispatch('advance');
+  expect(h.state().task!.itemId).toBe('stop-1');
+  expect(h.view.container.querySelectorAll('[data-pip-object^="option-"]')).toHaveLength(3);
+});
+
+it('validate checks a lever stop like any stop: a help whose stop says its answer is refused', () => {
+  const base = stop(1, ['frog', '🐸'], [['rock', '🪨', 'other']]);
+  base.levers = [{ id: 'help_1', kind: 'help', when: 'w', says: 's', item: { ...base, id: 'stop-1-help_1', ask: 'Is the frog alive?' } }];
+  const d = walk();
+  d.challenges[0] = base;
+  expect(() => wonderWalkBoss.validate(d)).toThrow(/says its answer/);
+});

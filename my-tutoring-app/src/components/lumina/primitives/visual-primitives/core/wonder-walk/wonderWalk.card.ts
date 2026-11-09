@@ -23,22 +23,23 @@ export const WORD_MISSES: readonly WonderWalkMiss[] = ['repeated_pick', 'near_so
 const WORD_MOVES = 'taps a card, a card and then its basket, or cards in order onto the track, then Done';
 const MOVES = 'taps a place or a number, or a thing and then where it goes, then Done';
 
-// No levers yet: help and simplify levers are the /add-support-tiers layer (queued on the birth certificate).
+// Levers: every stop carries its own help and simplify levers, authored with it (`service/agent-kit/levers.ts`).
 /** Language modes a stop can answer with a picture's name or a letter (said, or tapped). */
-const words = { ...SAY_OR_SHOW, misses: WORD_MISSES, unanswered: WORD_MISSES, moves: WORD_MOVES };
+const words = { ...SAY_OR_SHOW, misses: WORD_MISSES, moves: WORD_MOVES };
 /** Language modes always shown: a track, or cards told apart by where the picture sits or how many it shows. */
-const wordsShown = { ...TAP_ONE, misses: WORD_MISSES, unanswered: WORD_MISSES, moves: WORD_MOVES };
+const wordsShown = { ...TAP_ONE, misses: WORD_MISSES, moves: WORD_MOVES };
 /** Math modes that can end in a number the child says (or taps). */
-const math = { ...SAY_OR_SHOW, misses: MATH_MISSES, unanswered: MATH_MISSES, moves: MOVES };
+const math = { ...SAY_OR_SHOW, misses: MATH_MISSES, moves: MOVES };
 /** Math modes always shown: comparing places, or making a group by moving things. */
-const mathShown = { ...TAP_ONE, misses: MATH_MISSES, unanswered: MATH_MISSES, moves: MOVES };
+const mathShown = { ...TAP_ONE, misses: MATH_MISSES, moves: MOVES };
 
 export const wonderWalkCard = defineCard<WonderWalkMiss>({
   id: 'wonder-walk',
   grades: ['Kindergarten'],
   audio: SPOKEN_AUDIO,
+  levers: true,
   modes: {
-    'which-one': { ...SAY_OR_SHOW, misses: WHICH_ONE_MISSES, unanswered: WHICH_ONE_MISSES },
+    'which-one': { ...SAY_OR_SHOW, misses: WHICH_ONE_MISSES },
     'how-many': math,
     'more-fewer': mathShown,
     'count-out': mathShown,
@@ -52,13 +53,12 @@ export const wonderWalkCard = defineCard<WonderWalkMiss>({
     'one-many': wordsShown, 'where-is': wordsShown, 'story-detail': words, 'story-order': wordsShown,
   },
   words: {
-    job: 'look and listen, then say or tap the answer, or move things where they go',
-    answer: 'the picture, number, letter or word, the group, or the sort or order',
+    job: 'look and listen, then say, tap or move the answer',
+    answer: 'the picture, number, letter, word, group, sort or order',
     question: 'the narration, the idea, the ask and what each place holds',
-    special: 'Say the narration warmly, then the ask; after a miss, go back to the idea. Math: tell the story with its parts (three ducks, two more come); never say '
-      + 'the answer or count an answer group. As the child moves things, ask them to count aloud; never say when to stop. '
-      + 'Language: name each picture card plainly when posing the stop and when the child is stuck (the cards left to place, not just the idea); '
-      + 'say sounds as saySounds writes them; never name a letter card to find; stress no card’s sound over another’s. '
-      + 'If the key takes any word that fits, invite the child’s own word first.',
+    special: 'Say the narration, then the ask; after a miss, return to the idea. Math: tell the story with its parts, not the total; '
+      + 'never say or count the answer; as the child moves things, have them count aloud; never say when to stop. '
+      + 'Language: name each card plainly; say sounds as saySounds writes them; never name a letter card to find or stress one card’s sound. '
+      + 'If any fitting word counts, invite the child’s own word first.',
   },
 });

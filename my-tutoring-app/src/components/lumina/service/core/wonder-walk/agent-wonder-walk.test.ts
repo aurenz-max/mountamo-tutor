@@ -33,7 +33,8 @@ const stop = (o: Record<string, unknown>) => ({ name: 'write_stop', args: {
   ideaIndex: 0, narration: 'A puppy eats and grows into a dog. It is alive!', sceneWords: ['puppy'],
   imagePrompt: 'a puppy eating in a garden', ask: 'Which one is alive too?', correctWord: 'frog',
   wrongWords: [{ word: 'rock', trap: 'other' }, { word: 'car', trap: 'looks_like' }],
-  why: 'Living things eat and grow.', ...o } });
+  why: 'Living things eat and grow.',
+  levers: [{ kind: 'help', when: 'after a wrong tap', says: 'Look, here are two living things side by side.', change: { sceneWords: ['puppy', 'cow'] } }], ...o } });
 
 // Pinned, so the mode resolver makes no model call; the how-many test pins its own mode.
 const ctx = { topic: 'Living and nonliving things', intent: 'Tell living from nonliving things', scope: {}, raw: { seed: 7 }, targetEvalMode: 'which-one', objective: {} } as never;
@@ -74,6 +75,10 @@ describe('generateWonderWalk', () => {
     expect(walk.challenges[2].options.map(o => o.word).sort()).toEqual(['bird', 'kite', 'shoe']);
     expect(walk.challenges.every(s => s.sceneImage === 'data:image/png;base64,AAAA')).toBe(true);
     expect(walk).toMatchObject({ gradeBand: 'K', challengeType: 'which-one', domain: 'science' });
+    // Each stop ships its own help lever, built as a stop (the kit rebuilt and checked it); no salvage was needed.
+    expect(walk.challenges.map(s => s.levers?.map(l => l.id))).toEqual([['help_1'], ['help_1'], ['help_1']]);
+    expect(walk.challenges[0].levers![0].item.sceneWords).toEqual(['puppy', 'cow']);
+    expect((walk.agentDebug as { advisories: string[] }).advisories.join()).not.toMatch(/salvaged/);
   });
 
   it('reports the code checks on every write', async () => {
@@ -112,7 +117,14 @@ describe('generateWonderWalk', () => {
   it('a math walk: the author builds worlds; code names each skill, blocks a shortcut and a tier miss, derives keys, ships', async () => {
     expect(toolsFor(['add-take', 'count-out']).map(t => t.name)).toEqual(['plan_walk', 'write_math_stop', 'remove_stop', 'finish', 'decline']);
     const w = (o: Record<string, unknown>) => ({ name: 'write_math_stop', args: { ideaIndex: 0, why: 'Touch each one as you count. The last number tells how many.', ...o } });
-    const pond = (start: number, join: number, o: Record<string, unknown> = {}) => w({
+    const pondLevers = (start: number) => [
+      { kind: 'help', when: 'after a miscount', says: 'Let us line them up so we can count.',
+        change: { places: [{ id: 'pond', kind: 'group', arrangement: 'rows', contents: [{ word: 'duck', count: start }] }] } },
+      { kind: 'simplify', when: 'after two misses', says: 'Let us try a smaller pond.',
+        change: { places: [{ id: 'pond', kind: 'group', arrangement: 'rows', contents: [{ word: 'duck', count: 2 }] }], events: [{ kind: 'join', place: 'pond', word: 'duck', count: 1 }],
+          narration: 'Two ducks swim. More ducks come!' } },
+    ];
+    const pond = (start: number, join: number, o: Record<string, unknown> = {}) => w({ levers: pondLevers(start),
       places: [{ id: 'pond', kind: 'group', arrangement: 'scattered', contents: [{ word: 'duck', count: start }] }],
       events: [{ kind: 'join', place: 'pond', word: 'duck', count: join }], answer: { kind: 'number', countPlaces: ['pond'] },
       narration: `${['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'][start]} ducks swim. More ducks come!`, ask: 'How many ducks now?', ...o });
@@ -125,7 +137,14 @@ describe('generateWonderWalk', () => {
         w({ places: [{ id: 'p', kind: 'group', arrangement: 'rows', contents: [{ word: 'frog', count: 2 }] }], events: [{ kind: 'join', place: 'p', word: 'frog', count: 1 }],
           answer: { kind: 'number', countPlaces: ['p'] }, narration: 'Two frogs sit. One more hops in!', ask: 'How many frogs now?' }),
         w({ ideaIndex: 1, places: [{ id: 'pile', kind: 'pile', arrangement: 'scattered', contents: [{ word: 'apple', count: 10 }] }, { id: 'bk', kind: 'basket', arrangement: 'rows', contents: [] }],
-          answer: { kind: 'move', goal: [{ places: ['bk'], count: 6 }] }, narration: 'So many apples!', ask: 'Can you put six apples in the basket?' }),
+          answer: { kind: 'move', goal: [{ places: ['bk'], count: 6 }] }, narration: 'So many apples!', ask: 'Can you put six apples in the basket?',
+          levers: [
+            { kind: 'help', when: 'when counting out goes past', says: 'Let us line the apples up first.',
+              change: { places: [{ id: 'pile', kind: 'pile', arrangement: 'rows', contents: [{ word: 'apple', count: 10 }] }, { id: 'bk', kind: 'basket', arrangement: 'rows', contents: [] }] } },
+            { kind: 'simplify', when: 'after two misses', says: 'Let us make a smaller group.',
+              change: { places: [{ id: 'pile', kind: 'pile', arrangement: 'rows', contents: [{ word: 'apple', count: 5 }] }, { id: 'bk', kind: 'basket', arrangement: 'rows', contents: [] }],
+                answer: { kind: 'move', goal: [{ places: ['bk'], count: 3 }] }, ask: 'Can you put three apples in the basket?' } },
+          ] }),
         { name: 'finish', args: {} },
       ],
       [pond(4, 3, { replaceIndex: 0 }), pond(5, 3, { replaceIndex: 1 }), { name: 'finish', args: {} }],
@@ -140,13 +159,24 @@ describe('generateWonderWalk', () => {
     expect(walk.challenges.map(s => s.challengeType)).toEqual(['add-take', 'add-take', 'count-out']);
     expect(walk.challenges.map(s => s.correctOptionId)).toEqual(['num-7', 'num-8', '']);
     expect(walk.challenges.every(s => s.difficulty?.band === 'hard' && s.sceneImage === null && s.world)).toBe(true);
+    // The pond's simplify is a smaller pond of the same skill; its help draws the same ducks in rows (same answer).
+    expect(walk.challenges.map(s => s.levers?.map(l => l.id))).toEqual([['help_1', 'simpler_1'], ['help_1', 'simpler_1'], ['help_1', 'simpler_1']]);
+    const [help, simpler] = walk.challenges[0].levers!;
+    expect(help.item.correctOptionId).toBe('num-7');
+    expect(simpler.item.correctOptionId).toBe('num-3');
+    expect(simpler.item.challengeType).toBe('add-take');
+    expect((walk.agentDebug as { advisories: string[] }).advisories.join()).not.toMatch(/salvaged/);
   });
 
   it('a language walk: the author builds word worlds; code fills the sounds, blocks a meaning shortcut, names the skills, ships', async () => {
     expect(toolsFor(['rhyme', 'first-sound']).map(t => t.name)).toEqual(['plan_walk', 'write_word_stop', 'remove_stop', 'finish', 'decline']);
     const w = (o: Record<string, unknown>) => ({ name: 'write_word_stop', args: { ideaIndex: 0, why: 'Say each word slowly and listen.', ...o } });
     const rhyme = (ref: string, things: string[], o: Record<string, unknown> = {}) => w({ refs: [{ id: 'r', word: ref }], things: things.map((x, i) => ({ id: `t${i}`, word: x })),
-      answer: { kind: 'tap', rule: { type: 'rhymes', ref: 'r' } }, narration: `Here is a ${ref}. Rhyming words end the same.`, ask: `Which one rhymes with ${ref}?`, ...o });
+      answer: { kind: 'tap', rule: { type: 'rhymes', ref: 'r' } }, narration: `Here is a ${ref}. Rhyming words end the same.`, ask: `Which one rhymes with ${ref}?`,
+      levers: [
+        { kind: 'help', when: 'after a wrong tap', says: 'Listen to how this word ends.', change: { refs: [{ id: 'r', word: ref }, { id: 'r2', word: ref === 'cat' ? 'bat' : 'coat' }] } },
+        { kind: 'simplify', when: 'after two misses', says: 'Just two pictures this time.', change: { things: things.slice(0, 2).map((x, i) => ({ id: `t${i}`, word: x })) } },
+      ], ...o });
     turns.push(
       [
         { name: 'plan_walk', args: { title: 'Sound Safari', bigIdea: 'Words are made of sounds we can hear.', domain: 'language', ideas: ['Rhyming words end the same.', 'Words start with a sound.'] } },
@@ -154,7 +184,9 @@ describe('generateWonderWalk', () => {
         rhyme('cat', ['rat', 'cup', 'sun']),
         rhyme('goat', ['boat', 'dog', 'sun']),
         w({ ideaIndex: 1, things: [{ id: 'a', word: 'sock' }, { id: 'b', word: 'map' }, { id: 'c', word: 'dog' }],
-          answer: { kind: 'tap', rule: { type: 'sound', at: 'first', sound: 's' } }, narration: 'Listen to the start of each word.', ask: 'Which one starts with [sound]?' }),
+          answer: { kind: 'tap', rule: { type: 'sound', at: 'first', sound: 's' } }, narration: 'Listen to the start of each word.', ask: 'Which one starts with [sound]?',
+          levers: [{ kind: 'help', when: 'after a wrong tap', says: 'Here is another word that starts the same way.', change: { refs: [{ id: 'x', word: 'sun' }] } },
+            { kind: 'simplify', when: 'after two misses', says: 'Just two pictures.', change: { things: [{ id: 'a', word: 'sock' }, { id: 'b', word: 'map' }] } }] }),
         { name: 'finish', args: {} },
       ],
       // The fix also answers the walk rule that the child makes a word once: the first rhyme becomes say-any.
@@ -174,5 +206,6 @@ describe('generateWonderWalk', () => {
     expect(walk.challenges[2].ask).toBe('Which one starts with sss?');
     const right = walk.challenges.map(s => s.words!.things.find(t => `thing-${t.id}` === s.correctOptionId)!.word);
     expect(right).toEqual(['hat', 'boat', 'sock']);
+    expect(walk.challenges.map(s => s.levers?.map(l => l.id))).toEqual([['help_1', 'simpler_1'], ['help_1', 'simpler_1'], ['help_1', 'simpler_1']]);
   });
 });

@@ -12,7 +12,9 @@ import { describeWork, moveMiss, moveMatches, pickMiss, stopMatches, wordMatches
 import { WonderWalkWordStage } from './WonderWalkWordStage';
 import { targetsFor, type Arrangement, type CounterColor, type World, type WorldObject, type WorldPlace } from './wonderWalkWorld';
 import type { WordWorld } from './wonderWalkWords';
-import { wonderWalkBoss } from './wonderWalk.boss';
+import { wonderWalkBoss, wonderWalkLevers } from './wonderWalk.boss';
+import type { AuthoredLever } from '../../../../service/agent-kit/levers';
+import { useAuthoredLevers } from '../../../../service/agent-kit/useAuthoredLevers';
 
 /**
  * Wonder Walk — an agent-authored walk for a child who cannot read yet (Kindergarten).
@@ -91,6 +93,8 @@ export interface WonderWalkStop {
   respond?: 'show' | 'say' | 'say-any';
   /** say-any: other library words the rule holds for, computed by code when the stop was built (the judge's examples). */
   sayAny?: string[];
+  /** The stop's own help and simplify levers, authored with it and checked by code (`service/agent-kit/levers.ts`). */
+  levers?: AuthoredLever<WonderWalkStop>[];
 }
 
 export interface WonderWalkData {
@@ -251,7 +255,10 @@ const WonderWalkSurface = ({ data, className = '', runtimePlanItemId }: WonderWa
     onSubmit: onEvaluationSubmit,
   });
 
-  const stop = data.challenges[progress.currentIndex] ?? null;
+  // The session's stop, and what is on screen: a simplify lever's practice stop, or the stop with its pulled help shown.
+  const sessionStop = data.challenges[progress.currentIndex] ?? null;
+  const levers = useAuthoredLevers(sessionStop, wonderWalkLevers, wonderWalkBoss.assignment, () => resetSurface());
+  const stop = levers.shown;
   const world = stop?.world;
   const whyShown = !!stop && whyFor === stop.id;
   const placeOf = (o: WorldObject) => where[o.id] ?? o.place;
@@ -261,6 +268,14 @@ const WonderWalkSurface = ({ data, className = '', runtimePlanItemId }: WonderWa
   // re-open with nothing committed keeps what the child already moved: only a new stop, or Try again after an answer,
   // resets it.
   const openedIndex = useRef(0);
+  function resetSurface() {
+    setPickedId(null);
+    setFlash(null);
+    setWhere({});
+    setHeld(null);
+    setBasketOf({});
+    setTrack([]);
+  }
   openItem.current = (index, retry) => {
     if (index === openedIndex.current && pickedId === null) return;
     openedIndex.current = index;
@@ -375,7 +390,7 @@ const WonderWalkSurface = ({ data, className = '', runtimePlanItemId }: WonderWa
 
   // The scene the tutor and observer see, republished after every render.
   useLayoutEffect(() => {
-    if (stop) workspace.current = { ...workspaceScene(data, stop, { pickedId, placed: placed(), whyShown, basketOf, track }) };
+    if (stop) workspace.current = levers.publish(workspaceScene(data, stop, { pickedId, placed: placed(), whyShown, basketOf, track }));
   });
 
   if (!stop) return null;

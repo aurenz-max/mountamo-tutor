@@ -456,5 +456,17 @@
   "map-explorer.world_direction": {
     "J1-drivable": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins",
     "J13-help-lever-keeps-item": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins"
+  },
+  "wonder-walk.first-sound": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
+  },
+  "wonder-walk.first-sound-respond": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
+  },
+  "wonder-walk.rhyme": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
+  },
+  "wonder-walk.rhyme-respond": {
+    "J12-item-miss-answered": "saved before authored levers (agent kit, 2026-11-07): the payload carries no levers; a regeneration clears it"
   }
 }

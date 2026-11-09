@@ -9,6 +9,7 @@ import type { WonderWalkData, WonderWalkStop } from './WonderWalk';
 import { hasText as text, spokenBoss } from '../../../../components/live-activity/boss';
 import { spokenNumber } from '../../../../components/live-activity/runtime/spokenMissContract';
 import { wonderWalkCard } from './wonderWalk.card';
+import { authoredLeverSet } from '../../../../service/agent-kit/levers';
 import { stopAsk, stopHarnessTaps, type WonderWalkMiss } from './wonderWalkWorkspace';
 import { countIn, goalHolds, solveMove } from './wonderWalkWorld';
 import { tapKey, wordWorldError } from './wonderWalkWords';
@@ -83,7 +84,8 @@ export function validateWonderWalkData(value: unknown): WonderWalkData {
     throw new Error('Generated wonder walk has invalid lesson content.');
   const ids = new Set(d.challenges.map(s => s?.id));
   if (ids.size !== d.challenges.length) throw new Error('Wonder walk stops need distinct ids.');
-  for (const s of d.challenges as WonderWalkStop[]) {
+  const stops = (d.challenges as WonderWalkStop[]).flatMap(s => [s, ...(s?.levers ?? []).map(l => l?.item)]);
+  for (const s of stops) {
     if (!s || !STOP_TYPES.has(s.challengeType) || !text(s.id) || !text(s.ask) || !text(s.narration) || !text(s.idea) || !text(s.why) || !Array.isArray(s.options))
       throw new Error(`Wonder walk stop ${s?.id} cannot be played as generated.`);
     if (s.challengeType === 'which-one') {
@@ -104,8 +106,15 @@ export function validateWonderWalkData(value: unknown): WonderWalkData {
   return d;
 }
 
+/** The stop's own levers (authored with it, checked by the kit): one lever set for every agent primitive. */
+export const wonderWalkLevers = authoredLeverSet<WonderWalkStop>({
+  modeOf: stop => stop.challengeType,
+  missesOf: mode => wonderWalkCard.modes[mode]?.misses ?? [],
+});
+
 export const wonderWalkBoss = spokenBoss<WonderWalkData, WonderWalkStop, WonderWalkMiss>({
   card: wonderWalkCard,
+  levers: wonderWalkLevers,
   validate: validateWonderWalkData,
   items: data => data.challenges,
   speech: {

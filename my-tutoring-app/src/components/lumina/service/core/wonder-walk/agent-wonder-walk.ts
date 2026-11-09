@@ -1,7 +1,7 @@
 /**
  * Agentic Wonder Walk author (Kindergarten).
  *
- * One model runs a function-calling loop, the deep dive's pattern at a smaller size: it plans the walk's big idea and
+ * One model runs the agent kit's author loop (`agent-kit/authorLoop.ts`): it plans the walk's big idea and
  * 2-3 ideas, writes each stop through a typed tool, reads every stop back with the code checks (`checks.ts`), fixes
  * what they block, and calls finish. At finish a second reader that did not write the walk solves every stop from what
  * the child hears and sees (`review.ts`); a stop it gets wrong or finds two answers for goes back to the author once.
@@ -17,14 +17,15 @@
  * computed difficulty so the author can aim at the walk's tier (agent-primitive invariants,
  * `.claude/skills/agent-primitive/SKILL.md`). Math stops are drawn by code: no scene image and no review round.
  */
-import { ThinkingLevel, Type, type Content, type FunctionCall, type FunctionDeclaration, type Part } from '@google/genai';
-import { ai } from '../../geminiClient';
+import type { FunctionDeclaration } from '@google/genai';
+import { authorTools, openModes, runAuthor, str, strs, arr, num, optStr, type Args, type WriteOutcome } from '../../agent-kit/authorLoop';
+import { leverPrompt, slotLevers, type LeverCapability } from '../../agent-kit/levers';
 import { buildScopePromptSection } from '../../scopeContext';
-import { resolveEvalModes, type ChallengeTypeDoc } from '../../evalMode';
+import type { ChallengeTypeDoc } from '../../evalMode';
 import { generateImage } from '../gemini-deep-dive';
 import type { GenerationContext } from '../../generation/generationContext';
 import type { WonderWalkData, WonderWalkStopType } from '../../../primitives/visual-primitives/core/wonder-walk/WonderWalk';
-import { validateWonderWalkData } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
+import { saysNumber, validateWonderWalkData } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
 import { buildStops, stopChecks, walkChecks, type MathScope, type StopDraft, type WordScope } from './checks';
 import { LANDMARKS, RELATIONS, RULE_TYPES, SOUND_OF, WORD_MODES, WORD_STANDARDS, wordModeOf, readWords, type WordDraft } from './words';
 import { ARRANGEMENTS, ARRANGEMENT_MAX, COLORS, MATH_MODES, PLACE_KINDS, STANDARDS, TAP_RULES, countMax, modeOf, type WorldDraft } from './world';
@@ -42,14 +43,10 @@ const SALVAGE_MIN_STOPS = 2;
 const imagesOn = () => process.env.LUMINA_WW_IMAGES !== '0';
 const DOMAINS = new Set(['science', 'language', 'math', 'social-studies']);
 
-type Args = Record<string, unknown>;
-const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
-const strs = (v: unknown) => (Array.isArray(v) ? v.map(str).filter(Boolean) : []);
 
 interface Entry { uid: number; draft: StopDraft; image?: Promise<string | null> }
 interface State {
   plan?: { title: string; bigIdea: string; domain: WonderWalkData['domain']; ideas: string[] };
-  entries: Entry[];
   nextUid: number;
   /** Scene images render (env LUMINA_WW_IMAGES, and config.images !== false from the tester). */
   images: boolean;
@@ -227,8 +224,17 @@ ${canAsk(kinds, math, words)}${respondSection(math, words)}
 Answer pictures, group words and scene words must be words from this list (code shows each word's picture; any other word is rejected). Pick pictures that look different from each other.
 ${pictureMenu()}
 
-imagePrompt (write_stop only) describes the scene picture for an illustrator: the scene's example doing the idea, one clear subject, no text. It must not show the right answer. Math and language scenes are drawn by code.`;
+imagePrompt (write_stop only) describes the scene picture for an illustrator: the scene's example doing the idea, one clear subject, no text. It must not show the right answer. Math and language scenes are drawn by code.${leverPrompt(LEVER_EXAMPLES)}`;
 }
+
+/** Wonder walk's lever examples, in its own fields (the agent writes its own for each stop). */
+const LEVER_EXAMPLES = `Examples (write your own for each stop):
+- which-one (frog among rock, toy car): help change {sceneWords: [puppy, kitten]} (two alive examples side by side); simplify change {wrongWords: [one picture]} (two pictures, not three).
+- add-take (3 ducks, 2 join, scattered): help change {places: the same pond with arrangement rows} ("Let's line them up to count."); simplify change {places: 2 ducks, events: 1 joins}.
+- count-on (5 under a cup, 3 out): help change {places: the cup as a plate, so the 5 show}; simplify change {places: 3 under the cup, 2 out}.
+- rhyme tap among hat, dog, sun with ref cat: help change {refs: cat and bat} (a second word that rhymes, heard and shown); simplify change {things: hat, dog} (two cards).
+- first-sound sort with 5 cards: help change {refs: each basket label with a second example picture}; simplify change {things: 3 cards}.
+- story-order with 4 events: simplify change {story: 3 events, things: 3 cards}.`;
 
 const TOOLS: FunctionDeclaration[] = [
   {
@@ -284,6 +290,7 @@ const TOOLS: FunctionDeclaration[] = [
     parametersJsonSchema: { type: 'object', properties: { reason: { type: 'string' } }, required: ['reason'] },
   },
 ];
+const toolNamed = (n: string) => TOOLS.find(t => t.name === n)!;
 
 const str_ = { type: 'string' } as const;
 const RESPOND_DOC = 'What the child produces (see "How the child answers"): show, say or say-any. Code checks it fits the answer and returns the key the tutor will judge with.';
@@ -379,15 +386,20 @@ const WORD_TOOL: FunctionDeclaration = {
   },
 };
 
-/** The tools for the open stop types: a closed type's writer (or task) is not offered at all. */
+/** The writers for the open stop types: a closed type's writer (or task) is not offered at all. */
+function writersFor(kinds: WonderWalkStopType[]) {
+  return [
+    ...(kinds.includes('which-one') ? [{ decl: toolNamed('write_stop'), write: (st: State, a: Args, o?: { lever?: boolean }) => writeStop(st, a, 'which-one', false, o) }] : []),
+    ...(kinds.some(k => MATH_KINDS.has(k)) ? [{ decl: MATH_TOOL, write: writeMathStop }] : []),
+    ...(kinds.some(k => WORD_KINDS.has(k)) ? [{ decl: WORD_TOOL, write: writeWordStop }] : []),
+  ];
+}
+
+const KIT_TOOLS = { plan: toolNamed('plan_walk'), remove: toolNamed('remove_stop'), finish: toolNamed('finish'), decline: toolNamed('decline') };
+
+/** The tools the author sees for the open stop types. */
 export function toolsFor(kinds: WonderWalkStopType[]): FunctionDeclaration[] {
-  const math = kinds.some(k => MATH_KINDS.has(k));
-  const words = kinds.some(k => WORD_KINDS.has(k));
-  return TOOLS.flatMap(t => {
-    if (t.name === 'write_stop') return kinds.includes('which-one') ? [t] : [];
-    if (t.name === 'remove_stop') return [...(math ? [MATH_TOOL] : []), ...(words ? [WORD_TOOL] : []), t];
-    return [t];
-  });
+  return authorTools({ tools: KIT_TOOLS, writers: writersFor(kinds) as never, levers: WALK_LEVERS as never });
 }
 
 /** The topic is outside what the open stop types can ask. The generator fails with the author's reason, at once. */
@@ -395,11 +407,7 @@ export class WonderWalkDeclined extends Error {}
 
 // ── Tools ────────────────────────────────────────────────────────────
 
-const intOr = (v: unknown) => (v === undefined || v === null || v === '' ? undefined : Number(v));
-
-const arr = (v: unknown): Args[] => (Array.isArray(v) ? v : []).map(x => (x ?? {}) as Args);
-const optStr = <T extends string>(v: unknown) => (str(v) ? (str(v) as T) : undefined);
-const optInt = (v: unknown) => intOr(v);
+const optInt = num;
 const clean = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== '')) as T;
 
 /** The world the author wrote, as code reads it. */
@@ -486,7 +494,7 @@ function setPlan(state: State, a: Args) {
   return { ok: true, ideas: ideas.map((idea, i) => `${i}: ${idea}`) };
 }
 
-function writeStop(state: State, a: Args, kind: WonderWalkStopType = 'which-one', math = false) {
+function writeStop(state: State, a: Args, kind: WonderWalkStopType = 'which-one', math = false, opts: { lever?: boolean } = {}): WriteOutcome<Entry> {
   if (!state.plan) return { error: 'call plan_walk first' };
   if (!math && !state.kinds.includes(kind)) return { error: `${kind} stops are not open in this walk` };
   const draft = draftOf(a, kind);
@@ -494,17 +502,12 @@ function writeStop(state: State, a: Args, kind: WonderWalkStopType = 'which-one'
   const { difficulty, key, mode, ask: filledAsk, answeredBy, ...checks } = stopChecks(draft, state.plan.ideas.length, state.math, state.words);
   if (mode) draft.kind = mode;
   // A stop that cannot ship still lands so the agent can see it, but no image is spent on it (nor on a drawn set).
-  if (!checks.blocking.length && kind === 'which-one') entry.image = startImage(draft.imagePrompt, state.images);
-  const at = a.replaceIndex !== undefined && a.replaceIndex !== null ? Number(a.replaceIndex) : undefined;
-  if (at !== undefined) {
-    if (!state.entries[at]) return { error: `no stop at index ${at}` };
-    state.entries[at] = entry;
-  } else state.entries.push(entry);
+  if (!checks.blocking.length && kind === 'which-one' && !opts.lever) entry.image = startImage(draft.imagePrompt, state.images);
   const keyNote = key === undefined ? {} : draft.words ? { key: wordKeyNote(draft.words, key) }
     : typeof key === 'object' && !Array.isArray(key) && ('place' in key || 'number' in key || 'goal' in key) ? { key: 'place' in key ? `place ${key.place}` : 'number' in key ? `the number ${key.number}` : 'the goal' } : {};
   const standards = mode ? (WORD_KINDS.has(mode) ? WORD_STANDARDS[mode] : STANDARDS[mode]) : undefined;
-  return { ok: true, index: at ?? state.entries.length - 1, checks, ...(mode ? { skill: `${mode} (${standards})` } : {}), ...(difficulty ? { difficulty } : {}), ...keyNote,
-    ...(draft.words && filledAsk ? { askAsSaid: filledAsk } : {}), ...(answeredBy ? { answeredBy } : {}) };
+  return { item: entry, result: { checks, ...(mode ? { skill: `${mode} (${standards})` } : {}), ...(difficulty ? { difficulty } : {}), ...keyNote,
+    ...(draft.words && filledAsk ? { askAsSaid: filledAsk } : {}), ...(answeredBy ? { answeredBy } : {}) } };
 }
 
 /** What code derived, in words, for the author (it never reaches the child or the tutor). */
@@ -517,34 +520,145 @@ function wordKeyNote(d: WordDraft, key: unknown): string {
 }
 
 /** A language world: its stop type is the skill code reads from its structure. */
-function writeWordStop(state: State, a: Args) {
+function writeWordStop(state: State, a: Args, opts: { lever?: boolean } = {}): WriteOutcome<Entry> {
   if (!state.words) return { error: 'language stops are not open in this walk' };
   let kind: WonderWalkStopType;
   try { kind = wordModeOf(readWords(wordsOf(a)).world); } catch { kind = state.kinds.find(k => WORD_KINDS.has(k)) ?? 'first-sound'; }
-  return writeStop(state, a, state.kinds.includes(kind) ? kind : (state.kinds.find(k => WORD_KINDS.has(k)) ?? kind), true);
+  return writeStop(state, a, state.kinds.includes(kind) ? kind : (state.kinds.find(k => WORD_KINDS.has(k)) ?? kind), true, opts);
 }
 
 /** A math world: its stop type is the skill code reads from its structure. */
-function writeMathStop(state: State, a: Args) {
+function writeMathStop(state: State, a: Args, opts: { lever?: boolean } = {}): WriteOutcome<Entry> {
   if (!state.math) return { error: 'math stops are not open in this walk' };
   let kind: WonderWalkStopType;
   try { kind = modeOf(worldOf(a)); } catch { kind = state.kinds.find(k => MATH_KINDS.has(k)) ?? 'how-many'; }
   // A world of a closed skill still lands (with its checks naming the open ones), so the author sees why.
-  return writeStop(state, a, state.kinds.includes(kind) ? kind : (state.kinds.find(k => MATH_KINDS.has(k)) ?? kind), true);
+  return writeStop(state, a, state.kinds.includes(kind) ? kind : (state.kinds.find(k => MATH_KINDS.has(k)) ?? kind), true, opts);
 }
 
 // ── Loop ─────────────────────────────────────────────────────────────
 
+const wordAt = (text: string, word: string) =>
+  !!word && new RegExp(`\\b${word.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(e?s)?\\b`).test(text.toLowerCase());
+
+/** What code knows about a stop, for the kit's lever checks. */
+function stopFacts(e: Entry, state: State) {
+  const c = stopChecks(e.draft, state.plan?.ideas.length ?? 3, state.math, state.words);
+  const which = (e.draft.kind ?? 'which-one') === 'which-one';
+  // The answer by what it is, not by id: a help may list the same cards in another order with other ids.
+  const card = (id: string) => (e.draft.words ? readWords(e.draft.words).world.things.find(t => t.id === id)?.word : undefined) ?? id;
+  const key = which ? e.draft.correctWord.toLowerCase() : typeof c.key === 'string' ? card(c.key)
+    : Array.isArray(c.key) ? c.key.map(card) : c.key;
+  return { mode: c.mode ?? e.draft.kind, key, score: c.difficulty?.score, band: c.difficulty?.band, blocking: c.blocking };
+}
+
+/** Wonder walk's half of the kit's lever capability: its facts, its answer words, its word-only fields. */
+const WALK_LEVERS: LeverCapability<State, Entry> = {
+  facts: (e, state) => stopFacts(e, state),
+  leaks: (text, e) => {
+    const d = e.draft;
+    if ((d.kind ?? 'which-one') === 'which-one') return wordAt(text, d.correctWord);
+    const key = stopChecks(d, 3, { max: 20, openModes: [...MATH_MODES] }, { openModes: [...WORD_MODES] }).key;
+    if (d.words && typeof key === 'string') return wordAt(text, readWords(d.words).world.things.find(t => t.id === key)?.word ?? '');
+    if (key && typeof key === 'object' && 'number' in key && typeof key.number === 'number') return saysNumber(text, key.number);
+    return false;
+  },
+  wordFields: ['narration', 'ask', 'why', 'imagePrompt'],
+  // Everything on a stop but its spoken words is drawn (pictures, places, counts, cards, baskets).
+  drawn: e => ({ ...e.draft, narration: '', ask: '', why: '', imagePrompt: '', ideaIndex: 0 }),
+  fixedFields: ['ideaIndex', 'respond'],
+  // A which-one stop has no computed difficulty, and an easy stop has no simpler step: simplify is optional on both.
+  lowest: e => (e.draft.kind ?? 'which-one') === 'which-one' || stopChecks(e.draft, 3, { max: 20, openModes: [...MATH_MODES] }, { openModes: [...WORD_MODES] }).difficulty?.band === 'easy',
+};
+
+const summarize = (e: Entry, i: number) => e.draft.words
+  ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" refs=${(e.draft.words.refs ?? []).map(t => t.word ?? t.letter).join('/') || 'none'} things=${e.draft.words.things.map(t => t.word ?? t.letter).join('/')} answer=${e.draft.words.answer.kind}`
+  : e.draft.kind && e.draft.kind !== 'which-one'
+  ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" places=${(e.draft.world?.places ?? []).map(p => `${p.id}:${p.kind}[${p.contents.map(c => `${c.count} ${c.color ?? ''}${c.word}`).join('+')}]`).join(' ')} events=${(e.draft.world?.events ?? []).map(ev => `${ev.kind} ${ev.count} ${ev.word}@${ev.place}`).join(',') || 'none'} answer=${e.draft.world?.answer.kind}`
+  : `${i}. idea ${e.draft.ideaIndex}: "${e.draft.ask}" right=${e.draft.correctWord} wrong=${e.draft.wrongWords.map(w => w.word).join('/')}`;
+
+/** The independent reader: which-one and story-detail stops, heard as the child hears them. Issues send stops back once. */
+async function review(state: State, entries: Entry[], seed: number, debug: Record<string, unknown>): Promise<string[]> {
+  const plan = state.plan!;
+  // The stops in a fixed order (seeded) so the reviewer sees what the child sees.
+  // A story-detail stop's key is computed, but whether the ask asks for it is wording ("Who did we see first?" after
+  // "A duck saw a dog" fits both): the reader hears it as the child does, with the cards as its pictures.
+  const draftStops = buildStops(entries.map(e => e.draft), plan.ideas, seed, []).map(s => (s.challengeType === 'story-detail' && s.words
+    ? { ...s, options: s.words.things.map(t => ({ id: `thing-${t.id}`, word: t.word ?? t.letter ?? '', emoji: t.emoji ?? '', trap: null })) } : s));
+  // A math or sound stop's answer is computed by code.
+  const reviewable = draftStops.map((s, i) => ({ s, i })).filter(x => x.s.challengeType === 'which-one' || x.s.challengeType === 'story-detail');
+  if (!reviewable.length) return [];
+  const verdicts = (await reviewWalk(plan.bigIdea, reviewable.map(x => x.s))).map(v => ({ ...v, stop: reviewable[v.stop]?.i ?? v.stop }));
+  debug.review = verdicts;
+  return verdicts.flatMap(v => {
+    const s = draftStops[v.stop];
+    if (!s) return [];
+    const right = s.options.find(o => o.id === s.correctOptionId)!.word;
+    const out: string[] = [];
+    if (v.pick.toLowerCase() !== right) out.push(`stop ${v.stop}: a reader who heard only the narration and the ask picked "${v.pick}", not "${right}". ${v.note}`);
+    if (v.alsoFits.length) out.push(`stop ${v.stop}: "${v.alsoFits.join('", "')}" also fits the ask; change the pictures so exactly one fits. ${v.note}`);
+    return out;
+  });
+}
+
+/**
+ * Out of turns or time: keep the stops that pass every check (first one per right answer), drop the ideas no kept
+ * stop teaches, and ship if enough remain. Every leak and picture rule still holds; only the walk's length and
+ * idea coverage give way, and the advisory says so.
+ */
+function salvage(state: State, entries: Entry[], min: number): { items: Entry[]; note: string } | null {
+  if (!state.plan) return null;
+  const seenAnswers = new Set<string>();
+  const kept = entries.filter(e => {
+    if (stopChecks(e.draft, state.plan!.ideas.length, state.math, state.words).blocking.length) return false;
+    const key = e.draft.world ? JSON.stringify(e.draft.world) : e.draft.words ? JSON.stringify(e.draft.words) : e.draft.correctWord.toLowerCase();
+    if (seenAnswers.has(key)) return false;
+    seenAnswers.add(key);
+    return true;
+  }).slice(0, 5);
+  if (kept.length < min) return null;
+  const used = Array.from(new Set(kept.map(e => e.draft.ideaIndex))).sort((a, b) => a - b);
+  const dropped = entries.length - kept.length;
+  state.plan = { ...state.plan, ideas: used.map(i => state.plan!.ideas[i]) };
+  return {
+    items: kept.map(e => ({ ...e, draft: { ...e.draft, ideaIndex: used.indexOf(e.draft.ideaIndex) } })),
+    note: `salvaged: shipped ${kept.length} passing stop(s) after the budget ran out${dropped ? `, dropped ${dropped} blocked or repeated` : ''}`,
+  };
+}
+
+async function ship(state: State, entries: Entry[], seed: number, debug: Record<string, unknown>, advisory: string[],
+  leversOf: (e: Entry) => Array<{ kind: 'help' | 'simplify'; when: string; says: string; item: Entry }> = () => []): Promise<WonderWalkData> {
+  const plan = state.plan!;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const images = await Promise.race([
+    Promise.all(entries.map(e => e.image ?? Promise.resolve(null))),
+    new Promise<Array<string | null>>(r => { timer = setTimeout(() => r(entries.map(() => null)), IMAGE_WAIT_MS); }),
+  ]);
+  clearTimeout(timer);
+  // Only which-one stops ask for a scene image; math stops are drawn by code.
+  const missing = entries.filter((e, i) => (e.draft.kind ?? 'which-one') === 'which-one' && !images[i]).length;
+  if (missing && state.images) advisory.push(`${missing} scene image(s) did not render; those stops show their emoji`);
+  // Each stop's levers: the changed item, built the way every stop is built (a help keeps the stop's scene image).
+  const challenges = buildStops(entries.map(e => e.draft), plan.ideas, seed, images).map((stop, i) => {
+    const levers = slotLevers(leversOf(entries[i]), (e, id) => ({ ...buildStops([e.draft], plan.ideas, seed, [images[i]])[0], id: `${stop.id}-${id}` }));
+    return levers.length ? { ...stop, levers } : stop;
+  });
+  return validateWonderWalkData({
+    title: plan.title,
+    bigIdea: plan.bigIdea,
+    // A walk of math stops is a math walk (and of language stops a language walk), whatever strand the plan named.
+    domain: challenges.every(c => MATH_KINDS.has(c.challengeType)) ? 'math' : challenges.every(c => WORD_KINDS.has(c.challengeType)) ? 'language' : plan.domain,
+    gradeBand: 'K',
+    challengeType: challenges[0].challengeType,
+    challenges,
+    agentDebug: debug,
+  });
+}
+
 export async function generateWonderWalk(gctx: GenerationContext): Promise<WonderWalkData> {
-  const started = Date.now();
-  const elapsed = () => Date.now() - started;
-  const seed = Number((gctx.raw as { seed?: number } | undefined)?.seed) || Math.floor(Math.random() * 2 ** 31);
-  const raw = (gctx.raw ?? {}) as { images?: boolean; targetEvalMode?: string };
-  const resolution = await resolveEvalModes('wonder-walk',
-    { targetEvalMode: gctx.targetEvalMode ?? raw.targetEvalMode, intent: gctx.intent, objectiveText: gctx.objective?.text },
-    CHALLENGE_TYPE_DOCS);
-  const picked = resolution?.allowedTypes.filter((t): t is WonderWalkStopType => ALL_KINDS.includes(t as WonderWalkStopType)) ?? [];
-  const open = picked.length ? picked : ALL_KINDS;
+  const raw = (gctx.raw ?? {}) as { images?: boolean; seed?: number };
+  const seed = Number(raw.seed) || Math.floor(Math.random() * 2 ** 31);
+  const { open, resolution } = await openModes('wonder-walk', gctx, CHALLENGE_TYPE_DOCS, ALL_KINDS);
   // The tier is a target every math stop's computed difficulty must hit, so it holds for a blend of math modes too.
   const tier = gctx.supportTier;
   const math: MathScope | undefined = open.some(k => MATH_KINDS.has(k))
@@ -552,168 +666,26 @@ export async function generateWonderWalk(gctx: GenerationContext): Promise<Wonde
     : undefined;
   const words: WordScope | undefined = open.some(k => WORD_KINDS.has(k)) ? { ...(tier ? { tier } : {}), openModes: open.filter(k => WORD_KINDS.has(k)) } : undefined;
   console.log(`[WonderWalk] modes: ${resolution ? `${resolution.modes.map(m => m.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${open.join(', ')}]${math ? ` · counts to ${math.max}, tier ${tier ?? 'none'}` : ''}`);
-  const state: State = { entries: [], nextUid: 1, images: imagesOn() && raw.images !== false, kinds: open, math, words };
-  const debug = { turns: 0, seconds: 0, modes: open, countMax: math?.max, tier, toolCalls: [] as Array<{ turn: number; name: string; ok: boolean; note?: string }>, review: [] as StopVerdict[], advisories: [] as string[] };
-  const contents: Content[] = [{ role: 'user', parts: [{ text: 'Author the Wonder Walk now.' }] }];
-  const systemInstruction = systemPrompt(gctx.topic, gctx.intent, buildScopePromptSection(gctx.scope), open, math, words);
-  const tools = toolsFor(open);
-  let shipped: WonderWalkData | undefined;
-  let reviewed = false;
-  let salvaged: string | undefined;
+  const state: State = { nextUid: 1, images: imagesOn() && raw.images !== false, kinds: open, math, words };
 
-  const checks = () => walkChecks({ planned: !!state.plan, ideas: state.plan?.ideas ?? [], stops: state.entries.map(e => e.draft), math: state.math, words: state.words }, salvaged ? SALVAGE_MIN_STOPS : 3);
-
-  const finalize = async (allowRevise: boolean): Promise<{ status: 'shipped' } | { status: 'revise'; blocking: string[] }> => {
-    const { blocking, advisory } = checks();
-    if (blocking.length) return { status: 'revise', blocking };
-    const plan = state.plan!;
-    const ideas = plan.ideas;
-    // The stops in a fixed order (seeded) so the reviewer sees what the child sees.
-    // A story-detail stop's key is computed, but whether the ask asks for it is wording ("Who did we see first?" after
-    // "A duck saw a dog" fits both): the reader hears it as the child does, with the cards as its pictures.
-    const draftStops = buildStops(state.entries.map(e => e.draft), ideas, seed, []).map(s => (s.challengeType === 'story-detail' && s.words
-      ? { ...s, options: s.words.things.map(t => ({ id: `thing-${t.id}`, word: t.word ?? t.letter ?? '', emoji: t.emoji ?? '', trap: null })) } : s));
-    // Which-one and story-detail stops go to the reader; a math or sound stop's answer is computed by code.
-    const reviewable = draftStops.map((s, i) => ({ s, i })).filter(x => x.s.challengeType === 'which-one' || x.s.challengeType === 'story-detail');
-    if (!reviewed && reviewable.length) {
-      reviewed = true;
-      const verdicts = (await reviewWalk(plan.bigIdea, reviewable.map(x => x.s)).catch((error) => {
-        advisory.push(`review failed: ${error instanceof Error ? error.message : String(error)}`);
-        return [] as StopVerdict[];
-      })).map(v => ({ ...v, stop: reviewable[v.stop]?.i ?? v.stop }));
-      debug.review = verdicts;
-      const issues = verdicts.flatMap(v => {
-        const s = draftStops[v.stop];
-        if (!s) return [];
-        const right = s.options.find(o => o.id === s.correctOptionId)!.word;
-        const out: string[] = [];
-        if (v.pick.toLowerCase() !== right) out.push(`stop ${v.stop}: a reader who heard only the narration and the ask picked "${v.pick}", not "${right}". ${v.note}`);
-        if (v.alsoFits.length) out.push(`stop ${v.stop}: "${v.alsoFits.join('", "')}" also fits the ask; change the pictures so exactly one fits. ${v.note}`);
-        return out;
-      });
-      if (issues.length && allowRevise && elapsed() < SOFT_DEADLINE_MS) return { status: 'revise', blocking: issues.map(x => `review: ${x}`) };
-      issues.forEach(x => advisory.push(`review: ${x}`));
-    }
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const images = await Promise.race([
-      Promise.all(state.entries.map(e => e.image ?? Promise.resolve(null))),
-      new Promise<Array<string | null>>(r => { timer = setTimeout(() => r(state.entries.map(() => null)), IMAGE_WAIT_MS); }),
-    ]);
-    clearTimeout(timer);
-    // Only which-one stops ask for a scene image; math stops are drawn by code.
-    const missing = state.entries.filter((e, i) => (e.draft.kind ?? 'which-one') === 'which-one' && !images[i]).length;
-    if (missing && state.images) advisory.push(`${missing} scene image(s) did not render; those stops show their emoji`);
-    debug.seconds = +(elapsed() / 1000).toFixed(1);
-    debug.advisories = salvaged ? [salvaged, ...advisory] : advisory;
-    const challenges = buildStops(state.entries.map(e => e.draft), ideas, seed, images);
-    shipped = validateWonderWalkData({
-      title: plan.title,
-      bigIdea: plan.bigIdea,
-      // A walk of math stops is a math walk (and of language stops a language walk), whatever strand the plan named.
-      domain: challenges.every(c => MATH_KINDS.has(c.challengeType)) ? 'math' : challenges.every(c => WORD_KINDS.has(c.challengeType)) ? 'language' : plan.domain,
-      gradeBand: 'K',
-      challengeType: challenges[0].challengeType,
-      challenges,
-      agentDebug: debug,
-    });
-    return { status: 'shipped' };
-  };
-
-  /**
-   * Out of turns or time: keep the stops that pass every check (first one per right answer), drop the ideas no kept
-   * stop teaches, and ship if enough remain. Every leak and picture rule still holds; only the walk's length and
-   * idea coverage give way, and the advisory says so.
-   */
-  const salvage = (): boolean => {
-    if (!state.plan) return false;
-    const seenAnswers = new Set<string>();
-    const kept = state.entries.filter(e => {
-      if (stopChecks(e.draft, state.plan!.ideas.length, state.math, state.words).blocking.length) return false;
-      const key = e.draft.world ? JSON.stringify(e.draft.world) : e.draft.words ? JSON.stringify(e.draft.words) : e.draft.correctWord.toLowerCase();
-      if (seenAnswers.has(key)) return false;
-      seenAnswers.add(key);
-      return true;
-    }).slice(0, 5);
-    if (kept.length < SALVAGE_MIN_STOPS) return false;
-    const used = Array.from(new Set(kept.map(e => e.draft.ideaIndex))).sort((a, b) => a - b);
-    const dropped = state.entries.length - kept.length;
-    state.plan = { ...state.plan, ideas: used.map(i => state.plan!.ideas[i]) };
-    state.entries = kept.map(e => ({ ...e, draft: { ...e.draft, ideaIndex: used.indexOf(e.draft.ideaIndex) } }));
-    reviewed = true; // no time for a review round; its earlier verdicts stay in the trace
-    salvaged = (`salvaged: shipped ${kept.length} passing stop(s) after the budget ran out${dropped ? `, dropped ${dropped} blocked or repeated` : ''}`);
-    return true;
-  };
-
-  while (!shipped && debug.turns < MAX_TURNS && elapsed() < HARD_DEADLINE_MS) {
-    debug.turns++;
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents,
-      config: { systemInstruction, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, tools: [{ functionDeclarations: tools }] },
-    });
-    const modelContent = response.candidates?.[0]?.content;
-    if (!modelContent) break;
-    contents.push(modelContent);
-    const calls: FunctionCall[] = response.functionCalls ?? [];
-    if (!calls.length) {
-      const said = (modelContent.parts ?? []).map(p => p.text ?? '').join(' ').trim();
-      debug.toolCalls.push({ turn: debug.turns, name: '(text, no tool call)', ok: false, note: said.slice(0, 160) || 'empty reply' });
-      contents.push({ role: 'user', parts: [{ text: 'Use the tools: write each stop, then finish, or decline if the topic cannot be taught with these stop types.' }] });
-      continue;
-    }
-    const declined = calls.find(c => c.name === 'decline');
-    if (declined) throw new WonderWalkDeclined(`[WonderWalk] declined "${gctx.topic}": ${str(declined.args?.reason) || 'no reason given'}`);
-    const results = new Map<number, unknown>();
-    const record = (i: number, value: unknown) => {
-      results.set(i, value);
-      const error = value && typeof value === 'object' && 'error' in value ? String((value as { error: unknown }).error) : undefined;
-      // A write that lands blocked is ok as a call; its first block goes in the trace, so a long run shows what it fought.
-      const blocked = (value as { checks?: { blocking?: string[] } } | undefined)?.checks?.blocking?.[0];
-      const note = error ?? (blocked ? `blocked: ${blocked}` : undefined);
-      debug.toolCalls.push({ turn: debug.turns, name: calls[i].name ?? '?', ok: !error, ...(note ? { note: note.slice(0, 160) } : {}) });
-    };
-    const byName = (n: string) => calls.map((c, i) => ({ c, i })).filter(x => x.c.name === n);
-    // Fixed order inside a turn: plan, removals (last first), writes, finish.
-    for (const { c, i } of byName('plan_walk')) record(i, setPlan(state, c.args ?? {}));
-    for (const { c, i } of byName('remove_stop').sort((a, b) => Number(b.c.args?.index) - Number(a.c.args?.index))) {
-      const index = Number(c.args?.index);
-      if (!state.entries[index]) record(i, { error: `no stop at index ${index}` });
-      else { state.entries.splice(index, 1); record(i, { ok: true, stops: state.entries.length }); }
-    }
-    for (const { c, i } of byName('write_stop')) record(i, writeStop(state, c.args ?? {}, 'which-one'));
-    for (const { c, i } of byName('write_math_stop')) record(i, writeMathStop(state, c.args ?? {}));
-    for (const { c, i } of byName('write_word_stop')) record(i, writeWordStop(state, c.args ?? {}));
-    for (const { i } of byName('finish')) record(i, await finalize(true));
-
-    const remaining = SOFT_DEADLINE_MS - elapsed();
-    const parts: Part[] = calls.map((c, i) => ({ functionResponse: { id: c.id, name: c.name, response: { output: results.get(i) ?? { error: 'not executed' } } } }));
-    if (!shipped) {
-      parts.push({ text: JSON.stringify({
-        walk: state.entries.map((e, i) => e.draft.words
-          ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" refs=${(e.draft.words.refs ?? []).map(t => t.word ?? t.letter).join('/') || 'none'} things=${e.draft.words.things.map(t => t.word ?? t.letter).join('/')} answer=${e.draft.words.answer.kind}`
-          : e.draft.kind && e.draft.kind !== 'which-one'
-          ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" places=${(e.draft.world?.places ?? []).map(p => `${p.id}:${p.kind}[${p.contents.map(c => `${c.count} ${c.color ?? ''}${c.word}`).join('+')}]`).join(' ')} events=${(e.draft.world?.events ?? []).map(ev => `${ev.kind} ${ev.count} ${ev.word}@${ev.place}`).join(',') || 'none'} answer=${e.draft.world?.answer.kind}`
-          : `${i}. idea ${e.draft.ideaIndex}: "${e.draft.ask}" right=${e.draft.correctWord} wrong=${e.draft.wrongWords.map(w => w.word).join('/')}`),
-        walkChecks: checks(),
-        time: remaining > 0 ? `${Math.round(remaining / 1000)}s left.` : 'Time is up. Fix only blocking issues and call finish now.',
-      }) });
-    }
-    contents.push({ role: 'user', parts });
-  }
-
-  if (!shipped) {
-    const outcome = await finalize(false);
-    if (outcome.status !== 'shipped' && salvage()) await finalize(false);
-    if (!shipped) {
-      const trace = debug.toolCalls.filter(t => !t.ok).slice(-4).map(t => `turn ${t.turn} ${t.name}: ${t.note}`);
-      const blocking = outcome.status === 'revise' ? outcome.blocking : [];
-      throw new Error(`[WonderWalk] stopped after ${debug.turns} turns without a valid walk: ${blocking.join('; ')}${trace.length ? ` | last failures: ${trace.join(' | ')}` : ''}`);
-    }
-  }
-  console.log('[WonderWalk] shipped', { turns: debug.turns, seconds: debug.seconds, stops: shipped!.challenges.length });
-  return shipped!;
+  return runAuthor<State, Entry, WonderWalkData>({
+    tag: 'WonderWalk', label: 'walk', noun: 'stop', topic: gctx.topic, model: MODEL,
+    budget: { softMs: SOFT_DEADLINE_MS, hardMs: HARD_DEADLINE_MS, maxTurns: MAX_TURNS, minItems: 3, salvageMin: SALVAGE_MIN_STOPS },
+    system: systemPrompt(gctx.topic, gctx.intent, buildScopePromptSection(gctx.scope), open, math, words),
+    start: 'Author the Wonder Walk now.',
+    nudge: 'Use the tools: write each stop, then finish, or decline if the topic cannot be taught with these stop types.',
+    Declined: WonderWalkDeclined,
+    tools: KIT_TOOLS,
+    setPlan,
+    writers: writersFor(open),
+    checks: (s, entries, min) => walkChecks({ planned: !!s.plan, ideas: s.plan?.ideas ?? [], stops: entries.map(e => e.draft), math: s.math, words: s.words }, min),
+    summarize,
+    review: (s, entries, debug) => review(s, entries, seed, debug),
+    salvage,
+    levers: WALK_LEVERS,
+    ship: (s, entries, { debug, advisory, leversOf }) => ship(s, entries, seed, debug, advisory, leversOf),
+  }, state, { modes: open, countMax: math?.max, tier, review: [] as StopVerdict[] });
 }
 
 export const __test = { setPlan, writeStop, writeMathStop, writeWordStop, draftOf, wordsOf, CHALLENGE_TYPE_DOCS };
 export const WONDER_WALK_TOOLS = TOOLS;
-void Type;

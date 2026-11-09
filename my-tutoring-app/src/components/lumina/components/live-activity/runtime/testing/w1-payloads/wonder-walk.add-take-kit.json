@@ -1,0 +1,378 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-add-take-kit-payload-2026-11-07.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "add-take",
+ "data": {
+  "title": "Ducks at the Pond",
+  "bigIdea": "Joining makes more ducks, and leaving makes fewer ducks.",
+  "domain": "math",
+  "gradeBand": "K",
+  "challengeType": "add-take",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "When more friends join, we add them to find how many now.",
+    "narration": "Three yellow ducks swim in the pond. Two more ducks splash in to join them!",
+    "ask": "How many ducks are in the pond now?",
+    "why": "Count all the ducks swimming together. Count the first ducks, then count the new ones.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "line",
+       "color": "yellow",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s0-pond-0",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-pond-1",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-pond-2",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "color": "yellow"
+      },
+      {
+       "id": "s0-pond-3",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "color": "yellow",
+       "event": "join"
+      },
+      {
+       "id": "s0-pond-4",
+       "word": "duck",
+       "emoji": "\ud83e\udd86",
+       "place": "pond",
+       "color": "yellow",
+       "event": "join"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       6,
+       4,
+       5
+      ],
+      "answer": 5
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "duck"
+    ],
+    "sceneEmoji": [
+     "\ud83e\udd86"
+    ],
+    "options": [],
+    "correctOptionId": "num-5",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-2",
+    "idea": "When friends swim away, we take them away to find how many now.",
+    "narration": "Five green frogs sit in the sun. Two frogs hop away to find food!",
+    "ask": "How many frogs are on the pond log now?",
+    "why": "Look at the frogs that stay on the log. Count each frog that did not hop away.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "scattered",
+       "color": "green",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s1-pond-0",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "color": "green",
+       "position": [
+        0.354,
+        0.651
+       ]
+      },
+      {
+       "id": "s1-pond-1",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "color": "green",
+       "position": [
+        0.088,
+        0.149
+       ]
+      },
+      {
+       "id": "s1-pond-2",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "color": "green",
+       "position": [
+        0.172,
+        0.634
+       ]
+      },
+      {
+       "id": "s1-pond-3",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "color": "green",
+       "event": "leave",
+       "position": [
+        0.605,
+        0.639
+       ]
+      },
+      {
+       "id": "s1-pond-4",
+       "word": "frog",
+       "emoji": "\ud83d\udc38",
+       "place": "pond",
+       "color": "green",
+       "event": "leave",
+       "position": [
+        0.87,
+        0.14
+       ]
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       2,
+       3,
+       4
+      ],
+      "answer": 3
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "hard",
+     "score": 3,
+     "reasons": [
+      "a scattered group (+1)",
+      "a story: some leave (+1.5)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "frog"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc38"
+    ],
+    "options": [],
+    "correctOptionId": "num-3",
+    "sceneImage": null
+   },
+   {
+    "id": "stop-3",
+    "idea": "We can add or take away to find the new number at the pond.",
+    "narration": "Four green turtles rest in the mud. Three more turtles crawl in to join them!",
+    "ask": "How many turtles are at the pond now?",
+    "why": "Count the first turtles in the mud. Then count the new turtles that joined them.",
+    "respond": "say",
+    "challengeType": "add-take",
+    "world": {
+     "places": [
+      {
+       "id": "pond",
+       "kind": "group",
+       "arrangement": "rows",
+       "color": "green",
+       "choosable": false,
+       "droppable": false
+      }
+     ],
+     "objects": [
+      {
+       "id": "s2-pond-0",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green"
+      },
+      {
+       "id": "s2-pond-1",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green"
+      },
+      {
+       "id": "s2-pond-2",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green"
+      },
+      {
+       "id": "s2-pond-3",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green"
+      },
+      {
+       "id": "s2-pond-4",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green",
+       "event": "join"
+      },
+      {
+       "id": "s2-pond-5",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green",
+       "event": "join"
+      },
+      {
+       "id": "s2-pond-6",
+       "word": "turtle",
+       "emoji": "\ud83d\udc22",
+       "place": "pond",
+       "color": "green",
+       "event": "join"
+      }
+     ],
+     "answer": {
+      "kind": "number",
+      "countPlaces": [
+       "pond"
+      ],
+      "choices": [
+       6,
+       8,
+       7
+      ],
+      "answer": 7
+     }
+    },
+    "standards": "K.OA.A.1-2",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "numbers to 7 (+1)",
+      "a story: some join (+1)",
+      "say the number (+0.5)"
+     ]
+    },
+    "sceneWords": [
+     "turtle"
+    ],
+    "sceneEmoji": [
+     "\ud83d\udc22"
+    ],
+    "options": [],
+    "correctOptionId": "num-7",
+    "sceneImage": null
+   }
+  ],
+  "agentDebug": {
+   "turns": 4,
+   "seconds": 15,
+   "modes": [
+    "add-take"
+   ],
+   "countMax": 10,
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_math_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": []
+  }
+ }
+}
