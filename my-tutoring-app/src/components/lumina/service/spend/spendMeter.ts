@@ -53,6 +53,17 @@ export function withSpendSource<T>(source: SpendSource, label: string | undefine
   return scope.run({ source, label }, fn);
 }
 
+/** What one generation spent, across every Gemini call made inside it (images, drawers and reviews included). */
+export interface SpendTally { usd: number; calls: number; byModel: Record<string, { calls: number; usd: number }> }
+
+const tallies = new AsyncLocalStorage<SpendTally>();
+
+/** Run `fn` with a tally that every Gemini call inside it adds to. Nested work and background promises count. */
+export function withSpendTally<T>(fn: (tally: SpendTally) => T): T {
+  const tally: SpendTally = { usd: 0, calls: 0, byModel: {} };
+  return tallies.run(tally, () => fn(tally));
+}
+
 export function currentSource(): { source: SpendSource; label?: string } {
   return scope.getStore() ?? { source: process.env.LUMINA_AGENT === '1' ? 'agent' : 'app' };
 }
@@ -140,6 +151,14 @@ export function assertBudget(source: SpendSource): void {
 export function recordCall(model: string, usage: Usage | undefined, src: { source: SpendSource; label?: string }): void {
   try {
     const usd = priceCall(model, usage);
+    const tally = tallies.getStore();
+    if (tally) {
+      tally.usd += usd;
+      tally.calls++;
+      const row = (tally.byModel[model] ??= { calls: 0, usd: 0 });
+      row.calls++;
+      row.usd += usd;
+    }
     mkdirSync(LEDGER_DIR, { recursive: true });
     const row = {
       t: new Date().toISOString(), model, source: src.source, label: src.label,

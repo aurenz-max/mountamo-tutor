@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withGenerationRequest } from '@/components/lumina/service/generation/generationRequest';
+import { withKitTrace } from '@/components/lumina/service/agent-kit/trace';
 
 // Core geminiService exports (cleaned up - only essential functions)
 import {
@@ -36,6 +37,28 @@ export async function POST(request: NextRequest) {
     () => handlePost(body));
 }
 
+/** One JSON object per line: `progress` for each agent-kit step, then one `result` or `error`. */
+function streamGeneration(generate: () => Promise<unknown>) {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream({
+    start(controller) {
+      // A closed tab must not stop or crash the generation, so a failed send is ignored.
+      const send = (event: Record<string, unknown>) => {
+        try { controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`)); } catch { /* the reader left */ }
+      };
+      void withKitTrace((event) => send({ type: 'progress', event }), generate)
+        .then(
+          (result) => send({ type: 'result', result }),
+          (error: unknown) => send({ type: 'error', error: error instanceof Error ? error.message : String(error) }),
+        )
+        .finally(() => {
+          try { controller.close(); } catch { /* already closed */ }
+        });
+    },
+  });
+  return new Response(body, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive' } });
+}
+
 async function handlePost(body: Record<string, unknown>) {
   try {
     const { action, params } = body as { action: string; params: any };
@@ -68,11 +91,9 @@ async function handlePost(body: Record<string, unknown>) {
             ...(params.config || {}),
           },
         };
-        const componentContent = await generateComponentContent(
-          item,
-          params.topic,
-          params.gradeLevel
-        );
+        const generate = () => generateComponentContent(item, params.topic, params.gradeLevel);
+        if (params.stream) return streamGeneration(generate);
+        const componentContent = await generate();
         return NextResponse.json(componentContent);
       }
 

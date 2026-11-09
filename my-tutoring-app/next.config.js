@@ -6,6 +6,8 @@ const nextConfig = {
     webpackBuildWorker: true,
     // Bound page-generation concurrency on memory-limited build machines.
     cpus: 2,
+    // A native binary, one per platform: webpack must leave it alone so the server loads the right one.
+    serverComponentsExternalPackages: ['@resvg/resvg-js'],
   },
   eslint: {
     ignoreDuringBuilds: true,
