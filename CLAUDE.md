@@ -13,6 +13,10 @@ This is Lumina — an adaptive learning platform where students interact with vi
 
 **Lesson-entry principle:** Every Lumina lesson launches through `useExhibitSession.generate`, scoped by `preBuiltObjectives`. New lesson-selection intelligence ships as a Lesson Builder fill mode (a producer of `preBuiltObjectives`) — never as a new launch surface, page, or endpoint without a consumer. Contract + deprecation ledger: `.claude/skills/student-data-loop/SKILL.md` §7.
 
+## Agent primitive design
+
+Agent primitives must be agent-led. Give the agent a world, a goal, general tools, and domain-specific capabilities and displays. Do not add hardcoded per-mode menus, fixed task/layout grids, fixed response-channel menus, or per-primitive lever logic. Before proposing a design, check it against /agent-primitive and identify every choice being taken away from the agent.
+
 ## Commands (verbatim — these exist because the obvious form false-passes)
 
 All frontend commands run from `my-tutoring-app/` with an **absolute** `cd` and the **project-local binary**. Bare `npx tsc` from the repo root prints "not the tsc command you are looking for", emits no `error TS` lines, and reads as clean without compiling.
@@ -48,6 +52,16 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 **Contract-first edits:** one primitive serves many skills; an edit for skill N must not ablate what skills 1..N−1 depend on. Before modifying an existing primitive's component or generator, read `my-tutoring-app/src/components/lumina/docs/contracts/<primitive-id>.md` if it exists (`/primitive-contract` derives/refreshes it; `--check` runs the edit guard). If the new demand contradicts an existing requirement, fork (eval-mode split → band gate → config axis → variant) — never edit in place over a conflict.
 
 **Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`, `PRIMITIVE_LIFECYCLE.md`
+
+### Agent primitives (USER 11-07)
+
+An agent primitive's generator is a model in a tool loop under code checks (wonder-walk, life-lab, deep-dive, annotated-example). The lifecycle above is written for schema primitives, where each `/add-*` skill writes a per-primitive table in app code. For an agent primitive that is the bug: a lever menu, word list, respond menu or task menu in app code is rails one level down.
+
+- **The agent authors; code checks.** The agent designs the item, how the child answers, and the item's help and simplify levers, in the primitive's own blocks. Code rebuilds what it wrote, derives every key, names the mode, scores difficulty, blocks shortcuts and refuses what does not fit. Invariants: `/agent-primitive` (`.claude/skills/agent-primitive/SKILL.md`).
+- **Capabilities are built once, in the kit.** `service/agent-kit/` holds the author loop (`runAuthor`) and the shared capabilities; a primitive supplies its blocks, its checks and its renderer. A new capability (levers, respond, a lookup into the word library) is added to the kit and every agent primitive gains it, never re-implemented inside one primitive.
+- **No new loops.** `agentKit.guard.test.ts` fails a new tool loop outside the kit; its legacy list only shrinks.
+- **A lesson is closed when it is a kit stage or a guard (USER 11-08).** `runAuthor` owns write, code checks, look, revise and ship, with the trace, cost and run record built in; a primitive says only what the child sees. `/review-agent-primitive <id>` closes agent-primitive work, the way `/review-live-wiring` closes tutor wiring.
+- **General agent primitives (USER 11-08): an eval mode is a capability, not a task.** `practice-studio` has one mode; the agent assembles each item from kit answer surfaces (`surfaces.ts`), displays (`displays.ts`) and the write-look-revise loop (`itemLoop.ts`, `look.ts`). Add a surface or display to the kit, never a per-primitive mode for one task.
 
 ## Project Management
 

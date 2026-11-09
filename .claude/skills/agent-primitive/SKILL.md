@@ -7,7 +7,8 @@ description: >-
   answer and names the skill from the structure, solves every item for shortcuts, computes difficulty from what was
   built, and every part has a render, a tool and a tutor face, including how the child answers: the agent designs what
   the child produces (say the value, make any word that fits, show it) by the nature of the problem, and code derives
-  the boss wiring, key, misses and harness from it (/add-live-tutor-tools does the mechanics). Use when building a new
+  the boss wiring, key, misses and harness from it (/add-live-tutor-tools does the mechanics). Also owns the kit's
+  displays: which ones each agent primitive offers and how a new one is wired. Use when building a new
   agent primitive, when an agent primitive feels no stronger than an on-rails schema, to wire or rewire one to the
   tutor, or to audit one. Not for which primitive a lesson gets (the manifest owns that), a schema generator with no
   tool loop (/primitive, /add-eval-modes), or levers alone (/add-support-tiers).
@@ -33,6 +34,78 @@ sort and count) with no task list; the old tasks are compositions of it.
 
 The roles that make it stronger: **the agent describes a world and a goal; code builds it, derives the answer, names
 the skill, solves it for shortcuts and scores it.**
+
+## General agent primitives (USER 2026-11-08)
+
+An eval mode in an agent primitive is a capability the agent can use (an answer surface, a display, the boss schema),
+not a task code pre-specified (life-lab's `whose_baby` was a task: it capped inheritance at one item shape). The kit
+holds the capabilities: `surfaces.ts` (choose, categorize, order: scoring, shortcut checks, structural difficulty),
+`displays.ts` (one registry entry per display: agent SVG, table, text, and code-drawn bar graph, number line, clock,
+base ten, pattern blocks, ten frame, array, coins, picture graph, timeline, flow and map) and the write-look-revise loop
+(`itemLoop.ts` + `look.ts`: screenshot, blind solve, code checks, revise per item). `practice-studio` is the first
+primitive on it: one catalog entry, one mode. A new kind of item is a new surface or display in the kit. For keys
+code cannot compute (which picture), the blind solve is the independent reader (I4): on 11-07 it agreed with the
+author 18/18; its value is catching shortcuts (7 to 4 after revising). Agent-claimed tiers do not hold; difficulty
+stays computed (I6). Evidence: `scripts/agent-surface-probe.mjs`, `qa/agent-surfaces/`.
+
+**A subject primitive is the framework plus its subject's capabilities (USER 2026-11-08, life-lab).** It stays its own
+entry, follows this framework and generalizes across most any concept in its subject: the agent decides what to show,
+teach and ask. The kit gives it the teach step (`teach.ts`: frames of a sentence and a drawing), the answer surfaces and
+displays through `write_item`, and its own drawings; the subject adds displays to the registry under a domain tag and may
+keep a simulation (life-lab's `write_world`) as one more writer. Never answer a weak topic with a world or a rule for that
+topic. A world is the right tool only when running it teaches.
+
+**Teaching is a lesson piece, not a preamble (USER 2026-11-08, life-lab).** `write_section` (`teach.ts`) places sections where the agent wants them; a frame is a sentence plus any of a display or drawing, a click-to-paint `picture` (prompt only) and `cards`. A picture appears only in a section, because no reader sees it at authoring time, and the sentence must teach without it. A lesson with no objective gets one from the plan tool, in the manifest's fields (`planWithObjective`), and the look reader checks against it.
+
+**Displays before drawings (USER 2026-11-08).** When the agent keeps hand-drawing the same kind of thing, build a kit
+display: the agent writes a few values, code draws it and can check it. Hand-drawn SVG was 65-75% of the item text on
+picture sessions, and clock items doubled the cost of the first write. Rules, evidence and the build order:
+`my-tutoring-app/qa/agent-surfaces/DISPLAY_ROADMAP.md`. Judge each display with the tester's compare mode on one fixed
+objective, before and after.
+
+**Keep hand drawing for concept diagrams (USER 2026-11-08).** Displays are for pictures that recur and that a few
+values describe. When the structure of the drawing is the idea being taught, the agent draws it: same frame on every
+option, only the taught variable changes, plain lines, and at least one drawing that tests the rule. Exemplar and
+rules: `DISPLAY_ROADMAP.md`, "When the agent should keep drawing".
+
+## Displays: one registry, a menu per primitive (USER 2026-11-08)
+
+Every agent primitive draws from one registry (`service/agent-kit/displays.ts`). What differs per primitive is the menu:
+a biology primitive offers its author the science and data displays, and a general one offers all of them. A display
+built for one domain is a registry entry with a domain tag, so every primitive that takes the domain gains it.
+
+| Primitive | Menu (`DisplayCapability`) | Where a display goes |
+|---|---|---|
+| `practice-studio` | `ALL_DISPLAYS` | item stimulus, option cards, help levers |
+| `deep-dive` | every domain, minus the ones a richer block already covers (chart, number line, table, timeline, process) | `write_figure` |
+| `life-lab` | `science`, `biology` and `general`, no `text` | teach frames, item stimulus and cards, `world.show`, help levers |
+| `wonder-walk`, `annotated-example` | none yet: reasons are in `NO_DISPLAYS` in the guard test | |
+
+**Wiring a primitive (each step has one kit function):**
+
+1. State the menu as a `DisplayCapability` beside the primitive's world or blocks.
+2. Tell the author: `displayPrompt(cap)`, in a section that says when a display is worth adding. Most items need none.
+3. Take it in the tool: `displayToolSchema(cap)` for a writer on `parametersJsonSchema`, or a JSON text field for one on
+   the older `Schema` type. Read it with `readDisplays`, which accepts both.
+4. Check it: `displayIssues(shown, cap)` joins the primitive's structure errors, so a display off the menu or one that
+   cannot be drawn is blocked with a sentence.
+5. Check it for leaks: put `displayText(d)` through the same rules as the ask. Life-lab adds it to the text every "names
+   the answer" rule reads. A list that gives an order is checked one display at a time, or the ask's words hide it.
+6. Draw it: `KitDisplay`, with `DISPLAY_CSS` once in the host.
+7. Tell the tutor: `displayWords` in the scene, as a fact present only when something is shown.
+8. Let a help use it: the display field is one of the writer's fields, so a lever's `change` can add one, and code
+   counts it as changing the screen. Life-lab's helps were only emoji and labels until this (11-07 runs).
+
+**`svg` is on a menu only where the author sees its drawing.** The item loop and deep-dive send back a screenshot, and
+`runAuthor` does when a view sets `drawn` (11-08). A drawing no one looked at does not ship.
+
+**Which picture, cheapest first:** a kit display (values) → an agent drawing (`svg`, for a concept diagram) → an
+interactive template (`gen-display`, deep-dive only today) → a catalog drawer (`embed_primitive`) → the image model.
+
+**Adding a display for a domain.** Same bar as any display (`DISPLAY_ROADMAP.md`: seen on more than one topic, measured
+before and after). Add a `DEFS` entry, its `DOMAINS` tag and its sample in `displays.test.ts`; the types fail until
+all three exist. Drawings already inside one primitive's component (life-lab's beaks, moths, feet and critters) are
+candidates: port one to the registry when a second primitive needs it.
 
 ## The invariants
 
@@ -79,7 +152,9 @@ fixtures too: they caught a shortcut in this skill's own first coverage table.
 arrangement, distractor distance, number of choices, production vs recognition) and returns the score and its reasons
 with every write. A requested tier (`config.difficulty`) is a target the agent must hit; code checks it. Never
 pre-picked slots: the agent chooses how to reach the tier.
-*Check:* the write result carries `difficulty: { band, score, reasons }`; a walk off its tier blocks.
+*Check:* the write result carries `difficulty: { band, score, reasons }`; a walk off its tier blocks; a test builds every
+kind of item at easy, medium and hard, so no structure is capped at one band (life-lab's trait worlds stopped at 0.9 and
+a hard request threw, 11-08). A tier miss blocks while the budget lasts and never stops a lesson once it runs out.
 
 **I7. Variety is a walk-level check.** Agents repeat themselves (11-05 bench: agents reused the same primitive and
 mode). Code blocks a set of items with the same task and representation throughout, and the same number twice.
@@ -87,20 +162,73 @@ mode). Code blocks a set of items with the same task and representation througho
 
 **I8. Every block has three faces.** Render and grade (the component draws it and the activity's own check judges it),
 tool (the agent can build it), tutor (the workspace scene describes it in words with no key, and the tutor has a
-lever on it or one is queued to `/add-support-tiers` by name).
+lever on it).
 *Check:* the block table (design step 2) has all three columns filled for every block.
 
-**I9. Code names the eval mode and standards from the structure.** The agent does not declare a skill; code reads it
-from the world (a hidden group is count-on, a story is add-take, a two-place sum goal is parts) by fixed precedence,
-returns it with every write, and refuses a world whose skill is not open. The mode's β is a prior; the computed
-difficulty moves within it.
-*Check:* a classifier test for every mode; the catalog list, backend priors and resolver docs name the same modes.
+**I13. The agent authors the levers; code checks them (USER 11-07).** The agent built the item and its traps, so it
+knows why a child misses it. Each item carries its own help and simplify levers, written as edits to the item in the
+same blocks (drop a card, add an example card, show the hidden group, split the story, say the sounds slower), plus the
+line the tutor says. Code applies each edit, rebuilds, and refuses: a simplify that changes the mode or does not lower
+the computed difficulty; a help that leaves the item solvable by a shortcut or shows the key; a lever that changes only
+text and leaves the screen the same. No per-mode lever menu in app code: that is rails one level down, like the
+`respond` channel menu. The lever capability is built once in `service/agent-kit/levers.ts` (authoring: `withLevers`,
+`buildLevers`; playing: `authoredLeverSet` on the boss, `useAuthoredLevers` in the component). A primitive supplies
+only `LeverCapability` (facts, leaks, word fields, `drawn`). `/add-support-tiers` is for schema primitives.
+
+**I14. One kit, no copies (USER 11-07).** An agent primitive runs `runAuthor` from `service/agent-kit/authorLoop.ts`
+and supplies only its own half (`AgentAuthor`: tools, read + check of a write, session checks, review, salvage, ship).
+A capability two primitives need is added to the kit, not written twice. `agentKit.guard.test.ts` fails a new loop.
+*Check:* every item in a real generation carries at least one help and one simplify lever that pass the rebuild checks.
+
+**I16. The loop owns the stages; a lesson is closed when it is a stage or a guard (USER 11-08).** Write, code checks,
+look, revise and ship are the kit's, with the trace, cost and run record (`agentDebug.run`) built in. A primitive gives
+`look` (what the child sees first) and never its own blind reader or screenshot path. A new lesson about authoring goes
+into a stage or a guard, so every author gains it. Primitive code or a paragraph here does not close it.
+*Check:* `agentKit.guard.test.ts` fails an author with no look stage that is not in `NO_LOOK` (which only shrinks);
+`/review-agent-primitive <id>` closes the work.
+
+**I15. Displays come from the kit, chosen per primitive (USER 11-08).** The agent picks a display and writes its values;
+code checks them, draws them, reads them for leaks and tells the tutor. A primitive states which displays fit it and
+never writes its own display type, renderer or checker. A world or block keeps its own picture language (life-lab's
+places and living things); a display sits beside it as evidence or an example.
+*Check:* `agentKit.guard.test.ts` fails an agent primitive whose author is offered no displays and that is not in
+`NO_DISPLAYS` (which only shrinks); `displays.test.ts` fails a display missing a face; a real generation shows the agent
+choosing a display where one teaches, and leaving it out where the world is enough.
+
+**I9. The input is the topic or objective; a skill is a label read off the finished item (USER 2026-11-08).** An agent
+primitive takes a curriculum topic and/or learning objective and builds what fits it. An eval mode is too narrow an
+input: a pin fixes the item's shape, so it caps difficulty and repeats one task. The catalog has one mode. The agent
+does not declare a skill; code reads it from the world (a hidden group is count-on, a story is add-take) by fixed
+precedence, returns it with every write, and uses it for the screen, standards and misses. A label never refuses an
+item. What keeps a free agent on the lesson is the look stage's objective reader (`look.objective`), which sends back an
+item that does not practise the objective. Wiring differs by item through `spokenBoss`: a keyless item in a
+`SAY_OR_SHOW` mode is shown. Pulse, the planner and calibration are out of scope until they need it (USER 11-08).
+*Check:* `agentKit.guard.test.ts` fails an author that calls `openModes` and is not in `MODE_INPUT` (which only
+shrinks); a classifier test for every label; a scripted run keeps a world of any kind and sends back an off-objective one.
 
 **I10. Scope and bounds come from the lesson, and a decline is a signal.** Ranges (count to 5, to 20) and limits come
-from the lesson text and the open modes, never a default that rules a mode out. A mode that needs a wider range
-widens it (teens open means 20). When the agent declines, read why: the 11-06 teens decline was right and exposed a
-default range of 10.
-*Check:* each mode generates at least once without a decline on a topic that names it.
+from the lesson text, never a default that rules a kind of item out. A kind of item that needs a wider range widens it
+(a teens lesson means 20). When the agent declines, read why: the 11-06 teens decline was right and exposed a default
+range of 10.
+*Check:* each kind of item generates at least once without a decline on a topic that names it.
+
+**I12. Engineers write the schema and the instructions; the agent writes the content.** The same split a coding agent
+works under: the schema is the shape of a world and the rules that run it; the content is everything that fills it
+(which organisms, machines or words, their traits, stages, parts and what each part does). Code verifies content two
+ways: what follows from structure it computes (a key, a solver, a mode, an inheritance check works for ANY organism and
+ANY trait), and a fact it cannot compute (a monarch's life stages, what a cactus spine is for) goes to an independent
+reader that can send the item back. A content list in code (an organism atlas, trait values, part jobs, a word library)
+is a cache of reviewed facts and a source of examples, never a gate: an id the list lacks is declared by the agent and
+reviewed, not refused. Rendering follows: draw from what was declared (a picture the agent names, traits drawn from
+their values), never only what code pre-drew.
+**Why (USER 2026-11-07, life-lab):** the canvas was built with code owning every biology fact as closed enums (31
+organisms, ears/coat/color for dogs and cats). A "Monarch Butterfly" lesson pinned to whose_baby was declined although
+"each trait comes from one parent" is pure structure. "We keep killing the flexibility of the agent to act the same way
+you do from a coding standpoint: we make the schema and instructions, the agent makes the content."
+*Check:* grep the engine and tool schema for enums of content (organism ids, trait values, part kinds, word lists). Each
+one is either structure (a rule kind, a control type, a goal kind: allowed) or content (must be open, with a review
+path). A test writes a world on an organism and trait set no list contains and sees it pass the structure checks and go
+to review.
 
 **I11. The agent designs what the child produces; code derives how it is judged.** The answer channel is part of
 the problem, like the answer's kind (I3), not a menu of channels. Math and language have different spoken designs
@@ -275,3 +403,6 @@ Live tutor journeys stay with the user (`backend/tests/tutor_live/LIVE_TESTING.m
 - A generic channel menu (`respond: show | say-or-show`, this skill's own first draft on 11-06). It lets the agent turn
   voice on or off; it does not let the agent design what the child says. Fails I3 and I11 the way a task menu does.
 - The agent writing the key, `alsoAccept` or the misses into the tool call. Fails I4 and I11: code derives all three.
+- A primitive with its own display type, or a figure tool hard-coded to one kind (deep-dive's `write_figure` took only
+  `svg` while its renderer could draw every kit display, 11-08). Fails I15: the author never saw the displays.
+- A display checked only for whether it draws. A table's cells reached neither the leak check nor the tutor until 11-08.
