@@ -5,7 +5,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 const getComponentMastery = vi.fn();
 vi.mock('@/lib/studentAnalyticsAPI', () => ({ analyticsApi: { getComponentMastery: (...a: unknown[]) => getComponentMastery(...a) } }));
 
-import ComponentMasteryGrid, { cellState, gridRows } from './ComponentMasteryGrid';
+import ComponentMasteryGrid, { cellState, cellTally, gridRows } from './ComponentMasteryGrid';
 
 const CATALOG = { kind: 'letter_sound', title: 'Letter sounds', components: [
   { id: 's/S', label: 's', detail: 's', group: 'Letter group 1' },
@@ -34,6 +34,15 @@ describe('gridRows', () => {
     expect(rows.map(r => [r.group, r.cells.map(c => c.id)])).toEqual([
       ['Letter group 1', ['s/S', 'a/AE']], ['Digraphs', ['sh/SH']], ['Other spellings', ['s/Z']],
     ]);
+  });
+});
+
+describe('cellTally', () => {
+  it('adds the tallies of the ids shown in one cell', () => {
+    const cell = { id: 'o/AA', also: ['o/AO'], label: 'o', group: 'Letter group 3' };
+    expect(cellTally(cell, { 'o/AA': { attempts: 2, correct: 1 }, 'o/AO': { attempts: 1, correct: 1 } })).toEqual({ attempts: 3, correct: 2 });
+    expect(cellTally(cell, { 'o/AO': { attempts: 1, correct: 1 } })).toEqual({ attempts: 1, correct: 1 });
+    expect(cellTally(cell, {})).toBeUndefined();
   });
 });
 

@@ -32,8 +32,10 @@ export interface ComponentInfo {
   id: string;
   /** What the cell shows, e.g. "sh". */
   label: string;
-  /** A second line, e.g. the sound "sh" spells. */
+  /** A second line: a word the component is read in ("rain" for ai). */
   detail?: string;
+  /** Other ids shown in this cell and counted with it (the two short o pairs). */
+  also?: string[];
   /** The row the cell sits in, e.g. "Letter group 1". */
   group: string;
 }

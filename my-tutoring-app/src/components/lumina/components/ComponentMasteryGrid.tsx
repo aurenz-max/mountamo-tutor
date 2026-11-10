@@ -44,12 +44,18 @@ const LEGEND: Array<[CellState, string]> = [
   ['secure', '9 in 10 or better'], ['growing', '7 in 10 or better'], ['shaky', 'under 7 in 10'], ['seen', 'fewer than 3 reads'],
 ];
 
+/** A cell's tally: its own id plus every id shown with it (`also`). */
+export function cellTally(c: ComponentInfo, tallies: ComponentMasteryResponse['components']): { attempts: number; correct: number } | undefined {
+  const found = [c.id, ...(c.also ?? [])].map(id => tallies[id]).filter((t): t is NonNullable<typeof t> => !!t && t.attempts > 0);
+  return found.length ? { attempts: found.reduce((n, t) => n + t.attempts, 0), correct: found.reduce((n, t) => n + t.correct, 0) } : undefined;
+}
+
 /** The rows the grid draws: every group in order, without unobserved cells of the catch-all last group. */
 export function gridRows(components: readonly ComponentInfo[], tallies: ComponentMasteryResponse['components'],
   catchAll: string | undefined): Array<{ group: string; cells: ComponentInfo[] }> {
   const rows: Array<{ group: string; cells: ComponentInfo[] }> = [];
   for (const c of components) {
-    if (c.group === catchAll && !tallies[c.id]?.attempts) continue;
+    if (c.group === catchAll && !cellTally(c, tallies)) continue;
     const row = rows.find(r => r.group === c.group) ?? rows[rows.push({ group: c.group, cells: [] }) - 1];
     row.cells.push(c);
   }
@@ -80,7 +86,7 @@ export default function ComponentMasteryGrid({ studentId, kind }: ComponentMaste
   }, [catalog, mastery]);
 
   if (!catalog || !mastery) return null;
-  const observed = Object.values(mastery.components).filter(t => t.attempts > 0);
+  const observed = catalog.components.map(c => cellTally(c, mastery.components)).filter((t): t is NonNullable<typeof t> => !!t);
   if (!observed.length) return null;
   const total = observed.reduce((n, t) => n + t.attempts, 0);
 
@@ -98,15 +104,15 @@ export default function ComponentMasteryGrid({ studentId, kind }: ComponentMaste
               <span className="w-44 shrink-0 pt-2 text-xs uppercase tracking-wide text-slate-500">{row.group}</span>
               <div className="flex flex-wrap gap-1.5">
                 {row.cells.map(c => {
-                  const tally = mastery.components[c.id];
+                  const tally = cellTally(c, mastery.components);
                   const state = cellState(tally);
                   return (
                     <div key={c.id} data-component={c.id} data-state={state}
-                      title={tally?.attempts ? `${c.label}: ${tally.correct} of ${tally.attempts} read correctly` : `${c.label}: not read yet`}
+                      title={`${c.label}${c.detail ? ` as in ${c.detail}` : ''}: ${tally ? `${tally.correct} of ${tally.attempts} read correctly` : 'not read yet'}`}
                       className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg border ${CELL_CLASS[state]}`}>
                       <span className="text-sm font-semibold leading-none">{c.label}</span>
                       <span className="mt-1 text-[10px] leading-none opacity-70">
-                        {tally?.attempts ? `${tally.correct}/${tally.attempts}` : c.detail}
+                        {tally ? `${tally.correct}/${tally.attempts}` : c.detail}
                       </span>
                     </div>
                   );

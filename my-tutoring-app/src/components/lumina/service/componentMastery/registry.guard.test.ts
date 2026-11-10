@@ -32,7 +32,7 @@ describe('component kinds', () => {
   });
 
   it.each(COMPONENT_KINDS.map(k => [k.kind, k] as const))('%s evidence only names ids from its own list', (_, k) => {
-    const ids = new Set(k.components().map(c => c.id));
+    const ids = new Set(k.components().flatMap(c => [c.id, ...(c.also ?? [])]));
     const evidence = k.expand([{ unit: 'ship', attempts: 2, correct: 1 }, { unit: 'cake', attempts: 1, correct: 1 }, { unit: 'zzzznotaword', attempts: 1, correct: 1 }]);
     for (const row of evidence) {
       expect(row.kind).toBe(k.kind);
@@ -53,6 +53,18 @@ describe('letter_sound', () => {
     expect(groups.slice(0, 4)).toEqual(['Letter group 1', 'Letter group 2', 'Letter group 3', 'Letter group 4']);
     expect(groups[groups.length - 1]).toBe('Other spellings');
     expect(list.filter(c => c.id === 'ck/K')).toHaveLength(1);
+  });
+
+  it('short o is one cell that also counts the library\'s second short o, and each cell names a word it is read in', () => {
+    const list = k.components();
+    const group3 = list.filter(c => c.group === 'Letter group 3');
+    expect(group3.map(c => c.label)).toEqual(['g', 'o', 'u', 'l', 'f', 'b']);
+    expect(group3[1]).toMatchObject({ id: 'o/AA', also: ['o/AO'] });
+    expect(list.some(c => c.id === 'o/AO')).toBe(false);
+    for (const c of list.filter(c => c.group !== 'Other spellings')) {
+      expect(c.detail, c.id).toMatch(/^[a-z]{2,}$/);
+      expect(c.detail!.includes(c.label.replace('-e', '').replace('-', '')[0]), `${c.id} ${c.detail}`).toBe(true);
+    }
   });
 
   it('a word read counts toward each of its pairs, and a missed word counts against them', () => {
