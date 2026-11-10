@@ -40,6 +40,7 @@ import type { PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DecodableReaderMetrics } from '../../../evaluation/types';
 import { useTeachingWorkspace, type TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useTeachingEvaluation } from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { readingRecord, wordReadTally } from './readingRecord';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import { PipDock, PipWorkspace, useRunnerPip } from '../../../pip/WorkspacePip';
@@ -254,6 +255,9 @@ function ReaderWorkspace({ data, items, mode, instanceId, className, runtimePlan
         // 8-word one.
         meanLineWords: lines.length
           ? Math.round((lines.reduce((sum, it) => sum + it.wordCount, 0) / lines.length) * 10) / 10 : 0,
+        // Which printed words were misread, and word accuracy over first reads (`readingRecord.ts`).
+        ...(lines.length ? { reading: readingRecord(lines, result.teachingAttempts),
+          componentTallies: wordReadTally(lines, result.teachingAttempts) } : {}),
         phonicsPatternsInPassage };
     } });
 

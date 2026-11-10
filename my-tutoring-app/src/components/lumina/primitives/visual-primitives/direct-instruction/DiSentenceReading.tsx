@@ -68,6 +68,7 @@ import { buildSentenceReadingItems, workspaceScene, type SentenceReadingItem }
   from './diSentenceReadingDomain';
 import { DiModelCard } from './DiModelCard';
 import { diSentenceReadingBoss } from './diSentenceReading.boss';
+import { readingRecord, wordReadTally } from '../literacy/readingRecord';
 import type { PrimitiveEvaluationResult, DiSentenceReadingMetrics } from '../../../evaluation/types';
 import type { DiSentenceReadingChallenge, DiSentenceReadingChallengeType } from './diSentenceReadingDomain';
 
@@ -161,6 +162,9 @@ export const DiSentenceReading: React.FC<DiSentenceReadingProps> = ({ data, clas
     metrics={result => ({ type: 'di-sentence-reading', ...diStageMetrics(result, items, data.challengeType),
       // Not tracked on the workspace path (no-timer ruling: L0 never judges latency).
       meanResponseMs: null,
+      // Which printed words were misread, and word accuracy over first reads (`readingRecord.ts`).
+      reading: readingRecord(items, result.teachingAttempts),
+      componentTallies: wordReadTally(items, result.teachingAttempts),
       meanSentenceWords: items.length
         ? Math.round((items.reduce((sum, item) => sum + item.wordCount, 0) / items.length) * 10) / 10
         : 0 })} />;

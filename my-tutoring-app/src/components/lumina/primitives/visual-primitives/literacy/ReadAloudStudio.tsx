@@ -76,6 +76,7 @@ import {
 import { describePhrasePlan, readAloudScene } from './readAloudStudioWorkspace';
 import { DOTS_LEVER, READ_ALOUD_LEVERS, TRACK_LEVER } from './readAloudStudioLevers';
 import { readAloudStudioBoss } from './readAloudStudio.boss';
+import { readingRecord, wordReadTally } from './readingRecord';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -192,6 +193,11 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
     const meanLineWords = readingItems.length
       ? Math.round((readingItems.reduce((sum, it) => sum + it.wordCount, 0) / readingItems.length) * 10) / 10
       : 0;
+    // Which printed words were misread, and word accuracy over cold first reads (`readingRecord.ts`). A dialogue
+    // line and the expression reread are heard before they are read, so their words are not counted.
+    const readLines = items.filter(it => it.step !== 'mark').map(it => ({ id: it.id, text: it.text,
+      cold: it.step ? it.step === 'first_read' : it.kind === 'accuracy' }));
+    const reading = readingRecord(readLines, summary.teachingAttempts);
     const metrics: ReadAloudStudioMetrics = {
       type: 'read-aloud-studio',
       evalMode: mode,
@@ -203,6 +209,8 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
       accuracy: scored.accuracy,
       meanLineWords,
       passageLexileLevel: lexileLevel,
+      reading,
+      componentTallies: wordReadTally(readLines, summary.teachingAttempts),
     };
     evaluation.submitResult(
       scored.passed,

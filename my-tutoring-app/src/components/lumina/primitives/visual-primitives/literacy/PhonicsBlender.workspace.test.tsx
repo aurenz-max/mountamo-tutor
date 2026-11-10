@@ -51,6 +51,21 @@ it('a wrong word reopens the item with no picture; a right one shows it; the les
   const [passed, score, metrics] = seam.submit.mock.calls[0];
   expect([passed, score]).toEqual([true, 84]);
   expect(metrics).toMatchObject({ wordsBlended: 2, wordsTotal: 2, soundsCorrectOnFirstTry: 1 });
+  // First reads as word tallies: the missed word counts against its letter sounds, the right one for them.
+  expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound',
+    units: [{ unit: 'cat', attempts: 1, correct: 0 }, { unit: 'dog', attempts: 1, correct: 1 }] }]);
+});
+
+it('a word read after tapping a letter to hear its sound is left out of the letter-sound tallies', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'phonics-blender', evalMode: 'cvc', data: DATA });
+  fireEvent.click(screen.getByRole('button', { name: 'sound /c/' }));
+  h.say('cat'); h.feedback('correct', 'advance'); h.confirmVisible();
+  h.say('dog'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await flushScoring();
+  const [, , metrics] = seam.submit.mock.calls[0];
+  expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound', units: [{ unit: 'dog', attempts: 1, correct: 1 }] }]);
 });
 
 it('a tapped letter asks for its sound silently, as the host, never the word', () => {

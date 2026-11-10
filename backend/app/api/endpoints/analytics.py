@@ -1220,6 +1220,34 @@ async def get_student_profile(
         )
 
 
+@router.get("/student/{student_id}/components")
+async def get_component_mastery(
+    student_id: int,
+    kind: str = Query(..., pattern=r"^[a-z][a-z0-9_]{0,31}$", description="Component kind, e.g. letter_sound"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Per-student tallies one level below the subskill (app/services/component_mastery.py).
+
+    Returns {kind, components: {id: {attempts, correct, last_at}}, updated_at}.
+    The frontend owns what the ids mean and the order they are shown in.
+    """
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} components"
+            )
+    try:
+        return await analytics_service.fs.get_component_mastery(student_id, kind)
+    except Exception as e:
+        logger.error(f"Component mastery error for student {student_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving component mastery: {str(e)}"
+        )
+
+
 @router.get("/student/{student_id}/report")
 async def get_progress_report(
     student_id: int,

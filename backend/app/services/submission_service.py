@@ -24,6 +24,7 @@ from ..services.universal_validator import UniversalValidator
 from ..shared.question_types import Question, QuestionEvaluation
 
 from .learner_model.service import first_try_from_response
+from .component_mastery import clean_component_evidence
 
 logger = logging.getLogger(__name__)
 
@@ -650,6 +651,7 @@ class SubmissionService:
             evidence_parts=self._extract_evidence_parts(primitive_response),
             first_try=first_try_from_response(primitive_response),
             grade=(ctx.grade_level if ctx else None) or None,
+            component_evidence=clean_component_evidence(primitive_response.get('component_evidence')),
         )
 
         # Misconception Loop S6: resolution happens only AFTER the canonical
@@ -875,6 +877,7 @@ class SubmissionService:
         evidence_parts: int = 1,
         first_try: Optional[list] = None,
         grade: Optional[str] = None,
+        component_evidence: Optional[list] = None,
     ) -> dict:
         """Update student competency and return result"""
         try:
@@ -898,6 +901,7 @@ class SubmissionService:
                 evidence_parts=evidence_parts,
                 first_try=first_try,
                 grade=grade,
+                component_evidence=component_evidence,
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")

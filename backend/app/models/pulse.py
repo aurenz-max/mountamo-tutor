@@ -185,6 +185,9 @@ class PulseResultRequest(BaseModel):
     student_work: Optional[Dict[str, Any]] = None
     metrics: Optional[Dict[str, Any]] = None
     problem_content: Optional[Dict[str, Any]] = None
+    # Component mastery rows (app/services/component_mastery.py), stored on the
+    # attempt; save_attempt folds them into the student's tallies.
+    component_evidence: Optional[List[Dict[str, Any]]] = None
 
 
 class ThetaUpdate(BaseModel):

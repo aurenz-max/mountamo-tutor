@@ -222,8 +222,13 @@ class CompetencyService:
         evidence_parts: int = 1,
         first_try: Optional[List[bool]] = None,
         grade: Optional[str] = None,
+        component_evidence: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Update competency based on problem evaluation.
+
+        `component_evidence` (cleaned rows, app/services/component_mastery.py) is
+        stored on the attempt; save_attempt folds it into the student's
+        component tallies. It feeds no ability, gate or learner state here.
 
         `attempt_id` is the shared submission id (also stamped on the review
         doc by submission_service) so attempt and review join directly.
@@ -340,6 +345,8 @@ class CompetencyService:
                 attempt_extra["evidence_parts"] = int(evidence_parts)
             if grade:
                 attempt_extra["lesson_grade"] = grade
+            if component_evidence:
+                attempt_extra["component_evidence"] = component_evidence
 
             # Save the attempt to both CosmosDB and Firestore (dual write)
             logger.info(f"🔍 COMPETENCY_SERVICE: Saving attempt to databases...")

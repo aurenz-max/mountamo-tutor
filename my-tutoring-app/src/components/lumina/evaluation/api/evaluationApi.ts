@@ -15,6 +15,7 @@ import type {
   DemonstratedSkill,
 } from '../types';
 import { buildRemediationProblemMetadata } from '../remediation/remediationTransport';
+import { componentEvidenceFor } from '../../service/componentMastery/client';
 
 // =============================================================================
 // Response Types
@@ -285,6 +286,9 @@ export async function submitEvaluationToBackend(
 ): Promise<EvaluationSubmitResponse> {
   try {
     const payload = convertToProblemSubmission(result);
+    // Component mastery: what the session observed, expanded into component ids by the kind's own library.
+    const evidence = await componentEvidenceFor(result.metrics?.componentTallies);
+    if (evidence.length) payload.primitive_response.component_evidence = evidence;
 
     console.log('[evaluationApi] Submitting Lumina eval via /api/problems/submit', {
       primitiveType: result.primitiveType,

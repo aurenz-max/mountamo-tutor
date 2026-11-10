@@ -16,6 +16,7 @@ import { captureLearningObservation } from '../evaluation/diagnosis/captureLearn
 import { useStudent } from '../contexts/StudentContext';
 import type { ComponentId, HydratedPracticeItem, SessionBrief } from '../types';
 import type { PrimitiveEvaluationResult } from '../evaluation/types';
+import { componentEvidenceFor } from '../service/componentMastery/client';
 import type { GradeLevel } from '../components/GradeLevelSelector';
 import type {
   PulseItemSpec,
@@ -422,7 +423,10 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
     console.log(`${LOG} Submitting item ${state.currentIndex + 1}: score=${scoreOn10.toFixed(1)}/10 primitive="${primitiveType}" mode="${evalMode}"`);
 
     try {
+      // Component mastery, as on the lesson path: best-effort, empty when the primitive reports no tallies.
+      const componentEvidence = await componentEvidenceFor(evalResult.metrics?.componentTallies);
       const response = await pulseApi.submitResult(sessionId, {
+        ...(componentEvidence.length ? { component_evidence: componentEvidence } : {}),
         item_id: currentSpec.item_id,
         score: scoreOn10,
         primitive_type: primitiveType,

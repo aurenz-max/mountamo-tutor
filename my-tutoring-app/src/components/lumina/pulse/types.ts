@@ -132,6 +132,8 @@ export interface PulseResultRequest {
   student_work?: Record<string, unknown>;
   metrics?: Record<string, unknown>;
   problem_content?: Record<string, unknown>;
+  /** Component mastery rows for this answer (`service/componentMastery/contract.ts`). */
+  component_evidence?: Array<{ kind: string; id: string; attempts: number; correct: number }>;
 }
 
 export interface ThetaUpdate {

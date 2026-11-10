@@ -60,6 +60,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
+import { wordReadTally } from '../literacy/readingRecord';
 import { buildWordReadingItems, workspaceScene, type DiWordReadingChallenge, type DiWordReadingChallengeType,
   type WordReadingItem } from './diWordReadingDomain';
 import { BLEND_SLIDE, MODEL_WORD, SOUND_DOTS, TRACKING_ARROW, WORD_LEVERS, modelFor, type WordModel } from './diWordReadingLevers';
@@ -183,7 +184,9 @@ export const DiWordReading: React.FC<DiWordReadingProps> = ({ data, className, r
     stimulus={(item, marks, view) => <WordCard key={item.id} item={item} marks={marks} view={view}
       model={view.practice ? null : modelFor(item, items)} />}
     recapLabel={item => item.word}
-    metrics={result => ({ type: 'di-word-reading', ...diStageMetrics(result, items, data.challengeType) })} />;
+    metrics={result => ({ type: 'di-word-reading', ...diStageMetrics(result, items, data.challengeType),
+      // Each word's first read counts toward its letter-sound pairs (`service/componentMastery`).
+      componentTallies: wordReadTally(items.map(item => ({ id: item.id, text: item.word })), result.teachingAttempts) })} />;
 };
 
 export default DiWordReading;

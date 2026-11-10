@@ -113,6 +113,32 @@ it('expression: a one-phrase plan is fine, and only the modeled reread is scored
   expect(work.lineResults).toHaveLength(1);
   expect(work.firstReadResults).toHaveLength(1);
   expect(work.phrasePlans[0].learnerGroups).toEqual(['When the rain stopped, we ran outside.']);
+  // The reading record: the missed cold read names its two dropped words; the modeled reread is not counted.
+  expect(metrics.reading).toMatchObject({ wordsCounted: 7, wordAccuracy: 71, unlocated: 0 });
+  expect(metrics.reading.miscues).toEqual([
+    { lineId: 'line-1-first_read', kind: 'drop', printed: 'the', at: 1, attempt: 1, cold: true },
+    { lineId: 'line-1-first_read', kind: 'drop', printed: 'outside', at: 6, attempt: 1, cold: true },
+  ]);
+});
+
+it('accuracy: a swapped word is recorded with what was said, and word accuracy comes from first reads', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount('accuracy');
+  h.say('Sam reads a bike'); h.feedback('incorrect', 'retry'); h.confirmVisible();
+  h.say('Sam reads a book'); h.feedback('correct', 'advance'); h.confirmVisible();
+  h.say('He looks at words'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
+  const [, , metrics] = seam.submit.mock.calls[0];
+  expect(metrics.reading).toMatchObject({ wordsCounted: 8, wordAccuracy: 88, unlocated: 0 });
+  // The same reads as word tallies, the unit the letter-sound kind expands into pairs on submit.
+  expect(metrics.componentTallies).toHaveLength(1);
+  expect(metrics.componentTallies[0].kind).toBe('letter_sound');
+  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'book', attempts: 1, correct: 0 });
+  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'sam', attempts: 1, correct: 1 });
+  expect(metrics.reading.miscues).toEqual([
+    { lineId: 'line-1', kind: 'swap', printed: 'book', said: 'bike', at: 3, attempt: 1, cold: true },
+  ]);
 });
 
 it('the adapter refuses a passage with no askable line', () => {

@@ -296,6 +296,10 @@ class PulseEngine:
             extra["first_try"] = first_try
             extra["evidence_parts"] = len(first_try)
         extra = {k: v for k, v in extra.items() if v is not None}
+        from .component_mastery import clean_component_evidence
+        evidence = clean_component_evidence(getattr(result, "component_evidence", None))
+        if evidence:
+            extra["component_evidence"] = evidence
         try:
             await self.firestore.save_attempt(
                 student_id=student_id, subject=subject, skill_id=skill_id, subskill_id=subskill_id,

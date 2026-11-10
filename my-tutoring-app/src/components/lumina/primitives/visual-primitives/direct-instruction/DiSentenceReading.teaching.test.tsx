@@ -305,6 +305,9 @@ it('observes settled speech, advances visibly, and completes once after playback
   expect(metrics).toMatchObject({ type: 'di-sentence-reading', evalMode: 'decodable_sentence',
     challengeType: 'decodable_sentence', totalChallenges: 2, correctCount: 2, attemptsCount: 2, firstTryCount: 2,
     meanResponseMs: null, meanSentenceWords: 4.5 });
+  expect(metrics.reading).toMatchObject({ wordsCounted: 9, wordAccuracy: 100, miscues: [], unlocated: 0 });
+  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'the', attempts: 2, correct: 2 });
+  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'pig', attempts: 1, correct: 1 });
   h.transport.close();
 });
 

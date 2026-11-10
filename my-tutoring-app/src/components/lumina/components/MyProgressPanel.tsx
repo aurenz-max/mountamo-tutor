@@ -23,6 +23,7 @@ import { LuminaSectionLabel, LuminaBadge } from '../ui';
 import ForecastTimeline from './ForecastTimeline';
 import StudentActivityPanel from './StudentActivityPanel';
 import StudentProfileSummary from './StudentProfileSummary';
+import ComponentMasteryGrid from './ComponentMasteryGrid';
 import LearnerModelSection from './LearnerModelSection';
 import SavedLearningObservations from './SavedLearningObservations';
 import UnitSkillsPanel from './UnitSkillsPanel';
@@ -96,6 +97,8 @@ export default function MyProgressPanel({ studentId, onBack }: MyProgressPanelPr
 
       {/* ── Snapshot — one-call profile read (level/XP/streak + subject mastery) ── */}
       <StudentProfileSummary studentId={studentId} />
+      {/* ── Letter sounds: per-child tallies below the subskill (service/componentMastery) ── */}
+      <ComponentMasteryGrid key={`cm-${studentId}`} studentId={studentId} kind="letter_sound" />
       {/* ── What you know — two-layer learner model, stored state (shadow preview) ── */}
       <LearnerModelSection key={`lm-${studentId}`} studentId={studentId} />
       <SavedLearningObservations key={studentId} studentId={studentId} />

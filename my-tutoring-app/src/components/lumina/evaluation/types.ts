@@ -6,6 +6,8 @@
  */
 
 import type { ComponentId } from '../types';
+import type { ReadingRecord } from '../primitives/visual-primitives/literacy/readingRecord';
+import type { ComponentTally } from '../service/componentMastery/contract';
 
 // =============================================================================
 // Lesson Context (for curriculum mapping)
@@ -100,6 +102,11 @@ export interface BasePrimitiveMetrics {
   // Multi-phase primitives set this to the challenge type; single-mode primitives
   // can omit (defaults to 'default' on the backend).
   evalMode?: string;
+
+  // What this session observed about the small parts under its subskill (a printed word read aloud counts toward
+  // its letter-sound pairs), in each kind's own unit. The submit path expands it into `component_evidence`
+  // (`service/componentMastery/contract.ts`). Any primitive may set it; none has to.
+  componentTallies?: ComponentTally[];
 
   // AI assistance metadata (optional - only present if AI was enabled)
   aiAssistance?: {
@@ -2202,6 +2209,8 @@ export interface ReadAloudStudioMetrics extends BasePrimitiveMetrics {
   /** Mean words per judged line — the pack's structural difficulty axis. */
   meanLineWords: number;
   passageLexileLevel: string;
+  /** Which printed words were misread, and word accuracy over cold first reads. */
+  reading?: ReadingRecord;
 }
 
 export interface PoetryLabMetrics extends BasePrimitiveMetrics {
@@ -2350,6 +2359,8 @@ export interface DecodableReaderMetrics extends BasePrimitiveMetrics {
   linesTotal: number;                  // Passage sentences judged, 3-8 words each
   linesRead: number;                   // Read correctly (after corrections)
   meanLineWords: number;               // The set's structural difficulty axis
+  /** Which printed words were misread, and word accuracy over first reads (absent in read_along). */
+  reading?: ReadingRecord;
 
   // Judged comprehension
   questionsTotal: number;
@@ -3893,6 +3904,8 @@ export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
  * one instance of this primitive can serve any skill whose answer is a short
  * spoken word. IRT evidence therefore lands on the objective's own skill, and
  * the eval mode only says which of the four acts produced it.
+  /** Which printed words were misread, and word accuracy over first reads. */
+  reading?: ReadingRecord;
  */
 export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   type: 'di-spoken-practice';

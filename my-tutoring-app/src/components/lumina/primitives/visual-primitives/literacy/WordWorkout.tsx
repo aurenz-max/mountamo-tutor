@@ -78,9 +78,11 @@ import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSu
 import { SoundManager } from '../../../utils/SoundManager';
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { wordReadTally } from './readingRecord';
 import {
   describePictureTap,
   hearQuestionRequest,
+  wordWorkoutKey,
   wordWorkoutMiss,
   wordWorkoutScene,
   type ChainCueLevel,
@@ -331,6 +333,11 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
       wordsReadIndependently,
       wordsTotal,
       attemptsCount: summary.attemptsCount,
+      // Each printed word or sentence the learner read aloud counts toward its letter-sound pairs
+      // (`service/componentMastery`). Choosing the real word of a pair is not a read of one printed word.
+      componentTallies: wordReadTally(readItems.map(item => ({ id: item.id,
+        text: item.kind === 'read_sentence' ? item.sentence ?? '' : wordWorkoutKey(item)?.answer ?? '' }))
+        .filter(line => line.text), summary.teachingAttempts),
     };
 
     evaluation.submitResult(

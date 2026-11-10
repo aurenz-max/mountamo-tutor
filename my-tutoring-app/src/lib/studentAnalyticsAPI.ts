@@ -399,6 +399,12 @@ export interface LearnerCause {
   further: LearnerCauseLink[];
 }
 
+export interface ComponentMasteryResponse {
+  kind: string;
+  components: Record<string, { attempts: number; correct: number; last_at?: string }>;
+  updated_at?: string | null;
+}
+
 export interface StudentProfileResponse {
   student_id: number;
   /** The student's grade of record — the Snapshot's default grade filter. Null if unset. */
@@ -909,6 +915,14 @@ export const analyticsApi = {
     const queryString = params.toString();
     const endpoint = `/api/analytics/student/${studentId}/profile${queryString ? `?${queryString}` : ''}`;
     return authApi.get<StudentProfileResponse>(endpoint);
+  },
+
+  // Component mastery: per-student tallies one level below the subskill
+  // (lumina/service/componentMastery/contract.ts). Ids are the kind's own.
+  async getComponentMastery(studentId: number, kind: string): Promise<ComponentMasteryResponse> {
+    return authApi.get<ComponentMasteryResponse>(
+      `/api/analytics/student/${studentId}/components?kind=${encodeURIComponent(kind)}`
+    );
   },
 
   // Two-layer learner model state (shadow): mastered / ready-next / working-on

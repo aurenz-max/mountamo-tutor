@@ -228,6 +228,15 @@ class FirestoreService:
             except Exception as e:
                 logger.warning(f"Rollup update failed for student {student_id} (attempt {attempt_id}): {e}")
 
+            # Component mastery (app/services/component_mastery.py): the same
+            # best-effort contract, rebuilt by scripts/backfill_component_mastery.py.
+            evidence = attempt_data.get("component_evidence")
+            if evidence:
+                try:
+                    await self.apply_component_evidence(student_id, evidence, timestamp)
+                except Exception as e:
+                    logger.warning(f"Component mastery update failed for student {student_id} (attempt {attempt_id}): {e}")
+
             logger.info(f"Saved attempt {attempt_id} to Firestore for student {student_id}")
             return firestore_data
 
@@ -543,6 +552,51 @@ class FirestoreService:
             "updated_at": ts,
         }
         self._profile_summary_ref(student_id).set(profile_update, merge=True)
+
+    def _component_mastery_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/component_mastery"""
+        return self._student_doc(student_id).collection('component_mastery')
+
+    async def apply_component_evidence(
+        self,
+        student_id: int,
+        evidence: List[Dict[str, Any]],
+        timestamp: Optional[str] = None,
+    ) -> None:
+        """Increment students/{sid}/component_mastery/{kind} for one attempt's evidence.
+
+        Increment sentinels + merge, so concurrent submissions compose without a
+        read-modify-write. Called from save_attempt; only the backfill script
+        writes these docs any other way.
+        """
+        from app.services.component_mastery import clean_component_evidence, tally_by_kind
+
+        ts = timestamp or datetime.now(timezone.utc).isoformat()
+        for kind, components in tally_by_kind(clean_component_evidence(evidence)).items():
+            update = {
+                "kind": kind,
+                "student_id": student_id,
+                "updated_at": ts,
+                "components": {
+                    cid: {
+                        "attempts": firestore.Increment(c["attempts"]),
+                        "correct": firestore.Increment(c["correct"]),
+                        "last_at": ts,
+                    }
+                    for cid, c in components.items()
+                },
+            }
+            self._component_mastery_subcollection(student_id).document(kind).set(update, merge=True)
+
+    async def get_component_mastery(self, student_id: int, kind: str) -> Dict[str, Any]:
+        """One kind's tallies: {kind, components: {id: {attempts, correct, last_at}}, updated_at}."""
+        doc = self._component_mastery_subcollection(student_id).document(kind).get()
+        data = (doc.to_dict() or {}) if doc.exists else {}
+        return {
+            "kind": kind,
+            "components": data.get("components") or {},
+            "updated_at": data.get("updated_at"),
+        }
 
     async def get_daily_rollups(
         self,

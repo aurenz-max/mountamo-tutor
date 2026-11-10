@@ -321,6 +321,9 @@ it('observes settled speech, advances visibly, and completes once after playback
   expect(accuracy).toBe(100);
   expect(metrics).toMatchObject({ type: 'di-word-reading', evalMode: 'cvc_reading',
     challengeType: 'cvc_reading', totalChallenges: 2, correctCount: 2, attemptsCount: 2, firstTryCount: 2 });
+  // Each word's first read, the unit the letter-sound kind expands into pairs on submit.
+  expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound',
+    units: [{ unit: 'sam', attempts: 1, correct: 1 }, { unit: 'mat', attempts: 1, correct: 1 }] }]);
   h.transport.close();
 });
 

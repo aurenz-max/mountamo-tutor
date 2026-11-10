@@ -51,6 +51,7 @@ import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 import { blendScene, blendWords, soundRequest, type BlendWord, type Segmentation } from './phonicsBlenderDomain';
 import { ARROW_LEVER, BLEND_LEVERS, DOTS_LEVER, NAME_MODEL_LEVER, SLIDE_LEVER, buildLevers, nameModelFor } from './phonicsBlenderLevers';
 import { phonicsBlenderBoss } from './phonicsBlender.boss';
+import { wordReadTally } from './readingRecord';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -160,6 +161,8 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   /** When each word opened, for the blending-speed metric. */
   const openedAt = useRef(new Map<string, number>());
   const seconds = useRef(new Map<string, number>());
+  /** Session words on which the learner tapped a letter to hear its sound. */
+  const heardSound = useRef(new Set<string>());
 
   const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -196,6 +199,10 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
       soundsCorrectOnFirstTry: outcomes.filter(o => o.solved && o.corrections === 0).length,
       soundsTotal: words.reduce((sum, w) => sum + w.phonemes.length, 0),
       attemptsCount: outcomes.reduce((s, o) => s + 1 + o.corrections, 0),
+      // A word read without tapping a letter to hear its sound counts toward its letter-sound pairs
+      // (`service/componentMastery`). After a tap the sound was given, so the read shows blending only.
+      componentTallies: wordReadTally(items.filter(w => !heardSound.current.has(w.id)).map(w => ({ id: w.id, text: w.targetWord })),
+        summary.teachingAttempts),
     };
     // The observer's corrected attempts are the misconception evidence; kept only on a diagnosable session.
     const diagnosisEvidence = summary.accuracy < 60 ? summary.diagnosisEvidence : undefined;
@@ -242,6 +249,7 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
     const phoneme = currentWord?.phonemes.find(p => p.id === phonemeId);
     if (!phoneme) return;
     SoundManager.tap();
+    if (!practice && sessionWord) heardSound.current.add(sessionWord.id);
     setActiveSoundId(phonemeId);
     runner.requestHear(soundRequest(phoneme.sound));
     if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
