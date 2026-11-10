@@ -37,6 +37,17 @@ describe('letter scope', () => {
     const missed = examples.filter((x) => lexWord(x) && !w.has(x));
     expect(missed).toEqual([]);
   });
+  it('a CVC objective that quotes several vowels is not a letter group (published K short i and short o)', () => {
+    const shortI = 'Decode CVC words with Short \'i\' (e.g., pig, sit, fin) Focus: Reading CVC words containing the short \'i\' sound. '
+      + 'Examples: pig, sit, fin, big, win, lip, tin, dig. Constraints: Progress to activities that mix short \'i\' words with '
+      + 'previously learned short \'a\' and \'e\' words to test for discrimination (e.g., "pat", "pet", "pit").';
+    const shortO = 'Decode CVC words with Short \'o\' Focus: Reading CVC words containing the short \'o\' sound. Examples: dog, hot, '
+      + 'mop, log, top, pot, hop, fox. Constraints: Generate activities that mix short \'o\' words with previously learned short '
+      + '\'a\', \'e\', and \'i\' words to ensure discrimination.';
+    expect(scopeFromObjective([shortI])!.knownLetters).toBeNull();
+    for (const w of ['pig', 'sit', 'fin', 'big']) expect(words(shortI, 'K')).toContain(w);
+    for (const w of ['dog', 'hot', 'mop', 'log']) expect(words(shortO, 'K')).toContain(w);
+  });
   it('a single named vowel is the focus of every word', () => {
     const scope = scopeFromObjective(['Encode CVC words with Short \'i\''])!;
     expect(decodableWords(scope, { grade: 'K' }).every((x) => x.phones.includes('IH'))).toBe(true);

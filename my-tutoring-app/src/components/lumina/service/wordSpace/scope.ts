@@ -25,7 +25,7 @@ const SHORT_GPC: Readonly<Record<string, readonly string[]>> = { a: ['a/AE'], e:
 export const SPLIT_DIGRAPHS: readonly string[] = ['a_e/EY', 'i_e/AY', 'o_e/OW', 'u_e/UW', 'u_e/Y UW', 'e_e/IY'];
 export const DIGRAPHS: readonly string[] = ['sh/SH', 'ch/CH', 'th/TH', 'th/DH', 'wh/W'];
 /** Double letters and ck: taught with their single letter in every K-1 sequence (bell, kiss, duck). */
-const DOUBLES: readonly string[] = ['ck/K', 'ss/S', 'll/L', 'ff/F', 'zz/Z'];
+export const DOUBLES: readonly string[] =['ck/K', 'ss/S', 'll/L', 'ff/F', 'zz/Z'];
 export const VOWEL_TEAMS: readonly string[] = ['ai/EY', 'ay/EY', 'ee/IY', 'ea/IY', 'oa/OW', 'ow/OW', 'oo/UW', 'oo/UH', 'ou/AW', 'ow/AW', 'oi/OY', 'oy/OY', 'aw/AO', 'au/AO', 'ew/UW', 'igh/AY'];
 export const R_CONTROLLED: readonly string[] = ['ar/AA R', 'or/AO R', 'er/ER', 'ir/ER', 'ur/ER'];
 const INITIAL_BLENDS = ['bl', 'cl', 'fl', 'gl', 'pl', 'sl', 'br', 'cr', 'dr', 'fr', 'gr', 'tr', 'st', 'sp', 'sn', 'sw', 'sk', 'sm'];
@@ -90,6 +90,10 @@ function readLetters(text: string): { known: string[]; focus: string[]; group: L
   }
   // A list of three or more letters ("s, a, t, i, p, n" / "s a t i p n"), never one quoted letter.
   const named = lettersNamedIn(text).map((l) => (l === 'q' ? 'qu' : l));
+  // A CVC objective that only quotes vowels ("short 'i' ... previously learned short 'a' and 'e'") names its
+  // vowels, not a letter group: read as letters it would allow three vowels and no consonant, so no word at all
+  // (two published K subskills, 2026-11-10). The short-vowel reader below takes it.
+  if (/\bcvc\b/.test(t) && named.every((l) => 'aeiou'.includes(l))) return null;
   return named.length >= 3 ? { known: named, focus: named, group: null } : null;
 }
 
