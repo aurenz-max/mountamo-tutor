@@ -113,6 +113,21 @@ drawing) feeds it automatically:
   separators→`_`, strip `_G\d+` — mirrors `_norm_subject`); original spelling
   is preserved in each entry's `name`.
 
+### 4b. Component mastery (2026-11-10)
+Per-student tallies one level below the subskill (a letter-sound pair; later a
+single math fact). `app/services/component_mastery.py` cleans the rows a
+submission carries as `primitive_response.component_evidence`
+(`[{kind, id, attempts, correct}]`); they are stored on the attempt and
+`save_attempt` increments `students/{sid}/component_mastery/{kind}` (same
+best-effort contract as rollups; rebuild with
+`scripts/backfill_component_mastery.py`). Served by
+`GET /api/analytics/student/{id}/components?kind=`, shown by
+`ComponentMasteryGrid` in My Progress. The backend names no kind and no
+primitive: the frontend registry (`lumina/service/componentMastery/registry.ts`,
+held by `registry.guard.test.ts`) owns the kinds and maps a session's work onto
+ids. The tallies are a read model: they never select a lesson, set a gate or
+feed calibration (user ruling 2026-11-10). Pulse answers carry none yet.
+
 **Rebuild contract:** `backend/scripts/backfill_daily_rollups.py` recomputes
 everything from L0 and OVERWRITES (dry-run default; `--student N` / `--all` /
 `--apply`). Any suspected drift → rerun backfill; never hand-edit rollups.
