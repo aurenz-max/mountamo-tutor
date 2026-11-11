@@ -123,33 +123,72 @@ export function locateMiscues(printedLine: string, saidLine: string): Array<Omit
  * `readingRecord`: a credited read counts every word; an unlocated read counts none. A `line` may be one printed
  * word (a word-reading item): the verdict alone says whether it was read.
  */
-export function firstReadWords(lines: readonly ReadLine[], attempts: readonly ReadAttempt[]): Array<{ word: string; correct: boolean }> {
-  const out: Array<{ word: string; correct: boolean }> = [];
+export function firstReadWords(lines: readonly ReadLine[], attempts: readonly ReadAttempt[]): Array<{ word: string; correct: boolean; said?: string }> {
+  const out: Array<{ word: string; correct: boolean; said?: string }> = [];
   for (const line of lines) {
     if (line.cold === false) continue;
-    const first = attempts.find(a => a.itemId === line.id && a.source === 'speech' && !a.practice);
-    // A read after the answer was shown or said (a lever, a demonstration) is not the learner's own decoding.
-    if (!first || first.answerExposure === 'full' || disputed(first)) continue;
+    const first = countedFirstRead(line.id, attempts);
+    if (!first) continue;
     const words = readWords(line.text);
     // One printed word: the tutor's verdict is the whole evidence, and there is nothing to align.
-    if (words.length === 1) { out.push({ word: words[0], correct: first.correct }); continue; }
+    // A miss names what was said in its place when the transcript gives one other word, so the tally can count it
+    // against only the letter sounds that differ (8.3g).
+    if (words.length === 1) {
+      const said = readWords(first.response).filter(w => !FILLERS.has(w));
+      out.push({ word: words[0], correct: first.correct,
+        ...(!first.correct && said.length === 1 && said[0] !== words[0] ? { said: said[0] } : {}) });
+      continue;
+    }
     const found = first.correct ? [] : locateMiscues(line.text, first.response);
     if (found === null) continue;
-    const wrong = new Set(found.filter(m => m.kind !== 'add').map(m => m.at));
-    words.forEach((word, at) => out.push({ word, correct: !wrong.has(at) }));
+    const wrong = new Map(found.filter(m => m.kind !== 'add').map(m => [m.at, m.said]));
+    words.forEach((word, at) => out.push({ word, correct: !wrong.has(at), ...(wrong.get(at) ? { said: wrong.get(at) } : {}) }));
   }
   return out;
 }
 
-/** `firstReadWords` as one tally per distinct word, the unit the letter-sound kind expands into pairs. */
+/**
+ * `firstReadWords` as one tally per distinct unit, the unit the letter-sound kind expands into pairs: the printed
+ * word, or `printed>said` for a word read as another word, which counts only against the pairs that differ.
+ */
 export function wordReadTally(lines: readonly ReadLine[], attempts: readonly ReadAttempt[]): ComponentTally[] {
   const byWord = new Map<string, { unit: string; attempts: number; correct: number }>();
-  for (const { word, correct } of firstReadWords(lines, attempts)) {
-    const t = byWord.get(word) ?? { unit: word, attempts: 0, correct: 0 };
+  for (const { word, correct, said } of firstReadWords(lines, attempts)) {
+    const unit = said ? `${word}>${said}` : word;
+    const t = byWord.get(unit) ?? { unit, attempts: 0, correct: 0 };
     t.attempts++; if (correct) t.correct++;
-    byWord.set(word, t);
+    byWord.set(unit, t);
   }
   return byWord.size ? [{ kind: 'letter_sound', units: Array.from(byWord.values()) }] : [];
+}
+
+/**
+ * An item's first spoken answer, when it can count as evidence: not practice, not after the answer was shown or said
+ * (a lever, a demonstration: that is not the learner's own decoding), and not disputed.
+ */
+function countedFirstRead(itemId: string, attempts: readonly ReadAttempt[]): ReadAttempt | null {
+  const first = attempts.find(a => a.itemId === itemId && a.source === 'speech' && !a.practice);
+  return !first || first.answerExposure === 'full' || disputed(first) ? null : first;
+}
+
+/** The unit for a printed letter or letter team whose sound the learner said; the kind maps it to the taught pair. */
+export const letterUnit = (letters: string): string => `letter:${letters.trim().toLowerCase()}`;
+
+/**
+ * Letter-sound evidence from items that print a letter (or letter team) and take its sound out loud: the first read
+ * of each item, same policy as `firstReadWords`. Only the reading direction (print to sound) belongs here: a sound
+ * heard and a letter tapped is the spelling direction, which is not on this grid.
+ */
+export function letterSoundTally(items: ReadonlyArray<{ id: string; letters: string }>, attempts: readonly ReadAttempt[]): ComponentTally[] {
+  const byUnit = new Map<string, { unit: string; attempts: number; correct: number }>();
+  for (const item of items) {
+    const first = countedFirstRead(item.id, attempts);
+    if (!first || !item.letters.trim()) continue;
+    const unit = letterUnit(item.letters), t = byUnit.get(unit) ?? { unit, attempts: 0, correct: 0 };
+    t.attempts++; if (first.correct) t.correct++;
+    byUnit.set(unit, t);
+  }
+  return byUnit.size ? [{ kind: 'letter_sound', units: Array.from(byUnit.values()) }] : [];
 }
 
 /** The session's reading record: every located miscue, and word accuracy over cold first reads. */

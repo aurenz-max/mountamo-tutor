@@ -53,7 +53,7 @@ it('a wrong word reopens the item with no picture; a right one shows it; the les
   expect(metrics).toMatchObject({ wordsBlended: 2, wordsTotal: 2, soundsCorrectOnFirstTry: 1 });
   // First reads as word tallies: the missed word counts against its letter sounds, the right one for them.
   expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound',
-    units: [{ unit: 'cat', attempts: 1, correct: 0 }, { unit: 'dog', attempts: 1, correct: 1 }] }]);
+    units: [{ unit: 'cat>cap', attempts: 1, correct: 0 }, { unit: 'dog', attempts: 1, correct: 1 }] }]);
 });
 
 it('a word read after tapping a letter to hear its sound is left out of the letter-sound tallies', async () => {

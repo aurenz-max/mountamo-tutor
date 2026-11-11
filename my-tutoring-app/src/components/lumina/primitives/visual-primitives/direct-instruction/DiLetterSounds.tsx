@@ -49,6 +49,7 @@ import { FIRST_BOX, KEYWORD_SOUNDS, MODEL_SOUND, SOUND_ARROW, LETTER_LEVERS, mod
   startingLevers } from './diLetterSoundsLevers';
 import type { LetterSoundMenuEntry } from './diLetterSoundsMenu';
 import { DiModelCard } from './DiModelCard';
+import { letterSoundTally } from '../literacy/readingRecord';
 import type { PrimitiveEvaluationResult, DiLetterSoundsMetrics } from '../../../evaluation/types';
 import type { DiLetterSoundChallenge, DiLetterSoundChallengeType } from './diLetterSoundsDomain';
 
@@ -154,7 +155,11 @@ export const DiLetterSounds: React.FC<DiLetterSoundsProps> = ({ data, className,
     assignment={diLetterSoundsBoss.assignment} scene={(item, view) => workspaceScene(item, view)} copy={COPY} levers={levers}
     stimulus={(item, marks, view) => stimulus(item, marks, view, view.practice ? null : modelFor(item, items))}
     recapLabel={item => item.stimulus === 'word' ? item.keyword : item.letter}
-    metrics={result => ({ type: 'di-letter-sounds', ...diStageMetrics(result, items, data.challengeType) })} />;
+    metrics={result => ({ type: 'di-letter-sounds', ...diStageMetrics(result, items, data.challengeType),
+      // A printed letter's sound said on the first try counts toward that letter's pair (`service/componentMastery`).
+      // A first sound heard in a word is phonemic awareness, not print to sound: left out.
+      componentTallies: letterSoundTally(items.filter(item => item.stimulus === 'letter')
+        .map(item => ({ id: item.id, letters: item.letter })), result.teachingAttempts) })} />;
 };
 
 export default DiLetterSounds;

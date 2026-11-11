@@ -40,6 +40,7 @@ import { KEYWORDS_LEVER, LETTER_MODEL_LEVER, LETTER_SOUND_LEVERS, PAIR_MODEL_LEV
 import { hearSoundRequest, letterSoundMiss, printedStimulus, workspaceScene,
   type LetterSoundItem, type LetterSoundMode, type LetterSoundTier } from './letterSoundLinkDomain';
 import { letterSoundLinkBoss, letterSoundLinkItems } from './letterSoundLink.boss';
+import { letterSoundTally } from './readingRecord';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -185,7 +186,11 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }: LetterSoun
         phonemeToGraphemeAccuracy: rate(item => item.mode === 'hear-see'),
         vowelSoundAccuracy: rate(item => VOWELS.has(item.letter.toLowerCase())),
         consonantSoundAccuracy: rate(item => !VOWELS.has(item.letter.toLowerCase())),
-        confusedSoundPairs: Array.from(confused), attemptsCount: result.attemptsCount };
+        confusedSoundPairs: Array.from(confused), attemptsCount: result.attemptsCount,
+        // see-hear (a printed letter, its sound said) counts toward the letter's pair (`service/componentMastery`).
+        // hear-see is the spelling direction and keyword-match a two-picture choice: neither is on this grid.
+        componentTallies: letterSoundTally(items.filter(item => item.mode === 'see-hear')
+          .map(item => ({ id: item.id, letters: item.letter })), result.teachingAttempts) };
     } });
 
   const sessionItem = items[lesson.state.index];

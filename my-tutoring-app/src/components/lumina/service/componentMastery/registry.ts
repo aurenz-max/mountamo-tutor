@@ -87,14 +87,43 @@ function letterSoundComponents(): ComponentInfo[] {
   return out;
 }
 
+/**
+ * The pairs a unit names. A word gives every pair the library spells it with. `letter:<letters>` (a letter card whose
+ * sound was said) gives the first pair on the grid spelled with those letters: the taught sound, since the taught
+ * sequence comes first (o is short o, th is the th in thin). Letters with no pair on the grid give none.
+ */
+export function unitPairs(unit: string): string[] {
+  const swap = unit.indexOf('>');
+  if (swap > 0) return misreadPairs(unit.slice(0, swap), unit.slice(swap + 1));
+  if (!unit.startsWith('letter:')) return lexWord(unit)?.gpcs ?? [];
+  const letters = unit.slice('letter:'.length);
+  const pair = letterSoundComponents().find(c => c.id.split('/')[0] === letters);
+  return pair ? [pair.id] : [];
+}
+
+/**
+ * A printed word read as another word (`sits>sat`): the printed word's pairs the said word does not contain, so
+ * "sits" read as "sat" counts against i and the final s, not s or t. The pairs both share get nothing: the transcript
+ * locates the miss, it does not prove the rest was decoded. When the said word is not in the library, or the two share
+ * every pair (letters read out of order), the whole printed word counts, as before.
+ */
+function misreadPairs(printed: string, said: string): string[] {
+  const own = lexWord(printed)?.gpcs ?? [];
+  const other = lexWord(said)?.gpcs;
+  if (!other) return own;
+  const left = [...other];
+  const differ = own.filter(id => { const at = left.indexOf(id); if (at < 0) return true; left.splice(at, 1); return false; });
+  return differ.length ? differ : own;
+}
+
 const LETTER_SOUND: ComponentKind = {
   kind: 'letter_sound',
   title: 'Letter sounds',
-  unit: 'a printed word read aloud',
+  unit: 'a printed word read aloud, `printed>said` for a word read as another, or `letter:<letters>` for a printed letter whose sound was said',
   library: 'service/wordSpace/lexicon.json',
   display: 'ComponentMasteryGrid',
   components: letterSoundComponents,
-  expand: units => mergeEvidence(units.flatMap(u => (lexWord(u.unit)?.gpcs ?? [])
+  expand: units => mergeEvidence(units.flatMap(u => unitPairs(u.unit)
     .map(id => ({ kind: 'letter_sound', id, attempts: u.attempts, correct: u.correct })))),
 };
 

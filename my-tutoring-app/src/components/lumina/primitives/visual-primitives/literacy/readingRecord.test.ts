@@ -41,21 +41,24 @@ describe('wordReadTally', () => {
   const lines = [{ id: 'l1', text: 'The cat sits on the mat.' }, { id: 'l2', text: 'The dog ran.' },
     { id: 'l3', text: 'The cat ran.', cold: false }];
 
-  it('tallies each word of the cold first reads, counting a misread word as wrong', () => {
+  it('tallies each word of the cold first reads; a misread word carries what was said in its place', () => {
     const [tally] = wordReadTally(lines, [
       read('l1', 'the cat sat on the mat', false), read('l1', 'the cat sits on the mat', true),
       read('l2', 'sechs', true), read('l3', 'the cat ran', true),
     ]);
     expect(tally.kind).toBe('letter_sound');
     const by = Object.fromEntries(tally.units.map(u => [u.unit, [u.attempts, u.correct]]));
-    expect(by).toEqual({ the: [3, 3], cat: [1, 1], sits: [1, 0], on: [1, 1], mat: [1, 1], dog: [1, 1], ran: [1, 1] });
+    expect(by).toEqual({ the: [3, 3], cat: [1, 1], 'sits>sat': [1, 0], on: [1, 1], mat: [1, 1], dog: [1, 1], ran: [1, 1] });
   });
-  it('a one-word item takes the verdict as it stands: nothing to align', () => {
+  it('a one-word item takes the verdict as it stands; a one-word miss names the word said', () => {
     const words = [{ id: 'w1', text: 'cat' }, { id: 'w2', text: 'ship' }, { id: 'w3', text: 'dog' }];
     const [tally] = wordReadTally(words, [
       read('w1', 'cap', false), read('w1', 'cat', true), read('w2', 'sheep', true),
     ]);
-    expect(tally.units).toEqual([{ unit: 'cat', attempts: 1, correct: 0 }, { unit: 'ship', attempts: 1, correct: 1 }]);
+    expect(tally.units).toEqual([{ unit: 'cat>cap', attempts: 1, correct: 0 }, { unit: 'ship', attempts: 1, correct: 1 }]);
+    // A longer reply names no single word: the whole word counts, as before.
+    expect(wordReadTally([{ id: 'w1', text: 'cat' }], [read('w1', 'um is it cap', false)])[0].units)
+      .toEqual([{ unit: 'cat', attempts: 1, correct: 0 }]);
   });
   it('leaves out a first read made after the answer was shown or said', () => {
     expect(wordReadTally([{ id: 'w1', text: 'cat' }], [read('w1', 'cat', true, { answerExposure: 'full' })])).toEqual([]);
@@ -68,7 +71,7 @@ describe('wordReadTally', () => {
       read('w3', 'sign', false, { flowCorrect: true }),
       read('w4', 'das', false, { flowCorrect: false }), read('w4', 'bus', true, { flowCorrect: true }),
     ]);
-    expect(tally.units).toEqual([{ unit: 'cat', attempts: 1, correct: 1 }, { unit: 'bus', attempts: 1, correct: 0 }]);
+    expect(tally.units).toEqual([{ unit: 'cat', attempts: 1, correct: 1 }, { unit: 'bus>das', attempts: 1, correct: 0 }]);
     const record = readingRecord([{ id: 'l1', text: 'The cat sat on a mat.' }], [read('l1', 'the cat sat on mat', false, { flowCorrect: true })]);
     expect(record).toMatchObject({ wordsCounted: 0, wordAccuracy: null, miscues: [], unlocated: 0, disputed: 1 });
   });

@@ -387,6 +387,28 @@ it('observes settled speech, advances visibly, and completes once after playback
   expect(accuracy).toBe(100);
   expect(metrics).toMatchObject({ type: 'letter-sound-link', letterGroup: 1, challengesCorrect: 2,
     challengesTotal: 2, attemptsCount: 2, phonemeToGraphemeAccuracy: 100, confusedSoundPairs: [] });
+  // A two-picture choice is not letter-sound evidence for the per-child tallies.
+  expect(metrics.componentTallies).toEqual([]);
+  h.transport.close();
+});
+
+it("see_hear: each letter's first said sound becomes a letter-sound tally; a retry does not count", async () => {
+  const verdict = (v: 'correct' | 'incorrect', transition: 'advance' | 'retry') => ({ verdict: v, transition,
+    confidence: .99, verdictConfidence: .99, grounded: 1, accepted: true, reason: 'supported', ms: 200 });
+  const classify = vi.fn().mockResolvedValueOnce(verdict('incorrect', 'retry'))
+    .mockResolvedValueOnce(verdict('correct', 'advance')).mockResolvedValueOnce(verdict('correct', 'advance'));
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount('see_hear', classify as never);
+  for (const [answer, reply] of [['em', 'Not quite.'], ['mmm', 'Yes, mmm.'], ['t', 'Yes, t.']]) {
+    h.say(answer);
+    act(() => { h.transport.beginTurn(reply); h.transport.endTurn(true); });
+    await act(async () => { h.transport.audioChanged(false); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(80); });
+  }
+  expect(h.state().status).toBe('completed');
+  const metrics = seam.submit.mock.calls[0]?.[2];
+  expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound', units: [
+    { unit: 'letter:m', attempts: 1, correct: 0 }, { unit: 'letter:t', attempts: 1, correct: 1 }] }]);
   h.transport.close();
 });
 
@@ -404,6 +426,8 @@ it('records the confused letter pair a wrong tap reveals, and nothing else', asy
   const metrics = seam.submit.mock.calls[0]?.[2];
   expect(metrics).toMatchObject({ type: 'letter-sound-link', confusedSoundPairs: ['f↔s'],
     phonemeToGraphemeAccuracy: 100, graphemeToPhonemeAccuracy: 100 });
+  // A heard sound and a tapped letter is the spelling direction: not on the reading grid.
+  expect(metrics.componentTallies).toEqual([]);
 });
 
 it('refuses every action after the learner stops', () => {

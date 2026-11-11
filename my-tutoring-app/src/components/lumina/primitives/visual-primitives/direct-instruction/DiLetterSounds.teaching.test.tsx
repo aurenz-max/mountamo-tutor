@@ -268,6 +268,9 @@ it('observes settled speech, advances visibly, and completes once after playback
   expect(accuracy).toBe(100);
   expect(metrics).toMatchObject({ type: 'di-letter-sounds', evalMode: 'letter_sound',
     challengeType: 'letter_sound', totalChallenges: 2, correctCount: 2, attemptsCount: 2, firstTryCount: 2 });
+  // Each printed letter's first said sound counts toward that letter's pair (`service/componentMastery`).
+  expect(metrics.componentTallies).toEqual([{ kind: 'letter_sound', units: [
+    { unit: 'letter:m', attempts: 1, correct: 1 }, { unit: 'letter:a', attempts: 1, correct: 1 }] }]);
   h.transport.close();
 });
 

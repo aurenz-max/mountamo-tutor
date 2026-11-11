@@ -134,7 +134,7 @@ it('accuracy: a swapped word is recorded with what was said, and word accuracy c
   // The same reads as word tallies, the unit the letter-sound kind expands into pairs on submit.
   expect(metrics.componentTallies).toHaveLength(1);
   expect(metrics.componentTallies[0].kind).toBe('letter_sound');
-  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'book', attempts: 1, correct: 0 });
+  expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'book>bike', attempts: 1, correct: 0 });
   expect(metrics.componentTallies[0].units).toContainEqual({ unit: 'sam', attempts: 1, correct: 1 });
   expect(metrics.reading.miscues).toEqual([
     { lineId: 'line-1', kind: 'swap', printed: 'book', said: 'bike', at: 3, attempt: 1, cold: true },

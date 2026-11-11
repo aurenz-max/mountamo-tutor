@@ -76,6 +76,25 @@ describe('letter_sound', () => {
     expect(by['p/P']).toEqual([3, 2]);
   });
 
+  it('a letter card whose sound was said counts toward that letter\'s taught pair only', () => {
+    const evidence = k.expand([{ unit: 'letter:o', attempts: 1, correct: 0 }, { unit: 'letter:sh', attempts: 2, correct: 2 },
+      { unit: 'letter:x', attempts: 1, correct: 1 }, { unit: 'letter:zq', attempts: 1, correct: 1 }]);
+    const by = Object.fromEntries(evidence.map(e => [e.id, [e.attempts, e.correct]]));
+    expect(by).toEqual({ 'o/AA': [1, 0], 'sh/SH': [2, 2], 'x/K S': [1, 1] });
+  });
+
+  it('a word read as another counts against only the pairs that differ', () => {
+    const ids = (unit: string) => k.expand([{ unit, attempts: 1, correct: 0 }]).map(e => e.id).sort();
+    expect(ids('sits>sat')).toEqual(ids('sits').filter(id => id !== 't/T' && id !== 's/S').concat(
+      // sits has two s pairs; sat shares one, so the final s still counts.
+      k.expand([{ unit: 'sits', attempts: 1, correct: 0 }]).filter(e => e.id === 's/S').map(e => e.id)).sort());
+    expect(ids('sits>sat')).not.toContain('t/T');
+    expect(ids('cat>cap')).toEqual(['t/T']);
+    // Not in the library, or the same pairs in another order: the whole printed word counts.
+    expect(ids('cat>zzqx')).toEqual(ids('cat'));
+    expect(ids('pots>stop')).toEqual(ids('pots'));
+  });
+
   it('a word the library lacks, and an unknown kind, give no evidence', () => {
     expect(k.expand([{ unit: 'zzzznotaword', attempts: 1, correct: 1 }])).toEqual([]);
     expect(expandTallies([{ kind: 'no_such_kind', units: [{ unit: 'ship', attempts: 1, correct: 1 }] }])).toEqual([]);
