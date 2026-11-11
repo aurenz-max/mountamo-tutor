@@ -1475,6 +1475,7 @@ export type ComponentId =
   | 'vocabulary-explorer' // Interactive vocabulary exploration
   | 'deep-dive'          // Orchestrated multi-block learning experience
   | 'wonder-walk'        // Agent-authored K picture walk: scene, narration, tap the picture that fits the idea
+  | 'agent-canvas'       // General agent primitive: a program the agent writes and plays itself; the child operates it, its goal check judges
   | 'practice-studio'    // General agent primitive: items assembled from kit surfaces (choose, sort, order) and displays, revised after a look
   | 'passage-studio'     // Multi-block orchestrator anchored to a text stimulus
 
@@ -2374,6 +2375,7 @@ export type { VocabularyExplorerData } from './primitives/visual-primitives/core
 export type { DeepDiveData } from './primitives/visual-primitives/core/deep-dive/types';
 export type { WonderWalkData } from './primitives/visual-primitives/core/wonder-walk/WonderWalk';
 export type { PracticeStudioData } from './primitives/visual-primitives/core/practice-studio/PracticeStudio';
+export type { AgentCanvasData } from './primitives/visual-primitives/core/agent-canvas/AgentCanvas';
 export type { ScaleComparatorData, CelestialObject, ReferenceObject } from './primitives/visual-primitives/astronomy/ScaleComparator';
 export type { DayNightSeasonsData, LocationMarker } from './primitives/visual-primitives/astronomy/DayNightSeasons';
 export type { MoonPhasesLabData, ViewMode, MoonPhase, MoonPhaseInfo } from './primitives/visual-primitives/astronomy/MoonPhasesLab';

@@ -1,0 +1,442 @@
+{
+ "id": "zero-machine",
+ "title": "Mystery Machine",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner sends numbers through a machine with a hidden adding rule and works out what it adds, which shows that adding zero leaves a number the same."
+ },
+ "request": {
+  "topic": "Adding zero keeps a number the same",
+  "grade": "grade 1",
+  "objective": "Test numbers in a machine with a hidden adding rule and find that adding zero leaves every number the same."
+ },
+ "source": "function Display({ params, lumina }) {\n  const rule = params?.rule ?? 0;\n  const cards = params?.cards ?? [3, 6, 8, 1];\n  const minTests = params?.minTests ?? 3;\n  const predict = params?.predict ?? null;\n\n  const [fed, setFed] = useState([]);\n  const [last, setLast] = useState(null);\n  const [adds, setAdds] = useState(null);\n  const [typed, setTyped] = useState('');\n\n  useEffect(() => {\n    const distinct = new Set(fed).size;\n    const predicted = predict === null || typed === String(predict + rule);\n    lumina.goal(distinct >= minTests && adds === rule && predicted);\n    lumina.scene({ numberCards: cards, numbersFedIn: fed, cameOut: fed.map((v) => v + rule), machineAddsChosen: adds, askedForNumber: predict, numberTyped: typed });\n  }, [fed, adds, typed, cards, rule, predict, minTests]);\n\n  const feed = (v) => {\n    setFed((list) => list.concat(v));\n    setLast(v);\n  };\n\n  const pressDigit = (d) => setTyped((t) => (t.length < 3 ? t + d : t));\n  const erase = () => setTyped((t) => t.slice(0, -1));\n\n  const box = { width: 96, height: 76, borderRadius: 14, border: '2px solid #475569', background: '#1e293b', color: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, fontWeight: 800 };\n  const label = { color: '#94a3b8', fontSize: 15, marginBottom: 4, textAlign: 'center' };\n  const chip = (on) => ({ width: 56, height: 52, borderRadius: 10, border: '2px solid ' + (on ? '#38bdf8' : '#475569'), background: on ? '#0c4a6e' : '#1e293b', color: '#f1f5f9', fontSize: 23, fontWeight: 700, cursor: 'pointer' });\n  const keyStyle = { width: 50, height: 46, borderRadius: 10, border: '1px solid #475569', background: '#1e293b', color: '#f1f5f9', fontSize: 21, fontWeight: 700, cursor: 'pointer' };\n\n  return (\n    <Panel title=\"Mystery Machine\" caption=\"Tap a number to send it through the machine.\">\n      <Stack gap={12}>\n        <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>\n          {cards.map((v, i) => (\n            <button key={i} id={'card-' + i} type=\"button\" onClick={() => feed(v)} style={{ width: 72, height: 58, borderRadius: 12, border: '2px solid #a78bfa', background: '#1e293b', color: '#f1f5f9', fontSize: 26, fontWeight: 800, cursor: 'pointer' }}>{v}</button>\n          ))}\n        </div>\n\n        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 22 }}>\n          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>\n            <div>\n              <div style={label}>In</div>\n              <div id=\"in-box\" style={box}>{last === null ? '' : last}</div>\n            </div>\n            <span style={{ color: '#94a3b8', fontSize: 26, paddingTop: 20 }}>{'→'}</span>\n            <div>\n              <div style={label}>Machine</div>\n              <div style={{ ...box, width: 110, background: '#312e81', borderColor: '#818cf8' }}>?</div>\n            </div>\n            <span style={{ color: '#94a3b8', fontSize: 26, paddingTop: 20 }}>{'→'}</span>\n            <div>\n              <div style={label}>Out</div>\n              <div id=\"out-box\" style={box}>{last === null ? '' : last + rule}</div>\n            </div>\n          </div>\n          <div style={{ width: 150 }}>\n            <div style={label}>What you tried</div>\n            <div id=\"log\" style={{ minHeight: 76, maxHeight: 112, overflow: 'hidden', padding: '6px 10px', borderRadius: 12, background: '#1e293b', color: '#cbd5e1', fontSize: 18, fontWeight: 700 }}>\n              {fed.slice(-4).map((v, i) => (\n                <div key={i} style={{ textAlign: 'center' }}>{v} {'→'} {v + rule}</div>\n              ))}\n            </div>\n          </div>\n        </div>\n\n        <div>\n          <div style={label}>This machine adds:</div>\n          <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>\n            {[0, 1, 2, 3, 4, 5].map((n) => (\n              <button key={n} id={'adds-' + n} type=\"button\" style={chip(adds === n)} onClick={() => setAdds(n)}>{n}</button>\n            ))}\n          </div>\n        </div>\n\n        {predict !== null ? (\n          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>\n            <div>\n              <div style={label}>If {predict} goes in, what comes out?</div>\n              <div id=\"typed\" style={{ ...box, width: 200, height: 54, fontSize: 30, margin: '0 auto' }}>{typed}</div>\n            </div>\n            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 50px)', gap: 5 }}>\n              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => (\n                <button key={d} id={'key-' + d} type=\"button\" style={keyStyle} onClick={() => pressDigit(String(d))}>{d}</button>\n              ))}\n              <button id=\"key-erase\" type=\"button\" style={{ ...keyStyle, gridColumn: 'span 2', width: 105, fontSize: 15 }} onClick={erase}>Erase</button>\n            </div>\n          </div>\n        ) : null}\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "rule": 1,
+    "cards": [
+     2,
+     5,
+     7,
+     4
+    ],
+    "minTests": 3,
+    "predict": null
+   },
+   "ask": "Send at least three numbers through the machine. What does this machine add?",
+   "goal": "Three different numbers tried and the machine set to adds 1.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-2"
+    },
+    {
+     "do": "click",
+     "target": "#adds-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-2"
+    },
+    {
+     "do": "click",
+     "target": "#adds-2"
+    }
+   ],
+   "scene": {
+    "numberCards": [
+     2,
+     5,
+     7,
+     4
+    ],
+    "numbersFedIn": [],
+    "cameOut": [],
+    "machineAddsChosen": null,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numberCards": [
+     2,
+     5,
+     7,
+     4
+    ],
+    "numbersFedIn": [
+     2,
+     5,
+     7
+    ],
+    "cameOut": [
+     3,
+     6,
+     8
+    ],
+    "machineAddsChosen": 1,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "missScene": {
+    "numberCards": [
+     2,
+     5,
+     7,
+     4
+    ],
+    "numbersFedIn": [
+     2,
+     5,
+     7
+    ],
+    "cameOut": [
+     3,
+     6,
+     8
+    ],
+    "machineAddsChosen": 2,
+    "askedForNumber": null,
+    "numberTyped": ""
+   }
+  },
+  {
+   "params": {
+    "rule": 0,
+    "cards": [
+     3,
+     6,
+     8,
+     1
+    ],
+    "minTests": 3,
+    "predict": null
+   },
+   "ask": "Here is a new machine. Send at least three numbers through it. What does this machine add?",
+   "goal": "Three different numbers tried and the machine set to adds 0.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-2"
+    },
+    {
+     "do": "click",
+     "target": "#adds-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#adds-0"
+    }
+   ],
+   "scene": {
+    "numberCards": [
+     3,
+     6,
+     8,
+     1
+    ],
+    "numbersFedIn": [],
+    "cameOut": [],
+    "machineAddsChosen": null,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numberCards": [
+     3,
+     6,
+     8,
+     1
+    ],
+    "numbersFedIn": [
+     3,
+     6,
+     8
+    ],
+    "cameOut": [
+     3,
+     6,
+     8
+    ],
+    "machineAddsChosen": 0,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "missScene": {
+    "numberCards": [
+     3,
+     6,
+     8,
+     1
+    ],
+    "numbersFedIn": [
+     3
+    ],
+    "cameOut": [
+     3
+    ],
+    "machineAddsChosen": 0,
+    "askedForNumber": null,
+    "numberTyped": ""
+   }
+  },
+  {
+   "params": {
+    "rule": 0,
+    "cards": [
+     14,
+     27,
+     35,
+     42
+    ],
+    "minTests": 3,
+    "predict": null
+   },
+   "ask": "Try bigger numbers in this machine. Send at least three through. What does it add?",
+   "goal": "Three different two-digit numbers tried and the machine set to adds 0; big numbers do not change it.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-2"
+    },
+    {
+     "do": "click",
+     "target": "#adds-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-2"
+    },
+    {
+     "do": "click",
+     "target": "#adds-1"
+    }
+   ],
+   "scene": {
+    "numberCards": [
+     14,
+     27,
+     35,
+     42
+    ],
+    "numbersFedIn": [],
+    "cameOut": [],
+    "machineAddsChosen": null,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numberCards": [
+     14,
+     27,
+     35,
+     42
+    ],
+    "numbersFedIn": [
+     14,
+     27,
+     35
+    ],
+    "cameOut": [
+     14,
+     27,
+     35
+    ],
+    "machineAddsChosen": 0,
+    "askedForNumber": null,
+    "numberTyped": ""
+   },
+   "missScene": {
+    "numberCards": [
+     14,
+     27,
+     35,
+     42
+    ],
+    "numbersFedIn": [
+     14,
+     27,
+     35
+    ],
+    "cameOut": [
+     14,
+     27,
+     35
+    ],
+    "machineAddsChosen": 1,
+    "askedForNumber": null,
+    "numberTyped": ""
+   }
+  },
+  {
+   "params": {
+    "rule": 0,
+    "cards": [
+     10,
+     50,
+     19,
+     8
+    ],
+    "minTests": 3,
+    "predict": 96
+   },
+   "ask": "Send at least three numbers through. Say what the machine adds, then work out what comes out for a number you cannot try.",
+   "goal": "Three numbers tried, adds 0 chosen, and 96 typed for the number not on a card.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-3"
+    },
+    {
+     "do": "click",
+     "target": "#adds-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#card-0"
+    },
+    {
+     "do": "click",
+     "target": "#card-1"
+    },
+    {
+     "do": "click",
+     "target": "#card-3"
+    },
+    {
+     "do": "click",
+     "target": "#adds-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    }
+   ],
+   "scene": {
+    "numberCards": [
+     10,
+     50,
+     19,
+     8
+    ],
+    "numbersFedIn": [],
+    "cameOut": [],
+    "machineAddsChosen": null,
+    "askedForNumber": 96,
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numberCards": [
+     10,
+     50,
+     19,
+     8
+    ],
+    "numbersFedIn": [
+     10,
+     50,
+     8
+    ],
+    "cameOut": [
+     10,
+     50,
+     8
+    ],
+    "machineAddsChosen": 0,
+    "askedForNumber": 96,
+    "numberTyped": "96"
+   },
+   "missScene": {
+    "numberCards": [
+     10,
+     50,
+     19,
+     8
+    ],
+    "numbersFedIn": [
+     10,
+     50,
+     8
+    ],
+    "cameOut": [
+     10,
+     50,
+     8
+    ],
+    "machineAddsChosen": 0,
+    "askedForNumber": 96,
+    "numberTyped": "0"
+   }
+  }
+ ]
+}

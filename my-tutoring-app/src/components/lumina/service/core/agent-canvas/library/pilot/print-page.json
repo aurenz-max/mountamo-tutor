@@ -1,0 +1,681 @@
+{
+ "id": "print-page",
+ "title": "Print Page",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The learner taps the words on a page in reading order, left to right and top to bottom, and counts the words, which shows concepts of print: reading order and separate words with spaces."
+ },
+ "request": {
+  "topic": "Concepts of print: reading order and words",
+  "grade": "kindergarten",
+  "objective": "Show that print is read left to right and top to bottom, and that a sentence is made of separate words with spaces between them."
+ },
+ "source": "function Display({ params, lumina }) {\n  // A page (or a two-page spread) of a picture book. The child taps the words in the order we read them.\n  // params.pages: [{ picture, lines: [[word, ...], ...] }] - one or two pages, left page first.\n  // params.task: 'first' (tap the first word only) or 'all' (tap every word in reading order).\n  // params.count: true shows number buttons for \"how many words\".\n  const pages = Array.isArray(params?.pages) && params.pages.length\n    ? params.pages\n    : [{ picture: '🐶', lines: [['The', 'dog', 'ran']] }];\n  const task = params?.task ?? 'all';\n  const count = params?.count ?? false;\n  const two = pages.length > 1;\n\n  const [taps, setTaps] = useState([]); // keys: 'p-l-i' for a word, 'pic-p' for a picture\n  const [chosen, setChosen] = useState(null);\n\n  const order = [];\n  pages.forEach((pg, p) => pg.lines.forEach((ln, l) => ln.forEach((w, i) => order.push(p + '-' + l + '-' + i))));\n  const wordAt = (key) => {\n    if (key.startsWith('pic-')) return '(picture on page ' + (Number(key.slice(4)) + 1) + ')';\n    const [p, l, i] = key.split('-').map(Number);\n    return pages[p].lines[l][i];\n  };\n\n  useEffect(() => {\n    let met;\n    if (task === 'first') met = taps.length === 1 && taps[0] === order[0];\n    else met = taps.length === order.length && taps.every((k, n) => k === order[n]);\n    if (count) met = met && chosen === order.length;\n    lumina.goal(met);\n    lumina.scene({\n      pages: pages.map((pg, p) => ({\n        page: two ? (p === 0 ? 'left page' : 'right page') : 'the page',\n        picture: pg.picture,\n        linesTopToBottom: pg.lines.map((ln) => ln.join(' ')),\n      })),\n      tapsInOrder: taps.map(wordAt),\n      numberChosen: count ? chosen : undefined,\n    });\n  }, [taps, chosen]);\n\n  const tap = (key) => setTaps((t) => t.concat(key));\n  const marks = (key) => taps.filter((k) => k === key).length;\n\n  const dots = (n) => (\n    <div style={{ height: 14, marginTop: 4, display: 'flex', gap: 4, justifyContent: 'center' }}>\n      {Array.from({ length: n }).map((_, j) => (\n        <div key={j} style={{ width: 12, height: 12, borderRadius: 6, background: '#475569' }} />\n      ))}\n    </div>\n  );\n\n  const fontSize = two ? 28 : 34;\n  const page = (pg, p) => (\n    <div\n      key={p}\n      id={'page-' + p}\n      style={{\n        width: two ? 324 : 600, minHeight: two ? 380 : 320, boxSizing: 'border-box', padding: '16px 14px',\n        background: '#fdf6e3', borderRadius: two ? (p === 0 ? '12px 2px 2px 12px' : '2px 12px 12px 2px') : 12,\n        boxShadow: '0 4px 14px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,\n      }}\n    >\n      <button\n        id={'pic-' + p}\n        type=\"button\"\n        onClick={() => tap('pic-' + p)}\n        style={{ border: 'none', background: '#f3e7c4', borderRadius: 12, width: two ? 180 : 220, height: two ? 120 : 130, fontSize: two ? 72 : 84, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 0 }}\n      >\n        <span>{pg.picture}</span>\n      </button>\n      {dots(marks('pic-' + p))}\n      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, width: '100%' }}>\n        {pg.lines.map((ln, l) => (\n          <div key={l} style={{ display: 'flex', gap: two ? 22 : 30, flexWrap: 'nowrap' }}>\n            {ln.map((w, i) => {\n              const key = p + '-' + l + '-' + i;\n              return (\n                <button\n                  key={key}\n                  id={'word-' + key}\n                  type=\"button\"\n                  onClick={() => tap(key)}\n                  style={{ border: 'none', background: 'transparent', padding: '6px 2px 0', minHeight: 56, minWidth: 44, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}\n                >\n                  <span style={{ fontFamily: 'Georgia, \"Times New Roman\", serif', fontSize, color: '#1e293b', lineHeight: 1.1 }}>{w}</span>\n                  {dots(marks(key))}\n                </button>\n              );\n            })}\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n\n  const numStyle = (n) => ({\n    width: 56, height: 56, borderRadius: 12, fontSize: 26, fontWeight: 800, cursor: 'pointer',\n    border: chosen === n ? '3px solid #e2e8f0' : '1px solid #475569',\n    background: chosen === n ? '#334155' : '#1e293b', color: '#f1f5f9',\n  });\n\n  return (\n    <Panel title=\"Print Page\">\n      <Stack gap={14}>\n        <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>\n          {pages.map(page)}\n        </div>\n        {count && (\n          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>\n            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (\n              <button key={n} id={'num-' + n} type=\"button\" style={numStyle(n)} onClick={() => setChosen(n)}>{n}</button>\n            ))}\n          </div>\n        )}\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "task": "first",
+    "pages": [
+     {
+      "picture": "🐱",
+      "lines": [
+       [
+        "A",
+        "cat",
+        "naps"
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Where do we start reading on this page? Tap the first word.",
+   "goal": "One tap, on A, the first word of the line. The picture and the other words are not the start.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#pic-0"
+    }
+   ],
+   "scene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐱",
+      "linesTopToBottom": [
+       "A cat naps"
+      ]
+     }
+    ],
+    "tapsInOrder": []
+   },
+   "proofScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐱",
+      "linesTopToBottom": [
+       "A cat naps"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "A"
+    ]
+   },
+   "missScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐱",
+      "linesTopToBottom": [
+       "A cat naps"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "(picture on page 1)"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "all",
+    "pages": [
+     {
+      "picture": "🐕",
+      "lines": [
+       [
+        "My",
+        "dog",
+        "can",
+        "run"
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Tap each word, in the order we read them.",
+   "goal": "My, dog, can, run tapped once each, in that order.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#word-0-0-3"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    }
+   ],
+   "scene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐕",
+      "linesTopToBottom": [
+       "My dog can run"
+      ]
+     }
+    ],
+    "tapsInOrder": []
+   },
+   "proofScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐕",
+      "linesTopToBottom": [
+       "My dog can run"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "My",
+     "dog",
+     "can",
+     "run"
+    ]
+   },
+   "missScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐕",
+      "linesTopToBottom": [
+       "My dog can run"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "run",
+     "can",
+     "dog",
+     "My"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "all",
+    "pages": [
+     {
+      "picture": "☀️",
+      "lines": [
+       [
+        "We",
+        "can",
+        "see"
+       ],
+       [
+        "the",
+        "big",
+        "sun"
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "This page has two lines. Tap each word in the order we read them.",
+   "goal": "We, can, see, then the, big, sun: the top line, then back to the left of the next line.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2",
+     "shot": "line-one"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-0"
+    }
+   ],
+   "scene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "☀️",
+      "linesTopToBottom": [
+       "We can see",
+       "the big sun"
+      ]
+     }
+    ],
+    "tapsInOrder": []
+   },
+   "proofScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "☀️",
+      "linesTopToBottom": [
+       "We can see",
+       "the big sun"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "We",
+     "can",
+     "see",
+     "the",
+     "big",
+     "sun"
+    ]
+   },
+   "missScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "☀️",
+      "linesTopToBottom": [
+       "We can see",
+       "the big sun"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "We",
+     "can",
+     "see",
+     "sun",
+     "big",
+     "the"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "all",
+    "count": true,
+    "pages": [
+     {
+      "picture": "🐘",
+      "lines": [
+       [
+        "The",
+        "elephant",
+        "ate",
+        "a",
+        "bun"
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Tap each word as we read it. Then show how many words there are.",
+   "goal": "The, elephant, ate, a, bun tapped once each in order, and 5 chosen. The long word is one word and the one-letter word is a word.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-3"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-4",
+     "shot": "tapped"
+    },
+    {
+     "do": "click",
+     "target": "#num-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-3"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-4"
+    },
+    {
+     "do": "click",
+     "target": "#num-6"
+    }
+   ],
+   "scene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐘",
+      "linesTopToBottom": [
+       "The elephant ate a bun"
+      ]
+     }
+    ],
+    "tapsInOrder": [],
+    "numberChosen": null
+   },
+   "proofScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐘",
+      "linesTopToBottom": [
+       "The elephant ate a bun"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "The",
+     "elephant",
+     "ate",
+     "a",
+     "bun"
+    ],
+    "numberChosen": 5
+   },
+   "missScene": {
+    "pages": [
+     {
+      "page": "the page",
+      "picture": "🐘",
+      "linesTopToBottom": [
+       "The elephant ate a bun"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "The",
+     "elephant",
+     "elephant",
+     "ate",
+     "a",
+     "bun"
+    ],
+    "numberChosen": 6
+   }
+  },
+  {
+   "params": {
+    "task": "all",
+    "pages": [
+     {
+      "picture": "🐸",
+      "lines": [
+       [
+        "The",
+        "frog",
+        "sat"
+       ],
+       [
+        "on",
+        "a",
+        "log"
+       ]
+      ]
+     },
+     {
+      "picture": "🦆",
+      "lines": [
+       [
+        "A",
+        "duck",
+        "swam"
+       ],
+       [
+        "by",
+        "the",
+        "frog"
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "This book is open to two pages. Tap each word in the order we read the book.",
+   "goal": "All six words of the left page, top line then next line, then all six of the right page the same way.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-0",
+     "shot": "left-page"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#word-0-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-0-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#word-1-1-2"
+    }
+   ],
+   "scene": {
+    "pages": [
+     {
+      "page": "left page",
+      "picture": "🐸",
+      "linesTopToBottom": [
+       "The frog sat",
+       "on a log"
+      ]
+     },
+     {
+      "page": "right page",
+      "picture": "🦆",
+      "linesTopToBottom": [
+       "A duck swam",
+       "by the frog"
+      ]
+     }
+    ],
+    "tapsInOrder": []
+   },
+   "proofScene": {
+    "pages": [
+     {
+      "page": "left page",
+      "picture": "🐸",
+      "linesTopToBottom": [
+       "The frog sat",
+       "on a log"
+      ]
+     },
+     {
+      "page": "right page",
+      "picture": "🦆",
+      "linesTopToBottom": [
+       "A duck swam",
+       "by the frog"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "The",
+     "frog",
+     "sat",
+     "on",
+     "a",
+     "log",
+     "A",
+     "duck",
+     "swam",
+     "by",
+     "the",
+     "frog"
+    ]
+   },
+   "missScene": {
+    "pages": [
+     {
+      "page": "left page",
+      "picture": "🐸",
+      "linesTopToBottom": [
+       "The frog sat",
+       "on a log"
+      ]
+     },
+     {
+      "page": "right page",
+      "picture": "🦆",
+      "linesTopToBottom": [
+       "A duck swam",
+       "by the frog"
+      ]
+     }
+    ],
+    "tapsInOrder": [
+     "The",
+     "frog",
+     "sat",
+     "A",
+     "duck",
+     "swam",
+     "on",
+     "a",
+     "log",
+     "by",
+     "the",
+     "frog"
+    ]
+   }
+  }
+ ]
+}

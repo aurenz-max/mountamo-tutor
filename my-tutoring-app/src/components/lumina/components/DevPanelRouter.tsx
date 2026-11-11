@@ -15,6 +15,7 @@ import { FeatureExhibitTester } from './FeatureExhibitTester';
 import DeepDiveTester from './DeepDiveTester';
 import WonderWalkTester from './WonderWalkTester';
 import PracticeStudioTester from './PracticeStudioTester';
+import CanvasTester from './CanvasTester';
 import PassageStudioTester from './PassageStudioTester';
 import BiologyPrimitivesTester from './BiologyPrimitivesTester';
 import ChemistryPrimitivesTester from './ChemistryPrimitivesTester';
@@ -64,6 +65,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'deep-dive-tester': DeepDiveTester,
   'wonder-walk-tester': WonderWalkTester,
   'practice-studio-tester': PracticeStudioTester,
+  'canvas-tester': CanvasTester,
   'passage-studio-tester': PassageStudioTester,
   'biology-primitives-tester': BiologyPrimitivesTester,
   'chemistry-primitives-tester': ChemistryPrimitivesTester,

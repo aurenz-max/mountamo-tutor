@@ -78,7 +78,11 @@ export interface AgentAuthor<S, I, D> {
   setPlan(s: S, a: Args): Args;
   /** The item writers. Inside a turn, writes land in the order the model called them. `replaceIndex` and `levers` are the kit's: a writer never
    *  reads them. `lever` is set when the kit rebuilds a lever's changed item (no side effects such as images). */
-  writers: Array<{ decl: FunctionDeclaration; write(s: S, a: Args, opts?: { lever?: boolean }): WriteOutcome<I>; /** A piece the child does not answer (a teaching section): no levers. */ noLevers?: boolean }>;
+  writers: Array<{ decl: FunctionDeclaration; write(s: S, a: Args, opts?: { lever?: boolean }): WriteOutcome<I> }>;
+  /** Tools the author works with between writes (run what it built, play it, look at it), as a coding agent runs its
+   *  code. They land nothing: a result is what the author reads, and its images follow in the same turn. They run after
+   *  the turn's writes, in the order called. */
+  work?: Array<{ decl: FunctionDeclaration; run(s: S, a: Args, at: { items: I[] }): Promise<{ result: Args; images?: Buffer[] }> }>;
   /** The lever capability (`levers.ts`): the agent authors each item's levers, the kit rebuilds and checks them. */
   levers?: LeverCapability<S, I>;
   /** Every blocking check of the session (per item and across items), with `min` items required. `salvaged`: the budget
@@ -88,8 +92,8 @@ export interface AgentAuthor<S, I, D> {
   summarize(item: I, index: number): string;
   /** The look stage: the primitive says what the child sees first; the kit screenshots it, reads it blind and sends back
    *  what it finds. `objective`: what the lesson is for, a function when the author wrote it; the reader also says when an
-   *  item does not practise it. `view` gets the item's place in the lesson; null means there is nothing to answer here. */
-  look?: { grade: string; objective?: string | ((s: S) => string | undefined); view(s: S, item: I, at: { items: readonly I[]; index: number }): LookView | null };
+   *  item does not practise it. `view` gets the item's place in the lesson. */
+  look?: { grade: string; objective?: string | ((s: S) => string | undefined); view(s: S, item: I, at: { items: readonly I[]; index: number }): LookView };
   /** What the run record counts: the displays this author is offered and those an item shows. */
   displays?: { offered: readonly string[]; shown(item: I): ReadonlyArray<{ kind: string } | null | undefined> };
   /** The independent reader, run once at the first finish that passes the checks. Returns issues that send items back. */
@@ -115,8 +119,8 @@ export async function openModes<M extends string>(primitiveId: string, gctx: Gen
 }
 
 /** The tools in the order the model sees them: plan, writers, remove, finish, decline. */
-export const authorTools = (spec: Pick<AgentAuthor<never, never, never>, 'tools' | 'writers' | 'levers'>): FunctionDeclaration[] =>
-  [spec.tools.plan, ...spec.writers.map(w => (spec.levers && !w.noLevers ? withLevers(w.decl, spec.levers) : w.decl)), spec.tools.remove, spec.tools.finish, spec.tools.decline];
+export const authorTools = (spec: Pick<AgentAuthor<never, never, never>, 'tools' | 'writers' | 'levers' | 'work'>): FunctionDeclaration[] =>
+  [spec.tools.plan, ...spec.writers.map(w => (spec.levers ? withLevers(w.decl, spec.levers) : w.decl)), ...(spec.work ?? []).map(w => w.decl), spec.tools.remove, spec.tools.finish, spec.tools.decline];
 
 // ── An objective the author writes ──────────────────────────────────────────────
 
@@ -167,7 +171,7 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
   const min = () => (salvaged ? budget.salvageMin : budget.minItems);
 
   // ── The look stage ─────────────────────────────────────────────────────────
-  /** What each item's screen was when it was read: a section rewritten before an item changes that item's screen. */
+  /** What each item's screen was when it was read. */
   const looked = new WeakMap<object, string>();
   /** What the reader found on the items still in the session; whatever is left at ship goes in the advisories. */
   const lookProblems = new Map<I, string[]>();
@@ -181,8 +185,7 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
     const stage = spec.look;
     if (!stage || !looker) return [];
     const views = items.map((item, i) => ({ item, i, view: stage.view(state, item, { items, index: i }) }));
-    views.forEach(({ item, view }) => { if (!view) looked.set(item as object, ''); });
-    const fresh = views.flatMap(x => (x.view && looked.get(x.item as object) !== x.view.html ? [{ ...x, view: x.view }] : []));
+    const fresh = views.filter(x => looked.get(x.item as object) !== x.view.html);
     if (!fresh.length) return [];
     const objective = typeof stage.objective === 'function' ? stage.objective(state) : stage.objective;
     if (elapsed() >= budget.softMs) {
@@ -210,7 +213,7 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
         ...(reading.shortcut ? [`a reader who saw only the screen says a child could succeed without the idea: ${reading.shortcut}`] : []),
         ...(reading.issues ? [`a reader who saw only the screen reports: ${reading.issues}`] : []),
         ...(reading.offObjective ? [`a reader who saw only the screen says this does not practise the lesson's objective: ${reading.offObjective}`] : []),
-        ...(reading.untaught ? [`the child has not been taught what this needs: ${reading.untaught}. Teach it in a section before this piece (insertAt), or change the piece.`] : []),
+        ...(reading.untaught ? [`the child has not been taught what this needs: ${reading.untaught}. Define it in terms, teach it first, or change the question.`] : []),
       ].map(p => `${spec.noun} ${i}: ${p}`);
       if (reading.error) trace.say('look', `${spec.noun} ${i}: the reader failed, so it has no independent check (${reading.error})`, { item: i + 1, level: 'warn' });
       else trace.say('look', `${png ? 'screenshot read' : 'no browser, read in words'}: ${problems.length} problem(s)${problems[0] ? `. First: ${problems[0]}` : ''}`, { item: i + 1, level: problems.length ? 'warn' : 'info' });
@@ -324,19 +327,26 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
       const a = c.args ?? {};
       const out = writer.write(state, a);
       if ('error' in out) { record(i, out); continue; }
-      const at = num(a.replaceIndex);
+      // Replacing at the next free index is a first write (11-10 canvas runs lost up to three turns to "no canvas at index 0").
+      const asked = num(a.replaceIndex);
+      const at = asked === items.length ? undefined : asked;
       if (at !== undefined && !items[at]) { record(i, { error: `no ${spec.noun} at index ${at}` }); continue; }
       let leverNote: Args = {};
-      if (spec.levers && !writer.noLevers) {
+      if (spec.levers) {
         const built = buildLevers(state, a, out.item, (st, x) => writer.write(st, x, { lever: true }), spec.levers);
         (out.item as WithLevers<I>)[LEVERS] = { levers: built.levers, blocking: built.blocking };
         leverNote = { levers: built.report.length ? built.report : ['none written'], ...(built.blocking.length ? { leverChecks: built.blocking } : {}) };
       }
-      // A piece can go before another (a section the lesson turned out to need); past the end it appends.
-      const before = at === undefined ? num(a.insertAt) : undefined;
-      const place = before !== undefined ? Math.max(0, Math.min(before, items.length)) : undefined;
-      if (at !== undefined) items[at] = out.item; else if (place !== undefined) items.splice(place, 0, out.item); else items.push(out.item);
-      record(i, { ok: true, index: at ?? place ?? items.length - 1, ...out.result, ...leverNote });
+      if (at !== undefined) items[at] = out.item; else items.push(out.item);
+      record(i, { ok: true, index: at ?? items.length - 1, ...out.result, ...leverNote });
+    }
+    // Work tools run on what the turn's writes left, so "write it, then run it" works in one turn.
+    for (let i = 0; i < calls.length; i++) {
+      const tool = spec.work?.find(w => w.decl.name === calls[i].name);
+      if (!tool) continue;
+      const out = await tool.run(state, calls[i].args ?? {}, { items }).catch((e): { result: Args; images?: Buffer[] } => ({ result: { error: e instanceof Error ? e.message : String(e) } }));
+      record(i, out.result);
+      (out.images ?? []).forEach((png, n) => shots.push({ text: `${calls[i].name} image ${n + 1}:` }, { inlineData: { mimeType: 'image/png', data: png.toString('base64') } }));
     }
     for (const { i } of byName(spec.tools.finish.name!)) record(i, await finalize(true));
 

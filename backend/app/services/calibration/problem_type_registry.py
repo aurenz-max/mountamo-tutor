@@ -1090,6 +1090,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "practice-studio": {
         "practice": PriorConfig(0.5, "K-5: items an agent assembles for the objective (choose, sort, order)"),
     },
+    "agent-canvas": {
+        "canvas": PriorConfig(1.0, "K-8: a canvas an agent writes and plays for the objective; the learner operates it until its goal check passes"),
+    },
     "life-lab": {
         "world": PriorConfig(0.8, "K-5: a living world an agent builds for the objective; the learner changes it until the goal holds"),
     },

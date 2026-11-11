@@ -1,0 +1,434 @@
+{
+ "id": "no-touch",
+ "title": "Move It Without Touching",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The learner gets things to a star without touching them, choosing a magnet for iron and steel, a fan for light things and squirted water for floating things, which shows that pushes and pulls can move things without touching."
+ },
+ "request": {
+  "topic": "Moving things without touching them",
+  "grade": "kindergarten",
+  "objective": "Move a thing to a place without touching it: a magnet pulls iron and steel things to itself, moving air from a fan pushes light things away, and squirted water pushes floating things away. Heavy things do not blow away and a magnet does not pull wood or plastic. (SCI001-01-F)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // One or two lanes. Each lane holds one thing (a toy car, a feather, a boat...) and a star at one end. The child\n  // drags a mover from the tray (a magnet, a fan, a water squirter) to the left or right end of a lane. Nothing moves\n  // unless params.test gives a Try it button: the placement is a prediction and Check judges it.\n  // params.lanes: [{ obj, goal: 'left' | 'right', water: boolean }], 1-2. params.tray: mover keys. params.test: boolean.\n  const THINGS = {\n    car: { label: 'toy car', iron: true, light: false, floats: false },\n    ball: { label: 'steel ball', iron: true, light: false, floats: false },\n    key: { label: 'key', iron: true, light: false, floats: false },\n    feather: { label: 'feather', iron: false, light: true, floats: true },\n    leaf: { label: 'leaf', iron: false, light: true, floats: true },\n    block: { label: 'wood block', iron: false, light: false, floats: true },\n    boat: { label: 'plastic boat', iron: false, light: true, floats: true },\n  };\n  const MOVERS = {\n    magnet: { label: 'Magnet' },\n    fan: { label: 'Fan' },\n    hose: { label: 'Water squirter' },\n  };\n  const lanes = (Array.isArray(params.lanes) && params.lanes.length ? params.lanes : [{ obj: 'car', goal: 'right', water: false }])\n    .slice(0, 2)\n    .map(l => ({ obj: THINGS[l && l.obj] ? l.obj : 'car', goal: l && l.goal === 'left' ? 'left' : 'right', water: !!(l && l.water) }));\n  const tray = (Array.isArray(params.tray) ? params.tray : ['magnet', 'fan']).filter(k => MOVERS[k]).slice(0, 3);\n  const canTest = !!params.test;\n\n  // placed[k] = { lane, side } or undefined. One mover per lane: a new one pushes the old one back to the tray.\n  const [placed, setPlaced] = useState({});\n  const [ran, setRan] = useState(false);\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n\n  // The model. A magnet pulls iron and steel to itself. Moving air (the fan) pushes light things away from it.\n  // Squirted water pushes a thing that floats on the water away from it. Anything else stays where it is.\n  const moverIn = i => Object.keys(placed).find(k => placed[k] && placed[k].lane === i);\n  const endOf = i => {\n    const l = lanes[i];\n    const t = THINGS[l.obj];\n    const k = moverIn(i);\n    if (!k) return 'middle';\n    const side = placed[k].side;\n    const away = side === 'left' ? 'right' : 'left';\n    if (k === 'magnet') return t.iron ? side : 'middle';\n    if (k === 'fan') return t.light ? away : 'middle';\n    if (k === 'hose') return l.water && t.floats ? away : 'middle';\n    return 'middle';\n  };\n  const goalMet = lanes.every((l, i) => endOf(i) === l.goal);\n\n  const laneName = i => (lanes.length === 1 ? 'the lane' : ['top lane', 'bottom lane'][i]);\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      lanes: lanes.map((l, i) => {\n        const k = moverIn(i);\n        return {\n          lane: laneName(i),\n          thing: THINGS[l.obj].label,\n          on: l.water ? 'water' : 'a table',\n          star: `${l.goal} end`,\n          mover: k ? `${MOVERS[k].label} at the ${placed[k].side} end` : 'none',\n          ...(ran ? { thingNow: endOf(i) === 'middle' ? 'did not move' : `moved to the ${endOf(i)} end` } : {}),\n        };\n      }),\n      tray: tray.filter(k => !placed[k]).map(k => MOVERS[k].label),\n      ...(canTest ? { tryIt: ran ? 'ran' : 'not yet' } : {}),\n    });\n  }, [goalMet, placed, ran]);\n\n  // ---------- layout ----------\n  const W = 680;\n  const LANE_H = lanes.length === 1 ? 230 : 176;\n  const TRAY_Y = lanes.length * LANE_H + 6;\n  const TRAY_H = 120;\n  const H = TRAY_Y + TRAY_H;\n  const SLOT_X = { left: 62, right: W - 62 };\n  const END_X = { left: 168, middle: W / 2, right: W - 168 };\n  const groundY = i => i * LANE_H + LANE_H - 54;\n  const slotAt = (i, side) => ({ x: SLOT_X[side], y: groundY(i) - 34 });\n  const traySlot = j => ({ x: (W / (tray.length + 1)) * (j + 1), y: TRAY_Y + 46 });\n\n  const onDown = (key, e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    setDrag({ key });\n  };\n  const onMove = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDrag(d => (d ? { ...d, x: pt.x, y: pt.y } : null));\n  };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    let hit = null;\n    lanes.forEach((_, i) => ['left', 'right'].forEach(side => {\n      const s = slotAt(i, side);\n      if (Math.abs(pt.x - s.x) <= 60 && Math.abs(pt.y - s.y) <= 60) hit = { lane: i, side };\n    }));\n    setPlaced(prev => {\n      const next = { ...prev };\n      delete next[drag.key];\n      if (hit) {\n        Object.keys(next).forEach(k => { if (next[k] && next[k].lane === hit.lane) delete next[k]; });\n        next[drag.key] = hit;\n      }\n      return next;\n    });\n    setRan(false);\n    setDrag(null);\n  };\n\n  // ---------- pictures ----------\n  const thing = key => {\n    if (key === 'car') return (\n      <g>\n        <rect x=\"-34\" y=\"-30\" width=\"68\" height=\"22\" rx=\"6\" fill=\"#94a3b8\" stroke=\"#334155\" strokeWidth=\"2\" />\n        <rect x=\"-20\" y=\"-46\" width=\"36\" height=\"18\" rx=\"5\" fill=\"#cbd5e1\" stroke=\"#334155\" strokeWidth=\"2\" />\n        <circle cx=\"-20\" cy=\"-6\" r=\"8\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <circle cx=\"20\" cy=\"-6\" r=\"8\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      </g>\n    );\n    if (key === 'ball') return (\n      <g>\n        <circle cx=\"0\" cy=\"-20\" r=\"20\" fill=\"url(#steelBall)\" stroke=\"#334155\" strokeWidth=\"2\" />\n        <circle cx=\"-7\" cy=\"-27\" r=\"5\" fill=\"#f8fafc\" opacity=\"0.8\" />\n      </g>\n    );\n    if (key === 'block') return (\n      <g>\n        <rect x=\"-26\" y=\"-48\" width=\"52\" height=\"48\" rx=\"3\" fill=\"#b45309\" stroke=\"#78350f\" strokeWidth=\"2\" />\n        <path d=\"M -18 -36 H 18 M -18 -22 H 12\" stroke=\"#92400e\" strokeWidth=\"2\" />\n      </g>\n    );\n    if (key === 'boat') return (\n      <g>\n        <path d=\"M -40 -22 L 40 -22 L 28 2 L -28 2 Z\" fill=\"#f97316\" stroke=\"#9a3412\" strokeWidth=\"2\" />\n        <rect x=\"-14\" y=\"-34\" width=\"28\" height=\"12\" rx=\"3\" fill=\"#fde68a\" stroke=\"#9a3412\" strokeWidth=\"2\" />\n      </g>\n    );\n    if (key === 'key') return (\n      <g>\n        <circle cx=\"-20\" cy=\"-14\" r=\"12\" fill=\"none\" stroke=\"#cbd5e1\" strokeWidth=\"6\" />\n        <path d=\"M -8 -14 H 30 M 22 -14 V -4 M 14 -14 V -6\" stroke=\"#cbd5e1\" strokeWidth=\"6\" strokeLinecap=\"round\" />\n      </g>\n    );\n    if (key === 'leaf') return (\n      <g>\n        <path d=\"M -30 -10 Q -8 -42 30 -20 Q 6 8 -30 -10 Z\" fill=\"#22c55e\" stroke=\"#14532d\" strokeWidth=\"2\" />\n        <path d=\"M -30 -10 Q 0 -20 30 -20\" stroke=\"#14532d\" strokeWidth=\"2\" fill=\"none\" />\n      </g>\n    );\n    return <text x=\"0\" y=\"-4\" textAnchor=\"middle\" fontSize=\"44\">🪶</text>;\n  };\n\n  // A mover drawn facing +x (toward the lane's middle when it sits at the left end); flipped at the right end.\n  const mover = key => {\n    if (key === 'magnet') return (\n      <g>\n        <path d=\"M 22 -26 H -8 A 26 26 0 0 0 -8 26 H 22 V 12 H -8 A 12 12 0 0 1 -8 -12 H 22 Z\"\n          fill=\"#dc2626\" stroke=\"#7f1d1d\" strokeWidth=\"2\" />\n        <rect x=\"10\" y=\"-26\" width=\"12\" height=\"14\" fill=\"#e2e8f0\" stroke=\"#475569\" strokeWidth=\"1.5\" />\n        <rect x=\"10\" y=\"12\" width=\"12\" height=\"14\" fill=\"#e2e8f0\" stroke=\"#475569\" strokeWidth=\"1.5\" />\n      </g>\n    );\n    if (key === 'fan') return (\n      <g>\n        <rect x=\"-26\" y=\"16\" width=\"20\" height=\"18\" rx=\"3\" fill=\"#475569\" />\n        <circle cx=\"-8\" cy=\"-4\" r=\"26\" fill=\"#1e293b\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\n        {[0, 120, 240].map(a => (\n          <ellipse key={a} cx=\"-8\" cy=\"-16\" rx=\"7\" ry=\"12\" fill=\"#38bdf8\" transform={`rotate(${a} -8 -4)`} />\n        ))}\n        <circle cx=\"-8\" cy=\"-4\" r=\"4\" fill=\"#e2e8f0\" />\n      </g>\n    );\n    return (\n      <g>\n        <rect x=\"-30\" y=\"-8\" width=\"34\" height=\"18\" rx=\"6\" fill=\"#16a34a\" stroke=\"#14532d\" strokeWidth=\"2\" />\n        <path d=\"M 4 -6 L 26 -11 L 26 11 L 4 8 Z\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2\" />\n        <path d=\"M -30 2 q -10 0 -10 16\" stroke=\"#16a34a\" strokeWidth=\"7\" fill=\"none\" strokeLinecap=\"round\" />\n      </g>\n    );\n  };\n\n  const star = (x, y) => (\n    <path transform={`translate(${x}, ${y})`}\n      d=\"M 0 -16 L 4.7 -5 L 16 -5 L 7 2 L 10 13 L 0 6.5 L -10 13 L -7 2 L -16 -5 L -4.7 -5 Z\"\n      fill=\"#fbbf24\" stroke=\"#b45309\" strokeWidth=\"1.5\" />\n  );\n\n  const lane = (l, i) => {\n    const top = i * LANE_H;\n    const gy = groundY(i);\n    const at = ran ? endOf(i) : 'middle';\n    const gx = END_X[l.goal];\n    return (\n      <g key={i}>\n        <rect x=\"0\" y={top} width={W} height={LANE_H - 8} rx=\"12\" fill=\"#0b1224\" />\n        {l.water ? (\n          <rect x=\"8\" y={gy - 14} width={W - 16} height={top + LANE_H - 16 - (gy - 14)} rx=\"8\" fill=\"#1d4ed8\" opacity=\"0.55\" />\n        ) : (\n          <rect x=\"8\" y={gy} width={W - 16} height=\"16\" rx=\"4\" fill=\"#a16207\" />\n        )}\n        {/* the star the thing should reach */}\n        <rect x={gx - 46} y={gy - 70} width=\"92\" height=\"70\" rx=\"10\" fill=\"rgba(251,191,36,0.06)\" stroke=\"#fbbf24\"\n          strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n        {star(gx, top + 26)}\n        {/* the two ends where a mover can go */}\n        {['left', 'right'].map(side => {\n          const s = slotAt(i, side);\n          return (\n            <rect key={side} id={`end-${i + 1}-${side}`} x={s.x - 44} y={s.y - 44} width=\"88\" height=\"88\" rx=\"12\"\n              fill=\"rgba(148,163,184,0.06)\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"5 5\" />\n          );\n        })}\n        <g style={{ transform: `translate(${END_X[at]}px, ${gy}px)`, transition: 'transform 1.2s ease-in-out' }}>\n          {thing(l.obj)}\n        </g>\n      </g>\n    );\n  };\n\n  const moverItem = key => {\n    const dragging = drag && drag.key === key && drag.x !== undefined;\n    const p = placed[key];\n    let at, flip = false;\n    if (dragging) at = { x: drag.x, y: drag.y };\n    else if (p) { at = slotAt(p.lane, p.side); flip = p.side === 'right'; }\n    else at = traySlot(tray.indexOf(key));\n    return (\n      <g key={key} id={`mover-${key}`} transform={`translate(${at.x}, ${at.y}) scale(${flip ? -1 : 1}, 1)`}\n        style={{ cursor: 'grab', touchAction: 'none' }}\n        onPointerDown={e => onDown(key, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n        <rect x=\"-44\" y=\"-40\" width=\"88\" height=\"80\" fill=\"transparent\" />\n        {mover(key)}\n      </g>\n    );\n  };\n\n  const anyPlaced = Object.keys(placed).length > 0;\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <defs>\n          <radialGradient id=\"steelBall\" cx=\"0.35\" cy=\"0.35\" r=\"0.8\">\n            <stop offset=\"0\" stopColor=\"#f1f5f9\" />\n            <stop offset=\"0.6\" stopColor=\"#94a3b8\" />\n            <stop offset=\"1\" stopColor=\"#475569\" />\n          </radialGradient>\n        </defs>\n        {lanes.map(lane)}\n        <rect x=\"0\" y={TRAY_Y} width={W} height={TRAY_H - 6} rx=\"12\" fill=\"rgba(30,41,59,0.6)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\n        {tray.map((k, j) => !placed[k] && (\n          <text key={`label-${k}`} x={traySlot(j).x} y={TRAY_Y + 102} textAnchor=\"middle\" fill=\"#e2e8f0\" fontSize=\"15\" fontWeight=\"600\">\n            {MOVERS[k].label}\n          </text>\n        ))}\n        {tray.map(moverItem)}\n      </svg>\n      {canTest && anyPlaced && (\n        <Row>\n          <Button label={ran ? 'Try it again' : 'Try it'} onClick={() => { setRan(false); setTimeout(() => setRan(true), 30); }} />\n        </Row>\n      )}\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "lanes": [
+     {
+      "obj": "car",
+      "goal": "right",
+      "water": false
+     }
+    ],
+    "tray": [
+     "fan",
+     "magnet"
+    ],
+    "test": true
+   },
+   "ask": "Get the toy car to the star without touching it. You can try it first.",
+   "goal": "The magnet is at the right end: it pulls the steel car to the star. The fan's air is too weak to move a heavy car.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-right",
+     "shot": "placed"
+    },
+    {
+     "do": "click",
+     "target": "button.lx-btn"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mover-fan",
+     "to": "#end-1-left"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "toy car",
+      "on": "a table",
+      "star": "right end",
+      "mover": "none"
+     }
+    ],
+    "tray": [
+     "Fan",
+     "Magnet"
+    ],
+    "tryIt": "not yet"
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "toy car",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Magnet at the right end",
+      "thingNow": "moved to the right end"
+     }
+    ],
+    "tray": [
+     "Fan"
+    ],
+    "tryIt": "ran"
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "toy car",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Fan at the left end"
+     }
+    ],
+    "tray": [
+     "Magnet"
+    ],
+    "tryIt": "not yet"
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "obj": "feather",
+      "goal": "right",
+      "water": false
+     }
+    ],
+    "tray": [
+     "magnet",
+     "fan"
+    ]
+   },
+   "ask": "Get the feather to the star without touching it.",
+   "goal": "The fan is at the left end: its air pushes the light feather away, to the star. A magnet does not pull a feather.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mover-fan",
+     "to": "#end-1-left"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-right"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "feather",
+      "on": "a table",
+      "star": "right end",
+      "mover": "none"
+     }
+    ],
+    "tray": [
+     "Magnet",
+     "Fan"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "feather",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Fan at the left end"
+     }
+    ],
+    "tray": [
+     "Magnet"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "feather",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Magnet at the right end"
+     }
+    ],
+    "tray": [
+     "Fan"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "obj": "ball",
+      "goal": "left",
+      "water": false
+     }
+    ],
+    "tray": [
+     "fan",
+     "magnet"
+    ]
+   },
+   "ask": "Get the steel ball to the star without touching it.",
+   "goal": "The magnet is at the left end, beside the star: a magnet pulls the ball toward itself. Behind the ball it would pull it the wrong way.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-left"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-right"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "steel ball",
+      "on": "a table",
+      "star": "left end",
+      "mover": "none"
+     }
+    ],
+    "tray": [
+     "Fan",
+     "Magnet"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "steel ball",
+      "on": "a table",
+      "star": "left end",
+      "mover": "Magnet at the left end"
+     }
+    ],
+    "tray": [
+     "Fan"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "steel ball",
+      "on": "a table",
+      "star": "left end",
+      "mover": "Magnet at the right end"
+     }
+    ],
+    "tray": [
+     "Fan"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "obj": "boat",
+      "goal": "right",
+      "water": true
+     }
+    ],
+    "tray": [
+     "magnet",
+     "hose"
+    ]
+   },
+   "ask": "Get the boat across the water to the star without touching it.",
+   "goal": "The water squirter is at the left end: the water pushes the floating plastic boat away, to the star. A magnet does not pull plastic.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mover-hose",
+     "to": "#end-1-left"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-right"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "plastic boat",
+      "on": "water",
+      "star": "right end",
+      "mover": "none"
+     }
+    ],
+    "tray": [
+     "Magnet",
+     "Water squirter"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "plastic boat",
+      "on": "water",
+      "star": "right end",
+      "mover": "Water squirter at the left end"
+     }
+    ],
+    "tray": [
+     "Magnet"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "thing": "plastic boat",
+      "on": "water",
+      "star": "right end",
+      "mover": "Magnet at the right end"
+     }
+    ],
+    "tray": [
+     "Water squirter"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "obj": "key",
+      "goal": "left",
+      "water": false
+     },
+     {
+      "obj": "leaf",
+      "goal": "right",
+      "water": false
+     }
+    ],
+    "tray": [
+     "fan",
+     "magnet"
+    ]
+   },
+   "ask": "Get the key and the leaf to their stars without touching them.",
+   "goal": "The magnet is at the left end of the key's lane (it pulls the steel key) and the fan is at the left end of the leaf's lane (its air pushes the leaf to the right).",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-1-left"
+    },
+    {
+     "do": "drag",
+     "target": "#mover-fan",
+     "to": "#end-2-left"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mover-fan",
+     "to": "#end-1-right"
+    },
+    {
+     "do": "drag",
+     "target": "#mover-magnet",
+     "to": "#end-2-right"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "thing": "key",
+      "on": "a table",
+      "star": "left end",
+      "mover": "none"
+     },
+     {
+      "lane": "bottom lane",
+      "thing": "leaf",
+      "on": "a table",
+      "star": "right end",
+      "mover": "none"
+     }
+    ],
+    "tray": [
+     "Fan",
+     "Magnet"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "thing": "key",
+      "on": "a table",
+      "star": "left end",
+      "mover": "Magnet at the left end"
+     },
+     {
+      "lane": "bottom lane",
+      "thing": "leaf",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Fan at the left end"
+     }
+    ],
+    "tray": []
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "thing": "key",
+      "on": "a table",
+      "star": "left end",
+      "mover": "Fan at the right end"
+     },
+     {
+      "lane": "bottom lane",
+      "thing": "leaf",
+      "on": "a table",
+      "star": "right end",
+      "mover": "Magnet at the right end"
+     }
+    ],
+    "tray": []
+   }
+  }
+ ]
+}

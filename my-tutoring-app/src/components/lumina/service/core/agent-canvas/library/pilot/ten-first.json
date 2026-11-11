@@ -1,0 +1,386 @@
+{
+ "id": "ten-first",
+ "title": "Ten First",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner adds three numbers within 20 by putting the two that make a ten on ten frames first, then adding the third, which shows the make-a-ten strategy for three addends."
+ },
+ "request": {
+  "topic": "Adding three numbers by making a ten first",
+  "grade": "grade 1",
+  "objective": "Add three numbers with a total within 20 by finding the two that make a ten, adding those first, then adding the third."
+ },
+ "source": "function Display({ params, lumina }) {\n  const numbers = params?.numbers ?? [7, 5, 3];\n  const showDots = params?.showDots ?? true;\n  const showCounters = params?.showCounters ?? true;\n\n  // The child's order: indices into `numbers`, first placed first.\n  const [order, setOrder] = useState([]);\n  const [typed, setTyped] = useState('');\n\n  const total = numbers.reduce((a, b) => a + b, 0);\n  const placedValues = order.map((i) => numbers[i]);\n\n  useEffect(() => {\n    const allPlaced = order.length === numbers.length;\n    const tenFirst = allPlaced && placedValues[0] + placedValues[1] === 10;\n    lumina.goal(tenFirst && typed === String(total));\n    lumina.scene({\n      numbers,\n      numbersPutInFirstThenNext: placedValues,\n      numberTyped: typed,\n    });\n  }, [order, typed, numbers]);\n\n  const place = (i) => setOrder((o) => (o.includes(i) || o.length >= numbers.length ? o : o.concat(i)));\n  const unplace = (i) => setOrder((o) => o.filter((x) => x !== i));\n  const pressDigit = (d) => setTyped((t) => (t.length < 3 ? t + d : t));\n  const erase = () => setTyped((t) => t.slice(0, -1));\n\n  const COLORS = ['#f87171', '#60a5fa', '#fbbf24'];\n\n  // Counters fill the first frame and run over into the second, in the order the child placed the numbers.\n  const cellColors = [];\n  order.forEach((i) => {\n    for (let n = 0; n < numbers[i]; n += 1) cellColors.push(COLORS[i]);\n  });\n\n  const CELL = 44;\n  const GAP = 5;\n  const Frame = ({ id, start }) => (\n    <div id={id} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, ' + CELL + 'px)', gap: GAP, padding: 8, background: '#1e293b', borderRadius: 12 }}>\n      {Array.from({ length: 10 }, (_, c) => {\n        const color = showCounters ? cellColors[start + c] : undefined;\n        return (\n          <div key={c} style={{ width: CELL, height: CELL, borderRadius: 8, border: '2px solid #475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>\n            {color ? <div style={{ width: 32, height: 32, borderRadius: 16, background: color }} /> : null}\n          </div>\n        );\n      })}\n    </div>\n  );\n\n  const Dots = ({ n, color }) => (\n    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 9px)', gap: 3, justifyContent: 'center', minHeight: 21 }}>\n      {Array.from({ length: n }, (_, k) => <div key={k} style={{ width: 9, height: 9, borderRadius: 5, background: color }} />)}\n    </div>\n  );\n\n  const Tile = ({ i, inTray }) => {\n    const here = order.includes(i);\n    const gone = inTray ? here : false;\n    return (\n      <button\n        id={'tile-' + i}\n        type=\"button\"\n        onClick={() => (here ? unplace(i) : place(i))}\n        style={{\n          width: 96, minHeight: 84, borderRadius: 14, cursor: 'pointer',\n          border: '2px solid ' + (gone ? '#334155' : COLORS[i]),\n          background: gone ? '#0f172a' : '#1e293b',\n          color: gone ? '#334155' : '#f1f5f9',\n          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,\n        }}\n      >\n        <span style={{ fontSize: 38, fontWeight: 800, lineHeight: 1 }}>{numbers[i]}</span>\n        {showDots && !gone ? <Dots n={numbers[i]} color={COLORS[i]} /> : null}\n      </button>\n    );\n  };\n\n  const Slot = ({ place: p, label }) => {\n    const i = order[p];\n    return (\n      <div style={{ textAlign: 'center' }}>\n        <div style={{ color: '#94a3b8', fontSize: 15, marginBottom: 4 }}>{label}</div>\n        <div id={'slot-' + p} style={{ width: 72, height: 60, borderRadius: 12, border: '2px dashed #475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: '#f1f5f9', background: i === undefined ? 'transparent' : '#1e293b' }}>\n          {i === undefined ? '' : numbers[i]}\n        </div>\n      </div>\n    );\n  };\n\n  const keyStyle = { width: 52, height: 48, borderRadius: 10, border: '1px solid #475569', background: '#1e293b', color: '#f1f5f9', fontSize: 22, fontWeight: 700, cursor: 'pointer' };\n\n  return (\n    <Panel title=\"Ten First\" caption={(showCounters ? 'Tap a number to put it on the frames.' : 'Tap a number to put it in the row.') + ' Tap it again to take it back.'}>\n      <Stack gap={12}>\n        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>\n          {numbers.map((_, i) => (\n            <React.Fragment key={i}>\n              {i > 0 ? <span style={{ fontSize: 32, color: '#94a3b8', fontWeight: 700 }}>+</span> : null}\n              <Tile i={i} inTray />\n            </React.Fragment>\n          ))}\n        </div>\n\n        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 16 }}>\n          <Slot place={0} label=\"first\" />\n          <span style={{ fontSize: 26, color: '#94a3b8', paddingBottom: 12 }}>+</span>\n          <Slot place={1} label=\"next\" />\n          <span style={{ fontSize: 26, color: '#94a3b8', paddingBottom: 12 }}>+</span>\n          <Slot place={2} label=\"last\" />\n        </div>\n\n        {showCounters ? (\n          <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>\n            <Frame id=\"frame-a\" start={0} />\n            <Frame id=\"frame-b\" start={10} />\n          </div>\n        ) : null}\n\n        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>\n          <div>\n            <div style={{ color: '#94a3b8', fontSize: 15, marginBottom: 4, textAlign: 'center' }}>How many in all?</div>\n            <div id=\"typed\" style={{ width: 110, height: 56, borderRadius: 12, border: '2px solid #475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, fontWeight: 800, color: '#f1f5f9' }}>{typed}</div>\n          </div>\n          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 52px)', gap: 5 }}>\n            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => (\n              <button key={d} id={'key-' + d} type=\"button\" style={keyStyle} onClick={() => pressDigit(String(d))}>{d}</button>\n            ))}\n            <button id=\"key-erase\" type=\"button\" style={{ ...keyStyle, gridColumn: 'span 2', width: 109, fontSize: 16 }} onClick={erase}>Erase</button>\n          </div>\n        </div>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "numbers": [
+     7,
+     3,
+     5
+    ],
+    "showDots": true,
+    "showCounters": true
+   },
+   "ask": "Add these three numbers. Find the two that make a ten and put them on the frames first. Then put on the last number and type how many in all.",
+   "goal": "The first two numbers placed are 7 and 3 in either order, then 5, and the typed total is 15. The ten pair sits side by side.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     7,
+     3,
+     5
+    ],
+    "numbersPutInFirstThenNext": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     7,
+     3,
+     5
+    ],
+    "numbersPutInFirstThenNext": [
+     7,
+     3,
+     5
+    ],
+    "numberTyped": "15"
+   },
+   "missScene": {
+    "numbers": [
+     7,
+     3,
+     5
+    ],
+    "numbersPutInFirstThenNext": [
+     3,
+     5,
+     7
+    ],
+    "numberTyped": "15"
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "showDots": true,
+    "showCounters": true
+   },
+   "ask": "Add these three numbers. Make a ten first, then put on the last number and type how many in all.",
+   "goal": "The first two numbers placed are 6 and 4, then 5, and the typed total is 15. The ten pair is split by the number between them.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "numbersPutInFirstThenNext": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "numbersPutInFirstThenNext": [
+     6,
+     4,
+     5
+    ],
+    "numberTyped": "15"
+   },
+   "missScene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "numbersPutInFirstThenNext": [
+     6,
+     5,
+     4
+    ],
+    "numberTyped": "15"
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     9,
+     4,
+     6
+    ],
+    "showDots": false,
+    "showCounters": true
+   },
+   "ask": "Add these three numbers. Make a ten first, then finish and type how many in all.",
+   "goal": "The first two numbers placed are 4 and 6, then 9, and the typed total is 19. The numbers carry no dots, and 9 is a tempting start that makes no ten with either other number.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     9,
+     4,
+     6
+    ],
+    "numbersPutInFirstThenNext": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     9,
+     4,
+     6
+    ],
+    "numbersPutInFirstThenNext": [
+     4,
+     6,
+     9
+    ],
+    "numberTyped": "19"
+   },
+   "missScene": {
+    "numbers": [
+     9,
+     4,
+     6
+    ],
+    "numbersPutInFirstThenNext": [
+     4,
+     6,
+     9
+    ],
+    "numberTyped": "10"
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     8,
+     9,
+     2
+    ],
+    "showDots": false,
+    "showCounters": false
+   },
+   "ask": "Add these three numbers without counters this time. Make a ten first, then finish and type how many in all.",
+   "goal": "The first two numbers placed are 8 and 2, then 9, and the typed total is 19. No counters are drawn, so the ten and the total come from reasoning about the numbers.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#tile-0"
+    },
+    {
+     "do": "click",
+     "target": "#tile-2"
+    },
+    {
+     "do": "click",
+     "target": "#tile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     8,
+     9,
+     2
+    ],
+    "numbersPutInFirstThenNext": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     8,
+     9,
+     2
+    ],
+    "numbersPutInFirstThenNext": [
+     8,
+     2,
+     9
+    ],
+    "numberTyped": "19"
+   },
+   "missScene": {
+    "numbers": [
+     8,
+     9,
+     2
+    ],
+    "numbersPutInFirstThenNext": [
+     8,
+     2,
+     9
+    ],
+    "numberTyped": "18"
+   }
+  }
+ ]
+}

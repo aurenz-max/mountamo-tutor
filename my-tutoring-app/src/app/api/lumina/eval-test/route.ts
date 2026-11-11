@@ -107,6 +107,8 @@ async function handleGet(request: NextRequest) {
       let longestStringPath = '';
       const walkStrings = (node: unknown, path: string): void => {
         if (typeof node === 'string') {
+          // A whole sandboxed page (agent-canvas, generated displays) is code built by the compiler, not model text.
+          if (node.startsWith('<!doctype html>')) return;
           if (node.length > longestString) { longestString = node.length; longestStringPath = path; }
         } else if (Array.isArray(node)) {
           node.forEach((v, i) => walkStrings(v, `${path}[${i}]`));

@@ -236,6 +236,12 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
           : root.querySelectorAll('[data-pip-object^="object-"]')[a.index ?? 0];
         if (!target) throw new Error(`touch: no object ${a.target ?? a.index}`);
         fireEvent.click(target);
+      } else if (a.type === 'report') {
+        // A canvas frame's page does not run in jsdom: deliver what its recorded playthrough reported, from that frame.
+        const frame = root.querySelector<HTMLIFrameElement>('iframe[data-canvas-frame]');
+        if (!frame?.contentWindow) throw new Error('report: no canvas frame');
+        const post = (kind: string, data: unknown) => window.dispatchEvent(new MessageEvent('message', { source: frame.contentWindow, data: { source: 'lumina-display', kind, data } }));
+        post('scene', a.scene ?? null); post('goal', a.goal);
       } else if (a.type === 'write') {
         const input = Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')).find(i => i.getAttribute('aria-label') === a.label);
         if (!input || input.disabled) throw new Error(`write: no enabled input "${a.label}"`);

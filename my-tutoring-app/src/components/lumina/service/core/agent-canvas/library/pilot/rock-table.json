@@ -1,0 +1,883 @@
+{
+ "id": "rock-table",
+ "title": "Rock Table",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The learner sorts rocks and soils into groups by one property they can see or feel (colour, size or texture), which shows they can classify materials by an observable property."
+ },
+ "request": {
+  "topic": "Sorting rocks and soil by what you can see and feel",
+  "grade": "kindergarten",
+  "objective": "Sort rocks and soils into groups by one property you can see or feel (color, size or texture), keeping the other properties from deciding the group. (SCI003-02-A)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // Rocks and soils sit on a table. The child drags each one into a tray. Each tray shows the sorting rule as a\n  // picture (a colour chip, a dashed outline, a bumpy or smooth outline, a grain cluster or a smear), or, with\n  // params.ruleIcons false, only by one example already lying in it. No sample carries a word: its colour, size and\n  // surface are drawn. Sand and clay look the same from the table; the magnifier shows grains or a smooth smear.\n  // params.rule: 'color' | 'size' | 'texture'. params.trays: the rule value each tray takes, left to right.\n  // params.samples: [{ id, kind: 'rock'|'sand'|'clay', color: 'light'|'dark'|'red', size: 'big'|'small', texture: 'rough'|'smooth' }].\n  // params.magnifier: show the magnifier. params.examples: [{ tray, ...sample }] already placed, not movable.\n  const DEFAULT_TRAYS = { color: ['light', 'dark'], size: ['big', 'small'], texture: ['rough', 'smooth'] };\n  const rule = ['color', 'size', 'texture'].includes(params.rule) ? params.rule : 'color';\n  const trayVals = (Array.isArray(params.trays) && params.trays.length >= 2 ? params.trays : DEFAULT_TRAYS[rule]).slice(0, 3);\n  const norm = (s, i) => {\n    const kind = s && ['rock', 'sand', 'clay'].includes(s.kind) ? s.kind : 'rock';\n    return {\n      id: s && s.id != null ? String(s.id) : String(i + 1),\n      kind,\n      color: s && ['light', 'dark', 'red'].includes(s.color) ? s.color : 'light',\n      size: kind === 'rock' && s && s.size === 'small' ? 'small' : 'big',\n      // Sand is gritty and clay is smooth: for soils the kind decides the feel.\n      texture: kind === 'sand' ? 'rough' : kind === 'clay' ? 'smooth' : (s && s.texture === 'rough' ? 'rough' : 'smooth'),\n    };\n  };\n  const samples = (Array.isArray(params.samples) && params.samples.length\n    ? params.samples\n    : [{ id: 1, color: 'light' }, { id: 2, color: 'dark' }, { id: 3, color: 'dark' }, { id: 4, color: 'light' }])\n    .slice(0, 5).map(norm);\n  const examples = (Array.isArray(params.examples) ? params.examples : []).slice(0, trayVals.length).map((e, i) => ({\n    ...norm(e, i), id: `ex${i + 1}`, tray: Math.max(0, Math.min(trayVals.length - 1, Number(e && e.tray) || 0)),\n  }));\n  const showIcons = params.ruleIcons !== false;\n  const hasLens = !!params.magnifier;\n  const soils = samples.every(s => s.kind !== 'rock');\n  const valueOf = s => (rule === 'color' ? s.color : rule === 'size' ? s.size : s.texture);\n\n  // ---------- layout ----------\n  const W = 720;\n  const TABLE_Y = 8, TABLE_H = 232;\n  const TRAY_Y = 254, TRAY_H = 332;\n  const H = TRAY_Y + TRAY_H + 6;\n  const LENS_R = 50;\n  const PARK = { x: 652, y: 98 };\n  const GAP = 12;\n  const trayW = (W - GAP * (trayVals.length + 1)) / trayVals.length;\n  const tray = t => ({ x: GAP + t * (trayW + GAP), y: TRAY_Y, w: trayW, h: TRAY_H });\n  const COLS = trayVals.length === 2 ? 3 : 2;\n  const SLOT_TOP = TRAY_Y + 88;\n  const slot = (t, k) => {\n    const r = tray(t), cw = r.w / COLS;\n    return { x: r.x + cw * ((k % COLS) + 0.5), y: SLOT_TOP + 56 + Math.floor(k / COLS) * 118 };\n  };\n  const spotW = (hasLens ? 580 : 700) / samples.length;\n  const spot = i => ({ x: 12 + spotW * (i + 0.5), y: TABLE_Y + 104 });\n  const ext = s => (s.kind !== 'rock' ? { rx: 48, ry: 26 } : s.size === 'big' ? { rx: 46, ry: 36 } : { rx: 24, ry: 19 });\n\n  // ---------- state ----------\n  const [bins, setBins] = useState(() => trayVals.map(() => []));\n  const [drag, setDrag] = useState(null); // { id, x, y, ox, oy }\n  const [lens, setLens] = useState(PARK);\n  const [lensHeld, setLensHeld] = useState(null); // { ox, oy }\n  const [seen, setSeen] = useState([]);\n  const svgRef = useRef(null);\n\n  const trayOf = id => bins.findIndex(b => b.includes(id));\n  const exCount = t => examples.filter(e => e.tray === t).length;\n  const posOf = s => {\n    if (s.id.startsWith('ex')) {\n      const t = s.tray;\n      return slot(t, examples.filter(e => e.tray === t).indexOf(s));\n    }\n    if (drag && drag.id === s.id && drag.x != null) return { x: drag.x, y: drag.y };\n    const t = trayOf(s.id);\n    if (t >= 0) return slot(t, exCount(t) + bins[t].indexOf(s.id));\n    return spot(samples.indexOf(s));\n  };\n  const all = [...examples, ...samples];\n  const lensHit = hasLens ? all.find(s => {\n    const p = posOf(s), e = ext(s);\n    return Math.abs(p.x - lens.x) <= e.rx + 6 && Math.abs(p.y - lens.y) <= e.ry + 10;\n  }) : null;\n\n  useEffect(() => {\n    if (lensHit && !seen.includes(lensHit.id)) setSeen(prev => [...prev, lensHit.id]);\n  }, [lensHit && lensHit.id]);\n\n  const goalMet = samples.every(s => {\n    const t = trayOf(s.id);\n    return t >= 0 && trayVals[t] === valueOf(s);\n  });\n\n  // ---------- words for the tutor (facts that are drawn, never the verdict) ----------\n  const SIDE = trayVals.length === 2 ? ['left', 'right'] : ['left', 'middle', 'right'];\n  const describe = s => {\n    if (s.kind === 'rock') {\n      const c = { light: 'light gray', dark: 'dark gray', red: 'red-brown' }[s.color];\n      return `${c} rock, ${s.size}, ${s.texture === 'rough' ? 'bumpy' : 'smooth'} surface`;\n    }\n    const c = s.color === 'dark' ? 'darker brown' : 'light brown';\n    if (!seen.includes(s.id)) return `${c} soil pile, looks like the other piles from the table`;\n    return `${c} soil pile; close up: ${s.kind === 'sand' ? 'many tiny separate grains' : 'smooth and sticky, no grains'}`;\n  };\n  const pictureWords = v => {\n    if (rule === 'color') return `a ${v === 'dark' ? 'dark' : 'light'} color chip`;\n    if (rule === 'size') return `a ${v === 'small' ? 'small' : 'big'} dashed outline`;\n    if (soils) return v === 'rough' ? 'a cluster of separate grains' : 'a smooth smear';\n    return v === 'rough' ? 'a bumpy outline' : 'a smooth outline';\n  };\n  const label = s => (s.kind === 'rock' ? `rock ${s.id}` : `pile ${s.id}`);\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      onTable: samples.filter(s => trayOf(s.id) < 0).map(s => `${label(s)}: ${describe(s)}`),\n      trays: trayVals.map((v, t) => ({\n        tray: SIDE[t],\n        picture: showIcons ? pictureWords(v) : 'no picture',\n        alreadyHeld: examples.filter(e => e.tray === t).map(e => describe(e)),\n        holds: bins[t].map(id => { const s = samples.find(x => x.id === id); return `${label(s)}: ${describe(s)}`; }),\n      })),\n      ...(hasLens ? { magnifier: lensHit ? `over ${lensHit.id.startsWith('ex') ? 'the rock already in a tray' : label(lensHit)}` : (lens.x === PARK.x && lens.y === PARK.y ? 'resting in its corner' : 'over nothing') } : {}),\n    });\n  }, [goalMet, JSON.stringify(bins), lensHit && lensHit.id, seen.length, lens.x === PARK.x && lens.y === PARK.y]);\n\n  // ---------- pointer ----------\n  const at = e => svgPoint(svgRef.current, e);\n  const sampleDown = (s, e) => {\n    if (lensHeld) return;\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const p = posOf(s), pt = at(e);\n    setDrag({ id: s.id, ox: pt.x - p.x, oy: pt.y - p.y });\n  };\n  const lensDown = e => {\n    e.stopPropagation();\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const pt = at(e);\n    setLensHeld({ ox: pt.x - lens.x, oy: pt.y - lens.y });\n  };\n  const onMove = e => {\n    if (!svgRef.current) return;\n    const pt = at(e);\n    if (lensHeld) {\n      setLens({ x: Math.max(LENS_R, Math.min(W - LENS_R, pt.x - lensHeld.ox)), y: Math.max(LENS_R, Math.min(H - LENS_R - 56, pt.y - lensHeld.oy)) });\n    } else if (drag) {\n      setDrag(d => (d ? { ...d, x: pt.x - d.ox, y: pt.y - d.oy } : null));\n    }\n  };\n  const lensUp = () => {\n    if (!lensHeld) return;\n    setLensHeld(null);\n    // Dropped near its corner, it settles back into the corner.\n    setLens(l => (Math.hypot(l.x - PARK.x, l.y - PARK.y) < 40 ? PARK : l));\n  };\n  const sampleUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = at(e);\n    const t = trayVals.findIndex((_, i) => { const r = tray(i); return pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h; });\n    const id = drag.id;\n    setBins(prev => {\n      const next = prev.map(b => b.filter(x => x !== id));\n      if (t >= 0 && exCount(t) + next[t].length < COLS * 2) next[t] = [...next[t], id];\n      return next;\n    });\n    setDrag(null);\n  };\n\n  // ---------- drawing ----------\n  const hash = str => { let h = 2166136261; const s = String(str); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };\n  const rng = seed => { let a = seed || 1; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };\n  const mix = (hex, f) => {\n    const n = parseInt(hex.slice(1), 16);\n    const to = f < 0 ? 0 : 255, p = Math.abs(f);\n    const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v + (to - v) * p));\n    return `rgb(${c[0]},${c[1]},${c[2]})`;\n  };\n  const ROCK = { light: ['#d6d3d1', '#e7e5e4', '#cfc8bc'], dark: ['#44403c', '#3f3f46', '#4b4038'], red: ['#b45a3c'] };\n  const SOIL = { light: '#c49a6c', dark: '#a57d52', red: '#a57d52' };\n  const fillOf = s => (s.kind === 'rock' ? ROCK[s.color][hash(s.id + s.color) % ROCK[s.color].length] : SOIL[s.color]);\n\n  const roughPath = (rx, ry, r) => {\n    let d = '';\n    for (let k = 0; k < 18; k++) {\n      const a = (k / 18) * Math.PI * 2;\n      const f = (k % 2 ? 0.85 : 1) + (r() - 0.5) * 0.16;\n      d += `${k ? 'L' : 'M'}${(Math.cos(a) * rx * f).toFixed(1)} ${(Math.sin(a) * ry * f).toFixed(1)}`;\n    }\n    return `${d}Z`;\n  };\n\n  // A sample as it looks from the table, centred on 0,0.\n  const drawSample = s => {\n    const base = fillOf(s), r = rng(hash(s.id + s.kind + s.texture));\n    if (s.kind !== 'rock') {\n      // Every pile is drawn the same way: from the table sand and clay differ only in shade.\n      return (\n        <g>\n          <ellipse cx=\"0\" cy=\"22\" rx=\"50\" ry=\"7\" fill=\"rgba(0,0,0,0.28)\" />\n          <path d=\"M -48 22 Q -42 -18 0 -24 Q 42 -18 48 22 Z\" fill={base} stroke={mix(base, -0.45)} strokeWidth=\"2\" />\n          {[[-22, 6], [-6, -10], [12, 2], [26, 12], [-30, 16], [4, 14]].map(([x, y], i) => (\n            <circle key={i} cx={x} cy={y} r=\"1.6\" fill={mix(base, -0.3)} />\n          ))}\n        </g>\n      );\n    }\n    const { rx, ry } = ext(s);\n    const shadow = <ellipse cx=\"0\" cy={ry * 0.9} rx={rx * 0.92} ry={ry * 0.22} fill=\"rgba(0,0,0,0.3)\" />;\n    if (s.texture === 'rough') {\n      const bumps = Array.from({ length: 10 }, (_, i) => {\n        const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.55;\n        return <circle key={i} cx={Math.cos(a) * rx * d} cy={Math.sin(a) * ry * d} r={Math.max(2.4, rx * 0.1)}\n          fill={i % 2 ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.28)'} />;\n      });\n      return (\n        <g>\n          {shadow}\n          <path d={roughPath(rx, ry, r)} fill={base} stroke=\"#1c1917\" strokeWidth=\"2\" strokeLinejoin=\"round\" />\n          {bumps}\n          <path d={`M ${-rx * 0.4} ${-ry * 0.1} l ${rx * 0.18} ${ry * 0.2} l ${rx * 0.14} ${-ry * 0.08}`} fill=\"none\" stroke=\"rgba(0,0,0,0.45)\" strokeWidth=\"1.6\" />\n        </g>\n      );\n    }\n    const rot = (r() - 0.5) * 24;\n    return (\n      <g>\n        {shadow}\n        <g transform={`rotate(${rot.toFixed(1)})`}>\n          <ellipse cx=\"0\" cy=\"0\" rx={rx} ry={ry} fill={base} stroke=\"#1c1917\" strokeWidth=\"2\" />\n          <ellipse cx={rx * 0.15} cy={ry * 0.3} rx={rx * 0.7} ry={ry * 0.45} fill=\"rgba(0,0,0,0.12)\" />\n          <ellipse cx={-rx * 0.32} cy={-ry * 0.38} rx={rx * 0.32} ry={ry * 0.16} fill=\"rgba(255,255,255,0.4)\" />\n        </g>\n      </g>\n    );\n  };\n\n  // What the magnifier shows of a sample: its surface, filling the lens.\n  const closeView = s => {\n    const base = fillOf(s), r = rng(hash(`close${s.id}${s.kind}`)), R = LENS_R;\n    if (s.kind === 'sand') {\n      return (\n        <g>\n          <circle r={R} fill={mix(base, -0.55)} />\n          {Array.from({ length: 58 }, (_, i) => {\n            const x = (r() * 2 - 1) * R, y = (r() * 2 - 1) * R, gr = 4.5 + r() * 3.5;\n            return (\n              <g key={i}>\n                <circle cx={x} cy={y} r={gr} fill={mix(base, (r() - 0.5) * 0.55)} stroke={mix(base, -0.5)} strokeWidth=\"1\" />\n                <circle cx={x - gr * 0.35} cy={y - gr * 0.35} r={gr * 0.3} fill=\"rgba(255,255,255,0.45)\" />\n              </g>\n            );\n          })}\n        </g>\n      );\n    }\n    if (s.kind === 'clay') {\n      return (\n        <g>\n          <circle r={R} fill={base} />\n          {[-26, -10, 6, 22].map((y, i) => (\n            <path key={i} d={`M ${-R} ${y + 6} Q 0 ${y - 10} ${R} ${y + 4}`} fill=\"none\" stroke={mix(base, -0.18)} strokeWidth=\"3\" opacity=\"0.8\" />\n          ))}\n          <ellipse cx=\"-10\" cy=\"-24\" rx=\"28\" ry=\"6\" fill=\"rgba(255,255,255,0.35)\" transform=\"rotate(-10)\" />\n          <ellipse cx=\"14\" cy=\"26\" rx=\"16\" ry=\"4\" fill=\"rgba(255,255,255,0.22)\" transform=\"rotate(-6)\" />\n        </g>\n      );\n    }\n    if (s.texture === 'rough') {\n      return (\n        <g>\n          <circle r={R} fill={base} />\n          {Array.from({ length: 26 }, (_, i) => {\n            const x = (r() * 2 - 1) * R, y = (r() * 2 - 1) * R, br = 5 + r() * 6;\n            return (\n              <g key={i}>\n                <circle cx={x + 2} cy={y + 2.5} r={br} fill={mix(base, -0.45)} />\n                <circle cx={x} cy={y} r={br} fill={mix(base, (r() - 0.5) * 0.3)} />\n                <circle cx={x - br * 0.35} cy={y - br * 0.35} r={br * 0.35} fill=\"rgba(255,255,255,0.3)\" />\n              </g>\n            );\n          })}\n          <path d=\"M -40 -6 L -22 4 L -10 -2 L 4 10\" fill=\"none\" stroke={mix(base, -0.6)} strokeWidth=\"2.5\" />\n        </g>\n      );\n    }\n    return (\n      <g>\n        <circle r={R} fill={base} />\n        <circle cx=\"16\" cy=\"18\" r={R * 0.9} fill=\"rgba(0,0,0,0.14)\" />\n        <ellipse cx=\"-14\" cy=\"-20\" rx=\"24\" ry=\"10\" fill=\"rgba(255,255,255,0.32)\" transform=\"rotate(-20)\" />\n        <ellipse cx=\"-18\" cy=\"-22\" rx=\"9\" ry=\"4\" fill=\"rgba(255,255,255,0.6)\" transform=\"rotate(-20)\" />\n      </g>\n    );\n  };\n\n  // The rule picture on a tray. Never a sample: a chip, an outline, a cluster or a smear.\n  const trayIcon = (v, cx, cy) => {\n    const ink = '#f8fafc';\n    if (rule === 'color') {\n      return <rect x={cx - 34} y={cy - 22} width=\"68\" height=\"44\" rx=\"10\" fill={v === 'dark' ? '#3f3f46' : '#e7e5e4'} stroke={ink} strokeWidth=\"2.5\" />;\n    }\n    if (rule === 'size') {\n      return v === 'small'\n        ? <ellipse cx={cx} cy={cy + 8} rx=\"14\" ry=\"11\" fill=\"none\" stroke={ink} strokeWidth=\"3\" strokeDasharray=\"5 4\" />\n        : <ellipse cx={cx} cy={cy} rx=\"34\" ry=\"25\" fill=\"none\" stroke={ink} strokeWidth=\"3\" strokeDasharray=\"7 5\" />;\n    }\n    if (soils) {\n      if (v === 'rough') {\n        return (\n          <g>\n            {[[-18, -8], [-4, -12], [10, -8], [22, -2], [-12, 4], [2, 2], [16, 8], [-22, 10], [-6, 14], [8, 16]].map(([x, y], i) => (\n              <circle key={i} cx={cx + x} cy={cy + y} r=\"5\" fill=\"none\" stroke={ink} strokeWidth=\"2.2\" />\n            ))}\n          </g>\n        );\n      }\n      return (\n        <g>\n          <path d={`M ${cx - 32} ${cy + 6} Q ${cx} ${cy - 14} ${cx + 32} ${cy + 2}`} fill=\"none\" stroke={ink} strokeWidth=\"12\" strokeLinecap=\"round\" opacity=\"0.9\" />\n          <path d={`M ${cx - 18} ${cy - 2} Q ${cx} ${cy - 10} ${cx + 14} ${cy - 6}`} fill=\"none\" stroke=\"#0f172a\" strokeWidth=\"2.5\" strokeLinecap=\"round\" />\n        </g>\n      );\n    }\n    if (v === 'rough') {\n      const r = rng(7);\n      return (\n        <g transform={`translate(${cx} ${cy})`}>\n          <path d={roughPath(32, 23, r)} fill=\"none\" stroke={ink} strokeWidth=\"3\" strokeLinejoin=\"round\" />\n          {[[-10, -5], [8, -7], [-2, 7], [14, 6]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r=\"3.2\" fill={ink} />)}\n        </g>\n      );\n    }\n    return (\n      <g>\n        <ellipse cx={cx} cy={cy} rx=\"32\" ry=\"23\" fill=\"none\" stroke={ink} strokeWidth=\"3\" />\n        <path d={`M ${cx - 18} ${cy - 9} Q ${cx - 8} ${cy - 16} ${cx + 4} ${cy - 15}`} fill=\"none\" stroke={ink} strokeWidth=\"3\" strokeLinecap=\"round\" />\n      </g>\n    );\n  };\n\n  const sampleEl = s => {\n    const p = posOf(s), e = ext(s);\n    const fixed = s.id.startsWith('ex');\n    return (\n      <g key={s.id} id={fixed ? `example-${s.tray + 1}` : `s-${s.id}`} transform={`translate(${p.x} ${p.y})`}\n        style={{ cursor: fixed ? 'default' : 'grab', touchAction: 'none' }}\n        onPointerDown={fixed ? undefined : ev => sampleDown(s, ev)} onPointerUp={fixed ? undefined : sampleUp}\n        onPointerCancel={() => setDrag(null)}>\n        <rect x={-Math.max(e.rx, 30)} y={-Math.max(e.ry, 30)} width={Math.max(e.rx, 30) * 2} height={Math.max(e.ry, 30) * 2 + 8} fill=\"transparent\" />\n        {drawSample(s)}\n        {!fixed && (\n          <g>\n            <circle cx=\"0\" cy={e.ry + 14} r=\"10\" fill=\"#0f172a\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" />\n            <text x=\"0\" y={e.ry + 18.5} textAnchor=\"middle\" fontSize=\"13\" fontWeight=\"700\" fill=\"#f8fafc\">{s.id}</text>\n          </g>\n        )}\n      </g>\n    );\n  };\n\n  const lensEl = () => (\n    <g transform={`translate(${lens.x} ${lens.y})`} style={{ cursor: lensHeld ? 'grabbing' : 'grab', touchAction: 'none' }}\n      onPointerDown={lensDown} onPointerUp={lensUp} onPointerCancel={() => setLensHeld(null)}>\n      <rect x=\"-9\" y={LENS_R - 2} width=\"18\" height=\"56\" rx=\"7\" fill=\"#b45309\" stroke=\"#451a03\" strokeWidth=\"2\" />\n      <g clipPath=\"url(#lens-clip)\">\n        {lensHit ? closeView(lensHit) : <circle r={LENS_R} fill=\"rgba(186,230,253,0.14)\" />}\n      </g>\n      <circle id=\"magnifier\" r={LENS_R} fill=\"transparent\" />\n      <circle r={LENS_R} fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"7\" />\n      <circle r={LENS_R + 3.5} fill=\"none\" stroke=\"#334155\" strokeWidth=\"1.5\" />\n    </g>\n  );\n\n  const dragging = drag && drag.x != null ? samples.find(s => s.id === drag.id) : null;\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <defs>\n          <clipPath id=\"lens-clip\"><circle cx=\"0\" cy=\"0\" r={LENS_R} /></clipPath>\n        </defs>\n        {/* the table */}\n        <rect x=\"0\" y={TABLE_Y} width={W} height={TABLE_H} rx=\"14\" fill=\"#7d8ba1\" stroke=\"#cbd5e1\" strokeWidth=\"1.5\" />\n        {hasLens && <circle id=\"lens-park\" cx={PARK.x} cy={PARK.y} r={LENS_R + 4} fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"2\" strokeDasharray=\"6 5\" opacity=\"0.7\" />}\n        {/* the trays */}\n        {trayVals.map((v, t) => {\n          const r = tray(t);\n          return (\n            <g key={`tray-${t}`}>\n              <rect id={`tray-${t + 1}`} x={r.x} y={r.y} width={r.w} height={r.h} rx=\"16\" fill=\"#a3aebe\" stroke=\"#e2e8f0\" strokeWidth=\"3\" />\n              {showIcons && (\n                <g>\n                  <rect x={r.x + r.w / 2 - 62} y={r.y + 12} width=\"124\" height=\"66\" rx=\"12\" fill=\"#0f172a\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\n                  {trayIcon(v, r.x + r.w / 2, r.y + 45)}\n                </g>\n              )}\n            </g>\n          );\n        })}\n        {examples.map(sampleEl)}\n        {samples.filter(s => !dragging || s.id !== dragging.id).map(sampleEl)}\n        {dragging && sampleEl(dragging)}\n        {hasLens && lensEl()}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "rule": "color",
+    "trays": [
+     "light",
+     "dark"
+    ],
+    "magnifier": false,
+    "samples": [
+     {
+      "id": 1,
+      "kind": "rock",
+      "color": "light",
+      "size": "big",
+      "texture": "smooth"
+     },
+     {
+      "id": 2,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "smooth"
+     },
+     {
+      "id": 3,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "smooth"
+     },
+     {
+      "id": 4,
+      "kind": "rock",
+      "color": "light",
+      "size": "big",
+      "texture": "smooth"
+     }
+    ]
+   },
+   "ask": "Sort the rocks by their color.",
+   "goal": "Rocks 1 and 4 (light) are in the tray with the light chip; rocks 2 and 3 (dark) are in the tray with the dark chip. All four are the same size and smooth, so only color can decide.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    }
+   ],
+   "scene": {
+    "onTable": [
+     "rock 1: light gray rock, big, smooth surface",
+     "rock 2: dark gray rock, big, smooth surface",
+     "rock 3: dark gray rock, big, smooth surface",
+     "rock 4: light gray rock, big, smooth surface"
+    ],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a light color chip",
+      "alreadyHeld": [],
+      "holds": []
+     },
+     {
+      "tray": "right",
+      "picture": "a dark color chip",
+      "alreadyHeld": [],
+      "holds": []
+     }
+    ]
+   },
+   "proofScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a light color chip",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: light gray rock, big, smooth surface",
+       "rock 4: light gray rock, big, smooth surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a dark color chip",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: dark gray rock, big, smooth surface",
+       "rock 3: dark gray rock, big, smooth surface"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a light color chip",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: dark gray rock, big, smooth surface",
+       "rock 3: dark gray rock, big, smooth surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a dark color chip",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: light gray rock, big, smooth surface",
+       "rock 4: light gray rock, big, smooth surface"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "rule": "size",
+    "trays": [
+     "big",
+     "small"
+    ],
+    "magnifier": false,
+    "samples": [
+     {
+      "id": 1,
+      "kind": "rock",
+      "color": "light",
+      "size": "small",
+      "texture": "rough"
+     },
+     {
+      "id": 2,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "rough"
+     },
+     {
+      "id": 3,
+      "kind": "rock",
+      "color": "light",
+      "size": "big",
+      "texture": "rough"
+     },
+     {
+      "id": 4,
+      "kind": "rock",
+      "color": "dark",
+      "size": "small",
+      "texture": "rough"
+     }
+    ]
+   },
+   "ask": "Sort the rocks by their size.",
+   "goal": "Rocks 2 and 3 (big) are in the tray with the big outline; rocks 1 and 4 (small) are in the tray with the small outline. Each tray holds one light and one dark rock, so color did not decide.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "scene": {
+    "onTable": [
+     "rock 1: light gray rock, small, bumpy surface",
+     "rock 2: dark gray rock, big, bumpy surface",
+     "rock 3: light gray rock, big, bumpy surface",
+     "rock 4: dark gray rock, small, bumpy surface"
+    ],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a big dashed outline",
+      "alreadyHeld": [],
+      "holds": []
+     },
+     {
+      "tray": "right",
+      "picture": "a small dashed outline",
+      "alreadyHeld": [],
+      "holds": []
+     }
+    ]
+   },
+   "proofScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a big dashed outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: dark gray rock, big, bumpy surface",
+       "rock 3: light gray rock, big, bumpy surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a small dashed outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: light gray rock, small, bumpy surface",
+       "rock 4: dark gray rock, small, bumpy surface"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a big dashed outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: light gray rock, small, bumpy surface",
+       "rock 3: light gray rock, big, bumpy surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a small dashed outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: dark gray rock, big, bumpy surface",
+       "rock 4: dark gray rock, small, bumpy surface"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "rule": "texture",
+    "trays": [
+     "rough",
+     "smooth"
+    ],
+    "magnifier": true,
+    "samples": [
+     {
+      "id": 1,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "smooth"
+     },
+     {
+      "id": 2,
+      "kind": "rock",
+      "color": "light",
+      "size": "big",
+      "texture": "rough"
+     },
+     {
+      "id": 3,
+      "kind": "rock",
+      "color": "dark",
+      "size": "small",
+      "texture": "rough"
+     },
+     {
+      "id": 4,
+      "kind": "rock",
+      "color": "light",
+      "size": "small",
+      "texture": "smooth"
+     }
+    ]
+   },
+   "ask": "Sort the rocks by how they feel: bumpy or smooth.",
+   "goal": "Rocks 2 and 3 (bumpy) are in the tray with the bumpy outline; rocks 1 and 4 (smooth) are in the tray with the smooth outline. Each tray holds a big and a small rock and a light and a dark rock, so neither size nor color decided.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#s-3",
+     "shot": "look-bumpy"
+    },
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#s-1",
+     "shot": "look-smooth"
+    },
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#lens-park"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "scene": {
+    "onTable": [
+     "rock 1: dark gray rock, big, smooth surface",
+     "rock 2: light gray rock, big, bumpy surface",
+     "rock 3: dark gray rock, small, bumpy surface",
+     "rock 4: light gray rock, small, smooth surface"
+    ],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a bumpy outline",
+      "alreadyHeld": [],
+      "holds": []
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth outline",
+      "alreadyHeld": [],
+      "holds": []
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "proofScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a bumpy outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: light gray rock, big, bumpy surface",
+       "rock 3: dark gray rock, small, bumpy surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: dark gray rock, big, smooth surface",
+       "rock 4: light gray rock, small, smooth surface"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "missScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a bumpy outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 1: dark gray rock, big, smooth surface",
+       "rock 3: dark gray rock, small, bumpy surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth outline",
+      "alreadyHeld": [],
+      "holds": [
+       "rock 2: light gray rock, big, bumpy surface",
+       "rock 4: light gray rock, small, smooth surface"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   }
+  },
+  {
+   "params": {
+    "rule": "texture",
+    "trays": [
+     "rough",
+     "smooth"
+    ],
+    "magnifier": true,
+    "samples": [
+     {
+      "id": 1,
+      "kind": "sand",
+      "color": "light"
+     },
+     {
+      "id": 2,
+      "kind": "clay",
+      "color": "dark"
+     },
+     {
+      "id": 3,
+      "kind": "clay",
+      "color": "light"
+     },
+     {
+      "id": 4,
+      "kind": "sand",
+      "color": "dark"
+     }
+    ]
+   },
+   "ask": "Sort the soils by how they would feel. Use the magnifier to look closer.",
+   "goal": "Piles 1 and 4 (sand: separate grains) are in the tray with the grain cluster; piles 2 and 3 (clay: smooth) are in the tray with the smooth smear. Each tray holds a light and a darker brown pile, so color did not decide.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#s-1",
+     "shot": "look-sand"
+    },
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#s-3",
+     "shot": "look-clay"
+    },
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#lens-park"
+    },
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "scene": {
+    "onTable": [
+     "pile 1: light brown soil pile, looks like the other piles from the table",
+     "pile 2: darker brown soil pile, looks like the other piles from the table",
+     "pile 3: light brown soil pile, looks like the other piles from the table",
+     "pile 4: darker brown soil pile, looks like the other piles from the table"
+    ],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a cluster of separate grains",
+      "alreadyHeld": [],
+      "holds": []
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth smear",
+      "alreadyHeld": [],
+      "holds": []
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "proofScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a cluster of separate grains",
+      "alreadyHeld": [],
+      "holds": [
+       "pile 1: light brown soil pile; close up: many tiny separate grains",
+       "pile 4: darker brown soil pile; close up: many tiny separate grains"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth smear",
+      "alreadyHeld": [],
+      "holds": [
+       "pile 2: darker brown soil pile; close up: smooth and sticky, no grains",
+       "pile 3: light brown soil pile; close up: smooth and sticky, no grains"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "missScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "a cluster of separate grains",
+      "alreadyHeld": [],
+      "holds": [
+       "pile 1: light brown soil pile, looks like the other piles from the table",
+       "pile 3: light brown soil pile, looks like the other piles from the table"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "a smooth smear",
+      "alreadyHeld": [],
+      "holds": [
+       "pile 2: darker brown soil pile, looks like the other piles from the table",
+       "pile 4: darker brown soil pile, looks like the other piles from the table"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   }
+  },
+  {
+   "params": {
+    "rule": "texture",
+    "trays": [
+     "rough",
+     "smooth"
+    ],
+    "magnifier": true,
+    "ruleIcons": false,
+    "examples": [
+     {
+      "tray": 0,
+      "kind": "rock",
+      "color": "red",
+      "size": "small",
+      "texture": "rough"
+     },
+     {
+      "tray": 1,
+      "kind": "rock",
+      "color": "red",
+      "size": "small",
+      "texture": "smooth"
+     }
+    ],
+    "samples": [
+     {
+      "id": 1,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "rough"
+     },
+     {
+      "id": 2,
+      "kind": "rock",
+      "color": "dark",
+      "size": "small",
+      "texture": "smooth"
+     },
+     {
+      "id": 3,
+      "kind": "rock",
+      "color": "light",
+      "size": "big",
+      "texture": "smooth"
+     },
+     {
+      "id": 4,
+      "kind": "rock",
+      "color": "light",
+      "size": "small",
+      "texture": "rough"
+     },
+     {
+      "id": 5,
+      "kind": "rock",
+      "color": "dark",
+      "size": "big",
+      "texture": "smooth"
+     }
+    ]
+   },
+   "ask": "Each tray already has one rock in it. Sort the other rocks to go with them.",
+   "goal": "Rocks 1 and 4 (bumpy) are with the small bumpy red rock; rocks 2, 3 and 5 (smooth) are with the small smooth red rock. The two rocks already in the trays differ only in how they feel, so that is the rule; size and color are mixed in both trays.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#example-1",
+     "shot": "look-example"
+    },
+    {
+     "do": "drag",
+     "target": "#magnifier",
+     "to": "#lens-park"
+    },
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-5",
+     "to": "#tray-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#s-1",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-3",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-5",
+     "to": "#tray-1"
+    },
+    {
+     "do": "drag",
+     "target": "#s-2",
+     "to": "#tray-2"
+    },
+    {
+     "do": "drag",
+     "target": "#s-4",
+     "to": "#tray-2"
+    }
+   ],
+   "scene": {
+    "onTable": [
+     "rock 1: dark gray rock, big, bumpy surface",
+     "rock 2: dark gray rock, small, smooth surface",
+     "rock 3: light gray rock, big, smooth surface",
+     "rock 4: light gray rock, small, bumpy surface",
+     "rock 5: dark gray rock, big, smooth surface"
+    ],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, bumpy surface"
+      ],
+      "holds": []
+     },
+     {
+      "tray": "right",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, smooth surface"
+      ],
+      "holds": []
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "proofScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, bumpy surface"
+      ],
+      "holds": [
+       "rock 1: dark gray rock, big, bumpy surface",
+       "rock 4: light gray rock, small, bumpy surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, smooth surface"
+      ],
+      "holds": [
+       "rock 2: dark gray rock, small, smooth surface",
+       "rock 3: light gray rock, big, smooth surface",
+       "rock 5: dark gray rock, big, smooth surface"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   },
+   "missScene": {
+    "onTable": [],
+    "trays": [
+     {
+      "tray": "left",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, bumpy surface"
+      ],
+      "holds": [
+       "rock 1: dark gray rock, big, bumpy surface",
+       "rock 3: light gray rock, big, smooth surface",
+       "rock 5: dark gray rock, big, smooth surface"
+      ]
+     },
+     {
+      "tray": "right",
+      "picture": "no picture",
+      "alreadyHeld": [
+       "red-brown rock, small, smooth surface"
+      ],
+      "holds": [
+       "rock 2: dark gray rock, small, smooth surface",
+       "rock 4: light gray rock, small, bumpy surface"
+      ]
+     }
+    ],
+    "magnifier": "resting in its corner"
+   }
+  }
+ ]
+}

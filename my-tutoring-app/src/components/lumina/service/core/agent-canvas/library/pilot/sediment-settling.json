@@ -1,0 +1,843 @@
+{
+ "id": "sediment-settling",
+ "title": "Stream Table: Where Sediment Settles",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner sets the water speed on a stream table so pebbles, sand and silt settle at marked places and build layers, which shows that water drops its largest grains first where it slows down."
+ },
+ "request": {
+  "topic": "Erosion and deposition: where moving water drops its sediment",
+  "grade": "grade 4",
+  "objective": "Explain that water or wind drops its sediment where it slows down, the largest grains first, and that this builds layers."
+ },
+ "source": "function Display({ params, lumina }) {\n  // A stream of five stretches that ends in a lake. Each stretch has ground (steep or gentle, from params) and a width\n  // (narrow, middle or wide) the child sets by dragging its bank. The water's speed in a stretch is\n  // ground + width + the day's flow. A grain comes to rest in the first stretch where the water is too slow to carry\n  // it: pebbles need the fastest water, sand less, silt the least. Everything that is still carried ends in the lake.\n  const N = 5;\n  const terrain = Array.isArray(params?.terrain) ? params.terrain : ['gentle', 'gentle', 'gentle', 'gentle', 'gentle'];\n  const startWidths = Array.isArray(params?.startWidths) ? params.startWidths : ['middle', 'middle', 'middle', 'middle', 'middle'];\n  const grains = Array.isArray(params?.grains) ? params.grains : ['sand'];\n  const marks = Array.isArray(params?.marks) ? params.marks : [{ at: 3, grain: 'sand' }];\n  const banksFixed = params?.banksFixed === true;\n  const days = Math.max(1, Math.min(3, params?.days ?? 1));\n  const layerOrder = Array.isArray(params?.layerOrder) ? params.layerOrder : null;\n\n  const WIDTHS = ['narrow', 'middle', 'wide'];\n  const HALF = { narrow: 14, middle: 28, wide: 48 };\n  const WIDTH_PUSH = { narrow: 2, middle: 1, wide: 0 };\n  const GROUND_PUSH = { steep: 2, gentle: 1 };\n  const FLOWS = ['low', 'normal', 'high', 'flood'];\n  const FLOW_PUSH = { low: -1, normal: 0, high: 1, flood: 2 };\n  // The slowest water that still carries each grain size: below it, the grain settles.\n  const CARRY = { pebbles: 4, sand: 3, silt: 2 };\n  const LOOK = {\n    pebbles: { color: '#94a3b8', r: 6, n: 6, dx: -24 },\n    sand: { color: '#fcd34d', r: 3.5, n: 10, dx: 0 },\n    silt: { color: '#e0c29c', r: 2.7, n: 14, dx: 24 },\n  };\n\n  const [widths, setWidths] = useState(() => Array.from({ length: N }, (_, i) => (WIDTHS.includes(startWidths[i]) ? startWidths[i] : 'middle')));\n  const [flows, setFlows] = useState(() => Array.from({ length: days }, () => 'normal'));\n  const [run, setRun] = useState(null);\n  const [progress, setProgress] = useState(0);\n\n  const speedAt = (i, flow) => GROUND_PUSH[terrain[i] === 'steep' ? 'steep' : 'gentle'] + WIDTH_PUSH[widths[i]] + FLOW_PUSH[flow];\n  const restOf = (grain, flow) => {\n    for (let i = 0; i < N; i++) if (speedAt(i, flow) < CARRY[grain]) return i;\n    return N; // the lake\n  };\n\n  const runWater = () => {\n    const perDay = flows.map(flow => {\n      const rest = {};\n      grains.forEach(g => { rest[g] = restOf(g, flow); });\n      return rest;\n    });\n    setRun({ perDay, id: Date.now() });\n    setProgress(0);\n  };\n\n  // Settle animation: about 0.8 s per day.\n  useEffect(() => {\n    if (!run) return undefined;\n    let raf = 0;\n    const start = performance.now();\n    const step = now => {\n      const p = Math.min(days, (now - start) / 800);\n      setProgress(p);\n      if (p < days) raf = requestAnimationFrame(step);\n    };\n    raf = requestAnimationFrame(step);\n    return () => cancelAnimationFrame(raf);\n  }, [run]);\n\n  const changeWidth = (i, w) => {\n    if (w === widths[i]) return;\n    setWidths(prev => prev.map((v, j) => (j === i ? w : v)));\n    setRun(null);\n  };\n  const changeFlow = (d, f) => {\n    if (f === flows[d]) return;\n    setFlows(prev => prev.map((v, j) => (j === d ? f : v)));\n    setRun(null);\n  };\n\n  const flagAt = layerOrder ? (marks[0]?.at ?? 4) - 1 : -1;\n  const layers = run && layerOrder ? run.perDay.flatMap(rest => grains.filter(g => rest[g] === flagAt)) : [];\n\n  const met = useMemo(() => {\n    if (!run) return false;\n    if (layerOrder) return layers.length === layerOrder.length && layers.every((g, k) => g === layerOrder[k]);\n    const rest = run.perDay[0];\n    const named = marks.filter(m => m.grain);\n    if (!named.every(m => rest[m.grain] === m.at - 1)) return false;\n    const open = marks.filter(m => !m.grain).map(m => m.at - 1).sort();\n    const left = grains.filter(g => !named.some(m => m.grain === g)).map(g => rest[g]).sort();\n    return open.length === left.length && open.every((v, k) => v === left[k]);\n  }, [run, layers]);\n\n  const settled = run && progress >= days;\n  const placeName = i => (i >= N ? 'the lake' : `stretch ${i + 1}`);\n  const speedWord = s => (s >= 5 ? 'rushing' : s === 4 ? 'very fast' : s === 3 ? 'fast' : s === 2 ? 'slow' : 'very slow');\n\n  useEffect(() => {\n    lumina.goal(met);\n    const scene = {\n      stretches: widths.map((w, i) => {\n        const fact = { stretch: i + 1, ground: terrain[i] === 'steep' ? 'steep' : 'gentle', width: w };\n        fact[days > 1 ? 'waterOnDay1' : 'water'] = speedWord(speedAt(i, flows[0]));\n        const m = marks.find(mk => mk.at === i + 1);\n        if (m) fact.flag = m.label || m.grain || 'flag';\n        return fact;\n      }),\n      grainsPoured: grains,\n    };\n    if (days > 1) scene.flowByDay = flows;\n    if (!run) scene.lastRun = 'not run since the last change';\n    else if (!settled) scene.lastRun = 'the water is running';\n    else if (layerOrder) {\n      scene.lastRun = run.perDay.map((rest, d) => `day ${d + 1}: ` + grains.map(g => `${g} in ${placeName(rest[g])}`).join(', '));\n      scene.layersAtFlagBottomToTop = layers;\n    } else {\n      const rest = run.perDay[0];\n      scene.lastRun = grains.map(g => `${g} came to rest in ${placeName(rest[g])}`);\n    }\n    lumina.scene(scene);\n  }, [met, widths, flows, run, settled]);\n\n  // --- drawing ---\n  const X0 = 60, SW = 100, CY = 100, LAKE_X = X0 + N * SW;\n  const midX = i => (i >= N ? LAKE_X + 60 : X0 + i * SW + SW / 2);\n  const halfOf = i => HALF[widths[i]];\n\n  const bankPath = sign => {\n    const pts = [];\n    for (let i = 0; i < N; i++) {\n      const y = CY + sign * halfOf(i);\n      pts.push(`${X0 + i * SW + 10},${y}`, `${X0 + (i + 1) * SW - 10},${y}`);\n    }\n    return pts;\n  };\n  const top = bankPath(-1), bottom = bankPath(1).reverse();\n  const channel = [`${X0 - 40},${CY - 16}`, `${X0},${CY - halfOf(0)}`, ...top, `${LAKE_X + 4},${CY - halfOf(N - 1)}`, `${LAKE_X + 4},${CY + halfOf(N - 1)}`, ...bottom, `${X0},${CY + halfOf(0)}`, `${X0 - 40},${CY + 16}`].join(' ');\n\n  const cluster = (grain, cx, cy, spreadY, seed) => {\n    const look = LOOK[grain];\n    const out = [];\n    for (let k = 0; k < look.n; k++) {\n      const a = Math.sin(seed * 12.9 + k * 78.2) * 43758.5;\n      const b = Math.sin(seed * 39.3 + k * 11.7) * 24634.6;\n      const fx = (a - Math.floor(a)) * 2 - 1, fy = (b - Math.floor(b)) * 2 - 1;\n      out.push(<circle key={`${grain}-${seed}-${k}`} cx={cx + fx * 12} cy={cy + fy * spreadY} r={look.r} fill={look.color} stroke=\"#0f172a\" strokeWidth=\"0.8\" />);\n    }\n    return out;\n  };\n\n  const grainDots = [];\n  if (run) {\n    run.perDay.forEach((rest, d) => {\n      const f = progress - d;\n      if (f <= 0) return;\n      grains.forEach((g, gi) => {\n        const restX = midX(rest[g]) + LOOK[g].dx;\n        const t = Math.min(1, f);\n        const ease = 1 - Math.pow(1 - t, 3);\n        const x = 20 + (restX - 20) * ease;\n        const spread = rest[g] >= N ? 26 : Math.max(5, halfOf(Math.min(rest[g], N - 1)) - 7);\n        const y = rest[g] >= N ? CY + (d - 1) * 10 : CY + (d - 1) * 4;\n        grainDots.push(...cluster(g, x, y, t < 1 ? 4 : spread, d * 7 + gi + 1));\n      });\n    });\n  }\n\n  // The arrows show the water of the day that is running, or of day 1 before a run.\n  const flowNow = run && progress < days ? flows[Math.min(days - 1, Math.floor(progress))] : flows[0];\n  const chevrons = [];\n  for (let i = 0; i < N; i++) {\n    const s = Math.max(1, speedAt(i, flowNow));\n    for (let k = 0; k < s; k++) {\n      const x = X0 + i * SW + SW / 2 + (k - (s - 1) / 2) * 13;\n      chevrons.push(<path key={`ch-${i}-${k}`} d={`M ${x - 4} ${CY - 6} L ${x + 3} ${CY} L ${x - 4} ${CY + 6}`} fill=\"none\" stroke=\"#bae6fd\" strokeWidth=\"2\" opacity=\"0.55\" />);\n    }\n  }\n\n  // Side view: the ground drops more on a steep stretch.\n  const units = terrain.slice(0, N).reduce((a, t) => a + (t === 'steep' ? 2 : 1), 0);\n  const ground = [];\n  let gy = 205;\n  ground.push(`${X0},${gy}`);\n  for (let i = 0; i < N; i++) {\n    gy += ((terrain[i] === 'steep' ? 2 : 1) / units) * 34;\n    ground.push(`${X0 + (i + 1) * SW},${gy}`);\n  }\n  const groundEnd = gy;\n\n  const LEVEL_Y = { flood: 26, high: 54, normal: 82, low: 110 };\n  const dayX = d => 150 + d * 110;\n  const snapFlow = y => FLOWS.reduce((best, f) => (Math.abs(LEVEL_Y[f] - y) < Math.abs(LEVEL_Y[best] - y) ? f : best), 'normal');\n  const snapWidth = (i, y) => {\n    const half = CY - y;\n    return half < 21 ? 'narrow' : half < 38 ? 'middle' : 'wide';\n  };\n\n  const shownLayers = run && layerOrder ? run.perDay.slice(0, Math.floor(progress + 1e-6)).flatMap(rest => grains.filter(g => rest[g] === flagAt)) : [];\n\n  return (\n    <Panel\n      title=\"Stream Table\"\n      caption={banksFixed ? 'Drag each day’s dot to set how much water flows that day. Then run the water.' : 'Drag a bank to make that part of the stream wider or narrower. Then run the water.'}\n    >\n      <Stack gap={10}>\n        <svg viewBox=\"0 0 680 255\" style={{ width: '100%', height: 'auto', background: '#13261a', borderRadius: 12, touchAction: 'none', userSelect: 'none' }}>\n          {Array.from({ length: N }).map((_, i) => (\n            <text key={`n-${i}`} x={midX(i)} y={22} fill=\"#94a3b8\" fontSize=\"13\" textAnchor=\"middle\">{`stretch ${i + 1}`}</text>\n          ))}\n          <rect x={LAKE_X} y={34} width={680 - LAKE_X - 6} height={132} rx={30} fill=\"#075985\" />\n          <text x={LAKE_X + 60} y={50} fill=\"#e0f2fe\" fontSize=\"14\" textAnchor=\"middle\" fontWeight=\"600\">lake</text>\n          <polygon points={channel} fill=\"#0369a1\" />\n          {chevrons}\n          <rect x={4} y={CY - 22} width={44} height={44} rx={8} fill=\"#57534e\" stroke=\"#a8a29e\" />\n          <text x={26} y={CY + 40} fill=\"#e7e5e4\" fontSize=\"12\" textAnchor=\"middle\">grains</text>\n          <text x={26} y={CY + 54} fill=\"#e7e5e4\" fontSize=\"12\" textAnchor=\"middle\">pour in</text>\n          {marks.map((m, k) => {\n            const i = m.at - 1;\n            const x = midX(i) + 30;\n            const yTop = CY + halfOf(i) + 4;\n            const label = m.label || (m.grain ? m.grain : String.fromCharCode(65 + k));\n            return (\n              <g key={`flag-${k}`}>\n                <line x1={x} y1={yTop} x2={x} y2={yTop + 40} stroke=\"#e2e8f0\" strokeWidth=\"2\" />\n                <path d={`M ${x} ${yTop} L ${x - 34} ${yTop + 8} L ${x} ${yTop + 16} Z`} fill=\"#f472b6\" />\n                <text x={x - 6} y={yTop + 36} fill=\"#fbcfe8\" fontSize=\"14\" fontWeight=\"700\" textAnchor=\"end\">{label}</text>\n              </g>\n            );\n          })}\n          {grainDots}\n          {!banksFixed && widths.map((w, i) => (\n            <Handle key={`bank-${i}`} id={`bank-${i + 1}`} x={midX(i) - 18} y={CY - halfOf(i)} r={13}\n              onDrag={p => changeWidth(i, snapWidth(i, p.y))} onDrop={p => changeWidth(i, snapWidth(i, p.y))}>\n              <g>\n                <circle r=\"13\" fill=\"#a16207\" stroke=\"#fef3c7\" strokeWidth=\"2\" />\n                <path d=\"M -5 -3 L 0 -8 L 5 -3 M -5 3 L 0 8 L 5 3\" fill=\"none\" stroke=\"#fef3c7\" strokeWidth=\"2\" />\n              </g>\n            </Handle>\n          ))}\n          <text x={8} y={196} fill=\"#94a3b8\" fontSize=\"12\">side view</text>\n          <polygon points={`${X0},255 ${ground.join(' ')} 676,${groundEnd} 676,255`} fill=\"#3f3a2e\" />\n          <polyline points={ground.join(' ')} fill=\"none\" stroke=\"#7dd3fc\" strokeWidth=\"3\" />\n          <line x1={LAKE_X} y1={groundEnd} x2={676} y2={groundEnd} stroke=\"#7dd3fc\" strokeWidth=\"3\" />\n          {terrain.slice(0, N).map((t, i) => (\n            <text key={`t-${i}`} x={midX(i)} y={248} fill=\"#e7e5e4\" fontSize=\"13\" textAnchor=\"middle\">{t === 'steep' ? 'steep' : 'gentle'}</text>\n          ))}\n        </svg>\n\n        {days > 1 && (\n          <svg viewBox=\"0 0 680 150\" style={{ width: '100%', height: 'auto', background: '#111c2e', borderRadius: 12, touchAction: 'none', userSelect: 'none' }}>\n            <text x={16} y={16} fill=\"#94a3b8\" fontSize=\"12\">water flow each day</text>\n            {FLOWS.map(f => (\n              <g key={`lv-${f}`}>\n                <line x1={88} y1={LEVEL_Y[f]} x2={400} y2={LEVEL_Y[f]} stroke=\"#1e3a5f\" strokeWidth=\"1\" />\n                <text x={80} y={LEVEL_Y[f] + 5} fill=\"#cbd5e1\" fontSize=\"13\" textAnchor=\"end\">{f}</text>\n              </g>\n            ))}\n            <polyline points={flows.map((f, d) => `${dayX(d)},${LEVEL_Y[f]}`).join(' ')} fill=\"none\" stroke=\"#38bdf8\" strokeWidth=\"3\" />\n            {flows.map((f, d) => (\n              <g key={`day-${d}`}>\n                <text x={dayX(d)} y={140} fill=\"#cbd5e1\" fontSize=\"13\" textAnchor=\"middle\">{`Day ${d + 1}`}</text>\n                <Handle id={`flow-day-${d + 1}`} x={dayX(d)} y={LEVEL_Y[f]} r={13} color=\"cyan\"\n                  onDrag={p => changeFlow(d, snapFlow(p.y))} onDrop={p => changeFlow(d, snapFlow(p.y))} />\n              </g>\n            ))}\n            <text x={560} y={16} fill=\"#94a3b8\" fontSize=\"12\" textAnchor=\"middle\">at the flag, side view</text>\n            <rect x={470} y={24} width={180} height={116} rx={6} fill=\"#0b1324\" stroke=\"#334155\" />\n            {shownLayers.map((g, k) => (\n              <g key={`layer-${k}`}>\n                <rect x={472} y={138 - (k + 1) * 34} width={176} height={33} fill={LOOK[g].color} opacity=\"0.85\" />\n                <text x={560} y={138 - k * 34 - 12} fill=\"#0f172a\" fontSize=\"14\" fontWeight=\"700\" textAnchor=\"middle\">{g}</text>\n              </g>\n            ))}\n          </svg>\n        )}\n\n        <Row gap={14}>\n          <button id=\"run-water\" type=\"button\" onClick={runWater}\n            style={{ minHeight: 44, minWidth: 150, padding: '8px 18px', borderRadius: 10, border: '1px solid #38bdf8', background: '#0c4a6e', color: '#f0f9ff', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>\n            Run the water\n          </button>\n          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 18 }}>\n            {grains.map(g => (\n              <span key={`key-${g}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#e2e8f0', fontSize: 15 }}>\n                <svg width=\"18\" height=\"18\" viewBox=\"-9 -9 18 18\"><circle r={Math.min(8, LOOK[g].r + 1.5)} fill={LOOK[g].color} /></svg>\n                {g}\n              </span>\n            ))}\n          </span>\n        </Row>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "terrain": [
+     "gentle",
+     "gentle",
+     "gentle",
+     "gentle",
+     "gentle"
+    ],
+    "startWidths": [
+     "middle",
+     "middle",
+     "middle",
+     "middle",
+     "middle"
+    ],
+    "grains": [
+     "sand"
+    ],
+    "marks": [
+     {
+      "at": 3,
+      "grain": "sand"
+     }
+    ]
+   },
+   "ask": "Make the sand come to rest at the sand flag.",
+   "goal": "After the last run the sand rests in stretch 3: the water is fast enough to carry sand through stretches 1 and 2 and slows below sand's carrying speed in stretch 3.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bank-1",
+     "dy": 14
+    },
+    {
+     "do": "drag",
+     "target": "#bank-2",
+     "dy": 14
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bank-3",
+     "dy": 14
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "scene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 2,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "sand"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     }
+    ],
+    "grainsPoured": [
+     "sand"
+    ],
+    "lastRun": "not run since the last change"
+   },
+   "proofScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "sand"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     }
+    ],
+    "grainsPoured": [
+     "sand"
+    ],
+    "lastRun": [
+     "sand came to rest in stretch 3"
+    ]
+   },
+   "missScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 2,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast",
+      "flag": "sand"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     }
+    ],
+    "grainsPoured": [
+     "sand"
+    ],
+    "lastRun": [
+     "sand came to rest in stretch 1"
+    ]
+   }
+  },
+  {
+   "params": {
+    "terrain": [
+     "steep",
+     "steep",
+     "gentle",
+     "gentle",
+     "gentle"
+    ],
+    "startWidths": [
+     "narrow",
+     "narrow",
+     "narrow",
+     "narrow",
+     "narrow"
+    ],
+    "grains": [
+     "pebbles",
+     "sand"
+    ],
+    "marks": [
+     {
+      "at": 2,
+      "grain": "pebbles"
+     },
+     {
+      "at": 4,
+      "grain": "sand"
+     }
+    ]
+   },
+   "ask": "Make the pebbles stop at the pebbles flag and the sand stop at the sand flag.",
+   "goal": "After the last run the pebbles rest in stretch 2 and the sand in stretch 4.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bank-2",
+     "dy": -14
+    },
+    {
+     "do": "drag",
+     "target": "#bank-4",
+     "dy": -14
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "scene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast",
+      "flag": "pebbles"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast",
+      "flag": "sand"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand"
+    ],
+    "lastRun": "not run since the last change"
+   },
+   "proofScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "water": "fast",
+      "flag": "pebbles"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "sand"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand"
+    ],
+    "lastRun": [
+     "pebbles came to rest in stretch 2",
+     "sand came to rest in stretch 4"
+    ]
+   },
+   "missScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast",
+      "flag": "pebbles"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast",
+      "flag": "sand"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "water": "fast"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand"
+    ],
+    "lastRun": [
+     "pebbles came to rest in stretch 3",
+     "sand came to rest in the lake"
+    ]
+   }
+  },
+  {
+   "params": {
+    "terrain": [
+     "steep",
+     "steep",
+     "gentle",
+     "gentle",
+     "gentle"
+    ],
+    "startWidths": [
+     "middle",
+     "middle",
+     "middle",
+     "middle",
+     "middle"
+    ],
+    "grains": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "marks": [
+     {
+      "at": 2
+     },
+     {
+      "at": 3
+     },
+     {
+      "at": 5
+     }
+    ]
+   },
+   "ask": "Make one kind of grain stop at each flag, A, B and C.",
+   "goal": "After the last run each grain size rests at a different flag: pebbles in stretch 2, sand in stretch 3, silt in stretch 5.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bank-1",
+     "dy": 14
+    },
+    {
+     "do": "drag",
+     "target": "#bank-5",
+     "dy": -20
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bank-1",
+     "dy": 14
+    },
+    {
+     "do": "drag",
+     "target": "#bank-2",
+     "dy": -20
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 1500
+    }
+   ],
+   "scene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "middle",
+      "water": "fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "water": "fast",
+      "flag": "flag"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "flag"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "flag"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "lastRun": "not run since the last change"
+   },
+   "proofScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "water": "fast",
+      "flag": "flag"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "flag"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "wide",
+      "water": "very slow",
+      "flag": "flag"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "lastRun": [
+     "pebbles came to rest in stretch 2",
+     "sand came to rest in stretch 3",
+     "silt came to rest in stretch 5"
+    ]
+   },
+   "missScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "water": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "wide",
+      "water": "slow",
+      "flag": "flag"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "flag"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "middle",
+      "water": "slow",
+      "flag": "flag"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "lastRun": [
+     "pebbles came to rest in stretch 2",
+     "sand came to rest in stretch 2",
+     "silt came to rest in the lake"
+    ]
+   }
+  },
+  {
+   "params": {
+    "terrain": [
+     "steep",
+     "steep",
+     "gentle",
+     "gentle",
+     "gentle"
+    ],
+    "startWidths": [
+     "narrow",
+     "middle",
+     "middle",
+     "wide",
+     "narrow"
+    ],
+    "banksFixed": true,
+    "grains": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "marks": [
+     {
+      "at": 4,
+      "label": "layers"
+     }
+    ],
+    "days": 3,
+    "layerOrder": [
+     "pebbles",
+     "sand",
+     "silt"
+    ]
+   },
+   "ask": "Make layers at the flag: pebbles on the bottom, sand in the middle, silt on top.",
+   "goal": "After the last run the flag's layers, bottom to top, are pebbles, sand, silt: a flood day, then a high day, then a normal day.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#flow-day-1",
+     "dy": -56
+    },
+    {
+     "do": "drag",
+     "target": "#flow-day-2",
+     "dy": -28
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 3000
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#flow-day-2",
+     "dy": -28
+    },
+    {
+     "do": "drag",
+     "target": "#flow-day-3",
+     "dy": -56
+    },
+    {
+     "do": "click",
+     "target": "#run-water"
+    },
+    {
+     "do": "wait",
+     "ms": 3000
+    }
+   ],
+   "scene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "waterOnDay1": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "waterOnDay1": "fast"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "waterOnDay1": "slow"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "wide",
+      "waterOnDay1": "very slow",
+      "flag": "layers"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "waterOnDay1": "fast"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "flowByDay": [
+     "normal",
+     "normal",
+     "normal"
+    ],
+    "lastRun": "not run since the last change"
+   },
+   "proofScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "waterOnDay1": "rushing"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "waterOnDay1": "rushing"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "waterOnDay1": "very fast"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "wide",
+      "waterOnDay1": "fast",
+      "flag": "layers"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "waterOnDay1": "rushing"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "flowByDay": [
+     "flood",
+     "high",
+     "normal"
+    ],
+    "lastRun": [
+     "day 1: pebbles in stretch 4, sand in the lake, silt in the lake",
+     "day 2: pebbles in stretch 3, sand in stretch 4, silt in the lake",
+     "day 3: pebbles in stretch 2, sand in stretch 3, silt in stretch 4"
+    ],
+    "layersAtFlagBottomToTop": [
+     "pebbles",
+     "sand",
+     "silt"
+    ]
+   },
+   "missScene": {
+    "stretches": [
+     {
+      "stretch": 1,
+      "ground": "steep",
+      "width": "narrow",
+      "waterOnDay1": "very fast"
+     },
+     {
+      "stretch": 2,
+      "ground": "steep",
+      "width": "middle",
+      "waterOnDay1": "fast"
+     },
+     {
+      "stretch": 3,
+      "ground": "gentle",
+      "width": "middle",
+      "waterOnDay1": "slow"
+     },
+     {
+      "stretch": 4,
+      "ground": "gentle",
+      "width": "wide",
+      "waterOnDay1": "very slow",
+      "flag": "layers"
+     },
+     {
+      "stretch": 5,
+      "ground": "gentle",
+      "width": "narrow",
+      "waterOnDay1": "fast"
+     }
+    ],
+    "grainsPoured": [
+     "pebbles",
+     "sand",
+     "silt"
+    ],
+    "flowByDay": [
+     "normal",
+     "high",
+     "flood"
+    ],
+    "lastRun": [
+     "day 1: pebbles in stretch 2, sand in stretch 3, silt in stretch 4",
+     "day 2: pebbles in stretch 3, sand in stretch 4, silt in the lake",
+     "day 3: pebbles in stretch 4, sand in the lake, silt in the lake"
+    ],
+    "layersAtFlagBottomToTop": [
+     "silt",
+     "sand",
+     "pebbles"
+    ]
+   }
+  }
+ ]
+}

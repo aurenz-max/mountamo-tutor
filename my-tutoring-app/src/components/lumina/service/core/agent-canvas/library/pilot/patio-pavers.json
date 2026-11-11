@@ -1,0 +1,201 @@
+{
+ "id": "patio-pavers",
+ "title": "Patio Paver Delivery",
+ "serves": {
+  "grades": [
+   "3"
+  ],
+  "summary": "The learner shapes a rectangular patio from unit-square pavers so it uses an exact number of pavers, which shows that area is found by tiling and by multiplying the side lengths."
+ },
+ "request": {
+  "topic": "Area of rectangles",
+  "grade": "grade 3",
+  "objective": "Find the area of a rectangle by tiling it with unit squares, and relate the count to multiplying its side lengths (3.MD.C.7)"
+ },
+ "source": "function Display({ params, lumina }) {\n  const targetArea = params.targetArea || 18;\n  const showTiles = params.showTiles !== false;\n  const canDeliver = params.canDeliver !== false;\n  const lockRows = params.lockRows || null;\n\n  const maxCols = 7;\n  const maxRows = 6;\n  const cellSize = 42;\n  const gridStartX = 65;\n  const gridStartY = 45;\n\n  const [cols, setCols] = useState(params.startCols || 3);\n  const [rows, setRows] = useState(lockRows || params.startRows || 3);\n  const [tested, setTested] = useState(false);\n\n  const currentArea = cols * rows;\n\n  useEffect(() => {\n    lumina.goal(currentArea === targetArea);\n    lumina.scene({ orderPavers: targetArea, across: cols, down: rows, delivered: tested ? currentArea : null, ...(lockRows ? { rowsFixed: true } : {}) });\n  }, [cols, rows, tested, targetArea, currentArea, lockRows]);\n\n  const resize = ({ x, y }) => {\n    setTested(false);\n    setCols(Math.max(1, Math.min(maxCols, Math.round((x - gridStartX) / cellSize))));\n    if (!lockRows) setRows(Math.max(1, Math.min(maxRows, Math.round((y - gridStartY) / cellSize))));\n  };\n\n  const tilesDrawn = showTiles || tested;\n\n  return (\n    <Panel title=\"Patio Paver Delivery\" caption=\"Drag the corner of the patio to change its shape.\">\n      <Stack gap={12}>\n        <Row gap={14}>\n          <Readout label=\"Order\" value={targetArea} unit=\"pavers\" color=\"amber\" />\n          {canDeliver && <Readout label=\"Delivered\" value={tested ? currentArea : '?'} unit=\"pavers\" color=\"slate\" />}\n        </Row>\n\n        <div style={{ display: 'flex', justifyContent: 'center', background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b', padding: 8 }}>\n          <svg viewBox=\"0 0 440 320\" style={{ width: '100%', maxWidth: 440, userSelect: 'none', touchAction: 'none' }}>\n            <rect x={gridStartX} y={gridStartY} width={maxCols * cellSize} height={maxRows * cellSize} fill=\"#18181b\" stroke=\"#3f3f46\" strokeWidth=\"2\" rx=\"6\" />\n\n            {Array.from({ length: maxCols }).map((_, c) =>\n              Array.from({ length: maxRows }).map((_, r) => (\n                <rect key={`bg-${c}-${r}`} x={gridStartX + c * cellSize} y={gridStartY + r * cellSize} width={cellSize} height={cellSize} fill=\"none\" stroke=\"#3f3f46\" strokeDasharray=\"2,3\" />\n              ))\n            )}\n\n            {Array.from({ length: maxCols }).map((_, c) =>\n              Array.from({ length: maxRows }).map((_, r) => (\n                <circle key={`pt-${c}-${r}`} id={`pt-${c + 1}-${r + 1}`} cx={gridStartX + (c + 1) * cellSize} cy={gridStartY + (r + 1) * cellSize} r=\"1\" fill=\"transparent\" pointerEvents=\"none\" />\n              ))\n            )}\n\n            <rect x={gridStartX} y={gridStartY} width={cols * cellSize} height={rows * cellSize} fill=\"rgba(56, 189, 248, 0.1)\" stroke=\"#38bdf8\" strokeWidth=\"2.5\" rx=\"4\" />\n\n            <path d={`M ${gridStartX} ${gridStartY - 8} L ${gridStartX + cols * cellSize} ${gridStartY - 8}`} stroke=\"#38bdf8\" strokeWidth=\"2\" />\n            <text x={gridStartX + (cols * cellSize) / 2} y={gridStartY - 14} fill=\"#38bdf8\" fontSize=\"13\" fontWeight=\"bold\" textAnchor=\"middle\">{cols} across</text>\n\n            <path d={`M ${gridStartX - 8} ${gridStartY} L ${gridStartX - 8} ${gridStartY + rows * cellSize}`} stroke=\"#34d399\" strokeWidth=\"2\" />\n            <text x={gridStartX - 14} y={gridStartY + (rows * cellSize) / 2 + 4} fill=\"#34d399\" fontSize=\"13\" fontWeight=\"bold\" textAnchor=\"end\">{rows} down</text>\n\n            {tilesDrawn &&\n              Array.from({ length: cols }).map((_, c) =>\n                Array.from({ length: rows }).map((_, r) => (\n                  <g key={`tile-${c}-${r}`}>\n                    <rect x={gridStartX + c * cellSize + 2} y={gridStartY + r * cellSize + 2} width={cellSize - 4} height={cellSize - 4} rx=\"4\" fill=\"#fde68a\" stroke=\"#d97706\" strokeWidth=\"1.5\" />\n                    {tested && <text x={gridStartX + c * cellSize + cellSize / 2} y={gridStartY + r * cellSize + cellSize / 2 + 4} fill=\"#78350f\" fontSize=\"12\" fontWeight=\"bold\" textAnchor=\"middle\">{r * cols + c + 1}</text>}\n                  </g>\n                ))\n              )}\n\n            <Handle id=\"corner\" x={gridStartX + cols * cellSize} y={gridStartY + rows * cellSize} r={13} color=\"amber\" onDrag={resize} onDrop={resize} />\n          </svg>\n        </div>\n\n        {canDeliver && (\n          <Row gap={12}>\n            <div id=\"deliver\"><Button label=\"Deliver Pavers\" onClick={() => setTested(true)} /></div>\n            {tested && <Formula tex={`${rows} \\\\text{ rows of } ${cols} = ${rows} \\\\times ${cols} = ${currentArea}`} />}\n          </Row>\n        )}\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "targetArea": 12,
+    "startCols": 2,
+    "startRows": 2,
+    "showTiles": true,
+    "canDeliver": true
+   },
+   "ask": "Shape the patio so it uses exactly 12 pavers.",
+   "goal": "The patio is exactly 12 pavers: across times down is 12.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-4-3"
+    },
+    {
+     "do": "click",
+     "target": "#deliver button"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-4-2"
+    },
+    {
+     "do": "click",
+     "target": "#deliver button"
+    }
+   ],
+   "scene": {
+    "orderPavers": 12,
+    "across": 2,
+    "down": 2,
+    "delivered": null
+   },
+   "proofScene": {
+    "orderPavers": 12,
+    "across": 4,
+    "down": 3,
+    "delivered": 12
+   },
+   "missScene": {
+    "orderPavers": 12,
+    "across": 4,
+    "down": 2,
+    "delivered": 8
+   }
+  },
+  {
+   "params": {
+    "targetArea": 18,
+    "startCols": 3,
+    "startRows": 4,
+    "showTiles": false,
+    "canDeliver": true
+   },
+   "ask": "Shape the patio so it uses exactly 18 pavers.",
+   "goal": "The patio is exactly 18 pavers: across times down is 18.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-6-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-5-4"
+    }
+   ],
+   "scene": {
+    "orderPavers": 18,
+    "across": 3,
+    "down": 4,
+    "delivered": null
+   },
+   "proofScene": {
+    "orderPavers": 18,
+    "across": 6,
+    "down": 3,
+    "delivered": null
+   },
+   "missScene": {
+    "orderPavers": 18,
+    "across": 5,
+    "down": 4,
+    "delivered": null
+   }
+  },
+  {
+   "params": {
+    "targetArea": 14,
+    "startCols": 3,
+    "lockRows": 2,
+    "showTiles": false,
+    "canDeliver": false
+   },
+   "ask": "This patio has to be 2 rows deep. Make it use exactly 14 pavers.",
+   "goal": "With 2 rows, the patio is 7 across.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-7-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-5-2"
+    }
+   ],
+   "scene": {
+    "orderPavers": 14,
+    "across": 3,
+    "down": 2,
+    "delivered": null,
+    "rowsFixed": true
+   },
+   "proofScene": {
+    "orderPavers": 14,
+    "across": 7,
+    "down": 2,
+    "delivered": null,
+    "rowsFixed": true
+   },
+   "missScene": {
+    "orderPavers": 14,
+    "across": 5,
+    "down": 2,
+    "delivered": null,
+    "rowsFixed": true
+   }
+  },
+  {
+   "params": {
+    "targetArea": 30,
+    "startCols": 2,
+    "startRows": 3,
+    "showTiles": false,
+    "canDeliver": false
+   },
+   "ask": "Shape the patio so it uses exactly 30 pavers.",
+   "goal": "The patio is exactly 30 pavers: 6 across and 5 down, or 5 across and 6 down.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-6-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#corner",
+     "to": "#pt-5-5"
+    }
+   ],
+   "scene": {
+    "orderPavers": 30,
+    "across": 2,
+    "down": 3,
+    "delivered": null
+   },
+   "proofScene": {
+    "orderPavers": 30,
+    "across": 6,
+    "down": 5,
+    "delivered": null
+   },
+   "missScene": {
+    "orderPavers": 30,
+    "across": 5,
+    "down": 5,
+    "delivered": null
+   }
+  }
+ ]
+}

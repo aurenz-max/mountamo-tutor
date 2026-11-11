@@ -61,6 +61,7 @@ An agent primitive's generator is a model in a tool loop under code checks (wond
 - **Capabilities are built once, in the kit.** `service/agent-kit/` holds the author loop (`runAuthor`) and the shared capabilities; a primitive supplies its blocks, its checks and its renderer. A new capability (levers, respond, a lookup into the word library) is added to the kit and every agent primitive gains it, never re-implemented inside one primitive.
 - **No new loops.** `agentKit.guard.test.ts` fails a new tool loop outside the kit; its legacy list only shrinks.
 - **A lesson is closed when it is a kit stage or a guard (USER 11-08).** `runAuthor` owns write, code checks, look, revise and ship, with the trace, cost and run record built in; a primitive says only what the child sees. `/review-agent-primitive <id>` closes agent-primitive work, the way `/review-live-wiring` closes tutor wiring.
+- **Canvas primitives (USER 11-10):** a canvas is an HTML+JS program hosted by `agent-canvas`; Gemini (live) and Claude Code write to one spec (`qa/canvas/specs/<id>/`) and pass one gate (`scripts/canvas-check.mjs`). `/canvas-primitive` is the checklist.
 - **General agent primitives (USER 11-08): an eval mode is a capability, not a task.** `practice-studio` has one mode; the agent assembles each item from kit answer surfaces (`surfaces.ts`), displays (`displays.ts`) and the write-look-revise loop (`itemLoop.ts`, `look.ts`). Add a surface or display to the kit, never a per-primitive mode for one task.
 
 ## Project Management

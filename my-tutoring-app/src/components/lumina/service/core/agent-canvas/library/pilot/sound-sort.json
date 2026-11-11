@@ -1,0 +1,605 @@
+{
+ "id": "sound-sort",
+ "title": "Sound Sort",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner taps sounds to hear them and sorts them by pitch (high or low) and by volume (loud or soft), keeping the two properties apart."
+ },
+ "request": {
+  "topic": "Sounds can be high or low, loud or soft",
+  "grade": "grade 1",
+  "objective": "Sort sounds by pitch (high or low) and by volume (loud or soft), keeping the two properties apart (1-PS4-1, SCI001-02-c)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // Sound cards the child taps to hear and drags into boxes. Every card looks the same; only the tone differs.\n  // params.axes: 'loud' (Loud / Soft boxes), 'pitch' (High / Low boxes) or 'both' (four boxes).\n  // params.sounds: [{ id, hz, vol }] (vol 0..1). params.splitHz and params.splitVol divide high from low and loud from soft.\n  const axes = params.axes || 'loud';\n  const sounds = Array.isArray(params.sounds) ? params.sounds : [{ id: 1, hz: 440, vol: 0.7 }, { id: 2, hz: 440, vol: 0.06 }];\n  const splitHz = params.splitHz || 500;\n  const splitVol = params.splitVol || 0.3;\n\n  const PITCH = { high: { word: 'High', icon: '🐦' }, low: { word: 'Low', icon: '🐻' } };\n  const VOL = { loud: { word: 'Loud', icon: '🔊' }, soft: { word: 'Soft', icon: '🔈' } };\n  const box = (key, x, y, w, h, parts) => ({ key, x, y, w, h, parts });\n  const bins = axes === 'both'\n    ? [\n      box('high-loud', 20, 16, 315, 112, [PITCH.high, VOL.loud]),\n      box('high-soft', 345, 16, 315, 112, [PITCH.high, VOL.soft]),\n      box('low-loud', 20, 138, 315, 112, [PITCH.low, VOL.loud]),\n      box('low-soft', 345, 138, 315, 112, [PITCH.low, VOL.soft]),\n    ]\n    : axes === 'pitch'\n      ? [box('high', 20, 16, 315, 234, [PITCH.high]), box('low', 345, 16, 315, 234, [PITCH.low])]\n      : [box('loud', 20, 16, 315, 234, [VOL.loud]), box('soft', 345, 16, 315, 234, [VOL.soft])];\n\n  const pitchOf = s => (s.hz >= splitHz ? 'high' : 'low');\n  const volOf = s => (s.vol >= splitVol ? 'loud' : 'soft');\n  const home = s => (axes === 'both' ? `${pitchOf(s)}-${volOf(s)}` : axes === 'pitch' ? pitchOf(s) : volOf(s));\n\n  const [where, setWhere] = useState({}); // sound id -> box key (absent: still on the tray)\n  const [drag, setDrag] = useState(null); // { id, x, y, moved }\n  const [ringing, setRinging] = useState(null);\n  const audio = useRef(null);\n\n  const play = s => {\n    setRinging(s.id);\n    setTimeout(() => setRinging(r => (r === s.id ? null : r)), 600);\n    try {\n      const Ctx = window.AudioContext || window.webkitAudioContext;\n      if (!audio.current) audio.current = new Ctx();\n      const ctx = audio.current;\n      if (ctx.state === 'suspended') ctx.resume();\n      const osc = ctx.createOscillator();\n      const gain = ctx.createGain();\n      const t = ctx.currentTime;\n      osc.type = 'triangle';\n      osc.frequency.value = s.hz;\n      gain.gain.setValueAtTime(0.0001, t);\n      gain.gain.exponentialRampToValueAtTime(Math.max(0.001, s.vol), t + 0.03);\n      gain.gain.setValueAtTime(Math.max(0.001, s.vol), t + 0.45);\n      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);\n      osc.connect(gain);\n      gain.connect(ctx.destination);\n      osc.start(t);\n      osc.stop(t + 0.62);\n    } catch (e) { /* no sound device: the card still rings on screen */ }\n  };\n\n  const allRight = sounds.every(s => where[s.id] === home(s));\n\n  useEffect(() => {\n    const name = key => bins.find(b => b.key === key).parts.map(p => p.word).join(' and ');\n    lumina.goal(allRight);\n    lumina.scene({\n      boxes: bins.map(b => b.parts.map(p => p.word).join(' and ')),\n      sounds: sounds.map((s, i) => `Sound ${i + 1}: ${where[s.id] ? 'in the ' + name(where[s.id]) + ' box' : 'on the tray'}`),\n    });\n  }, [allRight, where]);\n\n  // Where a card rests: on the tray, or in a row along the bottom of its box.\n  const rest = s => {\n    const key = where[s.id];\n    if (!key) {\n      const i = sounds.indexOf(s);\n      const gap = 600 / sounds.length;\n      return { x: 40 + gap * (i + 0.5), y: 310 };\n    }\n    const b = bins.find(v => v.key === key);\n    const mates = sounds.filter(v => where[v.id] === key);\n    return { x: b.x + 44 + mates.indexOf(s) * 62, y: b.y + b.h - 48 };\n  };\n\n  const drop = (s, pt) => {\n    const moved = drag && drag.id === s.id && drag.moved;\n    setDrag(null);\n    if (!moved) { play(s); return; }\n    const b = bins.find(v => pt.x >= v.x && pt.x <= v.x + v.w && pt.y >= v.y && pt.y <= v.y + v.h);\n    setWhere(prev => {\n      const next = { ...prev };\n      if (b) next[s.id] = b.key; else delete next[s.id];\n      return next;\n    });\n  };\n\n  return (\n    <Panel title=\"Sound Sort\" caption=\"Tap a sound to hear it. Drag it into a box.\">\n      <svg\n        viewBox=\"0 0 680 370\"\n        style={{ width: '100%', height: 'auto', background: '#0b1220', borderRadius: 12, border: '1px solid #1e293b', touchAction: 'none', userSelect: 'none' }}\n      >\n        {bins.map(b => (\n          <g key={b.key}>\n            <rect id={`bin-${b.key}`} x={b.x} y={b.y} width={b.w} height={b.h} rx=\"12\" fill=\"#172033\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <text x={b.x + b.w / 2} y={b.y + 28} textAnchor=\"middle\" fill=\"#f1f5f9\" fontSize=\"20\" fontWeight=\"700\" style={{ pointerEvents: 'none' }}>\n              {b.parts.map(p => `${p.icon} ${p.word}`).join('   ')}\n            </text>\n          </g>\n        ))}\n\n        <rect x=\"20\" y=\"272\" width=\"640\" height=\"88\" rx=\"12\" fill=\"rgba(30,41,59,0.5)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\n\n        {sounds.map((s, i) => {\n          const at = drag && drag.id === s.id ? drag : rest(s);\n          return (\n            <Handle\n              key={s.id}\n              id={`sound-${s.id}`}\n              x={at.x}\n              y={at.y}\n              r={22}\n              onDrag={pt => setDrag(prev => {\n                const start = prev && prev.id === s.id ? prev.start : rest(s);\n                const moved = (prev && prev.id === s.id && prev.moved) || Math.hypot(pt.x - start.x, pt.y - start.y) > 8;\n                return { id: s.id, x: moved ? pt.x : start.x, y: moved ? pt.y : start.y, start, moved };\n              })}\n              onDrop={pt => drop(s, pt)}\n            >\n              {ringing === s.id && <circle r=\"33\" fill=\"none\" stroke=\"#f8fafc\" strokeWidth=\"3\" opacity=\"0.7\" />}\n              <circle r=\"26\" fill=\"#6366f1\" stroke=\"#e0e7ff\" strokeWidth=\"3\" />\n              <path d=\"M -11 -5 L -5 -5 L 3 -12 L 3 12 L -5 5 L -11 5 Z\" fill=\"#ffffff\" />\n              <path d=\"M 8 -6 Q 13 0 8 6\" fill=\"none\" stroke=\"#ffffff\" strokeWidth=\"2.5\" strokeLinecap=\"round\" />\n              <text y=\"42\" textAnchor=\"middle\" fill=\"#cbd5e1\" fontSize=\"13\" fontWeight=\"700\">{i + 1}</text>\n            </Handle>\n          );\n        })}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "axes": "loud",
+    "sounds": [
+     {
+      "id": 1,
+      "hz": 440,
+      "vol": 0.7
+     },
+     {
+      "id": 2,
+      "hz": 440,
+      "vol": 0.06
+     },
+     {
+      "id": 3,
+      "hz": 440,
+      "vol": 0.06
+     },
+     {
+      "id": 4,
+      "hz": 440,
+      "vol": 0.7
+     }
+    ]
+   },
+   "ask": "Tap each sound to hear it. Sort the sounds into loud and soft.",
+   "goal": "Sounds 1 and 4 are in Loud, sounds 2 and 3 in Soft. All four have the same pitch.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-soft"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-soft"
+    }
+   ],
+   "scene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: on the tray",
+     "Sound 2: on the tray",
+     "Sound 3: on the tray",
+     "Sound 4: on the tray"
+    ]
+   },
+   "proofScene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the Loud box",
+     "Sound 2: in the Soft box",
+     "Sound 3: in the Soft box",
+     "Sound 4: in the Loud box"
+    ]
+   },
+   "missScene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the Loud box",
+     "Sound 2: in the Loud box",
+     "Sound 3: in the Soft box",
+     "Sound 4: in the Loud box"
+    ]
+   }
+  },
+  {
+   "params": {
+    "axes": "pitch",
+    "sounds": [
+     {
+      "id": 1,
+      "hz": 220,
+      "vol": 0.35
+     },
+     {
+      "id": 2,
+      "hz": 880,
+      "vol": 0.35
+     },
+     {
+      "id": 3,
+      "hz": 880,
+      "vol": 0.35
+     },
+     {
+      "id": 4,
+      "hz": 220,
+      "vol": 0.35
+     }
+    ]
+   },
+   "ask": "Tap each sound to hear it. Sort the sounds into high and low.",
+   "goal": "Sounds 2 and 3 are in High, sounds 1 and 4 in Low. All four are equally loud.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-low"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low"
+    }
+   ],
+   "scene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: on the tray",
+     "Sound 2: on the tray",
+     "Sound 3: on the tray",
+     "Sound 4: on the tray"
+    ]
+   },
+   "proofScene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: in the Low box",
+     "Sound 2: in the High box",
+     "Sound 3: in the High box",
+     "Sound 4: in the Low box"
+    ]
+   },
+   "missScene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: in the High box",
+     "Sound 2: in the High box",
+     "Sound 3: in the High box",
+     "Sound 4: in the Low box"
+    ]
+   }
+  },
+  {
+   "params": {
+    "axes": "loud",
+    "sounds": [
+     {
+      "id": 1,
+      "hz": 880,
+      "vol": 0.06
+     },
+     {
+      "id": 2,
+      "hz": 220,
+      "vol": 0.7
+     },
+     {
+      "id": 3,
+      "hz": 220,
+      "vol": 0.06
+     },
+     {
+      "id": 4,
+      "hz": 880,
+      "vol": 0.7
+     },
+     {
+      "id": 5,
+      "hz": 660,
+      "vol": 0.06
+     }
+    ]
+   },
+   "ask": "These sounds are high and low too. Sort them into loud and soft.",
+   "goal": "Sounds 2 and 4 are in Loud; 1, 3 and 5 in Soft. Sounds 1 and 5 are high and soft, sound 2 is low and loud.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-5",
+     "to": "#bin-soft"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-5",
+     "to": "#bin-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-soft"
+    }
+   ],
+   "scene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: on the tray",
+     "Sound 2: on the tray",
+     "Sound 3: on the tray",
+     "Sound 4: on the tray",
+     "Sound 5: on the tray"
+    ]
+   },
+   "proofScene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the Soft box",
+     "Sound 2: in the Loud box",
+     "Sound 3: in the Soft box",
+     "Sound 4: in the Loud box",
+     "Sound 5: in the Soft box"
+    ]
+   },
+   "missScene": {
+    "boxes": [
+     "Loud",
+     "Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the Loud box",
+     "Sound 2: in the Soft box",
+     "Sound 3: in the Soft box",
+     "Sound 4: in the Loud box",
+     "Sound 5: in the Loud box"
+    ]
+   }
+  },
+  {
+   "params": {
+    "axes": "pitch",
+    "sounds": [
+     {
+      "id": 1,
+      "hz": 220,
+      "vol": 0.7
+     },
+     {
+      "id": 2,
+      "hz": 880,
+      "vol": 0.06
+     },
+     {
+      "id": 3,
+      "hz": 880,
+      "vol": 0.7
+     },
+     {
+      "id": 4,
+      "hz": 220,
+      "vol": 0.06
+     },
+     {
+      "id": 5,
+      "hz": 300,
+      "vol": 0.7
+     }
+    ]
+   },
+   "ask": "These sounds are loud and soft too. Sort them into high and low.",
+   "goal": "Sounds 2 and 3 are in High; 1, 4 and 5 in Low. Sounds 1 and 5 are low and loud, sound 2 is high and soft.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-low"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-5",
+     "to": "#bin-low"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-5",
+     "to": "#bin-high"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-low"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low"
+    }
+   ],
+   "scene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: on the tray",
+     "Sound 2: on the tray",
+     "Sound 3: on the tray",
+     "Sound 4: on the tray",
+     "Sound 5: on the tray"
+    ]
+   },
+   "proofScene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: in the Low box",
+     "Sound 2: in the High box",
+     "Sound 3: in the High box",
+     "Sound 4: in the Low box",
+     "Sound 5: in the Low box"
+    ]
+   },
+   "missScene": {
+    "boxes": [
+     "High",
+     "Low"
+    ],
+    "sounds": [
+     "Sound 1: in the High box",
+     "Sound 2: in the Low box",
+     "Sound 3: in the High box",
+     "Sound 4: in the Low box",
+     "Sound 5: in the High box"
+    ]
+   }
+  },
+  {
+   "params": {
+    "axes": "both",
+    "sounds": [
+     {
+      "id": 1,
+      "hz": 880,
+      "vol": 0.06
+     },
+     {
+      "id": 2,
+      "hz": 220,
+      "vol": 0.7
+     },
+     {
+      "id": 3,
+      "hz": 880,
+      "vol": 0.7
+     },
+     {
+      "id": 4,
+      "hz": 220,
+      "vol": 0.06
+     }
+    ]
+   },
+   "ask": "Each sound goes in one box. Sort the sounds by high or low and by loud or soft.",
+   "goal": "Sound 1 is in High and Soft, 2 in Low and Loud, 3 in High and Loud, 4 in Low and Soft.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-high-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-low-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low-soft"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sound-1",
+     "to": "#bin-high-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-2",
+     "to": "#bin-low-soft"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-3",
+     "to": "#bin-high-loud"
+    },
+    {
+     "do": "drag",
+     "target": "#sound-4",
+     "to": "#bin-low-soft"
+    }
+   ],
+   "scene": {
+    "boxes": [
+     "High and Loud",
+     "High and Soft",
+     "Low and Loud",
+     "Low and Soft"
+    ],
+    "sounds": [
+     "Sound 1: on the tray",
+     "Sound 2: on the tray",
+     "Sound 3: on the tray",
+     "Sound 4: on the tray"
+    ]
+   },
+   "proofScene": {
+    "boxes": [
+     "High and Loud",
+     "High and Soft",
+     "Low and Loud",
+     "Low and Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the High and Soft box",
+     "Sound 2: in the Low and Loud box",
+     "Sound 3: in the High and Loud box",
+     "Sound 4: in the Low and Soft box"
+    ]
+   },
+   "missScene": {
+    "boxes": [
+     "High and Loud",
+     "High and Soft",
+     "Low and Loud",
+     "Low and Soft"
+    ],
+    "sounds": [
+     "Sound 1: in the High and Loud box",
+     "Sound 2: in the Low and Soft box",
+     "Sound 3: in the High and Loud box",
+     "Sound 4: in the Low and Soft box"
+    ]
+   }
+  }
+ ]
+}

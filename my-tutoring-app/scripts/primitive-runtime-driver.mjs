@@ -199,6 +199,13 @@ const PERFORM = {
       at('mouseup');
     }
   },
+  // A canvas frame's page does not run here: deliver what its recorded playthrough reported, from that frame.
+  report: ({ goal, scene }) => {
+    const frame = document.querySelector('iframe[data-canvas-frame]');
+    if (!frame?.contentWindow) throw new Error('No canvas frame is mounted');
+    const post = (kind, data) => flushSync(() => dom.window.dispatchEvent(new dom.window.MessageEvent('message', { source: frame.contentWindow, data: { source: 'lumina-display', kind, data } })));
+    post('scene', scene ?? null); post('goal', goal);
+  },
   give: () => {
     const button = [...document.querySelectorAll('button')].find(b => /give them to me/i.test(b.textContent));
     if (!button || button.disabled) throw new Error('No enabled handover button');

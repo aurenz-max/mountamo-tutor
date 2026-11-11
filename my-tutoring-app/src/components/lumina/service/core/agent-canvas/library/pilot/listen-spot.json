@@ -1,0 +1,236 @@
+{
+ "id": "listen-spot",
+ "title": "Where to Listen",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner puts an ear where a far-away tap, an underwater click or a call can be heard, which shows that sound travels through air, water and solids and that what it travels through matters."
+ },
+ "request": {
+  "topic": "Sound travels through air, water and solids",
+  "grade": "grade 1",
+  "objective": "Sound travels through air, water and solid things, and how well it gets to a listener depends on what it travels through: a far-away tap carries along a metal or wooden rail but not along hay, clicks under water are heard under water, and a call in the air is heard in the air. NGSS 1-PS4-1 (SCI001-03-a)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A friend far away makes a sound: in the air, under the water of a pond, or by tapping a post that bars run from.\n  // The child drags an ear from the tray to a spot on their side of the scene. Whether the sound arrives there is\n  // computed from what the sound travels through and how far, and nothing on screen shows it before Check.\n  //\n  // params.source: 'air' | 'water' | 'post'   where the sound is made\n  // params.strength: 'soft' | 'loud'           a tap or click is soft, a call is loud\n  // params.pond: boolean                       a pond across the scene (needed for source 'water')\n  // params.bars: [{ material: 'metal' | 'wood' | 'hay' }], 0-2 bars lying from the tapped post across the scene\n  const source = ['air', 'water', 'post'].includes(params.source) ? params.source : 'post';\n  const strength = params.strength === 'loud' ? 'loud' : 'soft';\n  const pond = params.pond === undefined ? source === 'water' : !!params.pond;\n  const bars = (Array.isArray(params.bars) ? params.bars : (source === 'post' ? [{ material: 'metal' }] : []))\n    .filter(b => b && ['metal', 'wood', 'hay'].includes(b.material)).slice(0, 2);\n\n  // ---------- layout ----------\n  const W = 680, GROUND = 250, H = 470;\n  // A friend who is not in the water stands on the bank, so the pond starts after them.\n  const POND = { x1: source === 'water' ? 30 : 170, x2: 650, top: GROUND, bottom: GROUND + 120 };\n  const SRC_X = 80;\n  const ZONE_X = 330; // the child's side starts here\n  const TRAY = { x: W / 2, y: 430 };\n  // Metal and hay lie on the ground; a wooden rail is a fence rail on legs. A second bar on the same level sits above.\n  const level = m => (m === 'wood' ? 1 : 0);\n  const barY = i => {\n    const base = level(bars[i].material) ? GROUND - 66 : GROUND - 15;\n    return base - (bars.slice(0, i).some(b => level(b.material) === level(bars[i].material)) ? 46 : 0);\n  };\n  const BAR_X1 = SRC_X + 16, BAR_X2 = 655;\n  const srcY = source === 'water' ? GROUND + 70 : source === 'air' ? GROUND - 22 : GROUND - 40;\n\n  // ---------- the model ----------\n  // Loss per 100 px of travel in each material, and a big loss where sound passes from one material into another\n  // (water into air, a bar into air). A sound is heard where what arrives is at least HEARD.\n  const LOSS = { air: 0.25, water: 0.06, metal: 0.02, wood: 0.07, hay: 0.6 };\n  const START = { soft: 1.0, loud: 2.0 };\n  const BOUNDARY = 1.2, HEARD = 0.5;\n  const MAT_WORD = { metal: 'metal rail', wood: 'wooden fence rail', hay: 'row of hay bales' };\n\n  const [ear, setEar] = useState(null); // { x, y } or null when in the tray\n  const [drag, setDrag] = useState(null); // { x, y } while dragging\n  const svgRef = useRef(null);\n\n  const mediumAt = p => {\n    if (!p) return null;\n    const bi = bars.findIndex((b, i) => p.x >= BAR_X1 && p.x <= BAR_X2 && Math.abs(p.y - barY(i)) <= 18);\n    if (bi >= 0) return { kind: 'bar', index: bi, material: bars[bi].material };\n    if (pond && p.y > POND.top + 4 && p.x >= POND.x1 && p.x <= POND.x2) return { kind: 'water', material: 'water' };\n    return { kind: 'air', material: 'air' };\n  };\n  const arrives = p => {\n    const m = mediumAt(p);\n    if (!m) return 0;\n    const d = Math.max(0, p.x - SRC_X) / 100;\n    const same = (source === 'air' && m.kind === 'air') || (source === 'water' && m.kind === 'water')\n      || (source === 'post' && m.kind === 'bar');\n    return same ? START[strength] - LOSS[m.material] * d : START[strength] - BOUNDARY - LOSS.air * d;\n  };\n  const goalMet = !!ear && arrives(ear) >= HEARD;\n\n  const earMedium = mediumAt(ear);\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      friend: source === 'water' ? 'under the water of the pond, clicking two stones'\n        : source === 'air' ? 'standing in the air across the pond, calling out'\n          : 'tapping a post with a stone',\n      sound: strength === 'loud' ? 'a loud call' : 'a soft tap',\n      pond: pond ? 'a pond runs across the scene' : 'no pond',\n      bars: bars.map(b => `a ${MAT_WORD[b.material]} lying from the post across the scene`),\n      ear: !ear ? 'in the tray'\n        : earMedium.kind === 'bar' ? `pressed to the ${MAT_WORD[earMedium.material]}`\n          : earMedium.kind === 'water' ? 'under the water' : 'in the air',\n      earDistance: ear ? (ear.x > 500 ? 'far from the friend' : 'on the near edge of your side') : 'not placed',\n    });\n  }, [goalMet, ear && ear.x, ear && ear.y]);\n\n  const clampToSide = pt => {\n    const maxY = pond && pt.x >= POND.x1 && pt.x <= POND.x2 ? POND.bottom - 20 : GROUND - 8;\n    return { x: Math.min(W - 26, Math.max(ZONE_X + 24, pt.x)), y: Math.min(maxY, Math.max(40, pt.y)) };\n  };\n  const onDown = e => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const pt = svgPoint(svgRef.current, e);\n    setDrag({ x: pt.x, y: pt.y });\n  };\n  const onMove = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDrag({ x: pt.x, y: pt.y });\n  };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDrag(null);\n    if (pt.y > GROUND + 140 && !(pond && pt.y < POND.bottom)) { setEar(null); return; } // back to the tray\n    if (pt.x < ZONE_X - 10) { setEar(null); return; }\n    setEar(clampToSide(pt));\n  };\n\n  // ---------- pictures ----------\n  const barPic = (b, i) => {\n    const y = barY(i);\n    const len = BAR_X2 - BAR_X1;\n    if (b.material === 'metal') return (\n      <g key={`bar-${i}`} id={`bar-${i + 1}`}>\n        <rect x={BAR_X1} y={y - 7} width={len} height=\"14\" rx=\"2\" fill=\"url(#steel)\" stroke=\"#334155\" strokeWidth=\"2\" />\n        {Array.from({ length: 9 }, (_, j) => <rect key={j} x={BAR_X1 + 20 + j * 62} y={y + 7} width=\"26\" height=\"6\" fill=\"#57534e\" />)}\n      </g>\n    );\n    if (b.material === 'wood') return (\n      <g key={`bar-${i}`}>\n        {Array.from({ length: 6 }, (_, j) => <rect key={j} x={BAR_X1 + 40 + j * 100} y={y + 9} width=\"10\" height={GROUND - y - 9} fill=\"#92400e\" />)}\n        <g id={`bar-${i + 1}`}>\n          <rect x={BAR_X1} y={y - 9} width={len} height=\"18\" rx=\"3\" fill=\"#b45309\" stroke=\"#78350f\" strokeWidth=\"2\" />\n          <path d={`M ${BAR_X1 + 10} ${y - 2} H ${BAR_X2 - 10}`} stroke=\"#92400e\" strokeWidth=\"2\" />\n        </g>\n      </g>\n    );\n    const n = Math.round(len / 46);\n    return (\n      <g key={`bar-${i}`} id={`bar-${i + 1}`}>\n        {Array.from({ length: n }, (_, j) => (\n          <g key={j}>\n            <rect x={BAR_X1 + j * (len / n) + 2} y={y - 14} width={len / n - 4} height=\"28\" rx=\"9\" fill=\"#eab308\" stroke=\"#a16207\" strokeWidth=\"2\" />\n            <path d={`M ${BAR_X1 + j * (len / n) + 10} ${y - 5} h ${len / n - 20} M ${BAR_X1 + j * (len / n) + 10} ${y + 5} h ${len / n - 20}`}\n              stroke=\"#a16207\" strokeWidth=\"1.5\" />\n          </g>\n        ))}\n      </g>\n    );\n  };\n\n  const friend = () => {\n    if (source === 'water') return (\n      <g>\n        <text x={SRC_X} y={srcY + 16} textAnchor=\"middle\" fontSize=\"42\">🧒</text>\n        <text x={SRC_X + 2} y={srcY - 6} textAnchor=\"middle\" fontSize=\"22\">🤿</text>\n        <text x={SRC_X + 36} y={srcY + 24} textAnchor=\"middle\" fontSize=\"20\">🪨</text>\n        {[0, 1, 2].map(j => <circle key={j} cx={SRC_X + 8 + j * 6} cy={srcY - 30 - j * 14} r={3 + j} fill=\"none\" stroke=\"#bfdbfe\" strokeWidth=\"1.5\" />)}\n      </g>\n    );\n    if (source === 'air') return (\n      <g>\n        <text x={SRC_X} y={srcY + 16} textAnchor=\"middle\" fontSize=\"46\">🧒</text>\n        <path d={`M ${SRC_X + 26} ${srcY - 22} q 10 -8 20 0 M ${SRC_X + 30} ${srcY - 32} q 14 -12 28 0`} stroke=\"#fde68a\" strokeWidth=\"2.5\" fill=\"none\" strokeLinecap=\"round\" />\n      </g>\n    );\n    return (\n      <g>\n        <rect x={SRC_X - 8} y={GROUND - 110} width=\"16\" height=\"110\" rx=\"3\" fill=\"#78716c\" stroke=\"#d6d3d1\" strokeWidth=\"2\" />\n        <text x={SRC_X - 36} y={GROUND - 66} textAnchor=\"middle\" fontSize=\"40\">🧒</text>\n        <text x={SRC_X - 14} y={GROUND - 92} textAnchor=\"middle\" fontSize=\"18\">🪨</text>\n      </g>\n    );\n  };\n\n  const earPic = (p, key) => (\n    <g key={key} id=\"ear\" transform={`translate(${p.x}, ${p.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n      onPointerDown={onDown} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <circle r=\"26\" fill=\"rgba(15,23,42,0.75)\" stroke=\"#e2e8f0\" strokeWidth=\"2.5\" />\n      <text y=\"10\" textAnchor=\"middle\" fontSize=\"28\">👂</text>\n    </g>\n  );\n  const earAt = drag ? drag : ear ? ear : TRAY;\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <defs>\n          <linearGradient id=\"steel\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0\" stopColor=\"#e2e8f0\" />\n            <stop offset=\"0.5\" stopColor=\"#94a3b8\" />\n            <stop offset=\"1\" stopColor=\"#64748b\" />\n          </linearGradient>\n        </defs>\n        {/* sky and ground */}\n        <rect id=\"sky\" x=\"0\" y=\"0\" width={W} height={GROUND} rx=\"12\" fill=\"#0b1224\" />\n        <rect x=\"0\" y={GROUND} width={W} height={150} fill=\"#3f2d1d\" />\n        <rect x=\"0\" y={GROUND} width={W} height=\"8\" fill=\"#166534\" />\n        {pond && (\n          <g>\n            <rect id=\"pond\" x={POND.x1} y={POND.top} width={POND.x2 - POND.x1} height={POND.bottom - POND.top} rx=\"10\" fill=\"#1d4ed8\" opacity=\"0.85\" />\n            <path d={`M ${POND.x1 + 10} ${POND.top + 6} q 20 -6 40 0` + ' t 40 0'.repeat(Math.max(0, Math.floor((POND.x2 - POND.x1 - 20) / 40) - 1))}\n              stroke=\"#93c5fd\" strokeWidth=\"2\" fill=\"none\" />\n          </g>\n        )}\n        {bars.map(barPic)}\n        {friend()}\n        {/* the child's side */}\n        <line x1={ZONE_X} y1=\"14\" x2={ZONE_X} y2={GROUND + 136} stroke=\"#fbbf24\" strokeWidth=\"2\" strokeDasharray=\"8 6\" />\n        <text id=\"side-label\" x={ZONE_X + 12} y=\"34\" fill=\"#fde68a\" fontSize=\"16\" fontWeight=\"600\">your side →</text>\n        {/* the tray */}\n        <rect x=\"0\" y={GROUND + 150} width={W} height={H - GROUND - 156} rx=\"12\" fill=\"rgba(30,41,59,0.6)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\n        {!ear && !drag && <text x={TRAY.x + 40} y={TRAY.y + 6} fill=\"#e2e8f0\" fontSize=\"15\" fontWeight=\"600\">your ear</text>}\n        {earPic(earAt, 'ear')}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "source": "post",
+    "strength": "soft",
+    "pond": false,
+    "bars": [
+     {
+      "material": "metal"
+     }
+    ]
+   },
+   "ask": "Your friend taps the post very softly, far away. Put your ear where you can hear the taps.",
+   "goal": "The ear is pressed to the metal rail: the tap travels along the metal to the ear. In the air, a soft tap from that far is too quiet.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#bar-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#sky"
+    }
+   ],
+   "scene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a metal rail lying from the post across the scene"
+    ],
+    "ear": "in the tray",
+    "earDistance": "not placed"
+   },
+   "proofScene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a metal rail lying from the post across the scene"
+    ],
+    "ear": "pressed to the metal rail",
+    "earDistance": "on the near edge of your side"
+   },
+   "missScene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a metal rail lying from the post across the scene"
+    ],
+    "ear": "in the air",
+    "earDistance": "on the near edge of your side"
+   }
+  },
+  {
+   "params": {
+    "source": "water",
+    "strength": "soft",
+    "pond": true,
+    "bars": []
+   },
+   "ask": "Your friend clicks two stones under the water. Put your ear where you can hear the clicks.",
+   "goal": "The ear is under the water: the clicks travel through the water. Very little of the sound gets out of the water into the air.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#pond"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#sky"
+    }
+   ],
+   "scene": {
+    "friend": "under the water of the pond, clicking two stones",
+    "sound": "a soft tap",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "in the tray",
+    "earDistance": "not placed"
+   },
+   "proofScene": {
+    "friend": "under the water of the pond, clicking two stones",
+    "sound": "a soft tap",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "under the water",
+    "earDistance": "on the near edge of your side"
+   },
+   "missScene": {
+    "friend": "under the water of the pond, clicking two stones",
+    "sound": "a soft tap",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "in the air",
+    "earDistance": "on the near edge of your side"
+   }
+  },
+  {
+   "params": {
+    "source": "post",
+    "strength": "soft",
+    "pond": false,
+    "bars": [
+     {
+      "material": "wood"
+     },
+     {
+      "material": "hay"
+     }
+    ]
+   },
+   "ask": "Your friend taps the post very softly again. Put your ear where you can hear the taps.",
+   "goal": "The ear is pressed to the wooden rail: wood carries the tap. The hay bales soak it up, and the air is too quiet from that far.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#bar-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#bar-2"
+    }
+   ],
+   "scene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a wooden fence rail lying from the post across the scene",
+     "a row of hay bales lying from the post across the scene"
+    ],
+    "ear": "in the tray",
+    "earDistance": "not placed"
+   },
+   "proofScene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a wooden fence rail lying from the post across the scene",
+     "a row of hay bales lying from the post across the scene"
+    ],
+    "ear": "pressed to the wooden fence rail",
+    "earDistance": "on the near edge of your side"
+   },
+   "missScene": {
+    "friend": "tapping a post with a stone",
+    "sound": "a soft tap",
+    "pond": "no pond",
+    "bars": [
+     "a wooden fence rail lying from the post across the scene",
+     "a row of hay bales lying from the post across the scene"
+    ],
+    "ear": "pressed to the row of hay bales",
+    "earDistance": "on the near edge of your side"
+   }
+  },
+  {
+   "params": {
+    "source": "air",
+    "strength": "loud",
+    "pond": true,
+    "bars": []
+   },
+   "ask": "Your friend calls out from across the pond. Put your ear where you can hear the call.",
+   "goal": "The ear is in the air: the call travels through the air. Under the water, very little of a sound made in the air gets in.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#sky"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#ear",
+     "to": "#pond"
+    }
+   ],
+   "scene": {
+    "friend": "standing in the air across the pond, calling out",
+    "sound": "a loud call",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "in the tray",
+    "earDistance": "not placed"
+   },
+   "proofScene": {
+    "friend": "standing in the air across the pond, calling out",
+    "sound": "a loud call",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "in the air",
+    "earDistance": "on the near edge of your side"
+   },
+   "missScene": {
+    "friend": "standing in the air across the pond, calling out",
+    "sound": "a loud call",
+    "pond": "a pond runs across the scene",
+    "bars": [],
+    "ear": "under the water",
+    "earDistance": "on the near edge of your side"
+   }
+  }
+ ]
+}

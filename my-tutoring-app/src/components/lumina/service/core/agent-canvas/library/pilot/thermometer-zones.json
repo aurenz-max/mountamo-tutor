@@ -1,0 +1,355 @@
+{
+ "id": "thermometer-zones",
+ "title": "Thermometer",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "Kindergarten: the child reads a picture thermometer's red liquid as hot, warm or cold by hanging it at the window of its day, moves the liquid to match a pictured day, and picks the warmer of two days by comparing liquid heights."
+ },
+ "request": {
+  "topic": "Reading a picture thermometer: hot, warm and cold",
+  "grade": "kindergarten",
+  "objective": "Read a picture thermometer as hot, warm or cold, and set the thermometer to match a pictured day."
+ },
+ "source": "function Display({ params, lumina }) {\r\n  const mode = params?.mode ?? 'read';\r\n  const zones = params?.zones ?? 2;\r\n  const levels = params?.levels ?? [18];\r\n  const days = params?.days ?? ['cold', 'hot'];\r\n  const target = params?.target ?? 'cold';\r\n  const start = params?.start ?? 50;\r\n  const showPictures = params?.showPictures ?? true;\r\n\r\n  const W = 670;\r\n  const H = 440;\r\n  const TUBE_TOP = 10;\r\n  const TUBE_ZERO = 280;\r\n  const PER = (TUBE_ZERO - TUBE_TOP) / 100;\r\n  const yOf = (level) => TUBE_ZERO - level * PER;\r\n  const zoneOf = (level) => (zones === 2 ? (level >= 50 ? 'hot' : 'cold') : level < 34 ? 'cold' : level < 67 ? 'warm' : 'hot');\r\n  const DAY_WORDS = { cold: 'a snowy day', warm: 'a spring day with flowers', hot: 'a sunny day at the beach' };\r\n  const marksOf = (level) => Math.round(level / 10);\r\n\r\n  const [hung, setHung] = useState(() => levels.map(() => null));\r\n  const [level, setLevel] = useState(start);\r\n  const [sunOn, setSunOn] = useState(null);\r\n  const [drag, setDrag] = useState(null);\r\n  const dragRef = useRef(null);\r\n  const svgRef = useRef(null);\r\n\r\n  useEffect(() => {\r\n    let met = false;\r\n    if (mode === 'read') met = levels.every((lv, i) => hung[i] === zoneOf(lv));\r\n    else if (mode === 'set') met = zoneOf(level) === target;\r\n    else met = sunOn != null && levels.every((lv, i) => i === sunOn || lv < levels[sunOn]);\r\n    lumina.goal(met);\r\n    const zoneFacts = { zoneLines: zones === 2 ? 'one line across the middle of the thermometer' : 'two lines that cut the thermometer into three parts', zonePicturesBesideThermometer: showPictures ? (zones === 2 ? 'a sun at the top, a snowflake at the bottom' : 'a sun at the top, a flower in the middle, a snowflake at the bottom') : 'none' };\r\n    if (mode === 'read') {\r\n      lumina.scene({ task: 'hang each thermometer by the window of its day', windows: days.map((d) => DAY_WORDS[d]), thermometers: levels.map((lv, i) => ({ redLiquidUpTo: 'about ' + marksOf(lv) + ' of 10 marks', hungBy: hung[i] ? DAY_WORDS[hung[i]] : 'not hung yet' })), ...zoneFacts });\r\n    } else if (mode === 'set') {\r\n      lumina.scene({ task: 'move the red liquid to show the day in the window', window: DAY_WORDS[target], redLiquidUpTo: 'about ' + marksOf(level) + ' of 10 marks', ...zoneFacts });\r\n    } else {\r\n      lumina.scene({ task: 'put the sun on the warmer day', windows: days.map((d, i) => 'day ' + (i + 1) + ': ' + DAY_WORDS[d]), thermometers: levels.map((lv, i) => ({ day: i + 1, redLiquidUpTo: 'about ' + marksOf(lv) + ' of 10 marks' })), sunIsOn: sunOn == null ? 'not placed yet' : 'day ' + (sunOn + 1), ...zoneFacts });\r\n    }\r\n  }, [hung, level, sunOn]);\r\n\r\n  // ---- layout ----\r\n  const nWin = days.length;\r\n  const WIN_W = nWin === 3 ? 130 : 180;\r\n  const WIN_GAP = nWin === 3 ? 12 : 24;\r\n  const WIN_X0 = W - 16 - (nWin * WIN_W + (nWin - 1) * WIN_GAP);\r\n  const winX = (j) => WIN_X0 + j * (WIN_W + WIN_GAP);\r\n  const WIN_Y = 24;\r\n  const WIN_H = 120;\r\n  const homeX = (i) => 70 + i * 110;\r\n  const SET_X = 170;\r\n  const SET_TOP = 60;\r\n  const CMP_X = [120, 380];\r\n  const CMP_TOP = 86;\r\n  const SUN_HOME = { x: 600, y: 330 };\r\n\r\n  const local = (e) => {\r\n    const box = svgRef.current.getBoundingClientRect();\r\n    return { x: e.clientX - box.left, y: e.clientY - box.top };\r\n  };\r\n  const begin = (e, what, from) => {\r\n    e.stopPropagation();\r\n    svgRef.current.setPointerCapture(e.pointerId);\r\n    const p = local(e);\r\n    const d = { what, p, off: { x: from.x - p.x, y: from.y - p.y } };\r\n    dragRef.current = d;\r\n    setDrag(d);\r\n    if (what === 'level') setLevel(levelAt(p));\r\n  };\r\n  const levelAt = (p) => Math.round(Math.max(0, Math.min(100, (TUBE_ZERO - (p.y - SET_TOP)) / PER)));\r\n  const onMove = (e) => {\r\n    const d = dragRef.current;\r\n    if (!d) return;\r\n    const p = local(e);\r\n    const next = { ...d, p };\r\n    dragRef.current = next;\r\n    setDrag(next);\r\n    if (d.what === 'level') setLevel(levelAt(p));\r\n  };\r\n  const onUp = (e) => {\r\n    const d = dragRef.current;\r\n    dragRef.current = null;\r\n    setDrag(null);\r\n    if (!d) return;\r\n    const p = local(e);\r\n    if (typeof d.what === 'number') {\r\n      let to = null;\r\n      for (let j = 0; j < nWin; j += 1) if (p.x >= winX(j) - 6 && p.x <= winX(j) + WIN_W + 6) to = days[j];\r\n      setHung((h) => h.map((v, i) => (i === d.what ? to : v)));\r\n    } else if (d.what === 'sun') {\r\n      const k = CMP_X.findIndex((x) => Math.abs(p.x - x) < 90 && p.y > CMP_TOP - 70);\r\n      setSunOn(k >= 0 ? k : null);\r\n    }\r\n  };\r\n\r\n  // ---- drawing ----\r\n  const sunIcon = (x, y, r) => (\r\n    <g transform={`translate(${x} ${y})`}>\r\n      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <line key={a} x1={0} y1={-r - 3} x2={0} y2={-r - 9} stroke=\"#facc15\" strokeWidth={3} strokeLinecap=\"round\" transform={`rotate(${a})`} />)}\r\n      <circle r={r} fill=\"#facc15\" />\r\n    </g>\r\n  );\r\n  const flakeIcon = (x, y, r) => (\r\n    <g transform={`translate(${x} ${y})`} stroke=\"#e0f2fe\" strokeWidth={3} strokeLinecap=\"round\">\r\n      {[0, 60, 120].map((a) => <line key={a} x1={0} y1={-r} x2={0} y2={r} transform={`rotate(${a})`} />)}\r\n    </g>\r\n  );\r\n  const flowerIcon = (x, y, r) => (\r\n    <g transform={`translate(${x} ${y})`}>\r\n      <line x1={0} y1={r * 0.4} x2={0} y2={r * 1.6} stroke=\"#4ade80\" strokeWidth={3} />\r\n      {[0, 72, 144, 216, 288].map((a) => <circle key={a} cx={0} cy={-r * 0.55} r={r * 0.45} fill=\"#f9a8d4\" transform={`rotate(${a})`} />)}\r\n      <circle r={r * 0.35} fill=\"#fde047\" />\r\n    </g>\r\n  );\r\n\r\n  // A thermometer whose tube top is at (x, top); the bulb hangs below. Nothing on it changes colour with the answer.\r\n  const thermo = (key, x, top, lv, scale, extra) => {\r\n    const bounds = zones === 2 ? [50] : [34, 67];\r\n    const centres = zones === 2 ? { hot: 75, cold: 25 } : { hot: 84, warm: 50, cold: 17 };\r\n    return (\r\n      <g key={key} transform={`translate(${x} ${top}) scale(${scale})`}>\r\n        <rect x={-34} y={-6} width={110} height={TUBE_ZERO + 50} rx={14} fill=\"#1e293b\" stroke=\"#475569\" strokeWidth={1.5} />\r\n        {Array.from({ length: 11 }, (_, k) => <line key={'t' + k} x1={-24} y1={yOf(k * 10)} x2={-14} y2={yOf(k * 10)} stroke=\"#94a3b8\" strokeWidth={2} />)}\r\n        <rect x={-12} y={TUBE_TOP - 6} width={24} height={TUBE_ZERO - TUBE_TOP + 20} rx={12} fill=\"#0f172a\" stroke=\"#cbd5e1\" strokeWidth={2} />\r\n        <rect x={-6} y={yOf(lv)} width={12} height={TUBE_ZERO + 14 - yOf(lv)} fill=\"#ef4444\" />\r\n        <circle cx={0} cy={TUBE_ZERO + 22} r={20} fill=\"#ef4444\" stroke=\"#cbd5e1\" strokeWidth={2} />\r\n        {bounds.map((b) => <line key={'z' + b} x1={-28} y1={yOf(b)} x2={30} y2={yOf(b)} stroke=\"#e2e8f0\" strokeWidth={2.5} strokeDasharray=\"6 4\" />)}\r\n        {showPictures ? (\r\n          <g>\r\n            {sunIcon(50, yOf(centres.hot), 9)}\r\n            {zones === 3 ? flowerIcon(50, yOf(centres.warm) - 6, 10) : null}\r\n            {flakeIcon(50, yOf(centres.cold), 11)}\r\n          </g>\r\n        ) : null}\r\n        {extra}\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const scenePic = (kind, x, y, w, h, id) => {\r\n    const sky = kind === 'cold' ? '#94a3b8' : kind === 'warm' ? '#7dd3fc' : '#fdba74';\r\n    const ground = kind === 'cold' ? '#f8fafc' : kind === 'warm' ? '#4ade80' : '#fde68a';\r\n    const g = y + h * 0.68;\r\n    const parts = [];\r\n    if (kind === 'cold') {\r\n      for (let k = 0; k < 14; k += 1) parts.push(<circle key={'s' + k} cx={x + 6 + ((k * 0.618 + 0.1) % 1) * (w - 12)} cy={y + 8 + ((k * 0.414 + 0.2) % 1) * (h * 0.58)} r={2.6} fill=\"#fff\" />);\r\n      parts.push(<circle key=\"m1\" cx={x + w * 0.72} cy={g - 12} r={13} fill=\"#fff\" />, <circle key=\"m2\" cx={x + w * 0.72} cy={g - 32} r={9} fill=\"#fff\" />, <circle key=\"m3\" cx={x + w * 0.72 + 3} cy={g - 34} r={1.6} fill=\"#0f172a\" />);\r\n    } else if (kind === 'warm') {\r\n      parts.push(<circle key=\"sun\" cx={x + w * 0.2} cy={y + 24} r={11} fill=\"#fde047\" />, <ellipse key=\"c1\" cx={x + w * 0.62} cy={y + 30} rx={24} ry={10} fill=\"#f8fafc\" />, <ellipse key=\"c2\" cx={x + w * 0.54} cy={y + 24} rx={14} ry={9} fill=\"#f8fafc\" />);\r\n      for (let k = 0; k < 4; k += 1) parts.push(<g key={'f' + k}>{flowerIcon(x + 18 + k * (w - 36) / 3, g + 10, 6)}</g>);\r\n    } else {\r\n      parts.push(<g key=\"sun\">{sunIcon(x + w * 0.75, y + 28, 15)}</g>, <rect key=\"sea\" x={x} y={g - 14} width={w} height={14} fill=\"#38bdf8\" />);\r\n      parts.push(<path key=\"um\" d={`M ${x + w * 0.22 - 22} ${g + 4} Q ${x + w * 0.22} ${g - 26} ${x + w * 0.22 + 22} ${g + 4} Z`} fill=\"#f43f5e\" />, <line key=\"pole\" x1={x + w * 0.22} y1={g + 4} x2={x + w * 0.22} y2={g + 26} stroke=\"#78350f\" strokeWidth={3} />);\r\n    }\r\n    return (\r\n      <g key={id} id={id}>\r\n        <rect x={x} y={y} width={w} height={h} rx={10} fill={sky} />\r\n        <rect x={x} y={g} width={w} height={y + h - g} fill={ground} />\r\n        {parts}\r\n        <rect x={x} y={y} width={w} height={h} rx={10} fill=\"none\" stroke=\"#e2e8f0\" strokeWidth={4} />\r\n        <line x1={x + w / 2} y1={y} x2={x + w / 2} y2={y + h} stroke=\"#e2e8f0\" strokeWidth={3} />\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const caption = mode === 'read' ? 'Drag a thermometer to hang it under a window.' : mode === 'set' ? 'Drag the handle up or down to move the red liquid.' : 'Drag the sun onto one of the thermometers.';\r\n  let body = null;\r\n\r\n  if (mode === 'read') {\r\n    const drawn = levels.map((lv, i) => {\r\n      const isDrag = drag && drag.what === i;\r\n      if (isDrag) return null;\r\n      let x = homeX(i);\r\n      let top = 60;\r\n      let scale = 1;\r\n      if (hung[i]) {\r\n        const j = days.indexOf(hung[i]);\r\n        const mates = levels.map((_, k) => k).filter((k) => hung[k] === hung[i]);\r\n        const m = mates.indexOf(i);\r\n        x = winX(j) + WIN_W / 2 - 8 + (m - (mates.length - 1) / 2) * 44;\r\n        top = WIN_Y + WIN_H + 26;\r\n        scale = 0.68;\r\n      }\r\n      return (\r\n        <g key={'th' + i} id={'thermo-' + i} style={{ cursor: 'grab' }} onPointerDown={(e) => begin(e, i, { x, y: top })}>\r\n          {thermo('t', x, top, lv, scale, null)}\r\n        </g>\r\n      );\r\n    });\r\n    const dragged = drag && typeof drag.what === 'number' ? thermo('drag', drag.p.x + drag.off.x, drag.p.y + drag.off.y, levels[drag.what], 0.85, null) : null;\r\n    body = (\r\n      <g>\r\n        {days.map((d, j) => (\r\n          <g key={d}>\r\n            {scenePic(d, winX(j), WIN_Y, WIN_W, WIN_H, 'day-' + d)}\r\n            <line x1={winX(j) + WIN_W / 2} y1={WIN_Y + WIN_H} x2={winX(j) + WIN_W / 2} y2={WIN_Y + WIN_H + 16} stroke=\"#94a3b8\" strokeWidth={3} />\r\n            <circle cx={winX(j) + WIN_W / 2} cy={WIN_Y + WIN_H + 18} r={5} fill=\"none\" stroke=\"#94a3b8\" strokeWidth={3} />\r\n          </g>\r\n        ))}\r\n        {drawn}\r\n        {dragged}\r\n      </g>\r\n    );\r\n  } else if (mode === 'set') {\r\n    const hy = SET_TOP + yOf(level);\r\n    body = (\r\n      <g>\r\n        <g id=\"thermo-set\" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'ns-resize' }}>\r\n          {thermo('t', SET_X, SET_TOP, level, 1, null)}\r\n        </g>\r\n        <g id=\"level-handle\" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'ns-resize' }} transform={`translate(${SET_X - 70} ${hy})`}>\r\n          <rect x={-26} y={-24} width={52} height={48} fill=\"transparent\" />\r\n          <polygon points=\"-20,-16 12,0 -20,16\" fill=\"#f8fafc\" stroke=\"#0f172a\" strokeWidth={2} />\r\n          <line x1={12} y1={0} x2={44} y2={0} stroke=\"#f8fafc\" strokeWidth={2} />\r\n        </g>\r\n        {scenePic(target, 300, 70, 330, 250, 'day-' + target)}\r\n      </g>\r\n    );\r\n  } else {\r\n    const sunPos = drag && drag.what === 'sun' ? { x: drag.p.x + drag.off.x, y: drag.p.y + drag.off.y } : sunOn != null ? { x: CMP_X[sunOn], y: CMP_TOP - 42 } : SUN_HOME;\r\n    body = (\r\n      <g>\r\n        {levels.map((lv, i) => (\r\n          <g key={'c' + i}>\r\n            {scenePic(days[i] ?? 'warm', CMP_X[i] + 88, CMP_TOP, 120, 92, 'day-' + (i + 1))}\r\n            <text x={CMP_X[i] + 148} y={CMP_TOP + 120} textAnchor=\"middle\" fill=\"#f1f5f9\" fontSize={18} fontWeight={700}>{'Day ' + (i + 1)}</text>\r\n            <g id={'thermo-' + i}>{thermo('t', CMP_X[i], CMP_TOP, lv, 1, null)}</g>\r\n          </g>\r\n        ))}\r\n        <g id=\"sun\" style={{ cursor: 'grab' }} onPointerDown={(e) => begin(e, 'sun', sunPos)}>\r\n          <circle cx={sunPos.x} cy={sunPos.y} r={30} fill=\"transparent\" />\r\n          {sunIcon(sunPos.x, sunPos.y, 18)}\r\n        </g>\r\n      </g>\r\n    );\r\n  }\r\n\r\n  return (\r\n    <Panel title=\"Thermometer\" caption={caption}>\r\n      <svg ref={svgRef} id=\"world\" width={W} height={H} style={{ display: 'block', touchAction: 'none', userSelect: 'none' }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>\r\n        {body}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "mode": "read",
+    "zones": 2,
+    "levels": [
+     18
+    ],
+    "days": [
+     "cold",
+     "hot"
+    ],
+    "showPictures": true
+   },
+   "ask": "Look at the thermometer. Is it a hot day or a cold day?",
+   "goal": "The thermometer (liquid low, below the middle line) hung under the snowy window. Every thermometer has a red bulb, so red does not mean hot.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#thermo-0",
+     "to": "#day-cold"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#thermo-0",
+     "to": "#day-hot"
+    }
+   ],
+   "scene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 2 of 10 marks",
+      "hungBy": "not hung yet"
+     }
+    ],
+    "zoneLines": "one line across the middle of the thermometer",
+    "zonePicturesBesideThermometer": "a sun at the top, a snowflake at the bottom"
+   },
+   "proofScene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 2 of 10 marks",
+      "hungBy": "a snowy day"
+     }
+    ],
+    "zoneLines": "one line across the middle of the thermometer",
+    "zonePicturesBesideThermometer": "a sun at the top, a snowflake at the bottom"
+   },
+   "missScene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 2 of 10 marks",
+      "hungBy": "a sunny day at the beach"
+     }
+    ],
+    "zoneLines": "one line across the middle of the thermometer",
+    "zonePicturesBesideThermometer": "a sun at the top, a snowflake at the bottom"
+   }
+  },
+  {
+   "params": {
+    "mode": "read",
+    "zones": 3,
+    "levels": [
+     52
+    ],
+    "days": [
+     "cold",
+     "warm",
+     "hot"
+    ],
+    "showPictures": true
+   },
+   "ask": "Look at the thermometer. Is this day hot, warm or cold?",
+   "goal": "The thermometer (liquid in the middle part) hung under the spring window: the middle part is warm, not hot.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#thermo-0",
+     "to": "#day-warm"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#thermo-0",
+     "to": "#day-hot"
+    }
+   ],
+   "scene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a spring day with flowers",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 5 of 10 marks",
+      "hungBy": "not hung yet"
+     }
+    ],
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   },
+   "proofScene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a spring day with flowers",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 5 of 10 marks",
+      "hungBy": "a spring day with flowers"
+     }
+    ],
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   },
+   "missScene": {
+    "task": "hang each thermometer by the window of its day",
+    "windows": [
+     "a snowy day",
+     "a spring day with flowers",
+     "a sunny day at the beach"
+    ],
+    "thermometers": [
+     {
+      "redLiquidUpTo": "about 5 of 10 marks",
+      "hungBy": "a sunny day at the beach"
+     }
+    ],
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   }
+  },
+  {
+   "params": {
+    "mode": "set",
+    "zones": 3,
+    "target": "cold",
+    "start": 50,
+    "showPictures": true
+   },
+   "ask": "Make the thermometer show the day in the window.",
+   "goal": "Liquid moved down into the bottom part for the snowy day.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#level-handle",
+     "dy": 103
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#level-handle",
+     "dy": -113
+    }
+   ],
+   "scene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a snowy day",
+    "redLiquidUpTo": "about 5 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   },
+   "proofScene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a snowy day",
+    "redLiquidUpTo": "about 1 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   },
+   "missScene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a snowy day",
+    "redLiquidUpTo": "about 9 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "a sun at the top, a flower in the middle, a snowflake at the bottom"
+   }
+  },
+  {
+   "params": {
+    "mode": "set",
+    "zones": 3,
+    "target": "warm",
+    "start": 8,
+    "showPictures": false
+   },
+   "ask": "Make the thermometer show this day.",
+   "goal": "Liquid moved up into the middle part for the spring day, with no sun, flower or snowflake beside the thermometer.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#level-handle",
+     "dy": -113
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#level-handle",
+     "dy": -226
+    }
+   ],
+   "scene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a spring day with flowers",
+    "redLiquidUpTo": "about 1 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   },
+   "proofScene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a spring day with flowers",
+    "redLiquidUpTo": "about 5 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   },
+   "missScene": {
+    "task": "move the red liquid to show the day in the window",
+    "window": "a spring day with flowers",
+    "redLiquidUpTo": "about 9 of 10 marks",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   }
+  },
+  {
+   "params": {
+    "mode": "compare",
+    "zones": 3,
+    "levels": [
+     44,
+     61
+    ],
+    "days": [
+     "warm",
+     "warm"
+    ],
+    "showPictures": false
+   },
+   "ask": "Which day was warmer?",
+   "goal": "Sun on Day 2, whose liquid is higher. Both are in the middle part, so only the heights tell them apart.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#sun",
+     "to": "#thermo-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#sun",
+     "to": "#thermo-0"
+    }
+   ],
+   "scene": {
+    "task": "put the sun on the warmer day",
+    "windows": [
+     "day 1: a spring day with flowers",
+     "day 2: a spring day with flowers"
+    ],
+    "thermometers": [
+     {
+      "day": 1,
+      "redLiquidUpTo": "about 4 of 10 marks"
+     },
+     {
+      "day": 2,
+      "redLiquidUpTo": "about 6 of 10 marks"
+     }
+    ],
+    "sunIsOn": "not placed yet",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   },
+   "proofScene": {
+    "task": "put the sun on the warmer day",
+    "windows": [
+     "day 1: a spring day with flowers",
+     "day 2: a spring day with flowers"
+    ],
+    "thermometers": [
+     {
+      "day": 1,
+      "redLiquidUpTo": "about 4 of 10 marks"
+     },
+     {
+      "day": 2,
+      "redLiquidUpTo": "about 6 of 10 marks"
+     }
+    ],
+    "sunIsOn": "day 2",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   },
+   "missScene": {
+    "task": "put the sun on the warmer day",
+    "windows": [
+     "day 1: a spring day with flowers",
+     "day 2: a spring day with flowers"
+    ],
+    "thermometers": [
+     {
+      "day": 1,
+      "redLiquidUpTo": "about 4 of 10 marks"
+     },
+     {
+      "day": 2,
+      "redLiquidUpTo": "about 6 of 10 marks"
+     }
+    ],
+    "sunIsOn": "day 1",
+    "zoneLines": "two lines that cut the thermometer into three parts",
+    "zonePicturesBesideThermometer": "none"
+   }
+  }
+ ]
+}

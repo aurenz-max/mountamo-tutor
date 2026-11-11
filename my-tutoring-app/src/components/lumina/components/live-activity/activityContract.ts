@@ -93,6 +93,7 @@ import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.b
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
 import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
 import { practiceStudioBoss } from '../../primitives/visual-primitives/core/practice-studio/practiceStudio.boss';
+import { agentCanvasBoss } from '../../primitives/visual-primitives/core/agent-canvas/agentCanvas.boss';
 import { pushPullArenaBoss } from '../../primitives/visual-primitives/physics/pushPullArena.boss';
 import { raceTrackLabBoss } from '../../primitives/visual-primitives/physics/raceTrackLab.boss';
 import { habitatDioramaBoss } from '../../primitives/visual-primitives/biology/habitatDiorama.boss';
@@ -282,6 +283,7 @@ export const LIVE_ADAPTERS = {
   'deep-dive': bossAdapter(deepDiveBoss),
   'wonder-walk': bossAdapter(wonderWalkBoss),
   'practice-studio': bossAdapter(practiceStudioBoss),
+  'agent-canvas': bossAdapter(agentCanvasBoss),
   'push-pull-arena': bossAdapter(pushPullArenaBoss),
   'race-track-lab': bossAdapter(raceTrackLabBoss),
   'habitat-diorama': bossAdapter(habitatDioramaBoss),

@@ -1,0 +1,374 @@
+{
+ "id": "circuit-loop",
+ "title": "Electric Circuit: Complete Loop",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner wires a battery, a switch and a bulb into one complete loop so the switch turns the bulb on and off, including finding and fixing a broken circuit."
+ },
+ "request": {
+  "topic": "Electric circuits",
+  "grade": "grade 4",
+  "objective": "Wire a battery, switch and bulb into one complete loop so the switch controls the bulb (4-PS3-2)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // Three wires, six terminals. params.prewired places wires at the start ([startTerminal, endTerminal] or null for a\n  // wire left on the tray). params.showNames hides the terminal names on the last problem.\n  const showNames = params.showNames !== false;\n  const prewired = Array.isArray(params.prewired) ? params.prewired : [];\n\n  const terminals = {\n    bat_pos: { x: 120, y: 135, label: 'Battery (+)' },\n    bat_neg: { x: 120, y: 255, label: 'Battery (-)' },\n    switch_l: { x: 290, y: 65, label: 'Switch A' },\n    switch_r: { x: 390, y: 65, label: 'Switch B' },\n    bulb_side: { x: 510, y: 187, label: 'Bulb side' },\n    bulb_foot: { x: 550, y: 255, label: 'Bulb tip' },\n    bench_1a: { x: 230, y: 220 }, bench_1b: { x: 330, y: 220 },\n    bench_2a: { x: 370, y: 220 }, bench_2b: { x: 470, y: 220 },\n    bench_3a: { x: 280, y: 280 }, bench_3b: { x: 420, y: 280 },\n  };\n  const WIRE_COLORS = ['#3b82f6', '#f59e0b', '#ef4444'];\n  const TERMINAL_KEYS = ['bat_pos', 'bat_neg', 'switch_l', 'switch_r', 'bulb_side', 'bulb_foot'];\n  const trayKey = (i, endKey) => `bench_${i + 1}${endKey === 'start' ? 'a' : 'b'}`;\n  const placed = (key, fallback) => (TERMINAL_KEYS.includes(key) ? key : fallback);\n\n  const [wires, setWires] = useState(() => WIRE_COLORS.map((color, i) => {\n    const p = Array.isArray(prewired[i]) ? prewired[i] : [];\n    return { color, start: placed(p[0], trayKey(i, 'start')), end: placed(p[1], trayKey(i, 'end')) };\n  }));\n  const [switchClosed, setSwitchClosed] = useState(false);\n  const [dragging, setDragging] = useState(null);\n  const svgRef = useRef(null);\n\n  // Is there a conducting path between the battery's terminals, with the switch and the bulb as given?\n  const batteryJoined = (closed, throughBulb) => {\n    const adj = {};\n    const link = (u, v) => { (adj[u] = adj[u] || []).push(v); (adj[v] = adj[v] || []).push(u); };\n    wires.forEach(w => { if (!w.start.startsWith('bench') && !w.end.startsWith('bench')) link(w.start, w.end); });\n    if (closed) link('switch_l', 'switch_r');\n    if (throughBulb) link('bulb_side', 'bulb_foot');\n    const seen = new Set(['bat_pos']);\n    const queue = ['bat_pos'];\n    while (queue.length) {\n      for (const n of adj[queue.shift()] || []) if (!seen.has(n)) { seen.add(n); queue.push(n); }\n    }\n    return seen.has('bat_neg');\n  };\n\n  // The switch controls the bulb: closing it completes the loop, opening it breaks the loop, and the loop runs\n  // through the bulb. Which way the switch is left does not matter, so the lit bulb is not the verdict.\n  const wiredRight = batteryJoined(true, true) && !batteryJoined(false, true) && !batteryJoined(true, false);\n  const isShort = batteryJoined(switchClosed, false);\n  const bulbLit = !isShort && batteryJoined(switchClosed, true);\n\n  const wireFact = (w, i) => {\n    const name = k => (k.startsWith('bench') ? 'the tray' : terminals[k].label);\n    return `Wire ${i + 1}: ${name(w.start)} to ${name(w.end)}`;\n  };\n\n  useEffect(() => {\n    lumina.goal(wiredRight);\n    lumina.scene({\n      switch: switchClosed ? 'closed' : 'open',\n      bulb: bulbLit ? 'lit' : 'dark',\n      battery: isShort ? 'hot' : 'normal',\n      wires: wires.map(wireFact),\n    });\n  }, [wiredRight, switchClosed, bulbLit, isShort, wires]);\n\n  const onHandleDown = (wireIdx, endKey, e) => {\n    e.target.setPointerCapture(e.pointerId);\n    setDragging({ wireIdx, endKey });\n  };\n\n  const onMove = e => {\n    if (!dragging || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDragging(prev => (prev ? { ...prev, svgX: pt.x, svgY: pt.y } : null));\n  };\n\n  const onHandleUp = e => {\n    if (!dragging || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    let nearest = null;\n    let minDist = Infinity;\n    TERMINAL_KEYS.forEach(key => {\n      const dist = Math.hypot(terminals[key].x - pt.x, terminals[key].y - pt.y);\n      if (dist < minDist) { minDist = dist; nearest = key; }\n    });\n    const finalKey = minDist <= 34 ? nearest : trayKey(dragging.wireIdx, dragging.endKey);\n    setWires(prev => prev.map((w, i) => (i === dragging.wireIdx ? { ...w, [dragging.endKey]: finalKey } : w)));\n    setDragging(null);\n  };\n\n  const getPos = (wireIdx, endKey) => {\n    if (dragging && dragging.wireIdx === wireIdx && dragging.endKey === endKey && dragging.svgX !== undefined) {\n      return { x: dragging.svgX, y: dragging.svgY };\n    }\n    return terminals[wires[wireIdx][endKey]];\n  };\n\n  const wirePath = (a, b, sag) => `M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 + sag} ${b.x} ${b.y}`;\n\n  const terminal = (key, domId, textProps) => (\n    <g transform={`translate(${terminals[key].x}, ${terminals[key].y})`}>\n      <circle id={domId} r=\"16\" fill=\"rgba(2,132,199,0.12)\" stroke=\"#38bdf8\" strokeWidth=\"1.5\" strokeDasharray=\"3 3\" />\n      <circle r=\"7\" fill=\"#0284c7\" stroke=\"#ffffff\" strokeWidth=\"2\" />\n      {showNames && <text textAnchor=\"middle\" fill=\"#7dd3fc\" fontSize=\"12\" fontWeight=\"600\" {...textProps}>{terminals[key].label}</text>}\n    </g>\n  );\n\n  const handle = (idx, endKey, pos, color) => (\n    <g\n      id={`wire${idx + 1}-${endKey}`}\n      transform={`translate(${pos.x}, ${pos.y})`}\n      style={{ cursor: 'grab' }}\n      onPointerDown={e => onHandleDown(idx, endKey, e)}\n      onPointerUp={onHandleUp}\n      onPointerCancel={() => setDragging(null)}\n    >\n      <circle r=\"22\" fill=\"transparent\" />\n      <circle r=\"13\" fill={color} stroke=\"#ffffff\" strokeWidth=\"2.5\" />\n      <circle r=\"4\" fill=\"#ffffff\" />\n    </g>\n  );\n\n  return (\n    <Panel title=\"Circuit Workshop\" caption=\"Drag the ends of each wire. Tap the switch lever to open or close it.\">\n      <Stack gap={12}>\n        <svg\n          ref={svgRef}\n          viewBox=\"0 0 680 340\"\n          style={{ width: '100%', height: 'auto', background: '#090d16', borderRadius: 12, border: '1px solid #1e293b', touchAction: 'none', userSelect: 'none' }}\n          onPointerMove={onMove}\n        >\n          {/* Tray */}\n          <rect x=\"205\" y=\"185\" width=\"290\" height=\"125\" rx=\"10\" fill=\"rgba(30,41,59,0.4)\" stroke=\"#334155\" strokeDasharray=\"4 4\" />\n          <text x=\"350\" y=\"327\" textAnchor=\"middle\" fill=\"#64748b\" fontSize=\"12\" fontWeight=\"600\">WIRE TRAY</text>\n\n          {/* Battery */}\n          <g transform=\"translate(80, 90)\">\n            {isShort && (\n              <g stroke=\"#f87171\" strokeWidth=\"3\" fill=\"none\" strokeLinecap=\"round\">\n                <path d=\"M 20 12 q -6 -8 0 -16 q 6 -8 0 -16\" />\n                <path d=\"M 40 8 q -6 -8 0 -16 q 6 -8 0 -16\" />\n                <path d=\"M 60 12 q -6 -8 0 -16 q 6 -8 0 -16\" />\n              </g>\n            )}\n            <rect x=\"0\" y=\"30\" width=\"80\" height=\"150\" rx=\"8\" fill=\"#1e293b\" stroke={isShort ? '#f87171' : '#475569'} strokeWidth=\"2\" />\n            <rect x=\"0\" y=\"30\" width=\"80\" height=\"45\" rx=\"4\" fill=\"#2563eb\" />\n            <rect x=\"28\" y=\"20\" width=\"24\" height=\"12\" rx=\"3\" fill=\"#cbd5e1\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\n            <text x=\"12\" y=\"52\" textAnchor=\"middle\" fill=\"#ffffff\" fontWeight=\"bold\" fontSize=\"18\">+</text>\n            <text x=\"40\" y=\"112\" textAnchor=\"middle\" fill=\"#cbd5e1\" fontWeight=\"600\" fontSize=\"13\">BATTERY</text>\n            <text x=\"12\" y=\"172\" textAnchor=\"middle\" fill=\"#ffffff\" fontWeight=\"bold\" fontSize=\"20\">-</text>\n          </g>\n\n          {/* Switch */}\n          <g transform=\"translate(260, 35)\">\n            <rect x=\"0\" y=\"0\" width=\"160\" height=\"60\" rx=\"8\" fill=\"#1e293b\" stroke=\"#334155\" strokeWidth=\"2\" />\n            <circle cx=\"30\" cy=\"30\" r=\"9\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <circle cx=\"130\" cy=\"30\" r=\"9\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2\" />\n            {switchClosed\n              ? <path d=\"M 30 30 L 130 30\" stroke=\"#f59e0b\" strokeWidth=\"6\" strokeLinecap=\"round\" />\n              : <path d=\"M 30 30 L 112 4\" stroke=\"#f59e0b\" strokeWidth=\"6\" strokeLinecap=\"round\" />}\n            <text x=\"80\" y=\"52\" textAnchor=\"middle\" fill=\"#94a3b8\" fontSize=\"12\" fontWeight=\"700\">SWITCH: {switchClosed ? 'CLOSED' : 'OPEN'}</text>\n            <rect id=\"switch-lever\" x=\"48\" y=\"-8\" width=\"64\" height=\"66\" fill=\"transparent\" style={{ cursor: 'pointer' }} onClick={() => setSwitchClosed(v => !v)} />\n          </g>\n\n          {/* Bulb */}\n          <g transform=\"translate(510, 70)\">\n            {bulbLit && <circle cx=\"40\" cy=\"50\" r=\"90\" fill=\"#facc15\" opacity=\"0.28\" />}\n            <text x=\"40\" y=\"8\" textAnchor=\"middle\" fill=\"#cbd5e1\" fontSize=\"13\" fontWeight=\"600\">BULB</text>\n            <path d=\"M 15 55 C 10 20, 70 20, 65 55 C 60 75, 55 85, 55 95 L 25 95 C 25 85, 20 75, 15 55 Z\" fill={bulbLit ? '#fef9c3' : 'rgba(255,255,255,0.06)'} stroke={bulbLit ? '#fef08a' : '#64748b'} strokeWidth=\"2.5\" />\n            <path d=\"M 33 95 L 35 55 L 38 48 L 42 48 L 45 55 L 47 95\" fill=\"none\" stroke={bulbLit ? '#f59e0b' : '#64748b'} strokeWidth=\"2\" strokeLinecap=\"round\" />\n            <rect x=\"25\" y=\"95\" width=\"30\" height=\"24\" rx=\"2\" fill=\"#94a3b8\" stroke=\"#475569\" strokeWidth=\"1.5\" />\n            <line x1=\"25\" y1=\"102\" x2=\"55\" y2=\"102\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <line x1=\"25\" y1=\"110\" x2=\"55\" y2=\"110\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <path d=\"M 32 119 Q 40 134 48 119 Z\" fill=\"#cbd5e1\" stroke=\"#475569\" strokeWidth=\"1\" />\n          </g>\n          {/* Short leads from the bulb's two contacts to its terminals */}\n          <line x1=\"535\" y1=\"187\" x2=\"510\" y2=\"187\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\n          <line x1=\"550\" y1=\"200\" x2=\"550\" y2=\"255\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\n\n          {terminal('bat_pos', 'term-bat-pos', { y: -33 })}\n          {terminal('bat_neg', 'term-bat-neg', { y: 34 })}\n          {terminal('switch_l', 'term-switch-l', { x: -38, y: 4, textAnchor: 'end' })}\n          {terminal('switch_r', 'term-switch-r', { x: 38, y: 4, textAnchor: 'start' })}\n          {terminal('bulb_side', 'term-bulb-side', { x: -6, y: -22, textAnchor: 'end' })}\n          {terminal('bulb_foot', 'term-bulb-foot', { y: 34 })}\n\n          {wires.map((w, idx) => {\n            const a = getPos(idx, 'start');\n            const b = getPos(idx, 'end');\n            return (\n              <g key={idx}>\n                <path d={wirePath(a, b, idx === 2 ? -20 : 20)} fill=\"none\" stroke={w.color} strokeWidth=\"5\" strokeLinecap=\"round\" />\n                {handle(idx, 'start', a, w.color)}\n                {handle(idx, 'end', b, w.color)}\n              </g>\n            );\n          })}\n        </svg>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "prewired": [
+     [
+      "bat_pos",
+      "switch_l"
+     ],
+     null,
+     null
+    ],
+    "showNames": true
+   },
+   "ask": "Finish the circuit so the switch turns the bulb on and off.",
+   "goal": "One loop runs through the battery, the switch and both bulb contacts, so the switch controls the bulb.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-switch-r"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-start",
+     "to": "#term-bulb-foot"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-bat-neg"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-switch-r"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-start",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-bat-neg"
+    }
+   ],
+   "scene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: the tray to the tray",
+     "Wire 3: the tray to the tray"
+    ]
+   },
+   "proofScene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: Switch B to Bulb side",
+     "Wire 3: Bulb tip to Battery (-)"
+    ]
+   },
+   "missScene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: Switch B to Bulb side",
+     "Wire 3: Bulb side to Battery (-)"
+    ]
+   }
+  },
+  {
+   "params": {
+    "prewired": [],
+    "showNames": true
+   },
+   "ask": "Connect the battery, the switch and the bulb so the switch turns the bulb on and off.",
+   "goal": "One loop runs through the battery, the switch and both bulb contacts, so the switch controls the bulb.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#wire1-start",
+     "to": "#term-bat-pos"
+    },
+    {
+     "do": "drag",
+     "target": "#wire1-end",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-bulb-foot"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-switch-l"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-start",
+     "to": "#term-switch-r"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-bat-neg"
+    },
+    {
+     "do": "click",
+     "target": "#switch-lever"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#wire1-start",
+     "to": "#term-bat-pos"
+    },
+    {
+     "do": "drag",
+     "target": "#wire1-end",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-bulb-foot"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-bat-neg"
+    },
+    {
+     "do": "click",
+     "target": "#switch-lever"
+    }
+   ],
+   "scene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: the tray to the tray",
+     "Wire 2: the tray to the tray",
+     "Wire 3: the tray to the tray"
+    ]
+   },
+   "proofScene": {
+    "switch": "closed",
+    "bulb": "lit",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Bulb side",
+     "Wire 2: Bulb tip to Switch A",
+     "Wire 3: Switch B to Battery (-)"
+    ]
+   },
+   "missScene": {
+    "switch": "closed",
+    "bulb": "lit",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Bulb side",
+     "Wire 2: Bulb tip to Battery (-)",
+     "Wire 3: the tray to the tray"
+    ]
+   }
+  },
+  {
+   "params": {
+    "prewired": [
+     [
+      "bat_pos",
+      "switch_l"
+     ],
+     [
+      "switch_r",
+      "bulb_side"
+     ],
+     [
+      "bat_neg",
+      "switch_r"
+     ]
+    ],
+    "showNames": true
+   },
+   "ask": "This circuit does not work. Find what is wrong and fix it so the switch turns the bulb on and off.",
+   "goal": "One loop runs through the battery, the switch and both bulb contacts, so the switch controls the bulb.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-bulb-foot"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-bulb-foot"
+    }
+   ],
+   "scene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: Switch B to Bulb side",
+     "Wire 3: Battery (-) to Switch B"
+    ]
+   },
+   "proofScene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: Switch B to Bulb side",
+     "Wire 3: Battery (-) to Bulb tip"
+    ]
+   },
+   "missScene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Switch A",
+     "Wire 2: Switch B to Bulb tip",
+     "Wire 3: Battery (-) to Switch B"
+    ]
+   }
+  },
+  {
+   "params": {
+    "prewired": [],
+    "showNames": false
+   },
+   "ask": "Connect the battery, the switch and the bulb so the switch turns the bulb on and off. The parts are no longer named.",
+   "goal": "One loop runs through the battery, the switch and both bulb contacts, so the switch controls the bulb.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#wire1-start",
+     "to": "#term-bat-neg"
+    },
+    {
+     "do": "drag",
+     "target": "#wire1-end",
+     "to": "#term-bulb-foot"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-switch-r"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-start",
+     "to": "#term-switch-l"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-bat-pos"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#wire1-start",
+     "to": "#term-bat-pos"
+    },
+    {
+     "do": "drag",
+     "target": "#wire1-end",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-start",
+     "to": "#term-bulb-foot"
+    },
+    {
+     "do": "drag",
+     "target": "#wire2-end",
+     "to": "#term-bat-neg"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-start",
+     "to": "#term-bulb-side"
+    },
+    {
+     "do": "drag",
+     "target": "#wire3-end",
+     "to": "#term-switch-l"
+    }
+   ],
+   "scene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: the tray to the tray",
+     "Wire 2: the tray to the tray",
+     "Wire 3: the tray to the tray"
+    ]
+   },
+   "proofScene": {
+    "switch": "open",
+    "bulb": "dark",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (-) to Bulb tip",
+     "Wire 2: Bulb side to Switch B",
+     "Wire 3: Switch A to Battery (+)"
+    ]
+   },
+   "missScene": {
+    "switch": "open",
+    "bulb": "lit",
+    "battery": "normal",
+    "wires": [
+     "Wire 1: Battery (+) to Bulb side",
+     "Wire 2: Bulb tip to Battery (-)",
+     "Wire 3: Bulb side to Switch A"
+    ]
+   }
+  }
+ ]
+}

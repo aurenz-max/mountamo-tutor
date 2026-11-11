@@ -1,0 +1,715 @@
+{
+ "id": "ring-the-tens",
+ "title": "Ring the Tens",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner rings groups of ten in a collection of up to 120 objects and types how many, which shows they can count a large collection by making tens."
+ },
+ "request": {
+  "topic": "Counting a collection to 120 by making tens",
+  "grade": "grade 1",
+  "objective": "Count a collection of up to 120 objects by making groups of ten and write the numeral for how many."
+ },
+ "source": "function Display({ params, lumina }) {\n  const n = params?.n ?? 42;\n  const cols = params?.cols ?? 10;\n  const holes = params?.holes ?? [];\n  const shape = params?.shape ?? 'dot';\n  const showRingCount = params?.showRingCount ?? false;\n\n  const CELL = 34;\n  const holeSet = useMemo(() => new Set(holes.map(([r, c]) => r + '-' + c)), [holes]);\n\n  // Objects fill row by row, skipping the gaps, until there are n of them.\n  const objects = useMemo(() => {\n    const out = [];\n    for (let r = 0; out.length < n && r < 40; r += 1) {\n      for (let c = 0; c < cols && out.length < n; c += 1) {\n        if (!holeSet.has(r + '-' + c)) out.push(r + '-' + c);\n      }\n    }\n    return new Set(out);\n  }, [n, cols, holeSet]);\n\n  const rows = useMemo(() => {\n    let max = 0;\n    objects.forEach((k) => { max = Math.max(max, Number(k.split('-')[0])); });\n    return max + 1;\n  }, [objects]);\n\n  // A ring is the objects the child's strokes went through, in order.\n  const [rings, setRings] = useState([]);\n  const ringsRef = useRef([]);\n  const commit = (next) => { ringsRef.current = next; setRings(next); };\n  const stroke = useRef(null);\n  const fieldRef = useRef(null);\n  const [typed, setTyped] = useState('');\n\n  useEffect(() => {\n    const ringed = rings.reduce((sum, ring) => sum + ring.length, 0);\n    const allTens = rings.length > 0 && rings.every((ring) => ring.length === 10);\n    lumina.goal(allTens && n - ringed < 10 && typed === String(n));\n    lumina.scene({ objectShape: shape, objectsAcrossEachRow: cols, rowsDown: rows, emptySpotsInTheRows: holes.length, ringsDrawn: rings.length, objectsInEachRing: rings.map((ring) => ring.length), numberTyped: typed });\n  }, [rings, typed, n, shape, cols, rows, holes]);\n\n  const local = (e) => {\n    const box = fieldRef.current.getBoundingClientRect();\n    return { x: e.clientX - box.left, y: e.clientY - box.top };\n  };\n  const cellOf = (p) => Math.floor(p.y / CELL) + '-' + Math.floor(p.x / CELL);\n  const objectAt = (p) => {\n    const r = Math.floor(p.y / CELL);\n    const c = Math.floor(p.x / CELL);\n    const key = r + '-' + c;\n    if (!objects.has(key)) return null;\n    const dx = p.x - (c + 0.5) * CELL;\n    const dy = p.y - (r + 0.5) * CELL;\n    return Math.sqrt(dx * dx + dy * dy) <= CELL * 0.46 ? key : null;\n  };\n  const ringOf = (key) => ringsRef.current.findIndex((ring) => ring.includes(key));\n\n  const gather = (key) => {\n    const s = stroke.current;\n    if (!key || !s || ringOf(key) >= 0) return;\n    if (s.ring < 0) {\n      s.ring = ringsRef.current.length;\n      commit(ringsRef.current.concat([[key]]));\n    } else {\n      commit(ringsRef.current.map((ring, i) => (i === s.ring ? ring.concat(key) : ring)));\n    }\n  };\n\n  const onDown = (e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const p = local(e);\n    const key = objectAt(p);\n    const owner = key ? ringOf(key) : -1;\n    stroke.current = { ring: owner, tappedRinged: owner >= 0 ? key : null, startCell: cellOf(p), moved: false, last: p };\n    if (owner < 0) gather(key);\n  };\n\n  const onMove = (e) => {\n    const s = stroke.current;\n    if (!s) return;\n    const p = local(e);\n    if (cellOf(p) !== s.startCell) s.moved = true;\n    // Sample along the segment so a fast stroke still passes through every object under it.\n    const dist = Math.sqrt((p.x - s.last.x) ** 2 + (p.y - s.last.y) ** 2);\n    const steps = Math.max(1, Math.ceil(dist / (CELL / 4)));\n    for (let i = 1; i <= steps; i += 1) {\n      const t = i / steps;\n      gather(objectAt({ x: s.last.x + (p.x - s.last.x) * t, y: s.last.y + (p.y - s.last.y) * t }));\n    }\n    s.last = p;\n  };\n\n  const onUp = () => {\n    const s = stroke.current;\n    stroke.current = null;\n    if (!s || s.moved) return;\n    // A tap, not a stroke: a tap on a ringed object takes that one out; a tap on a loose one does nothing.\n    const drop = s.tappedRinged;\n    const ring = s.ring;\n    const next = ringsRef.current\n      .map((list, i) => {\n        if (drop) return list.filter((k) => k !== drop);\n        return i === ring ? [] : list;\n      })\n      .filter((list) => list.length > 0);\n    commit(next);\n  };\n\n  const pressDigit = (d) => setTyped((t) => (t.length < 4 ? t + d : t));\n  const erase = () => setTyped((t) => t.slice(0, -1));\n\n  const RING_COLORS = ['#fbbf24', '#38bdf8', '#f472b6', '#4ade80', '#a78bfa'];\n  const LOOSE = '#e2e8f0';\n  const colorByKey = {};\n  rings.forEach((ring, i) => ring.forEach((k) => { colorByKey[k] = RING_COLORS[i % RING_COLORS.length]; }));\n\n  const Mark = ({ fill }) => {\n    if (shape === 'square') return <div style={{ width: 16, height: 16, borderRadius: 3, background: fill }} />;\n    if (shape === 'star') {\n      return (\n        <svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" style={{ display: 'block' }}>\n          <polygon points=\"10,1.5 12.6,7.2 18.8,7.9 14.2,12.1 15.5,18.3 10,15.2 4.5,18.3 5.8,12.1 1.2,7.9 7.4,7.2\" fill={fill} />\n        </svg>\n      );\n    }\n    return <div style={{ width: 17, height: 17, borderRadius: 9, background: fill }} />;\n  };\n\n  const centre = (key) => {\n    const [r, c] = key.split('-').map(Number);\n    return { x: (c + 0.5) * CELL, y: (r + 0.5) * CELL };\n  };\n\n  const keyStyle = { width: 62, height: 52, borderRadius: 10, border: '1px solid #475569', background: '#1e293b', color: '#f1f5f9', fontSize: 23, fontWeight: 700, cursor: 'pointer' };\n\n  return (\n    <Panel title=\"Ring the Tens\" caption=\"Drag through the objects to gather them into a group. Drag from a group to add more. Tap one to take it out.\">\n      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', justifyContent: 'center' }}>\n        <div\n          id=\"field\"\n          ref={fieldRef}\n          onPointerDown={onDown}\n          onPointerMove={onMove}\n          onPointerUp={onUp}\n          onPointerCancel={() => { stroke.current = null; }}\n          style={{ position: 'relative', width: cols * CELL, height: rows * CELL, touchAction: 'none', cursor: 'crosshair', userSelect: 'none', flex: '0 0 auto' }}\n        >\n          <svg width={cols * CELL} height={rows * CELL} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>\n            {rings.map((ring, i) => {\n              const pts = ring.map(centre);\n              const line = (pts.length === 1 ? [pts[0], pts[0]] : pts).map((p) => p.x + ',' + p.y).join(' ');\n              return <polyline key={i} points={line} fill=\"none\" stroke={RING_COLORS[i % RING_COLORS.length]} strokeOpacity={0.35} strokeWidth={28} strokeLinecap=\"round\" strokeLinejoin=\"round\" />;\n            })}\n          </svg>\n          {Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (__, c) => {\n            const key = r + '-' + c;\n            return (\n              <div key={key} id={'cell-' + key} style={{ position: 'absolute', left: c * CELL, top: r * CELL, width: CELL, height: CELL, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>\n                {objects.has(key) ? <Mark fill={colorByKey[key] || LOOSE} /> : null}\n              </div>\n            );\n          }))}\n          {showRingCount ? rings.map((ring, i) => {\n            const end = centre(ring[ring.length - 1]);\n            return (\n              <div key={'count-' + i} style={{ position: 'absolute', left: end.x + 2, top: end.y - 22, minWidth: 20, height: 20, borderRadius: 10, background: '#0f172a', border: '1px solid #94a3b8', color: '#f1f5f9', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>\n                {ring.length}\n              </div>\n            );\n          }) : null}\n        </div>\n\n        <Stack gap={12}>\n          <div>\n            <div style={{ color: '#94a3b8', fontSize: 15, marginBottom: 4, textAlign: 'center' }}>How many in all?</div>\n            <div id=\"typed\" style={{ width: 200, height: 60, borderRadius: 12, border: '2px solid #475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 800, color: '#f1f5f9' }}>{typed}</div>\n          </div>\n          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 62px)', gap: 7 }}>\n            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (\n              <button key={d} id={'key-' + d} type=\"button\" style={keyStyle} onClick={() => pressDigit(String(d))}>{d}</button>\n            ))}\n            <button id=\"key-0\" type=\"button\" style={keyStyle} onClick={() => pressDigit('0')}>0</button>\n            <button id=\"key-erase\" type=\"button\" style={{ ...keyStyle, gridColumn: 'span 2', width: 131, fontSize: 17 }} onClick={erase}>Erase</button>\n          </div>\n        </Stack>\n      </div>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "n": 42,
+    "cols": 10,
+    "holes": [],
+    "shape": "dot",
+    "showRingCount": true
+   },
+   "ask": "Count the dots. Make groups of ten by dragging through them, then type how many dots there are.",
+   "goal": "Four groups of exactly ten, 2 dots left loose, and 42 typed. Rows are ten wide and each group shows its count.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-1-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-3-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    },
+    {
+     "do": "click",
+     "target": "#key-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-1-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-3-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "scene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 5,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 0,
+    "objectsInEachRing": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 5,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 4,
+    "objectsInEachRing": [
+     10,
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "42"
+   },
+   "missScene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 5,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 4,
+    "objectsInEachRing": [
+     10,
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "24"
+   }
+  },
+  {
+   "params": {
+    "n": 37,
+    "cols": 6,
+    "holes": [],
+    "shape": "star",
+    "showRingCount": true
+   },
+   "ask": "Count the stars. Make groups of ten by dragging through them, then type how many stars there are.",
+   "goal": "Three groups of exactly ten, 7 left loose, and 37 typed. Rows are six wide, so a group runs on to the next row.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-0-5",
+     "to": "#cell-1-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-5",
+     "to": "#cell-1-2"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-1",
+     "to": "#cell-1-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-2-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-5",
+     "to": "#cell-3-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-5",
+     "to": "#cell-3-4"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-3",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-4-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-3"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-0-5",
+     "to": "#cell-1-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-5",
+     "to": "#cell-1-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-5",
+     "to": "#cell-3-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-5",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-5",
+     "to": "#cell-5-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-5",
+     "to": "#cell-5-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-3"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    }
+   ],
+   "scene": {
+    "objectShape": "star",
+    "objectsAcrossEachRow": 6,
+    "rowsDown": 7,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 0,
+    "objectsInEachRing": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "objectShape": "star",
+    "objectsAcrossEachRow": 6,
+    "rowsDown": 7,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 3,
+    "objectsInEachRing": [
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "37"
+   },
+   "missScene": {
+    "objectShape": "star",
+    "objectsAcrossEachRow": 6,
+    "rowsDown": 7,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 3,
+    "objectsInEachRing": [
+     12,
+     12,
+     12
+    ],
+    "numberTyped": "37"
+   }
+  },
+  {
+   "params": {
+    "n": 104,
+    "cols": 10,
+    "holes": [],
+    "shape": "square",
+    "showRingCount": false
+   },
+   "ask": "Count the squares. Make groups of ten by dragging through them, then type how many squares there are.",
+   "goal": "Ten groups of exactly ten, 4 left loose, and 104 typed. Ten tens is written as one hundred, not as 10 beside the ones. Group counts are no longer shown.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-1-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-3-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-0",
+     "to": "#cell-5-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-6-0",
+     "to": "#cell-6-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-7-0",
+     "to": "#cell-7-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-8-0",
+     "to": "#cell-8-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-9-0",
+     "to": "#cell-9-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-1-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-3-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-0",
+     "to": "#cell-5-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-6-0",
+     "to": "#cell-6-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-7-0",
+     "to": "#cell-7-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-8-0",
+     "to": "#cell-8-9"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-9-0",
+     "to": "#cell-9-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "scene": {
+    "objectShape": "square",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 11,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 0,
+    "objectsInEachRing": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "objectShape": "square",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 11,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 10,
+    "objectsInEachRing": [
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "104"
+   },
+   "missScene": {
+    "objectShape": "square",
+    "objectsAcrossEachRow": 10,
+    "rowsDown": 11,
+    "emptySpotsInTheRows": 0,
+    "ringsDrawn": 10,
+    "objectsInEachRing": [
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "1004"
+   }
+  },
+  {
+   "params": {
+    "n": 56,
+    "cols": 8,
+    "holes": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      4
+     ],
+     [
+      2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      1
+     ],
+     [
+      5,
+      4
+     ],
+     [
+      6,
+      2
+     ],
+     [
+      7,
+      4
+     ]
+    ],
+    "shape": "dot",
+    "showRingCount": false
+   },
+   "ask": "Count the dots. Some spots are empty. Make groups of ten by dragging through them, then type how many dots there are.",
+   "goal": "Five groups of exactly ten, 6 left loose, and 56 typed. Each row holds seven, so a row is not a ten.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-0-7",
+     "to": "#cell-1-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-7",
+     "to": "#cell-1-5"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-3",
+     "to": "#cell-1-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-2-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-6"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-7",
+     "to": "#cell-3-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-7",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-4-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-2"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-3",
+     "to": "#cell-4-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-7",
+     "to": "#cell-5-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-7",
+     "to": "#cell-5-2"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-1",
+     "to": "#cell-5-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-0",
+     "to": "#cell-6-0"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-6-0",
+     "to": "#cell-6-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-6-7",
+     "to": "#cell-7-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#cell-0-0",
+     "to": "#cell-0-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-1-0",
+     "to": "#cell-1-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-2-0",
+     "to": "#cell-2-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-3-0",
+     "to": "#cell-3-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-4-0",
+     "to": "#cell-4-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-5-0",
+     "to": "#cell-5-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-6-0",
+     "to": "#cell-6-7"
+    },
+    {
+     "do": "drag",
+     "target": "#cell-7-0",
+     "to": "#cell-7-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "scene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 8,
+    "rowsDown": 8,
+    "emptySpotsInTheRows": 8,
+    "ringsDrawn": 0,
+    "objectsInEachRing": [],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 8,
+    "rowsDown": 8,
+    "emptySpotsInTheRows": 8,
+    "ringsDrawn": 5,
+    "objectsInEachRing": [
+     10,
+     10,
+     10,
+     10,
+     10
+    ],
+    "numberTyped": "56"
+   },
+   "missScene": {
+    "objectShape": "dot",
+    "objectsAcrossEachRow": 8,
+    "rowsDown": 8,
+    "emptySpotsInTheRows": 8,
+    "ringsDrawn": 8,
+    "objectsInEachRing": [
+     7,
+     7,
+     7,
+     7,
+     7,
+     7,
+     7,
+     7
+    ],
+    "numberTyped": "56"
+   }
+  }
+ ]
+}

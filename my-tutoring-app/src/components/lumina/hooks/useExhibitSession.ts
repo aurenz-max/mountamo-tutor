@@ -304,7 +304,8 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
         gradeLevel,
         objectives,
         manifestCallbacks,
-        studentContext
+        studentContext,
+        studentId,
       );
       console.log('🗺️ Manifest generated based on learning objectives');
 

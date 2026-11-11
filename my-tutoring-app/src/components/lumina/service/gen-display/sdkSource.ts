@@ -146,11 +146,38 @@ function Formula({ tex, display }) {
   return <span className={display ? 'lx-formula lx-formula-block' : 'lx-formula'} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-window.LuminaDisplay = { Panel, Row, Stack, Text, Slider, Choice, Button, Readout, Plane, NumberLine, Bars, Table, Formula, PALETTE };
+/** A pointer event's position in an svg's own viewBox units. */
+function svgPoint(svg, e) {
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = svg.getScreenCTM();
+  const p = m ? pt.matrixTransform(m.inverse()) : pt;
+  return { x: p.x, y: p.y };
+}
+
+/** A thing the child drags inside an svg. Children are drawn at (x, y); with none it is a round handle. */
+function Handle({ id, x, y, r, color, label, onDrag, onDrop, children }) {
+  const [held, setHeld] = React.useState(false);
+  const at = (e) => svgPoint(e.currentTarget.ownerSVGElement, e);
+  const R = r || 16;
+  return (
+    <g id={id} style={{ cursor: held ? 'grabbing' : 'grab', touchAction: 'none' }}
+      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setHeld(true); }}
+      onPointerMove={(e) => { if (held && onDrag) onDrag(at(e)); }}
+      onPointerUp={(e) => { if (held) { setHeld(false); if (onDrop) onDrop(at(e)); } }}
+      onPointerCancel={() => setHeld(false)}>
+      <circle cx={x} cy={y} r={R + 10} fill="transparent" />
+      {children ? <g transform={'translate(' + x + ' ' + y + ')'}>{children}</g>
+        : <circle cx={x} cy={y} r={R} fill={colorOf(color, 0)} stroke="#f8fafc" strokeWidth={held ? 3 : 1.5} />}
+      {label && <text x={x} y={y - R - 6} className="lx-label" textAnchor="middle">{label}</text>}
+    </g>
+  );
+}
+
+window.LuminaDisplay = { svgPoint, Handle, Panel, Row, Stack, Text, Slider, Choice, Button, Readout, Plane, NumberLine, Bars, Table, Formula, PALETTE };
 `;
 
 /** The names a display may use without declaring them, in the order the page destructures them. */
-export const SDK_NAMES = ['Panel', 'Row', 'Stack', 'Text', 'Slider', 'Choice', 'Button', 'Readout', 'Plane', 'NumberLine', 'Bars', 'Table', 'Formula', 'PALETTE'];
+export const SDK_NAMES = ['svgPoint', 'Handle', 'Panel', 'Row', 'Stack', 'Text', 'Slider', 'Choice', 'Button', 'Readout', 'Plane', 'NumberLine', 'Bars', 'Table', 'Formula', 'PALETTE'];
 
 /** What the authoring agent is told about the kit: one line per component. */
 export const SDK_REFERENCE = `- Panel({ title, caption, children }): the frame every display starts with.
@@ -164,4 +191,6 @@ export const SDK_REFERENCE = `- Panel({ title, caption, children }): the frame e
 - Bars({ items: [{ label, value, color }], max, unit, digits }): horizontal bar chart.
 - Table({ headers: string[], rows: (string|number)[][] }).
 - Formula({ tex, display }): typeset math from a LaTeX string, inline or as its own line ('display'); build tex from live values, e.g. tex={'y = ' + m + 'x + ' + b}. Use it for every equation, fraction, exponent or matrix; never type math as plain text.
+- Handle({ id, x, y, r, color, label, onDrag: ({x, y}) => void, onDrop: ({x, y}) => void, children }): inside an <svg>, a thing the child drags; positions are in the svg's viewBox units. With children it draws them at (x, y) instead of a round handle.
+- svgPoint(svgElement, pointerEvent): the event's position in the svg's viewBox units, for your own pointer handlers.
 - Colors: 'cyan' | 'amber' | 'emerald' | 'pink' | 'indigo' | 'rose' | 'slate' | 'white'.`;

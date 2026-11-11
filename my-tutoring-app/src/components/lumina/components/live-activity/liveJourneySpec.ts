@@ -77,6 +77,7 @@ import { factFileBoss } from '../../primitives/visual-primitives/core/factFile.b
 import { deepDiveBoss } from '../../primitives/visual-primitives/core/deep-dive/deepDive.boss';
 import { wonderWalkBoss } from '../../primitives/visual-primitives/core/wonder-walk/wonderWalk.boss';
 import { practiceStudioBoss } from '../../primitives/visual-primitives/core/practice-studio/practiceStudio.boss';
+import { agentCanvasBoss } from '../../primitives/visual-primitives/core/agent-canvas/agentCanvas.boss';
 import { arrayGridBoss } from '../../primitives/visual-primitives/math/arrayGrid.boss';
 import { polygonAreaBuilderBoss } from '../../primitives/visual-primitives/math/polygonAreaBuilder.boss';
 import { paragraphArchitectBoss } from '../../primitives/visual-primitives/literacy/paragraphArchitect.boss';
@@ -213,6 +214,11 @@ export type DriverInput =
   /** Strokes drawn on the canvas, in canvas pixel coordinates; or, with `target`, on the SVG with that `data-pip-object`
    *  id, with pointer events, in its viewBox coordinates. */
   | { type: 'draw'; strokes: { x: number; y: number }[][]; target?: string }
+  /**
+   * What the page in a sandboxed canvas frame reports (`agent-canvas`). The harness cannot run that page, so it delivers
+   * the report a recorded playthrough produced: whether the goal is met, and the scene facts.
+   */
+  | { type: 'report'; goal: boolean; scene?: unknown }
   | { type: 'answer'; text: string };
 
 /** What the program is asking the learner to do, independent of how this primitive does it. */
@@ -463,6 +469,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'deep-dive': bossJourney(deepDiveBoss),
   'wonder-walk': bossJourney(wonderWalkBoss),
   'practice-studio': bossJourney(practiceStudioBoss),
+  'agent-canvas': bossJourney(agentCanvasBoss),
   'race-track-lab': bossJourney(raceTrackLabBoss),
   'push-pull-arena': bossJourney(pushPullArenaBoss),
   'ecosystem-diorama': bossJourney(ecosystemDioramaBoss),

@@ -1,4 +1,5 @@
-﻿import { Type, Schema, ThinkingLevel } from "@google/genai";
+﻿import { canvasCandidates, findCanvas, type CanvasOffer } from '../core/agent-canvas/canvasCandidates';
+import { Type, Schema, ThinkingLevel } from "@google/genai";
 
 import {
   ExhibitManifest,
@@ -319,7 +320,64 @@ export interface ManifestPromptOptions {
    * one extra line names what to look at first).
    */
   specialistSuggestions?: SpecialistSuggestion[];
+  /** The launching student. A pilot student is also offered unpromoted canvases (`agent-canvas/pilotVotes.ts`). */
+  studentId?: string | null;
+  /** Canvas offers to use instead of retrieval (a bench arm; `[]` turns canvases off). */
+  canvasOffers?: CanvasOffer[];
 }
+
+/** The catalog id the curator sees for one canvas. The manifest's pick is mapped back by `applyCanvasPicks`. */
+export const CANVAS_ENTRY_PREFIX = 'canvas:';
+
+/**
+ * The catalog with this lesson's canvas offers as their own entries, in place of the generic `agent-canvas` host. A
+ * canvas the curator can see is one that matched an objective; without offers no canvas is shown at all.
+ */
+export const withCanvasOffers = (
+  catalog: typeof UNIVERSAL_CATALOG,
+  offers: readonly CanvasOffer[],
+  objectives?: Array<{ id: string }>,
+): typeof UNIVERSAL_CATALOG => {
+  const host = catalog.find(c => c.id === 'agent-canvas');
+  const rest = catalog.filter(c => c.id !== 'agent-canvas');
+  if (!host || !offers.length) return rest;
+  const number = (id: string) => { const i = objectives?.findIndex(o => o.id === id) ?? -1; return i >= 0 ? String(i + 1) : null; };
+  return [...rest, ...offers.map(o => {
+    const matched = o.objectiveIds.map(number).filter(Boolean);
+    return {
+      ...host,
+      id: `${CANVAS_ENTRY_PREFIX}${o.entry.id}`,
+      description: `Hands-on canvas "${o.entry.title}" (Apply): ${o.entry.summary} The learner operates it through ${o.entry.problems} problems that get harder and remove support; each was played to its goal and through a wrong attempt in a browser before it shipped.${matched.length ? ` Matched to objective ${matched.join(' and ')}.` : ''}`,
+      constraints: `Grades ${o.entry.grades.join(', ')}. The Apply step of the objective it practises, at most one canvas per objective. The manifest must NOT supply the canvas, its values or its goal.`,
+      // Not a registered component id: `applyCanvasPicks` maps it back to 'agent-canvas' before anything else reads it.
+    } as unknown as (typeof UNIVERSAL_CATALOG)[number];
+  })];
+};
+
+/**
+ * Map each `canvas:<id>` pick back to the host primitive with `config.canvasId`, so the generator serves that canvas
+ * and does not choose again. An id outside the library and the pilot keeps the host with no id (the generator's own
+ * pick runs). Returns the canvases placed.
+ */
+export const applyCanvasPicks = (manifest: ExhibitManifest, studentId?: string | null): string[] => {
+  const placed: string[] = [];
+  for (const block of manifest.objectiveBlocks ?? []) {
+    for (const c of block.components ?? []) {
+      if (!c.componentId?.startsWith(CANVAS_ENTRY_PREFIX)) continue;
+      const id = c.componentId.slice(CANVAS_ENTRY_PREFIX.length);
+      (c as { componentId: string }).componentId = 'agent-canvas';
+      const found = findCanvas(id);
+      if (found) {
+        // A pilot canvas carries the student, so the finished lesson can record whose vote it is.
+        c.config = { ...(c.config ?? {}), canvasId: id, ...(found.pilot && studentId ? { pilotStudentId: studentId } : {}) };
+        placed.push(id);
+      } else {
+        console.warn(`[manifest] curator picked unknown canvas "${id}"; the generator will choose`);
+      }
+    }
+  }
+  return placed;
+};
 
 export interface SpecialistSuggestion {
   /** Matches `objectives[i].id` — the block is numbered like the objectives list. */
@@ -391,7 +449,14 @@ export const generateExhibitManifestStreaming = async (
     // plus a legend that reads them as facts, never bans. Untagged lines are
     // byte-identical to before — see catalog/affordances.ts for why this is
     // metadata and not a grade floor.
-    const { catalogContext, affordanceLegend } = buildCatalogContext(affordanceTags);
+    // Canvases: retrieved per objective (code filters by grade, one flash-lite call matches skills) and shown as their
+    // own catalog entries. Never blocks the lesson: any failure offers none.
+    let canvasOffers = promptOptions?.canvasOffers;
+    if (canvasOffers === undefined) {
+      callbacks?.onProgress?.('🧩 Matching hands-on canvases to objectives…');
+      canvasOffers = await canvasCandidates({ topic, gradeLevel, objectives, studentId: promptOptions?.studentId });
+    }
+    const { catalogContext, affordanceLegend } = buildCatalogContext(affordanceTags, withCanvasOffers(UNIVERSAL_CATALOG, canvasOffers, objectives));
 
     // Within-block ordering rule: the Introduce / Visualize / Apply phase ladder.
     //
@@ -433,6 +498,11 @@ ${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]${obj.grade ? `
     }
     const suggestionsBlock = buildSpecialistSuggestionsBlock(objectives, specialistSuggestions);
 
+    // The canvases offered to this lesson (`withCanvasOffers` lists each one in the catalog). Explained beside deep-dive
+    // and practice-studio so the curator learns what job a canvas does.
+    const canvasBlock = !canvasOffers.length ? '' : `CANVASES (catalog ids starting '${CANVAS_ENTRY_PREFIX}', Apply) — hands-on canvases matched to this lesson's objectives: the student operates a small world (drags, places, sets, runs) through 3-5 problems that get harder. Every problem was played to its goal and through a wrong attempt in a browser before it shipped, so they are among the most reliable practice in the catalog. Each canvas entry names the skill it practises and the objective it matched. When a canvas practises an objective, use it for that objective's Apply step: the student builds the answer with their hands. It works beside 'practice-studio' in the same lesson (choosing and sorting there, building here), and a specialist manipulative can still be the Visualize step of the same objective. At most one canvas per objective. Use the catalog id exactly as listed (for example '${CANVAS_ENTRY_PREFIX}${canvasOffers[0].entry.id}') and write the intent as the skill the student practises.
+
+`;
     const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.
 
 ASSIGNMENT: Create a manifest (blueprint) for: "${topic}"
@@ -452,19 +522,15 @@ STRUCTURE:
 2. objectiveBlocks: Array where EACH objective has its own dedicated components
 3. finalAssessment: Optional quiz/flashcards covering ALL objectives (at the end)
 
-## DEEP-DIVE: THE DEFAULT FOR BROAD COVERAGE
+## DEEP-DIVE AND PRACTICE-STUDIO: THE DEFAULTS FOR INTRODUCING AND PRACTISING
 
-'deep-dive' is a meta-primitive that orchestrates modular blocks (hero images, key facts, data tables, timelines, compare/contrast, MC questions, fill-in-the-blank, prose, pull quotes, mini-simulations) into a cohesive vertical scroll lesson. It adapts its block selection to the topic — a science topic gets diagrams + data tables, a history topic gets timelines + compare/contrast.
+These two are written for this lesson by an author agent and are among the strongest content in the catalog. Consider them first for these two jobs:
 
-USE 'deep-dive' when:
-- The objective needs broad topic coverage or background knowledge
-- No specialist interactive primitive exists for the topic (e.g., history, social studies, general science overviews)
-- The objective verb is EXPLAIN or IDENTIFY and the content is informational
-- You would otherwise reach for 'feature-exhibit' or 'generative-table' — 'deep-dive' does what they do but better
+'deep-dive' (Introduce) — a full illustrated article with graded questions through it. Use it, usually once per lesson, on the objective that introduces the topic or builds background knowledge, including when a fact card, profile or explainer exists for the topic ('machine-profile', 'species-profile', 'how-it-works', 'fast-fact', 'feature-exhibit', 'generative-table'): it does what they do and also checks understanding. Do not use it where the student must move something to learn the idea ('fraction-circles', 'slope-triangle', 'lever-lab'); those stay the Visualize step.
 
-DO NOT use 'deep-dive' when:
-- A specialist interactive primitive exists (e.g., use 'fraction-circles' for fractions, 'slope-triangle' for slope, 'lever-lab' for levers)
-- The objective is pure practice/drill (use 'knowledge-check' or the specialist interactive primitive)
+'practice-studio' (Apply, grades K-5) — items written for this objective and topic. Use it for the Apply step of an objective when the answer can be chosen, sorted or ordered, in preference to a general quiz. A specialist manipulative still comes first when the practice itself is moving or building something.
+
+${canvasBlock}The final assessment stays 'knowledge-check' or 'flashcard-deck'.
 
 ## SUPPORT TIER (config.difficulty)
 
@@ -589,6 +655,10 @@ Return ONLY valid JSON matching the schema.`;
     }
 
     const rawManifest = JSON.parse(jsonStr) as ExhibitManifest;
+
+    // A `canvas:<id>` pick becomes the host primitive with that canvas, before eval modes resolve against the catalog.
+    const placedCanvases = applyCanvasPicks(rawManifest, promptOptions?.studentId);
+    if (canvasOffers.length) console.log(`[manifest] canvases offered ${canvasOffers.map(o => o.entry.id).join(', ')}; placed ${placedCanvases.join(', ') || 'none'}`);
 
     // Dedicated eval-mode resolution stage — the authoritative selector. Runs one
     // batched call to pick the best mode per multi-mode component (the inline

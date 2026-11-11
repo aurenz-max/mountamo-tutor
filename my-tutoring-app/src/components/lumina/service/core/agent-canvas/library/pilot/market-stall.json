@@ -1,0 +1,573 @@
+{
+ "id": "market-stall",
+ "title": "Market Stall",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child runs a market stall: stocks it with what people want in the day's weather, reads which things sold out and brings more of those, and lowers the price of what is not selling and raises the price of the last scarce one, which shows supply and demand, scarcity and sale prices."
+ },
+ "request": {
+  "topic": "Supply and demand at a market stall: weather, running out, and prices",
+  "grade": "kindergarten",
+  "objective": "Predict what people will want on a given day and stock a stall with it; read what sold out and bring more of it; lower the price of what is not selling and raise the price of what is scarce. (SS002-04-A, SS002-04-C, SS002-04-F, SS002-04-I)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A market stall under the day's sky. Three tasks on one world:\n  //  stock:   drag things from the crate onto the stall's shelf (params.start may pre-fill it with yesterday's stock).\n  //  restock: yesterday's shelf shows what sold (faded places) and what was left; fill the wagon for tomorrow.\n  //  price:   each row shows what is left, its price in coins and the buyers waiting; tap - or + to change a price.\n  // Nothing on screen says which things fit the day or which price is right. The sky, the sales and the queue do.\n  // params.task, params.weather (rain | sun | hot | snow), params.slots, params.kinds [{ id, pic, name, count, fits }],\n  // params.start [kind ids], params.yesterday [{ id, morning, left }], params.rows [{ id, pic, name, left, buyers, price, move }],\n  // params.story (for the tutor).\n  const task = ['stock', 'restock', 'price'].includes(params.task) ? params.task : 'stock';\n  const weather = ['rain', 'sun', 'hot', 'snow'].includes(params.weather) ? params.weather : 'sun';\n  const story = params.story || 'a day at the market stall';\n  const slots = Math.max(1, Math.min(4, Number(params.slots) || 3));\n  const kinds = (Array.isArray(params.kinds) ? params.kinds : [\n    { id: 'umbrella', pic: '☂️', name: 'umbrella', fits: true },\n    { id: 'shades', pic: '🕶️', name: 'sunglasses', fits: false },\n  ]).slice(0, 6).map(k => ({ ...k, count: k.count == null ? 99 : Math.max(0, Number(k.count) || 0) }));\n  const kindOf = id => kinds.find(k => k.id === id);\n  const startSlots = Array.from({ length: slots }, (_, i) => (Array.isArray(params.start) && kindOf(params.start[i]) ? params.start[i] : null));\n  const yesterday = (Array.isArray(params.yesterday) ? params.yesterday : []).slice(0, 3).map(r => ({\n    ...r, morning: Math.max(1, Math.min(5, Number(r.morning) || 4)), left: Math.max(0, Math.min(5, Number(r.left) || 0)),\n  }));\n  const rows = (Array.isArray(params.rows) ? params.rows : [\n    { id: 'umbrella', pic: '☂️', name: 'umbrella', left: 4, buyers: 0, price: 3, move: 'down' },\n  ]).slice(0, 2).map(r => ({\n    ...r, left: Math.max(0, Math.min(6, Number(r.left) || 0)), buyers: Math.max(0, Math.min(6, Number(r.buyers) || 0)),\n    price: Math.max(1, Math.min(5, Number(r.price) || 2)),\n  }));\n\n  const W = 680;\n  const H = task === 'price' ? 440 : task === 'restock' ? 592 : 490;\n  const SLOT = 96, SGAP = 18;\n  const SLOTS_Y = task === 'restock' ? 336 : 162;\n  const slotsW = slots * SLOT + (slots - 1) * SGAP;\n  const SLOTS_RECT = { x: (W - slotsW) / 2 - 30, y: SLOTS_Y - 14, w: slotsW + 60, h: SLOT + 28 };\n  const CRATE_Y = task === 'restock' ? 468 : 312;\n\n  const [shelf, setShelf] = useState(startSlots);\n  const [prices, setPrices] = useState(rows.map(r => r.price));\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n\n  const placed = id => shelf.filter(s => s === id).length;\n  const avail = k => k.count - placed(k.id);\n  const goalMet = task === 'price'\n    ? rows.every((r, i) => (r.move === 'up' ? prices[i] > r.price : r.move === 'down' ? prices[i] < r.price : prices[i] === r.price))\n    : shelf.every(s => s && kindOf(s) && kindOf(s).fits);\n\n  const weatherWords = { rain: 'rainy and wet', sun: 'sunny', hot: 'very hot and sunny', snow: 'snowy and cold' }[weather];\n  useEffect(() => {\n    lumina.goal(goalMet);\n    const scene = { situation: story, sky: weatherWords + (task === 'restock' ? ' (tomorrow)' : '') };\n    if (task === 'price') {\n      scene.stall = rows.map((r, i) => r.name + ': ' + r.left + ' left, price ' + prices[i] + (prices[i] === 1 ? ' coin' : ' coins') +\n        (prices[i] !== r.price ? ' (was ' + r.price + ')' : '') + ', ' + r.buyers + (r.buyers === 1 ? ' buyer waiting' : ' buyers waiting'));\n    } else {\n      if (task === 'restock') scene.yesterday = yesterday.map(r => { const k = kindOf(r.id); return (k ? k.name : r.id) + ': ' + r.morning + ' in the morning, ' + r.left + ' left at the end of the day'; });\n      scene[task === 'restock' ? 'wagon' : 'shelf'] = shelf.map(s => (s ? kindOf(s).name : 'empty'));\n      scene.crate = kinds.filter(k => avail(k) > 0).map(k => k.name);\n    }\n    lumina.scene(scene);\n  }, [shelf, prices, goalMet]);\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;\n  const grab = (d, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag(d); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const p = pointOf(e), d = drag;\n    setDrag(null);\n    const into = inRect(p, SLOTS_RECT);\n    if (d.from === 'crate' && into) {\n      const k = kindOf(d.kind), free = shelf.indexOf(null);\n      if (k && avail(k) > 0 && free >= 0) setShelf(s => s.map((v, i) => (i === free ? d.kind : v)));\n    } else if (d.from === 'slot' && !into) {\n      setShelf(s => s.map((v, i) => (i === d.slot ? null : v)));\n    }\n  };\n  const nudge = (i, by) => setPrices(ps => ps.map((v, j) => (j === i ? Math.max(1, Math.min(5, v + by)) : v)));\n\n  // ---- the sky ----\n  const sky = () => {\n    const bg = { rain: '#334155', sun: '#0c4a6e', hot: '#9a3412', snow: '#475569' }[weather];\n    const cloud = (cx, cy, fill) => <g fill={fill}><circle cx={cx - 34} cy={cy + 6} r=\"22\" /><circle cx={cx} cy={cy - 6} r=\"30\" /><circle cx={cx + 36} cy={cy + 6} r=\"22\" /><rect x={cx - 56} y={cy + 6} width=\"114\" height=\"22\" rx=\"11\" /></g>;\n    return <g>\n      <rect x=\"0\" y=\"0\" width={W} height=\"100\" fill={bg} />\n      {(weather === 'sun' || weather === 'hot') && <g>\n        <circle cx=\"590\" cy=\"50\" r={weather === 'hot' ? 34 : 26} fill=\"#facc15\" />\n        {Array.from({ length: 10 }, (_, k) => { const a = (k / 10) * Math.PI * 2, r0 = weather === 'hot' ? 42 : 34; return <line key={k} x1={590 + Math.cos(a) * r0} y1={50 + Math.sin(a) * r0} x2={590 + Math.cos(a) * (r0 + 12)} y2={50 + Math.sin(a) * (r0 + 12)} stroke=\"#facc15\" strokeWidth=\"4\" strokeLinecap=\"round\" />; })}\n        {weather === 'hot' && [0, 1, 2].map(k => <path key={k} d={`M ${90 + k * 140} 80 q 10 -12 20 0 t 20 0 t 20 0 t 20 0`} fill=\"none\" stroke=\"#fdba74\" strokeWidth=\"3\" />)}\n      </g>}\n      {weather === 'rain' && <g>{cloud(160, 36, '#94a3b8')}{cloud(470, 30, '#94a3b8')}\n        {Array.from({ length: 16 }, (_, k) => <line key={k} x1={90 + k * 34} y1={66 + (k % 3) * 8} x2={84 + k * 34} y2={82 + (k % 3) * 8} stroke=\"#7dd3fc\" strokeWidth=\"3\" strokeLinecap=\"round\" />)}</g>}\n      {weather === 'snow' && <g>{cloud(160, 36, '#e2e8f0')}{cloud(470, 30, '#e2e8f0')}\n        {Array.from({ length: 16 }, (_, k) => <circle key={k} cx={90 + k * 34} cy={74 + (k % 3) * 8} r=\"4\" fill=\"#f8fafc\" />)}</g>}\n    </g>;\n  };\n\n  // ---- the stall ----\n  const awning = () => <g>\n    {Array.from({ length: 10 }, (_, k) => <path key={k} d={`M ${90 + k * 50} 108 l 50 0 l 0 30 q -25 16 -50 0 z`} fill={k % 2 ? '#f8fafc' : '#dc2626'} />)}\n    <rect x=\"96\" y=\"138\" width=\"8\" height={(task === 'price' ? H : CRATE_Y) - 150} fill=\"#78350f\" /><rect x=\"576\" y=\"138\" width=\"8\" height={(task === 'price' ? H : CRATE_Y) - 150} fill=\"#78350f\" />\n  </g>;\n\n  const slotAt = i => ({ x: (W - slotsW) / 2 + i * (SLOT + SGAP) + SLOT / 2, y: SLOTS_Y + SLOT / 2 });\n  const card = (k, held) => <g>\n    <rect x=\"-44\" y=\"-44\" width=\"88\" height=\"88\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n    <text y=\"4\" textAnchor=\"middle\" fontSize=\"46\" dominantBaseline=\"middle\">{k.pic}</text>\n  </g>;\n\n  const shelfArea = () => <g id=\"slots\">\n    {task === 'restock'\n      ? <g><rect x={SLOTS_RECT.x} y={SLOTS_RECT.y} width={SLOTS_RECT.w} height={SLOTS_RECT.h} rx=\"14\" fill=\"#713f12\" stroke=\"#422006\" strokeWidth=\"3\" />\n        <circle cx={SLOTS_RECT.x + 40} cy={SLOTS_RECT.y + SLOTS_RECT.h + 4} r=\"14\" fill=\"#1e293b\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\n        <circle cx={SLOTS_RECT.x + SLOTS_RECT.w - 40} cy={SLOTS_RECT.y + SLOTS_RECT.h + 4} r=\"14\" fill=\"#1e293b\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\n        <line x1={SLOTS_RECT.x + SLOTS_RECT.w} y1={SLOTS_RECT.y + 20} x2={SLOTS_RECT.x + SLOTS_RECT.w + 40} y2={SLOTS_RECT.y - 10} stroke=\"#422006\" strokeWidth=\"6\" strokeLinecap=\"round\" /></g>\n      : <g><rect x={SLOTS_RECT.x} y={SLOTS_RECT.y} width={SLOTS_RECT.w} height={SLOTS_RECT.h} rx=\"8\" fill=\"#451a03\" opacity=\"0.6\" />\n        <rect x={SLOTS_RECT.x - 10} y={SLOTS_RECT.y + SLOTS_RECT.h} width={SLOTS_RECT.w + 20} height=\"14\" rx=\"4\" fill=\"#92400e\" /></g>}\n    {shelf.map((s, i) => { const p = slotAt(i); return s ? null : <rect key={i} x={p.x - 44} y={p.y - 44} width=\"88\" height=\"88\" rx=\"12\" fill=\"none\" stroke=\"#a8a29e\" strokeWidth=\"2\" strokeDasharray=\"6 6\" />; })}\n  </g>;\n\n  const slotItem = i => {\n    const s = shelf[i]; if (!s) return null;\n    const held = drag && drag.from === 'slot' && drag.slot === i && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : slotAt(i);\n    return <g key={'slot' + i} id={'slot-' + i} transform={`translate(${p.x}, ${p.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n      onPointerDown={e => grab({ from: 'slot', slot: i, kind: s }, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>{card(kindOf(s))}</g>;\n  };\n\n  const CW = 92, CGAP = 12, cx0 = (W - (kinds.length * CW + (kinds.length - 1) * CGAP)) / 2;\n  const crateAt = i => ({ x: cx0 + i * (CW + CGAP) + CW / 2, y: CRATE_Y + 64 });\n  const crate = () => <g id=\"crate\">\n    <rect x=\"30\" y={CRATE_Y} width={W - 60} height=\"128\" rx=\"10\" fill=\"#57534e\" stroke=\"#292524\" strokeWidth=\"3\" />\n    {[1, 2].map(r => <line key={r} x1=\"30\" y1={CRATE_Y + r * 43} x2={W - 30} y2={CRATE_Y + r * 43} stroke=\"#44403c\" strokeWidth=\"2\" />)}\n  </g>;\n  const crateItem = (k, i) => {\n    if (avail(k) <= 0) return null;\n    const held = drag && drag.from === 'crate' && drag.kind === k.id && drag.x !== undefined;\n    const home = crateAt(i), many = k.count > 1;\n    return <g key={k.id}>\n      {held && many && <g transform={`translate(${home.x}, ${home.y})`}>{card(k)}</g>}\n      <g id={'stack-' + k.id} transform={`translate(${held ? drag.x : home.x}, ${held ? drag.y : home.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n        onPointerDown={e => grab({ from: 'crate', kind: k.id }, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n        {many && !held && <rect x=\"-38\" y=\"-50\" width=\"88\" height=\"88\" rx=\"12\" fill=\"#334155\" stroke=\"#475569\" strokeWidth=\"2\" />}\n        {card(k)}\n      </g>\n    </g>;\n  };\n\n  // ---- yesterday's shelf: one row per thing; a faded place is one that sold ----\n  const yesterdayRows = () => <g id=\"yesterday\">\n    <rect x=\"120\" y=\"150\" width=\"440\" height={yesterday.length * 56 + 12} rx=\"10\" fill=\"#1c1917\" stroke=\"#57534e\" strokeWidth=\"2\" />\n    {yesterday.map((r, ri) => { const k = kindOf(r.id) || { pic: '?' }; const y = 186 + ri * 56; return <g key={r.id} id={'row-' + r.id}>\n      {Array.from({ length: r.morning }, (_, j) => { const x = 170 + j * 76, sold = j >= r.left; return <g key={j} transform={`translate(${x}, ${y})`}>\n        <rect x=\"-26\" y=\"-24\" width=\"52\" height=\"48\" rx=\"8\" fill={sold ? 'none' : '#292524'} stroke=\"#78716c\" strokeWidth=\"2\" strokeDasharray={sold ? '5 5' : 'none'} />\n        <text y=\"3\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"30\" opacity={sold ? 0.18 : 1}>{k.pic}</text></g>; })}\n    </g>; })}\n  </g>;\n\n  // ---- prices ----\n  const btn = (id, x, y, label, on, act) => <g id={id} transform={`translate(${x}, ${y})`} style={{ cursor: on ? 'pointer' : 'default' }} opacity={on ? 1 : 0.3} onClick={on ? act : undefined}>\n    <rect x=\"-24\" y=\"-24\" width=\"48\" height=\"48\" rx=\"12\" fill=\"#334155\" stroke=\"#94a3b8\" strokeWidth=\"2\" />\n    <text y=\"2\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"32\" fill=\"#f8fafc\" fontWeight=\"700\">{label}</text></g>;\n  const priceRow = (r, i) => { const y = 214 + i * 124, n = prices[i]; return <g key={r.id} id={'row-' + r.id}>\n    <rect x=\"30\" y={y - 54} width={W - 60} height=\"108\" rx=\"12\" fill=\"#1c1917\" stroke=\"#57534e\" strokeWidth=\"2\" />\n    {Array.from({ length: r.left }, (_, j) => <text key={j} x={72 + (j % 3) * 46} y={y - 22 + Math.floor(j / 3) * 46} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"34\">{r.pic}</text>)}\n    {r.left === 0 && <rect x=\"50\" y={y - 40} width=\"130\" height=\"80\" rx=\"10\" fill=\"none\" stroke=\"#78716c\" strokeWidth=\"2\" strokeDasharray=\"6 6\" />}\n    {btn('down-' + r.id, 236, y, '−', n > 1, () => nudge(i, -1))}\n    <g id={'price-' + r.id}><path d={`M 272 ${y - 30} L 420 ${y - 30} L 420 ${y + 30} L 272 ${y + 30} L 262 ${y} Z`} fill=\"#fef3c7\" stroke=\"#a16207\" strokeWidth=\"2\" />\n      {Array.from({ length: n }, (_, k) => <circle key={k} cx={346 + (k - (n - 1) / 2) * 27} cy={y} r=\"11\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2.5\" />)}</g>\n    {btn('up-' + r.id, 452, y, '+', n < 5, () => nudge(i, 1))}\n    <g id={'buyers-' + r.id}>{Array.from({ length: r.buyers }, (_, j) => <text key={j} x={516 + (j % 3) * 40} y={y - 22 + Math.floor(j / 3) * 46} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"32\">🧒</text>)}</g>\n  </g>; };\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        {sky()}\n        {awning()}\n        {task === 'price' ? rows.map(priceRow) : <g>\n          {task === 'restock' && yesterdayRows()}\n          {shelfArea()}\n          {crate()}\n          {shelf.map((_, i) => (drag && drag.from === 'slot' && drag.slot === i ? null : slotItem(i)))}\n          {kinds.map((k, i) => (drag && drag.from === 'crate' && drag.kind === k.id ? null : crateItem(k, i)))}\n          {drag && drag.from === 'slot' && slotItem(drag.slot)}\n          {drag && drag.from === 'crate' && crateItem(kindOf(drag.kind), kinds.findIndex(k => k.id === drag.kind))}\n        </g>}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "task": "stock",
+    "weather": "rain",
+    "slots": 3,
+    "story": "a rainy market day; the child fills the stall's shelf with three things to sell",
+    "kinds": [
+     {
+      "id": "shades",
+      "pic": "🕶️",
+      "name": "sunglasses",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "umbrella",
+      "pic": "☂️",
+      "name": "umbrella",
+      "count": 1,
+      "fits": true
+     },
+     {
+      "id": "ball",
+      "pic": "⚽",
+      "name": "ball",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "coat",
+      "pic": "🧥",
+      "name": "raincoat",
+      "count": 1,
+      "fits": true
+     },
+     {
+      "id": "icecream",
+      "pic": "🍦",
+      "name": "ice cream",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "boots",
+      "pic": "👢",
+      "name": "rain boots",
+      "count": 1,
+      "fits": true
+     }
+    ]
+   },
+   "ask": "It is a rainy day at the market. Fill your stall with things people will want to buy.",
+   "goal": "The umbrella, raincoat and rain boots are on the shelf; nothing for sun or play takes a place.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#stack-umbrella",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-coat",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-boots",
+     "to": "#slots"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#stack-icecream",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-ball",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-umbrella",
+     "to": "#slots"
+    }
+   ],
+   "scene": {
+    "situation": "a rainy market day; the child fills the stall's shelf with three things to sell",
+    "sky": "rainy and wet",
+    "shelf": [
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "crate": [
+     "sunglasses",
+     "umbrella",
+     "ball",
+     "raincoat",
+     "ice cream",
+     "rain boots"
+    ]
+   },
+   "proofScene": {
+    "situation": "a rainy market day; the child fills the stall's shelf with three things to sell",
+    "sky": "rainy and wet",
+    "shelf": [
+     "umbrella",
+     "raincoat",
+     "rain boots"
+    ],
+    "crate": [
+     "sunglasses",
+     "ball",
+     "ice cream"
+    ]
+   },
+   "missScene": {
+    "situation": "a rainy market day; the child fills the stall's shelf with three things to sell",
+    "sky": "rainy and wet",
+    "shelf": [
+     "ice cream",
+     "ball",
+     "umbrella"
+    ],
+    "crate": [
+     "sunglasses",
+     "raincoat",
+     "rain boots"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "stock",
+    "weather": "hot",
+    "slots": 3,
+    "story": "the day after the rain is very hot; the stall still holds yesterday's rainy-day things",
+    "start": [
+     "umbrella",
+     "coat",
+     "boots"
+    ],
+    "kinds": [
+     {
+      "id": "umbrella",
+      "pic": "☂️",
+      "name": "umbrella",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "lemonade",
+      "pic": "🥤",
+      "name": "lemonade",
+      "count": 1,
+      "fits": true
+     },
+     {
+      "id": "coat",
+      "pic": "🧥",
+      "name": "raincoat",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "hat",
+      "pic": "👒",
+      "name": "sun hat",
+      "count": 1,
+      "fits": true
+     },
+     {
+      "id": "boots",
+      "pic": "👢",
+      "name": "rain boots",
+      "count": 1,
+      "fits": false
+     },
+     {
+      "id": "fan",
+      "pic": "🪭",
+      "name": "fan",
+      "count": 1,
+      "fits": true
+     }
+    ]
+   },
+   "ask": "Today is a very hot, sunny day. Get your stall ready for today.",
+   "goal": "The rainy-day things are back in the crate and the lemonade, sun hat and fan are on the shelf.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#slot-0",
+     "to": "#crate"
+    },
+    {
+     "do": "drag",
+     "target": "#slot-1",
+     "to": "#crate"
+    },
+    {
+     "do": "drag",
+     "target": "#slot-2",
+     "to": "#crate"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-lemonade",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-hat",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-fan",
+     "to": "#slots",
+     "shot": "full"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#slot-0",
+     "to": "#crate"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-lemonade",
+     "to": "#slots"
+    }
+   ],
+   "scene": {
+    "situation": "the day after the rain is very hot; the stall still holds yesterday's rainy-day things",
+    "sky": "very hot and sunny",
+    "shelf": [
+     "umbrella",
+     "raincoat",
+     "rain boots"
+    ],
+    "crate": [
+     "lemonade",
+     "sun hat",
+     "fan"
+    ]
+   },
+   "proofScene": {
+    "situation": "the day after the rain is very hot; the stall still holds yesterday's rainy-day things",
+    "sky": "very hot and sunny",
+    "shelf": [
+     "lemonade",
+     "sun hat",
+     "fan"
+    ],
+    "crate": [
+     "umbrella",
+     "raincoat",
+     "rain boots"
+    ]
+   },
+   "missScene": {
+    "situation": "the day after the rain is very hot; the stall still holds yesterday's rainy-day things",
+    "sky": "very hot and sunny",
+    "shelf": [
+     "lemonade",
+     "raincoat",
+     "rain boots"
+    ],
+    "crate": [
+     "umbrella",
+     "sun hat",
+     "fan"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "restock",
+    "weather": "hot",
+    "slots": 3,
+    "story": "yesterday was hot; the shelf shows what sold and what was left. Tomorrow is hot again and the wagon carries three more things",
+    "yesterday": [
+     {
+      "id": "lemonade",
+      "morning": 4,
+      "left": 0
+     },
+     {
+      "id": "umbrella",
+      "morning": 4,
+      "left": 4
+     },
+     {
+      "id": "hat",
+      "morning": 4,
+      "left": 1
+     }
+    ],
+    "kinds": [
+     {
+      "id": "umbrella",
+      "pic": "☂️",
+      "name": "umbrella",
+      "fits": false
+     },
+     {
+      "id": "lemonade",
+      "pic": "🥤",
+      "name": "lemonade",
+      "fits": true
+     },
+     {
+      "id": "hat",
+      "pic": "👒",
+      "name": "sun hat",
+      "fits": true
+     }
+    ]
+   },
+   "ask": "Here is what was left on the stall after yesterday. Tomorrow is hot again. Fill the wagon with more things to sell.",
+   "goal": "The wagon holds only lemonade and sun hats, the things that sold out or nearly sold out; no umbrella, which nobody bought.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#stack-lemonade",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-lemonade",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-hat",
+     "to": "#slots"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#stack-umbrella",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-umbrella",
+     "to": "#slots"
+    },
+    {
+     "do": "drag",
+     "target": "#stack-hat",
+     "to": "#slots"
+    }
+   ],
+   "scene": {
+    "situation": "yesterday was hot; the shelf shows what sold and what was left. Tomorrow is hot again and the wagon carries three more things",
+    "sky": "very hot and sunny (tomorrow)",
+    "yesterday": [
+     "lemonade: 4 in the morning, 0 left at the end of the day",
+     "umbrella: 4 in the morning, 4 left at the end of the day",
+     "sun hat: 4 in the morning, 1 left at the end of the day"
+    ],
+    "wagon": [
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "crate": [
+     "umbrella",
+     "lemonade",
+     "sun hat"
+    ]
+   },
+   "proofScene": {
+    "situation": "yesterday was hot; the shelf shows what sold and what was left. Tomorrow is hot again and the wagon carries three more things",
+    "sky": "very hot and sunny (tomorrow)",
+    "yesterday": [
+     "lemonade: 4 in the morning, 0 left at the end of the day",
+     "umbrella: 4 in the morning, 4 left at the end of the day",
+     "sun hat: 4 in the morning, 1 left at the end of the day"
+    ],
+    "wagon": [
+     "lemonade",
+     "lemonade",
+     "sun hat"
+    ],
+    "crate": [
+     "umbrella",
+     "lemonade",
+     "sun hat"
+    ]
+   },
+   "missScene": {
+    "situation": "yesterday was hot; the shelf shows what sold and what was left. Tomorrow is hot again and the wagon carries three more things",
+    "sky": "very hot and sunny (tomorrow)",
+    "yesterday": [
+     "lemonade: 4 in the morning, 0 left at the end of the day",
+     "umbrella: 4 in the morning, 4 left at the end of the day",
+     "sun hat: 4 in the morning, 1 left at the end of the day"
+    ],
+    "wagon": [
+     "umbrella",
+     "umbrella",
+     "sun hat"
+    ],
+    "crate": [
+     "umbrella",
+     "lemonade",
+     "sun hat"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "price",
+    "weather": "sun",
+    "story": "sale day at the end of a sunny week: lots of umbrellas are left and nobody is buying them; one cup of lemonade is left and three children are waiting for it",
+    "rows": [
+     {
+      "id": "umbrella",
+      "pic": "☂️",
+      "name": "umbrella",
+      "left": 5,
+      "buyers": 0,
+      "price": 3,
+      "move": "down"
+     },
+     {
+      "id": "lemonade",
+      "pic": "🥤",
+      "name": "lemonade",
+      "left": 1,
+      "buyers": 3,
+      "price": 2,
+      "move": "same"
+     }
+    ]
+   },
+   "ask": "It is sale day at the stall. Change a price so more things get sold.",
+   "goal": "The umbrella costs fewer coins than before and the lemonade keeps its price.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#down-umbrella"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#down-lemonade"
+    }
+   ],
+   "scene": {
+    "situation": "sale day at the end of a sunny week: lots of umbrellas are left and nobody is buying them; one cup of lemonade is left and three children are waiting for it",
+    "sky": "sunny",
+    "stall": [
+     "umbrella: 5 left, price 3 coins, 0 buyers waiting",
+     "lemonade: 1 left, price 2 coins, 3 buyers waiting"
+    ]
+   },
+   "proofScene": {
+    "situation": "sale day at the end of a sunny week: lots of umbrellas are left and nobody is buying them; one cup of lemonade is left and three children are waiting for it",
+    "sky": "sunny",
+    "stall": [
+     "umbrella: 5 left, price 2 coins (was 3), 0 buyers waiting",
+     "lemonade: 1 left, price 2 coins, 3 buyers waiting"
+    ]
+   },
+   "missScene": {
+    "situation": "sale day at the end of a sunny week: lots of umbrellas are left and nobody is buying them; one cup of lemonade is left and three children are waiting for it",
+    "sky": "sunny",
+    "stall": [
+     "umbrella: 5 left, price 3 coins, 0 buyers waiting",
+     "lemonade: 1 left, price 1 coin (was 2), 3 buyers waiting"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "price",
+    "weather": "rain",
+    "story": "a rainy day: one umbrella is left and five people want it; four pairs of sunglasses are left and nobody wants them",
+    "rows": [
+     {
+      "id": "umbrella",
+      "pic": "☂️",
+      "name": "umbrella",
+      "left": 1,
+      "buyers": 5,
+      "price": 2,
+      "move": "up"
+     },
+     {
+      "id": "shades",
+      "pic": "🕶️",
+      "name": "sunglasses",
+      "left": 4,
+      "buyers": 0,
+      "price": 2,
+      "move": "down"
+     }
+    ]
+   },
+   "ask": "It is raining hard at the market. Set the prices for today.",
+   "goal": "The last umbrella costs more than before and the sunglasses cost less.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#up-umbrella"
+    },
+    {
+     "do": "click",
+     "target": "#down-shades"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#down-umbrella"
+    },
+    {
+     "do": "click",
+     "target": "#down-shades"
+    }
+   ],
+   "scene": {
+    "situation": "a rainy day: one umbrella is left and five people want it; four pairs of sunglasses are left and nobody wants them",
+    "sky": "rainy and wet",
+    "stall": [
+     "umbrella: 1 left, price 2 coins, 5 buyers waiting",
+     "sunglasses: 4 left, price 2 coins, 0 buyers waiting"
+    ]
+   },
+   "proofScene": {
+    "situation": "a rainy day: one umbrella is left and five people want it; four pairs of sunglasses are left and nobody wants them",
+    "sky": "rainy and wet",
+    "stall": [
+     "umbrella: 1 left, price 3 coins (was 2), 5 buyers waiting",
+     "sunglasses: 4 left, price 1 coin (was 2), 0 buyers waiting"
+    ]
+   },
+   "missScene": {
+    "situation": "a rainy day: one umbrella is left and five people want it; four pairs of sunglasses are left and nobody wants them",
+    "sky": "rainy and wet",
+    "stall": [
+     "umbrella: 1 left, price 1 coin (was 2), 5 buyers waiting",
+     "sunglasses: 4 left, price 1 coin (was 2), 0 buyers waiting"
+    ]
+   }
+  }
+ ]
+}

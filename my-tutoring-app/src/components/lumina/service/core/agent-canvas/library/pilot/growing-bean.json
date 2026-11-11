@@ -1,0 +1,838 @@
+{
+ "id": "growing-bean",
+ "title": "Growing Bean",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child stacks cubes beside a bean plant each day, puts each day's height on a cube chart, then finds the tallest day, the day it did not grow, or how many cubes it grew."
+ },
+ "request": {
+  "topic": "Measuring a growing plant over several days",
+  "grade": "kindergarten",
+  "objective": "Measure a growing plant with cubes on several days, record each day's count, and tell which day it was tallest and how it changed."
+ },
+ "source": "function Display({ params, lumina }) {\n  const heights = params?.heights ?? [2, 4];\n  const answer = params?.answer ?? 'record';\n  const nibbleDay = params?.nibbleDay ?? -1;\n  const starWord = params?.starWord ?? 'Tallest';\n\n  const days = heights.length;\n  const CUBE = 30;\n  const SLOTS = 8;\n  const SCENE_W = 310;\n  const SCENE_H = 310;\n  const SOIL = 270;\n  const STEM = 112;\n  const COL_X = STEM + 26;\n  const CH = 28;\n\n  const [day, setDay] = useState(0);\n  const [cubes, setCubes] = useState([]);\n  const [recorded, setRecorded] = useState([]);\n  const [drag, setDrag] = useState(null);\n  const [star, setStar] = useState(null);\n  const [starDrag, setStarDrag] = useState(null);\n  const [marked, setMarked] = useState([]);\n  const sceneRef = useRef(null);\n  const worldRef = useRef(null);\n  const barRefs = useRef({});\n\n  const allMeasured = recorded.length === days;\n  const shownDay = allMeasured ? days - 1 : day;\n  const h = heights[shownDay];\n\n  const sorted = cubes.slice().sort((a, b) => a - b);\n  const facts = JSON.stringify({ day, cubes: sorted, recorded, star, marked });\n\n  useEffect(() => {\n    const tower = (list, n) => list.length === n && list.every((k, i) => k === i);\n    const measuredRight = allMeasured && recorded.every((list, d) => tower(list, heights[d]));\n    let met = measuredRight;\n    if (answer === 'tallest') {\n      let best = 0;\n      heights.forEach((v, d) => { if (v > heights[best]) best = d; });\n      met = measuredRight && star === best;\n    } else if (answer === 'nogrowth') {\n      met = measuredRight && star != null && star > 0 && heights[star] === heights[star - 1];\n    } else if (answer === 'grew') {\n      const grew = heights[days - 1] - heights[0];\n      met = measuredRight && marked.length === grew && marked.every((m) => m.startsWith((days - 1) + '-'));\n    }\n    lumina.goal(met);\n    const scene = {\n      plant: 'one bean plant in a planter, measured with cubes',\n      dayShown: allMeasured ? 'all days measured' : 'day ' + (day + 1) + ' of ' + days,\n      cubesStackedBesidePlant: allMeasured ? null : cubes.length,\n      lowestCubeSitsOnTheSoil: cubes.length ? sorted[0] === 0 : null,\n      gapInTheCubeStack: cubes.length ? sorted.some((k, i) => k !== sorted[0] + i) : null,\n      chartCubesPerDay: recorded.map((list) => list.length),\n      question: { record: 'record each day on the chart', tallest: 'which day was the plant tallest', nogrowth: 'which day the plant did not grow', grew: 'how many cubes the plant grew from the first day to the last' }[answer],\n    };\n    if (nibbleDay >= 0) scene.note = 'a rabbit nibbled the top of the bean on one night';\n    if (answer === 'tallest' || answer === 'nogrowth') scene.starOn = star == null ? null : 'day ' + (star + 1);\n    if (answer === 'grew') scene.cubesMarkedOnChart = marked.length;\n    lumina.scene(scene);\n  }, [facts]);\n\n  // Cubes: drag one from the bin; it lands in the spot beside the stem under the pointer. Tap a cube to take it off.\n  const local = (e, ref) => {\n    const b = ref.current.getBoundingClientRect();\n    return { x: e.clientX - b.left, y: e.clientY - b.top };\n  };\n  const slotAt = (p) => {\n    if (p.x < COL_X - 30 || p.x > COL_X + CUBE + 30) return -1;\n    const k = Math.floor((SOIL - p.y) / CUBE);\n    return k >= 0 && k < SLOTS ? k : -1;\n  };\n  const onBinDown = (e) => { if (allMeasured) return; e.currentTarget.setPointerCapture(e.pointerId); setDrag(local(e, sceneRef)); };\n  const onBinMove = (e) => { if (drag) setDrag(local(e, sceneRef)); };\n  const onBinUp = (e) => {\n    if (!drag) return;\n    setDrag(null);\n    const k = slotAt(local(e, sceneRef));\n    if (k >= 0 && !cubes.includes(k)) setCubes((c) => c.concat([k]));\n  };\n  const takeOff = (k) => setCubes((c) => c.filter((x) => x !== k));\n\n  const record = () => {\n    if (!cubes.length || allMeasured) return;\n    setRecorded((r) => r.concat([sorted]));\n    setCubes([]);\n    setDay((d) => Math.min(days - 1, d + 1));\n  };\n\n  // The star: drag it onto a day on the chart.\n  const onStarDown = (e) => { e.currentTarget.setPointerCapture(e.pointerId); setStarDrag(local(e, worldRef)); };\n  const onStarMove = (e) => { if (starDrag) setStarDrag(local(e, worldRef)); };\n  const onStarUp = (e) => {\n    if (!starDrag) return;\n    setStarDrag(null);\n    let hit = null;\n    Object.keys(barRefs.current).forEach((d) => {\n      const el = barRefs.current[d];\n      if (!el) return;\n      const r = el.getBoundingClientRect();\n      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) hit = Number(d);\n    });\n    setStar(hit);\n  };\n  const toggleMark = (key) => {\n    if (answer !== 'grew' || !allMeasured) return;\n    setMarked((m) => (m.includes(key) ? m.filter((x) => x !== key) : m.concat([key])));\n  };\n\n  const plant = () => {\n    const top = SOIL - h * CUBE;\n    const nibbled = shownDay === nibbleDay;\n    const leaves = [];\n    for (let k = 1; k < h; k += 1) {\n      const y = SOIL - k * CUBE + 8;\n      const rx = k % 2 === 1 ? 16 : 12;\n      leaves.push(<ellipse key={k} cx={STEM - rx - 1} cy={y} rx={rx} ry=\"7\" fill=\"#4ade80\" transform={'rotate(25 ' + (STEM - rx - 1) + ' ' + y + ')'} />);\n    }\n    return (\n      <g>\n        <line x1={STEM} y1={SOIL} x2={STEM} y2={top} stroke=\"#22c55e\" strokeWidth=\"6\" strokeLinecap=\"butt\" />\n        {leaves}\n        {nibbled ? (\n          <g>\n            <rect x={STEM - 5} y={top - 1} width=\"10\" height=\"4\" fill=\"#a16207\" />\n            <circle cx={STEM - 12} cy={top + 10} r=\"2\" fill=\"#4ade80\" />\n            <circle cx={STEM + 10} cy={top + 16} r=\"2\" fill=\"#4ade80\" />\n          </g>\n        ) : (\n          <g>\n            <path d={'M' + STEM + ' ' + top + ' Q ' + (STEM - 14) + ' ' + (top + 4) + ' ' + (STEM - 18) + ' ' + (top + 14) + ' Q ' + (STEM - 6) + ' ' + (top + 14) + ' ' + STEM + ' ' + top} fill=\"#86efac\" />\n            <path d={'M' + STEM + ' ' + top + ' Q ' + (STEM + 14) + ' ' + (top + 4) + ' ' + (STEM + 18) + ' ' + (top + 14) + ' Q ' + (STEM + 6) + ' ' + (top + 14) + ' ' + STEM + ' ' + top} fill=\"#86efac\" />\n          </g>\n        )}\n      </g>\n    );\n  };\n\n  const cubeStyle = (extra) => ({ position: 'absolute', width: CUBE - 2, height: CUBE - 2, borderRadius: 4, background: '#60a5fa', border: '1px solid #1e3a8a', boxSizing: 'border-box', ...extra });\n\n  const sceneBox = (\n    <div ref={sceneRef} style={{ position: 'relative', width: SCENE_W, height: SCENE_H, flex: '0 0 auto', opacity: allMeasured ? 0.35 : 1, touchAction: 'none', userSelect: 'none' }}>\n      <div style={{ position: 'absolute', left: 0, top: 0, fontSize: 20, fontWeight: 800, color: '#f1f5f9' }}>{allMeasured ? 'All days measured' : 'Day ' + (day + 1)}</div>\n      <svg width={SCENE_W} height={SCENE_H} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>\n        <rect x=\"20\" y={SOIL} width=\"200\" height={SCENE_H - SOIL} rx=\"6\" fill=\"#92400e\" />\n        <rect x=\"20\" y={SOIL} width=\"200\" height=\"8\" fill=\"#451a03\" />\n        {plant()}\n      </svg>\n      {Array.from({ length: SLOTS }, (_, k) => (\n        <div key={'s' + k} id={'slot-' + k} style={{ position: 'absolute', left: COL_X, top: SOIL - (k + 1) * CUBE, width: CUBE, height: CUBE, pointerEvents: 'none' }} />\n      ))}\n      {cubes.map((k) => (\n        <div key={'c' + k} id={'cube-' + k} onClick={() => takeOff(k)} style={cubeStyle({ left: COL_X + 1, top: SOIL - (k + 1) * CUBE + 1, cursor: 'pointer' })} />\n      ))}\n      {!allMeasured ? (\n        <div id=\"bin\" onPointerDown={onBinDown} onPointerMove={onBinMove} onPointerUp={onBinUp}\n          style={{ position: 'absolute', left: 236, top: SOIL - 70, width: 70, height: 66, borderRadius: 10, border: '2px solid #475569', background: '#1e293b', cursor: 'grab', display: 'flex', flexWrap: 'wrap', gap: 3, padding: 6, boxSizing: 'border-box', alignContent: 'flex-start' }}>\n          {Array.from({ length: 6 }, (_, k) => <div key={k} style={{ width: 16, height: 16, borderRadius: 3, background: '#60a5fa' }} />)}\n          <div style={{ width: '100%', textAlign: 'center', color: '#cbd5e1', fontSize: 12, marginTop: 2 }}>cubes</div>\n        </div>\n      ) : null}\n      {drag ? <div style={cubeStyle({ left: drag.x - CUBE / 2, top: drag.y - CUBE / 2, opacity: 0.8, pointerEvents: 'none' })} /> : null}\n    </div>\n  );\n\n  const BAR_W = 58;\n  const chart = (\n    <div style={{ flex: '0 0 auto' }}>\n      <div style={{ color: '#cbd5e1', fontSize: 15, marginBottom: 6, textAlign: 'center' }}>Bean chart: cubes tall</div>\n      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', padding: '8px 10px 0', borderBottom: '2px solid #64748b', minHeight: SLOTS * CH + 20 }}>\n        {heights.map((_, d) => {\n          const list = recorded[d] || [];\n          return (\n            <div key={d} id={'bar-' + d} ref={(el) => { barRefs.current[d] = el; }}\n              style={{ width: BAR_W, height: SLOTS * CH + 20, display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', gap: 1, position: 'relative' }}>\n              {list.map((_, k) => {\n                const key = d + '-' + k;\n                const on = marked.includes(key);\n                return <div key={key} id={'chart-' + key} onClick={() => toggleMark(key)} style={{ width: 44, height: CH - 1, borderRadius: 4, background: on ? '#f472b6' : '#60a5fa', border: '1px solid #1e3a8a', boxSizing: 'border-box', cursor: answer === 'grew' && allMeasured ? 'pointer' : 'default' }} />;\n              })}\n              {star === d ? starChip(false, true) : null}\n            </div>\n          );\n        })}\n      </div>\n      <div style={{ display: 'flex', gap: 10, padding: '4px 10px 0' }}>\n        {heights.map((_, d) => (\n          <div key={d} style={{ width: BAR_W, textAlign: 'center', fontSize: 15, fontWeight: d === day && !allMeasured ? 800 : 500, color: d === day && !allMeasured ? '#fbbf24' : '#cbd5e1' }}>Day {d + 1}</div>\n        ))}\n      </div>\n    </div>\n  );\n\n  function starChip(ghost, placed) {\n    if (placed) {\n      return <div id=\"star\" onPointerDown={onStarDown} onPointerMove={onStarMove} onPointerUp={onStarUp} style={{ fontSize: 30, lineHeight: '36px', cursor: 'grab', touchAction: 'none', userSelect: 'none', opacity: starDrag ? 0.25 : 1 }}>⭐</div>;\n    }\n    return (\n      <div id={ghost ? undefined : 'star'} onPointerDown={ghost ? undefined : onStarDown} onPointerMove={ghost ? undefined : onStarMove} onPointerUp={ghost ? undefined : onStarUp}\n        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', minHeight: 40, borderRadius: 20, background: '#fbbf24', color: '#1e293b', fontWeight: 800, fontSize: 14, whiteSpace: 'nowrap', cursor: 'grab', touchAction: 'none', userSelect: 'none', opacity: starDrag && !ghost ? 0.25 : 1, boxShadow: '0 2px 8px rgba(0,0,0,.4)' }}>\n        <span style={{ fontSize: 18 }}>⭐</span>{starWord}\n      </div>\n    );\n  }\n\n  const usesStar = answer === 'tallest' || answer === 'nogrowth';\n  const btn = (active) => ({ minHeight: 48, padding: '0 22px', borderRadius: 12, border: '2px solid ' + (active ? '#fbbf24' : '#475569'), background: '#1e293b', color: '#f1f5f9', fontSize: 18, fontWeight: 800, cursor: active ? 'pointer' : 'default', opacity: active ? 1 : 0.35 });\n\n  return (\n    <Panel title=\"Growing Bean\" caption={allMeasured ? (answer === 'grew' ? 'Tap cubes on the chart to mark them. Tap again to unmark.' : usesStar ? 'Drag the star onto a day on the chart.' : 'Every day is on the chart.') : 'Drag cubes from the box to stand beside the bean. Tap a cube to take it off. Put the day on the chart when you are done.'}>\n      <div ref={worldRef} style={{ position: 'relative', display: 'flex', gap: 28, alignItems: 'flex-start', justifyContent: 'center' }}>\n        <Stack gap={10}>\n          {sceneBox}\n          {!allMeasured ? (\n            <button id=\"record\" type=\"button\" style={btn(cubes.length > 0)} onClick={record}>Put Day {day + 1} on the chart</button>\n          ) : null}\n        </Stack>\n        <Stack gap={14}>\n          {chart}\n          {usesStar && allMeasured && star == null ? <div style={{ display: 'flex', justifyContent: 'center' }}>{starChip(false)}</div> : null}\n        </Stack>\n        {starDrag ? <div style={{ position: 'absolute', left: starDrag.x - 50, top: starDrag.y - 20, pointerEvents: 'none', zIndex: 5 }}>{starChip(true)}</div> : null}\n      </div>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "heights": [
+     2,
+     4
+    ],
+    "answer": "record"
+   },
+   "ask": "Measure the bean with cubes on Day 1 and on Day 2, and put each day on the chart.",
+   "goal": "Day 1 is 2 cubes and Day 2 is 4 cubes, each stack starting on the soil with no gaps, both on the chart.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1",
+     "shot": "day1-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3",
+     "shot": "day2-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    }
+   ],
+   "scene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "day 1 of 2",
+    "cubesStackedBesidePlant": 0,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [],
+    "question": "record each day on the chart"
+   },
+   "proofScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     2,
+     4
+    ],
+    "question": "record each day on the chart"
+   },
+   "missScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     2,
+     3
+    ],
+    "question": "record each day on the chart"
+   }
+  },
+  {
+   "params": {
+    "heights": [
+     3,
+     5,
+     4
+    ],
+    "answer": "tallest",
+    "nibbleDay": 2,
+    "starWord": "Tallest"
+   },
+   "ask": "A rabbit nibbled the bean one night. Measure the bean each day, then put the star on the day it was tallest.",
+   "goal": "3, 5 and 4 cubes on the chart; the star on Day 2. The last day is not the tallest because the top was nibbled.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2",
+     "shot": "day1-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4",
+     "shot": "day2-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3",
+     "shot": "day3-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#star",
+     "to": "#bar-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#star",
+     "to": "#bar-2"
+    }
+   ],
+   "scene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "day 1 of 3",
+    "cubesStackedBesidePlant": 0,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [],
+    "question": "which day was the plant tallest",
+    "note": "a rabbit nibbled the top of the bean on one night",
+    "starOn": null
+   },
+   "proofScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     3,
+     5,
+     4
+    ],
+    "question": "which day was the plant tallest",
+    "note": "a rabbit nibbled the top of the bean on one night",
+    "starOn": "day 2"
+   },
+   "missScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     3,
+     5,
+     4
+    ],
+    "question": "which day was the plant tallest",
+    "note": "a rabbit nibbled the top of the bean on one night",
+    "starOn": "day 3"
+   }
+  },
+  {
+   "params": {
+    "heights": [
+     1,
+     3,
+     3,
+     5
+    ],
+    "answer": "nogrowth",
+    "starWord": "Did not grow"
+   },
+   "ask": "Measure the bean on all four days. On which day did it not grow at all? Put the star there.",
+   "goal": "1, 3, 3 and 5 cubes on the chart; the star on Day 3, the day it stayed as tall as Day 2.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0",
+     "shot": "day1-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2",
+     "shot": "day2-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2",
+     "shot": "day3-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4",
+     "shot": "day4-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#star",
+     "to": "#bar-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#star",
+     "to": "#bar-0"
+    }
+   ],
+   "scene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "day 1 of 4",
+    "cubesStackedBesidePlant": 0,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [],
+    "question": "which day the plant did not grow",
+    "starOn": null
+   },
+   "proofScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     1,
+     3,
+     3,
+     5
+    ],
+    "question": "which day the plant did not grow",
+    "starOn": "day 3"
+   },
+   "missScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     1,
+     3,
+     3,
+     5
+    ],
+    "question": "which day the plant did not grow",
+    "starOn": "day 1"
+   }
+  },
+  {
+   "params": {
+    "heights": [
+     2,
+     4,
+     7
+    ],
+    "answer": "grew"
+   },
+   "ask": "Measure the bean on all three days. How many cubes did it grow from Day 1 to Day 3? Mark those cubes on the chart.",
+   "goal": "2, 4 and 7 cubes on the chart; 5 cubes marked on Day 3, the part above Day 1's height.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1",
+     "shot": "day1-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3",
+     "shot": "day2-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-5"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-6",
+     "shot": "day3-cubes"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-3"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-4"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-6"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-0"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-1"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-2"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-3"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-4"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-5"
+    },
+    {
+     "do": "drag",
+     "target": "#bin",
+     "to": "#slot-6"
+    },
+    {
+     "do": "click",
+     "target": "#record"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-0"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-3"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-4"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#chart-2-6"
+    }
+   ],
+   "scene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "day 1 of 3",
+    "cubesStackedBesidePlant": 0,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [],
+    "question": "how many cubes the plant grew from the first day to the last",
+    "cubesMarkedOnChart": 0
+   },
+   "proofScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     2,
+     4,
+     7
+    ],
+    "question": "how many cubes the plant grew from the first day to the last",
+    "cubesMarkedOnChart": 5
+   },
+   "missScene": {
+    "plant": "one bean plant in a planter, measured with cubes",
+    "dayShown": "all days measured",
+    "cubesStackedBesidePlant": null,
+    "lowestCubeSitsOnTheSoil": null,
+    "gapInTheCubeStack": null,
+    "chartCubesPerDay": [
+     2,
+     4,
+     7
+    ],
+    "question": "how many cubes the plant grew from the first day to the last",
+    "cubesMarkedOnChart": 7
+   }
+  }
+ ]
+}

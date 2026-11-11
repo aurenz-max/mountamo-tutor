@@ -90,6 +90,7 @@ import VocabularyExplorer from '../primitives/visual-primitives/core/VocabularyE
 import DeepDive from '../primitives/visual-primitives/core/deep-dive/DeepDive';
 import WonderWalk from '../primitives/visual-primitives/core/wonder-walk/WonderWalk';
 import PracticeStudio from '../primitives/visual-primitives/core/practice-studio/PracticeStudio';
+import AgentCanvas from '../primitives/visual-primitives/core/agent-canvas/AgentCanvas';
 import PassageStudio from '../primitives/visual-primitives/core/passage-studio/PassageStudio';
 import ScaleSpectrum from '../primitives/ScaleSpectrum';
 import AnnotatedExample from '../primitives/AnnotatedExample';
@@ -2104,6 +2105,17 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'practice-studio': {
     component: PracticeStudio,
     sectionTitle: 'Practice Studio',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-4xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  // Agent Canvas: a program the author agent writes and plays itself; the child operates it in a sandboxed frame
+  'agent-canvas': {
+    component: AgentCanvas,
+    sectionTitle: 'Canvas',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

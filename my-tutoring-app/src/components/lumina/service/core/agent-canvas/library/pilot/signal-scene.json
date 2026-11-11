@@ -1,0 +1,440 @@
+{
+ "id": "signal-scene",
+ "title": "Signal Across",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner chooses a light or a sound signal to send a message across fog, dark, noise or a hill, which shows that people use light and sound to communicate over a distance."
+ },
+ "request": {
+  "topic": "Sending a message with light or sound",
+  "grade": "grade 1",
+  "objective": "Choose a light signal or a sound signal to send a message across a distance, by what the place between sender and receiver lets through (fog, dark, daylight, noise, a hill). NGSS 1-PS4-4 (SCI001-07-d)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // One or more paths, each a sender on the left and a far-off receiver on the right, with what lies between them\n  // ('clear', 'fog', 'waterfall', 'crowd', 'hill'). The child drags a device from the tray onto each sender.\n  // params.sky: 'night' | 'day'. params.paths: [{ between, distance }]. params.tray: device keys, 3-4 of them.\n  const sky = params.sky === 'day' ? 'day' : 'night';\n  const paths = (Array.isArray(params.paths) && params.paths.length ? params.paths : [{ between: 'clear', distance: 3 }])\n    .slice(0, 2)\n    .map(p => ({ between: p.between || 'clear', distance: typeof p.distance === 'number' ? p.distance : 3 }));\n\n  // The model. A device has a kind and a power. Light and things that must be seen are stopped by a hill and cut by\n  // fog; a flag needs daylight to be seen; a lamp carries further in the dark. Sound goes over a hill and through fog\n  // but is drowned by loud noise. A device works on a path when its reach is at least the path's distance.\n  const DEVICES = {\n    lantern: { kind: 'light', power: 2, label: 'Lantern' },\n    lamp: { kind: 'light', power: 3, label: 'Big lamp' },\n    flag: { kind: 'seen', power: 3, label: 'Flag' },\n    whistle: { kind: 'sound', power: 1, label: 'Whistle' },\n    drum: { kind: 'sound', power: 2, label: 'Drum' },\n    horn: { kind: 'sound', power: 3, label: 'Horn' },\n  };\n  const FOG_CUT = 5, NOISE_CUT = 3, DARK_BOOST = 2;\n  const tray = (Array.isArray(params.tray) ? params.tray : ['flag', 'lantern', 'whistle', 'drum']).filter(k => DEVICES[k]).slice(0, 4);\n\n  const reach = (dev, path) => {\n    const noisy = path.between === 'waterfall' || path.between === 'crowd';\n    if (dev.kind === 'sound') return dev.power - (noisy ? NOISE_CUT : 0);\n    if (path.between === 'hill') return 0;\n    let r = dev.kind === 'light' ? dev.power + (sky === 'night' ? DARK_BOOST : 0) : (sky === 'night' ? 0 : dev.power);\n    if (path.between === 'fog') r -= FOG_CUT;\n    return r;\n  };\n  const works = (key, path) => !!key && reach(DEVICES[key], path) >= path.distance;\n\n  const [onSender, setOnSender] = useState(() => paths.map(() => null)); // device key held by each sender\n  const [drag, setDrag] = useState(null); // { key, x, y }\n  const svgRef = useRef(null);\n\n  const goalMet = paths.every((p, i) => works(onSender[i], p));\n  const NAMES = { clear: 'clear air', fog: 'thick fog', waterfall: 'a loud waterfall', crowd: 'a loud crowd', hill: 'a big hill' };\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      sky: sky === 'night' ? 'dark night' : 'daytime',\n      paths: paths.map((p, i) => ({\n        sender: paths.length > 1 ? (i === 0 ? 'top sender' : 'bottom sender') : 'sender',\n        between: NAMES[p.between] || p.between,\n        holding: onSender[i] ? DEVICES[onSender[i]].label : 'nothing',\n      })),\n      tray: tray.filter(k => !onSender.includes(k)).map(k => DEVICES[k].label),\n    });\n  }, [goalMet, onSender]);\n\n  const LANE_H = 190;\n  const TRAY_Y = paths.length * LANE_H + 8;\n  const H = TRAY_Y + 118;\n  const W = 680;\n  const hand = i => ({ x: 128, y: i * LANE_H + 104 });\n  const slotX = i => (W / (tray.length + 1)) * (i + 1);\n  const slot = i => ({ x: slotX(i), y: TRAY_Y + 50 });\n\n  const where = key => {\n    if (drag && drag.key === key && drag.x !== undefined) return { x: drag.x, y: drag.y };\n    const s = onSender.indexOf(key);\n    return s >= 0 ? hand(s) : slot(tray.indexOf(key));\n  };\n\n  const onDown = (key, e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    setDrag({ key });\n  };\n  const onMove = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDrag(d => (d ? { ...d, x: pt.x, y: pt.y } : null));\n  };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    let target = -1, best = 70;\n    paths.forEach((_, i) => {\n      const h = hand(i);\n      const d = Math.hypot(h.x - pt.x, h.y - pt.y);\n      if (d < best) { best = d; target = i; }\n    });\n    setOnSender(prev => {\n      const next = prev.map(k => (k === drag.key ? null : k));\n      if (target >= 0) next[target] = drag.key;\n      return next;\n    });\n    setDrag(null);\n  };\n\n  // ---------- pictures ----------\n  const person = (x, y, shirt, flip, size) => (\n    <g transform={`translate(${x}, ${y}) scale(${flip ? -(size || 1) : size || 1}, ${size || 1})`}>\n      <circle cx=\"0\" cy=\"-58\" r=\"12\" fill=\"#f5c9a0\" />\n      <rect x=\"-11\" y=\"-45\" width=\"22\" height=\"32\" rx=\"7\" fill={shirt} />\n      <line x1=\"-6\" y1=\"-14\" x2=\"-8\" y2=\"0\" stroke=\"#334155\" strokeWidth=\"6\" strokeLinecap=\"round\" />\n      <line x1=\"6\" y1=\"-14\" x2=\"8\" y2=\"0\" stroke=\"#334155\" strokeWidth=\"6\" strokeLinecap=\"round\" />\n      <line x1=\"9\" y1=\"-40\" x2=\"24\" y2=\"-52\" stroke={shirt} strokeWidth=\"6\" strokeLinecap=\"round\" />\n      <line x1=\"-9\" y1=\"-40\" x2=\"-16\" y2=\"-24\" stroke={shirt} strokeWidth=\"6\" strokeLinecap=\"round\" />\n    </g>\n  );\n\n  const stars = top => [[60, 24], [190, 40], [260, 18], [420, 30], [470, 56], [560, 22], [640, 48], [330, 50]].map(([x, y], i) => (\n    <circle key={i} cx={x} cy={top + y} r={i % 3 === 0 ? 2 : 1.4} fill=\"#e2e8f0\" opacity=\"0.85\" />\n  ));\n\n  const zig = (x, y, k) => (\n    <path key={k} d={`M ${x} ${y} l 8 -8 l 8 8 l 8 -8 l 8 8`} fill=\"none\" stroke=\"#fde047\" strokeWidth=\"3\" strokeLinecap=\"round\" strokeLinejoin=\"round\" />\n  );\n\n  const between = (kind, top) => {\n    const g = top + 160; // ground line\n    if (kind === 'fog') return (\n      <g opacity=\"0.92\">\n        {[[260, 70, 90, 40], [380, 60, 100, 46], [320, 120, 130, 44], [470, 115, 80, 44], [230, 130, 70, 32], [440, 82, 80, 36]].map(([cx, cy, rx, ry], i) => (\n          <ellipse key={i} cx={cx} cy={top + cy} rx={rx} ry={ry} fill={i % 2 ? '#cbd5e1' : '#94a3b8'} opacity=\"0.9\" />\n        ))}\n      </g>\n    );\n    if (kind === 'waterfall') return (\n      <g>\n        <path d={`M 300 ${g} L 312 ${top + 14} L 418 ${top + 14} L 430 ${g} Z`} fill=\"#57534e\" />\n        <rect x=\"336\" y={top + 14} width=\"58\" height={g - top - 14} fill=\"#7dd3fc\" />\n        {[346, 360, 374, 386].map((x, i) => <line key={i} x1={x} y1={top + 18 + i * 6} x2={x} y2={g - 6} stroke=\"#f0f9ff\" strokeWidth=\"3\" opacity=\"0.8\" />)}\n        <ellipse cx=\"365\" cy={g} rx=\"62\" ry=\"12\" fill=\"#e0f2fe\" />\n        {zig(250, top + 60, 'z1')}{zig(250, top + 96, 'z2')}{zig(448, top + 60, 'z3')}{zig(448, top + 96, 'z4')}\n      </g>\n    );\n    if (kind === 'crowd') return (\n      <g>\n        {[230, 268, 306, 344, 382, 420, 458].map((x, i) => (\n          <g key={i} transform={`translate(${x}, ${g - (i % 2 ? 4 : 0)})`}>\n            <circle cx=\"0\" cy=\"-44\" r=\"10\" fill={['#f5c9a0', '#c68642', '#8d5524', '#f1c27d'][i % 4]} />\n            <ellipse cx=\"0\" cy=\"-40\" rx=\"4\" ry=\"4\" fill=\"#1e1b4b\" />\n            <rect x=\"-9\" y=\"-33\" width=\"18\" height=\"30\" rx=\"6\" fill={['#a855f7', '#22c55e', '#ef4444', '#eab308'][i % 4]} />\n            <line x1=\"-8\" y1=\"-30\" x2=\"-16\" y2=\"-50\" stroke={['#a855f7', '#22c55e', '#ef4444', '#eab308'][i % 4]} strokeWidth=\"5\" strokeLinecap=\"round\" />\n            <line x1=\"8\" y1=\"-30\" x2=\"16\" y2=\"-50\" stroke={['#a855f7', '#22c55e', '#ef4444', '#eab308'][i % 4]} strokeWidth=\"5\" strokeLinecap=\"round\" />\n          </g>\n        ))}\n        {zig(240, top + 40, 'z1')}{zig(320, top + 30, 'z2')}{zig(400, top + 40, 'z3')}\n      </g>\n    );\n    if (kind === 'hill') return (\n      <path d={`M 190 ${g} C 260 ${top + 10}, 440 ${top + 10}, 510 ${g} Z`} fill=\"#166534\" stroke=\"#22c55e\" strokeWidth=\"2\" />\n    );\n    return (\n      <g>\n        {[260, 420].map((x, i) => <ellipse key={i} cx={x} cy={g - 6} rx=\"22\" ry=\"10\" fill=\"#14532d\" />)}\n      </g>\n    );\n  };\n\n  const lane = (p, i) => {\n    const top = i * LANE_H;\n    const night = sky === 'night';\n    return (\n      <g key={i}>\n        <rect x=\"0\" y={top} width={W} height={LANE_H - 6} rx=\"12\" fill={night ? '#0b1026' : '#7dd3fc'} />\n        {night ? stars(top) : <circle cx=\"600\" cy={top + 34} r=\"20\" fill=\"#fde047\" />}\n        {night && i === 0 && <path d={`M 120 ${top + 22} a 14 14 0 1 0 14 22 a 11 11 0 1 1 -14 -22 Z`} fill=\"#fef9c3\" />}\n        <rect x=\"0\" y={top + 160} width={W} height={LANE_H - 166} fill={night ? '#14321f' : '#4ade80'} />\n        {between(p.between, top)}\n        {person(76, top + 168, '#f97316', false, 1)}\n        {person(616, top + 164, '#3b82f6', true, 0.7)}\n        <circle id={`sender-${i + 1}`} cx={hand(i).x} cy={hand(i).y} r=\"30\" fill=\"rgba(251,191,36,0.10)\" stroke=\"#fbbf24\" strokeWidth=\"2\" strokeDasharray=\"5 4\" />\n      </g>\n    );\n  };\n\n  const icon = key => {\n    if (key === 'lantern') return (\n      <g>\n        <path d=\"M -8 -22 Q 0 -32 8 -22\" fill=\"none\" stroke=\"#cbd5e1\" strokeWidth=\"3\" />\n        <rect x=\"-13\" y=\"-22\" width=\"26\" height=\"6\" rx=\"2\" fill=\"#78350f\" />\n        <rect x=\"-11\" y=\"-16\" width=\"22\" height=\"26\" rx=\"4\" fill=\"#fde68a\" stroke=\"#78350f\" strokeWidth=\"3\" />\n        <rect x=\"-13\" y=\"10\" width=\"26\" height=\"6\" rx=\"2\" fill=\"#78350f\" />\n      </g>\n    );\n    if (key === 'lamp') return (\n      <g>\n        {[-40, -20, 0, 20, 40].map(a => (\n          <line key={a} x1=\"16\" y1=\"0\" x2={16 + 18 * Math.cos(a * Math.PI / 180)} y2={18 * Math.sin(a * Math.PI / 180)} stroke=\"#fde047\" strokeWidth=\"3\" strokeLinecap=\"round\" />\n        ))}\n        <rect x=\"-22\" y=\"-12\" width=\"30\" height=\"24\" rx=\"5\" fill=\"#475569\" stroke=\"#cbd5e1\" strokeWidth=\"2\" />\n        <path d=\"M 8 -16 L 18 -20 L 18 20 L 8 16 Z\" fill=\"#fef9c3\" stroke=\"#cbd5e1\" strokeWidth=\"2\" />\n        <rect x=\"-14\" y=\"12\" width=\"8\" height=\"12\" fill=\"#475569\" />\n      </g>\n    );\n    if (key === 'flag') return (\n      <g>\n        <line x1=\"-10\" y1=\"-26\" x2=\"-10\" y2=\"24\" stroke=\"#d6d3d1\" strokeWidth=\"4\" strokeLinecap=\"round\" />\n        <path d=\"M -8 -24 L 20 -16 L -8 -6 Z\" fill=\"#ef4444\" />\n      </g>\n    );\n    if (key === 'whistle') return (\n      <g>\n        <rect x=\"-16\" y=\"-8\" width=\"22\" height=\"14\" rx=\"3\" fill=\"#cbd5e1\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <circle cx=\"8\" cy=\"2\" r=\"10\" fill=\"#cbd5e1\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <circle cx=\"8\" cy=\"2\" r=\"3\" fill=\"#64748b\" />\n      </g>\n    );\n    if (key === 'drum') return (\n      <g>\n        <ellipse cx=\"0\" cy=\"12\" rx=\"20\" ry=\"7\" fill=\"#b91c1c\" />\n        <rect x=\"-20\" y=\"-10\" width=\"40\" height=\"22\" fill=\"#dc2626\" />\n        <ellipse cx=\"0\" cy=\"-10\" rx=\"20\" ry=\"7\" fill=\"#fef3c7\" stroke=\"#b91c1c\" strokeWidth=\"2\" />\n        <path d=\"M -20 -6 L -10 10 L 0 -6 L 10 10 L 20 -6\" fill=\"none\" stroke=\"#fde68a\" strokeWidth=\"2\" />\n      </g>\n    );\n    return (\n      <g>\n        <path d=\"M -24 -4 L 6 -6 L 22 -20 L 22 20 L 6 6 L -24 4 Z\" fill=\"#f59e0b\" stroke=\"#92400e\" strokeWidth=\"2\" strokeLinejoin=\"round\" />\n        <rect x=\"-28\" y=\"-5\" width=\"6\" height=\"10\" rx=\"2\" fill=\"#92400e\" />\n      </g>\n    );\n  };\n\n  const device = key => {\n    const at = where(key);\n    const inTray = onSender.indexOf(key) < 0 && !(drag && drag.key === key && drag.x !== undefined);\n    return (\n      <g key={key} id={`dev-${key}`} transform={`translate(${at.x}, ${at.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n        onPointerDown={e => onDown(key, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n        <circle r=\"32\" fill=\"transparent\" />\n        {icon(key)}\n        {inTray && <text y=\"48\" textAnchor=\"middle\" fill=\"#e2e8f0\" fontSize=\"15\" fontWeight=\"600\">{DEVICES[key].label}</text>}\n      </g>\n    );\n  };\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        {paths.map(lane)}\n        <rect x=\"0\" y={TRAY_Y} width={W} height=\"108\" rx=\"12\" fill=\"rgba(30,41,59,0.6)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\n        {tray.map(device)}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "sky": "night",
+    "paths": [
+     {
+      "between": "clear",
+      "distance": 3
+     }
+    ],
+    "tray": [
+     "flag",
+     "lantern",
+     "whistle",
+     "drum"
+    ]
+   },
+   "ask": "It is night. Send a message to your friend far away.",
+   "goal": "The lantern is on the sender: on a clear dark night a light carries far, a flag cannot be seen, and the whistle and drum are too quiet for that distance.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#dev-lantern",
+     "to": "#sender-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#dev-flag",
+     "to": "#sender-1"
+    }
+   ],
+   "scene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "clear air",
+      "holding": "nothing"
+     }
+    ],
+    "tray": [
+     "Flag",
+     "Lantern",
+     "Whistle",
+     "Drum"
+    ]
+   },
+   "proofScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "clear air",
+      "holding": "Lantern"
+     }
+    ],
+    "tray": [
+     "Flag",
+     "Whistle",
+     "Drum"
+    ]
+   },
+   "missScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "clear air",
+      "holding": "Flag"
+     }
+    ],
+    "tray": [
+     "Lantern",
+     "Whistle",
+     "Drum"
+    ]
+   }
+  },
+  {
+   "params": {
+    "sky": "night",
+    "paths": [
+     {
+      "between": "fog",
+      "distance": 3
+     }
+    ],
+    "tray": [
+     "lamp",
+     "flag",
+     "horn",
+     "whistle"
+    ]
+   },
+   "ask": "Send a message to your friend across the fog.",
+   "goal": "The horn is on the sender: thick fog stops even the big lamp, and sound goes through fog.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#dev-horn",
+     "to": "#sender-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#dev-lamp",
+     "to": "#sender-1"
+    }
+   ],
+   "scene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "thick fog",
+      "holding": "nothing"
+     }
+    ],
+    "tray": [
+     "Big lamp",
+     "Flag",
+     "Horn",
+     "Whistle"
+    ]
+   },
+   "proofScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "thick fog",
+      "holding": "Horn"
+     }
+    ],
+    "tray": [
+     "Big lamp",
+     "Flag",
+     "Whistle"
+    ]
+   },
+   "missScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "thick fog",
+      "holding": "Big lamp"
+     }
+    ],
+    "tray": [
+     "Flag",
+     "Horn",
+     "Whistle"
+    ]
+   }
+  },
+  {
+   "params": {
+    "sky": "night",
+    "paths": [
+     {
+      "between": "waterfall",
+      "distance": 3
+     }
+    ],
+    "tray": [
+     "horn",
+     "drum",
+     "lantern",
+     "flag"
+    ]
+   },
+   "ask": "Send a message to your friend past the waterfall.",
+   "goal": "The lantern is on the sender: the loud waterfall drowns even the horn, and a light can be seen across it at night.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#dev-lantern",
+     "to": "#sender-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#dev-horn",
+     "to": "#sender-1"
+    }
+   ],
+   "scene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a loud waterfall",
+      "holding": "nothing"
+     }
+    ],
+    "tray": [
+     "Horn",
+     "Drum",
+     "Lantern",
+     "Flag"
+    ]
+   },
+   "proofScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a loud waterfall",
+      "holding": "Lantern"
+     }
+    ],
+    "tray": [
+     "Horn",
+     "Drum",
+     "Flag"
+    ]
+   },
+   "missScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a loud waterfall",
+      "holding": "Horn"
+     }
+    ],
+    "tray": [
+     "Drum",
+     "Lantern",
+     "Flag"
+    ]
+   }
+  },
+  {
+   "params": {
+    "sky": "night",
+    "paths": [
+     {
+      "between": "hill",
+      "distance": 3
+     }
+    ],
+    "tray": [
+     "lamp",
+     "whistle",
+     "flag",
+     "horn"
+    ]
+   },
+   "ask": "Send a message to your friend on the other side of the hill.",
+   "goal": "The horn is on the sender: the hill blocks every light and the flag, and a loud sound goes over the hill.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#dev-horn",
+     "to": "#sender-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#dev-lamp",
+     "to": "#sender-1"
+    }
+   ],
+   "scene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a big hill",
+      "holding": "nothing"
+     }
+    ],
+    "tray": [
+     "Big lamp",
+     "Whistle",
+     "Flag",
+     "Horn"
+    ]
+   },
+   "proofScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a big hill",
+      "holding": "Horn"
+     }
+    ],
+    "tray": [
+     "Big lamp",
+     "Whistle",
+     "Flag"
+    ]
+   },
+   "missScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "sender",
+      "between": "a big hill",
+      "holding": "Big lamp"
+     }
+    ],
+    "tray": [
+     "Whistle",
+     "Flag",
+     "Horn"
+    ]
+   }
+  },
+  {
+   "params": {
+    "sky": "night",
+    "paths": [
+     {
+      "between": "fog",
+      "distance": 3
+     },
+     {
+      "between": "crowd",
+      "distance": 3
+     }
+    ],
+    "tray": [
+     "lantern",
+     "horn",
+     "flag",
+     "drum"
+    ]
+   },
+   "ask": "Send a message to both friends.",
+   "goal": "The horn is on the top sender (fog) and the lantern on the bottom sender (loud crowd): each path gets the signal it lets through.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#dev-horn",
+     "to": "#sender-1"
+    },
+    {
+     "do": "drag",
+     "target": "#dev-lantern",
+     "to": "#sender-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#dev-lantern",
+     "to": "#sender-1"
+    },
+    {
+     "do": "drag",
+     "target": "#dev-horn",
+     "to": "#sender-2"
+    }
+   ],
+   "scene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "top sender",
+      "between": "thick fog",
+      "holding": "nothing"
+     },
+     {
+      "sender": "bottom sender",
+      "between": "a loud crowd",
+      "holding": "nothing"
+     }
+    ],
+    "tray": [
+     "Lantern",
+     "Horn",
+     "Flag",
+     "Drum"
+    ]
+   },
+   "proofScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "top sender",
+      "between": "thick fog",
+      "holding": "Horn"
+     },
+     {
+      "sender": "bottom sender",
+      "between": "a loud crowd",
+      "holding": "Lantern"
+     }
+    ],
+    "tray": [
+     "Flag",
+     "Drum"
+    ]
+   },
+   "missScene": {
+    "sky": "dark night",
+    "paths": [
+     {
+      "sender": "top sender",
+      "between": "thick fog",
+      "holding": "Lantern"
+     },
+     {
+      "sender": "bottom sender",
+      "between": "a loud crowd",
+      "holding": "Horn"
+     }
+    ],
+    "tray": [
+     "Flag",
+     "Drum"
+    ]
+   }
+  }
+ ]
+}

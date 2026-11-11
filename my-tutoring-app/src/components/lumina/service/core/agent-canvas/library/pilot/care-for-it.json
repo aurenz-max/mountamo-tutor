@@ -1,0 +1,479 @@
+{
+ "id": "care-for-it",
+ "title": "Care For It",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child finds what is not being cared for in a classroom, park or home and fixes it (caps on, things put away, litter in the recycling or trash bin, water and lights off where nobody needs them) while leaving cared-for things alone, which shows care for shared materials and places and saving water and energy."
+ },
+ "request": {
+  "topic": "Taking care of shared things and places, and saving water and energy",
+  "grade": "kindergarten",
+  "objective": "Find the things in a classroom, park or home that are not being cared for and fix each one: caps back on, things put where they go, litter in the right bin, water and lights off where nobody needs them, while leaving cared-for things alone. (SS001-01-B, SS001-02-A, SS001-02-G, SS001-05-A, SS002-01-E, SS001-01-E)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // A place with things in it. Some are cared for, some are not: a cap left off, crayons on the floor, a tap running,\r\n  // a light on in a room nobody is in. Tap a thing to switch it (cap on/off, tap on/off, light on/off, door open/shut).\r\n  // Drag a loose thing to where it goes (box, shelf, a bin). Nothing says which things need care.\r\n  // params.place: 'classroom' | 'park' | 'home'. params.things: [{ id, state }] (state: 'on'|'off' or 'home'|'out').\r\n  // params.people: rooms with someone in them (home only: 'kitchen', 'living').\r\n  const place = ['classroom', 'park', 'home'].includes(params.place) ? params.place : 'classroom';\r\n  const people = Array.isArray(params.people) ? params.people : [];\r\n  const W = 680, H = 520;\r\n\r\n  // Every kind of thing: how it is switched or where it goes, and what care means for it.\r\n  // tog: tap switches 'on'/'off'; careOn = the cared-for state is 'on'. put: drag to a home.\r\n  const KINDS = {\r\n    marker: { tog: true, name: 'red marker', on: 'with its cap on', off: 'with its cap off', careOn: () => true },\r\n    glue: { tog: true, name: 'glue stick', on: 'with its lid on', off: 'with its lid off', careOn: () => true },\r\n    paint: { tog: true, name: 'paint pot', on: 'with its lid on', off: 'with its lid off', careOn: () => true },\r\n    sink: { tog: true, name: 'sink tap', on: 'running', off: 'turned off', careOn: () => false },\r\n    crayons: { put: ['crayon-box'], name: 'crayons' },\r\n    book: { put: ['shelf'], name: 'picture book' },\r\n    fountain: { tog: true, name: 'water fountain', on: 'running with nobody drinking', off: 'turned off', careOn: () => false },\r\n    can: { put: ['recycle'], name: 'empty can' },\r\n    bottle: { put: ['recycle'], name: 'plastic bottle' },\r\n    paper: { put: ['recycle'], name: 'newspaper' },\r\n    peel: { put: ['trash'], name: 'banana peel' },\r\n    wrapper: { put: ['trash'], name: 'chip bag' },\r\n    tap: { tog: true, name: 'kitchen tap', on: 'running', off: 'turned off', careOn: () => false },\r\n    fridge: { tog: true, name: 'fridge door', on: 'open', off: 'shut', careOn: () => false },\r\n    'light-kitchen': { tog: true, name: 'kitchen light', on: 'on', off: 'off', careOn: () => people.includes('kitchen') },\r\n    'light-living': { tog: true, name: 'living room light', on: 'on', off: 'off', careOn: () => people.includes('living') },\r\n    tv: { tog: true, name: 'TV', on: 'on', off: 'off', careOn: () => false },\r\n  };\r\n  const things = (Array.isArray(params.things) ? params.things : [{ id: 'marker', state: 'off' }, { id: 'crayons', state: 'out' }])\r\n    .filter(t => KINDS[t.id]);\r\n  const start = {};\r\n  things.forEach(t => { start[t.id] = KINDS[t.id].put ? (t.state === 'home' ? 'home' : 'out') : (t.state === 'on' ? 'on' : 'off'); });\r\n  const [st, setSt] = useState(start);\r\n  const [where, setWhere] = useState({}); // put things: which home they were dropped in\r\n  const [drag, setDrag] = useState(null);\r\n  const svgRef = useRef(null);\r\n  const has = id => st[id] !== undefined;\r\n\r\n  const homeOf = id => (st[id] === 'home' ? (where[id] || KINDS[id].put[0]) : null);\r\n  const cared = id => {\r\n    const k = KINDS[id];\r\n    if (k.put) return homeOf(id) === k.put[0];\r\n    return (st[id] === 'on') === k.careOn();\r\n  };\r\n  const goalMet = things.every(t => cared(t.id));\r\n\r\n  // Where loose things lie, and where their homes are, per place.\r\n  const LOOSE = {\r\n    crayons: { x: 230, y: 440 }, book: { x: 440, y: 455 },\r\n    can: { x: 120, y: 440 }, bottle: { x: 230, y: 470 }, paper: { x: 330, y: 430 }, peel: { x: 130, y: 360 }, wrapper: { x: 300, y: 365 },\r\n  };\r\n  const HOMES = place === 'classroom'\r\n    ? { 'crayon-box': { x: 430, y: 228, w: 70, h: 30, name: 'crayon box on the table' }, shelf: { x: 556, y: 150, w: 100, h: 52, name: 'top shelf' } }\r\n    : place === 'park'\r\n      ? { recycle: { x: 470, y: 380, w: 80, h: 100, name: 'blue recycling bin' }, trash: { x: 572, y: 380, w: 80, h: 100, name: 'grey trash bin' } }\r\n      : {};\r\n  const HOME_AT = {\r\n    crayons: { 'crayon-box': { x: 465, y: 236 } }, book: { shelf: { x: 606, y: 170 } },\r\n    can: { recycle: { x: 496, y: 372 }, trash: { x: 598, y: 372 } }, bottle: { recycle: { x: 512, y: 366 }, trash: { x: 614, y: 366 } },\r\n    paper: { recycle: { x: 526, y: 376 }, trash: { x: 626, y: 376 } }, peel: { recycle: { x: 504, y: 380 }, trash: { x: 604, y: 380 } },\r\n    wrapper: { recycle: { x: 520, y: 380 }, trash: { x: 620, y: 380 } },\r\n  };\r\n  const inHome = (p, r) => p.x >= r.x - 16 && p.x <= r.x + r.w + 16 && p.y >= r.y - 30 && p.y <= r.y + r.h + 16;\r\n\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    const facts = things.map(t => {\r\n      const k = KINDS[t.id];\r\n      if (k.put) return 'the ' + k.name + (st[t.id] === 'home' ? ' is in the ' + HOMES[homeOf(t.id)].name : ' is lying on the ' + (place === 'park' ? 'grass' : 'floor'));\r\n      return 'the ' + k.name + ' is ' + (st[t.id] === 'on' ? k.on : k.off);\r\n    });\r\n    if (place === 'home') {\r\n      facts.push(people.includes('kitchen') ? 'someone is in the kitchen' : 'nobody is in the kitchen');\r\n      facts.push(people.includes('living') ? 'Grandma is reading a book on the sofa in the living room' : 'nobody is in the living room');\r\n    }\r\n    lumina.scene({ place: { classroom: 'a classroom', park: 'a park', home: 'a house with a kitchen and a living room' }[place], things: facts });\r\n  }, [st, where, goalMet]);\r\n\r\n  const pointOf = e => svgPoint(svgRef.current, e);\r\n  const toggle = id => setSt(s => ({ ...s, [id]: s[id] === 'on' ? 'off' : 'on' }));\r\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\r\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\r\n  const onUp = e => {\r\n    if (!drag || !svgRef.current) return;\r\n    const p = pointOf(e), id = drag.id;\r\n    setDrag(null);\r\n    const hit = Object.keys(HOMES).find(h => HOME_AT[id] && HOME_AT[id][h] && inHome(p, HOMES[h]));\r\n    if (hit) { setSt(s => ({ ...s, [id]: 'home' })); setWhere(w => ({ ...w, [id]: hit })); }\r\n    else { setSt(s => ({ ...s, [id]: 'out' })); }\r\n  };\r\n  const tapProps = id => ({ id: 'thing-' + id, style: { cursor: 'pointer' }, onClick: () => toggle(id) });\r\n  const dragProps = id => ({ id: 'thing-' + id, style: { cursor: 'grab', touchAction: 'none' }, onPointerDown: e => grab(id, e), onPointerUp: onUp, onPointerCancel: () => setDrag(null) });\r\n  const at = id => {\r\n    if (drag && drag.id === id && drag.x !== undefined) return { x: drag.x, y: drag.y };\r\n    return st[id] === 'home' ? HOME_AT[id][homeOf(id)] : LOOSE[id];\r\n  };\r\n  const hit = (w, h) => <rect x={-w / 2} y={-h / 2} width={w} height={h} fill=\"transparent\" />;\r\n\r\n  // Loose things, drawn centred on 0,0.\r\n  const LOOSE_PICS = {\r\n    crayons: <g>{['#ef4444', '#3b82f6', '#22c55e', '#eab308'].map((c, i) => <g key={c} transform={`rotate(${-30 + i * 22}) translate(${i * 4 - 6}, 0)`}><rect x=\"-4\" y=\"-18\" width=\"8\" height=\"30\" rx=\"2\" fill={c} /><path d=\"M -4 -18 L 0 -26 L 4 -18 Z\" fill={c} /></g>)}</g>,\r\n    book: <g><rect x=\"-26\" y=\"-18\" width=\"52\" height=\"36\" rx=\"3\" fill=\"#7c3aed\" stroke=\"#4c1d95\" strokeWidth=\"2\" /><line x1=\"0\" y1=\"-18\" x2=\"0\" y2=\"18\" stroke=\"#4c1d95\" strokeWidth=\"2\" /><circle cx=\"-12\" cy=\"-2\" r=\"7\" fill=\"#fde047\" /></g>,\r\n    can: <g><rect x=\"-11\" y=\"-18\" width=\"22\" height=\"36\" rx=\"4\" fill=\"#94a3b8\" stroke=\"#475569\" strokeWidth=\"2\" /><rect x=\"-11\" y=\"-6\" width=\"22\" height=\"12\" fill=\"#ef4444\" /></g>,\r\n    bottle: <g transform=\"rotate(70)\"><rect x=\"-9\" y=\"-12\" width=\"18\" height=\"34\" rx=\"6\" fill=\"rgba(125,211,252,0.6)\" stroke=\"#0284c7\" strokeWidth=\"2\" /><rect x=\"-5\" y=\"-22\" width=\"10\" height=\"11\" fill=\"rgba(125,211,252,0.6)\" stroke=\"#0284c7\" strokeWidth=\"2\" /><rect x=\"-6\" y=\"-26\" width=\"12\" height=\"5\" fill=\"#2563eb\" /></g>,\r\n    paper: <g transform=\"rotate(-8)\"><rect x=\"-24\" y=\"-16\" width=\"48\" height=\"32\" fill=\"#e2e8f0\" stroke=\"#64748b\" strokeWidth=\"1.5\" />{[-8, -2, 4, 10].map(y => <line key={y} x1=\"-18\" y1={y} x2=\"18\" y2={y} stroke=\"#94a3b8\" strokeWidth=\"2\" />)}<rect x=\"-18\" y=\"-12\" width=\"14\" height=\"6\" fill=\"#64748b\" /></g>,\r\n    peel: <g><path d=\"M 0 -4 C -6 -24, -26 -6, -22 10 C -12 0, -6 -2, 0 -4 C 6 -2, 12 0, 22 10 C 26 -6, 6 -24, 0 -4 Z\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2\" /><path d=\"M 0 -4 L 2 -16\" stroke=\"#713f12\" strokeWidth=\"3\" /></g>,\r\n    wrapper: <g transform=\"rotate(14)\"><path d=\"M -20 -16 L 20 -16 L 16 16 L -16 16 Z\" fill=\"#f97316\" stroke=\"#9a3412\" strokeWidth=\"2\" /><path d=\"M -20 -16 l 5 -5 l 5 5 l 5 -5 l 5 5 l 5 -5 l 5 5 l 5 -5 l 5 5\" fill=\"none\" stroke=\"#9a3412\" strokeWidth=\"2\" /><circle r=\"7\" fill=\"#fde047\" /></g>,\r\n  };\r\n  const loose = id => {\r\n    if (!has(id)) return null;\r\n    const p = at(id), held = drag && drag.id === id;\r\n    return <g key={id} {...dragProps(id)} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.12 : 1})`}>{hit(64, 60)}{LOOSE_PICS[id]}</g>;\r\n  };\r\n\r\n  const lidded = (id, x, y, body, lidColor, h) => {\r\n    if (!has(id)) return null;\r\n    const on = st[id] === 'on';\r\n    return <g {...tapProps(id)} transform={`translate(${x}, ${y})`}>\r\n      <rect x=\"-26\" y={-h - 26} width=\"52\" height={h + 40} fill=\"transparent\" />\r\n      {body}\r\n      {on ? <rect x=\"-9\" y={-h - 12} width=\"18\" height=\"14\" rx=\"3\" fill={lidColor} />\r\n        : <rect x=\"12\" y=\"-8\" width=\"20\" height=\"16\" rx=\"3\" fill={lidColor} transform=\"rotate(80 22 0)\" />}\r\n    </g>;\r\n  };\r\n  const water = (x, y, len) => <g stroke=\"#38bdf8\" strokeWidth=\"4\" strokeLinecap=\"round\">\r\n    <line x1={x} y1={y} x2={x} y2={y + len} /><line x1={x - 5} y1={y + 6} x2={x - 6} y2={y + len - 4} opacity=\"0.6\" />\r\n  </g>;\r\n  const bulb = (id, x, y) => {\r\n    if (!has(id)) return null;\r\n    const on = st[id] === 'on';\r\n    return <g {...tapProps(id)}>\r\n      <rect x={x - 30} y={y - 30} width=\"60\" height=\"70\" fill=\"transparent\" />\r\n      <line x1={x} y1={y - 30} x2={x} y2={y - 8} stroke=\"#64748b\" strokeWidth=\"3\" />\r\n      <path d={`M ${x - 22} ${y + 6} Q ${x} ${y - 22} ${x + 22} ${y + 6} Z`} fill=\"#475569\" />\r\n      <circle cx={x} cy={y + 12} r=\"10\" fill={on ? '#fde047' : '#334155'} stroke=\"#1e293b\" strokeWidth=\"1.5\" />\r\n      {on && <circle cx={x} cy={y + 12} r=\"24\" fill=\"#fde047\" opacity=\"0.25\" />}\r\n    </g>;\r\n  };\r\n  const roomShade = (id, x, w) => (has(id) && st[id] === 'off' ? <rect x={x} y=\"0\" width={w} height={H} fill=\"#020617\" opacity=\"0.45\" pointerEvents=\"none\" /> : null);\r\n\r\n  const classroom = () => <g>\r\n    <rect width={W} height=\"300\" fill=\"#334155\" /><rect y=\"300\" width={W} height={H - 300} fill=\"#78350f\" />\r\n    <rect x=\"150\" y=\"30\" width=\"150\" height=\"100\" rx=\"4\" fill=\"#7dd3fc\" stroke=\"#e2e8f0\" strokeWidth=\"5\" /><line x1=\"225\" y1=\"30\" x2=\"225\" y2=\"130\" stroke=\"#e2e8f0\" strokeWidth=\"4\" />\r\n    {/* sink */}\r\n    <rect x=\"20\" y=\"200\" width=\"110\" height=\"18\" rx=\"4\" fill=\"#cbd5e1\" /><rect x=\"34\" y=\"218\" width=\"82\" height=\"82\" fill=\"#64748b\" />\r\n    {has('sink') && <g {...tapProps('sink')}>\r\n      <rect x=\"40\" y=\"140\" width=\"70\" height=\"80\" fill=\"transparent\" />\r\n      <path d=\"M 62 200 L 62 166 L 92 166 L 92 176\" fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"8\" strokeLinecap=\"round\" />\r\n      <rect x=\"52\" y=\"152\" width=\"20\" height=\"8\" rx=\"3\" fill={st.sink === 'on' ? '#38bdf8' : '#94a3b8'} />\r\n      {st.sink === 'on' && water(92, 182, 18)}\r\n    </g>}\r\n    {/* table */}\r\n    <rect x=\"170\" y=\"258\" width=\"350\" height=\"16\" rx=\"3\" fill=\"#a16207\" /><rect x=\"186\" y=\"274\" width=\"12\" height=\"90\" fill=\"#854d0e\" /><rect x=\"492\" y=\"274\" width=\"12\" height=\"90\" fill=\"#854d0e\" />\r\n    {lidded('marker', 220, 252, <rect x=\"-7\" y=\"-36\" width=\"14\" height=\"38\" rx=\"3\" fill=\"#ef4444\" stroke=\"#7f1d1d\" strokeWidth=\"1.5\" />, '#7f1d1d', 36)}\r\n    {lidded('glue', 290, 252, <rect x=\"-11\" y=\"-38\" width=\"22\" height=\"40\" rx=\"4\" fill=\"#a855f7\" stroke=\"#581c87\" strokeWidth=\"1.5\" />, '#581c87', 38)}\r\n    {lidded('paint', 360, 252, <g><rect x=\"-20\" y=\"-28\" width=\"40\" height=\"30\" rx=\"5\" fill=\"#e2e8f0\" stroke=\"#475569\" strokeWidth=\"1.5\" /><rect x=\"-20\" y=\"-16\" width=\"40\" height=\"10\" fill=\"#22c55e\" /></g>, '#475569', 28)}\r\n    <g id=\"crayon-box\"><rect x=\"430\" y=\"228\" width=\"70\" height=\"30\" rx=\"3\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2\" /><path d=\"M 438 236 l 54 0\" stroke=\"#a16207\" strokeWidth=\"2\" /></g>\r\n    {/* shelf */}\r\n    <rect x=\"550\" y=\"120\" width=\"112\" height=\"180\" fill=\"#92400e\" stroke=\"#78350f\" strokeWidth=\"3\" />\r\n    <rect id=\"shelf\" x=\"556\" y=\"150\" width=\"100\" height=\"52\" fill=\"#451a03\" /><rect x=\"556\" y=\"226\" width=\"100\" height=\"62\" fill=\"#451a03\" />\r\n    {[0, 1, 2, 3].map(i => <rect key={i} x={566 + i * 22} y=\"236\" width=\"16\" height=\"50\" fill={['#0ea5e9', '#f43f5e', '#22c55e', '#f59e0b'][i]} />)}\r\n  </g>;\r\n\r\n  const park = () => <g>\r\n    <rect width={W} height=\"210\" fill=\"#7dd3fc\" /><rect y=\"210\" width={W} height={H - 210} fill=\"#4d7c0f\" />\r\n    <rect y=\"270\" width={W} height=\"40\" fill=\"#d6d3d1\" opacity=\"0.7\" />\r\n    <rect x=\"70\" y=\"80\" width=\"22\" height=\"140\" fill=\"#78350f\" /><circle cx=\"81\" cy=\"80\" r=\"56\" fill=\"#15803d\" />\r\n    <rect x=\"200\" y=\"226\" width=\"130\" height=\"10\" fill=\"#a16207\" /><rect x=\"210\" y=\"236\" width=\"8\" height=\"26\" fill=\"#78350f\" /><rect x=\"312\" y=\"236\" width=\"8\" height=\"26\" fill=\"#78350f\" />\r\n    {has('fountain') && <g {...tapProps('fountain')}>\r\n      <rect x=\"380\" y=\"150\" width=\"90\" height=\"120\" fill=\"transparent\" />\r\n      <rect x=\"414\" y=\"200\" width=\"22\" height=\"70\" fill=\"#94a3b8\" /><rect x=\"400\" y=\"190\" width=\"50\" height=\"14\" rx=\"5\" fill=\"#cbd5e1\" />\r\n      <rect x=\"440\" y=\"214\" width=\"14\" height=\"10\" rx=\"3\" fill={st.fountain === 'on' ? '#38bdf8' : '#64748b'} />\r\n      {st.fountain === 'on' && <path d=\"M 420 190 Q 432 150 448 186\" fill=\"none\" stroke=\"#38bdf8\" strokeWidth=\"4\" />}\r\n    </g>}\r\n    <g id=\"recycle\"><rect x=\"470\" y=\"380\" width=\"80\" height=\"100\" rx=\"6\" fill=\"#2563eb\" stroke=\"#1e3a8a\" strokeWidth=\"3\" /><rect x=\"464\" y=\"372\" width=\"92\" height=\"12\" rx=\"3\" fill=\"#1d4ed8\" />\r\n      <g fill=\"none\" stroke=\"#e0f2fe\" strokeWidth=\"4\" strokeLinecap=\"round\"><path d=\"M 498 446 L 510 424 L 522 446 Z\" /><path d=\"M 506 452 l 10 0\" /></g></g>\r\n    <g id=\"trash\"><rect x=\"572\" y=\"380\" width=\"80\" height=\"100\" rx=\"6\" fill=\"#475569\" stroke=\"#1e293b\" strokeWidth=\"3\" /><rect x=\"566\" y=\"372\" width=\"92\" height=\"12\" rx=\"3\" fill=\"#334155\" />\r\n      <path d=\"M 596 420 l 32 0 l -4 34 l -24 0 Z\" fill=\"#1e293b\" /></g>\r\n  </g>;\r\n\r\n  const home = () => <g>\r\n    <rect width=\"340\" height={H} fill=\"#e7e5e4\" /><rect x=\"340\" width=\"340\" height={H} fill=\"#fde68a\" />\r\n    <rect y=\"420\" width={W} height=\"100\" fill=\"#a8a29e\" /><rect x=\"336\" width=\"8\" height={H} fill=\"#57534e\" />\r\n    {/* kitchen */}\r\n    <rect x=\"20\" y=\"300\" width=\"200\" height=\"120\" fill=\"#94a3b8\" /><rect x=\"20\" y=\"292\" width=\"200\" height=\"12\" fill=\"#cbd5e1\" /><rect x=\"70\" y=\"296\" width=\"70\" height=\"10\" rx=\"3\" fill=\"#64748b\" />\r\n    {has('tap') && <g {...tapProps('tap')}>\r\n      <rect x=\"70\" y=\"220\" width=\"70\" height=\"80\" fill=\"transparent\" />\r\n      <path d=\"M 94 296 L 94 258 L 124 258 L 124 270\" fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"8\" strokeLinecap=\"round\" />\r\n      <rect x=\"84\" y=\"244\" width=\"20\" height=\"8\" rx=\"3\" fill={st.tap === 'on' ? '#38bdf8' : '#64748b'} />\r\n      {st.tap === 'on' && water(124, 276, 20)}\r\n    </g>}\r\n    {has('fridge') && <g {...tapProps('fridge')}>\r\n      <rect x=\"238\" y=\"170\" width=\"92\" height=\"250\" rx=\"6\" fill=\"#f8fafc\" stroke=\"#94a3b8\" strokeWidth=\"3\" />\r\n      {st.fridge === 'on'\r\n        ? <g><rect x=\"244\" y=\"178\" width=\"80\" height=\"234\" fill=\"#e0f2fe\" /><rect x=\"250\" y=\"250\" width=\"22\" height=\"30\" fill=\"#ef4444\" /><rect x=\"282\" y=\"256\" width=\"30\" height=\"24\" fill=\"#facc15\" /><path d=\"M 238 172 L 200 190 L 200 410 L 238 418 Z\" fill=\"#e2e8f0\" stroke=\"#94a3b8\" strokeWidth=\"3\" /></g>\r\n        : <g><line x1=\"238\" y1=\"260\" x2=\"330\" y2=\"260\" stroke=\"#94a3b8\" strokeWidth=\"3\" /><rect x=\"244\" y=\"200\" width=\"6\" height=\"40\" rx=\"3\" fill=\"#64748b\" /></g>}\r\n    </g>}\r\n    {bulb('light-kitchen', 150, 40)}\r\n    {/* living room */}\r\n    <rect x=\"420\" y=\"330\" width=\"220\" height=\"70\" rx=\"12\" fill=\"#7c3aed\" /><rect x=\"410\" y=\"300\" width=\"240\" height=\"40\" rx=\"12\" fill=\"#6d28d9\" />\r\n    {people.includes('living') && <g>\r\n      <circle cx=\"530\" cy=\"270\" r=\"22\" fill=\"#fcd34d\" /><path d=\"M 508 262 Q 530 236 552 262\" fill=\"#e5e7eb\" />\r\n      <rect x=\"506\" y=\"292\" width=\"48\" height=\"50\" rx=\"10\" fill=\"#0d9488\" /><rect x=\"508\" y=\"300\" width=\"44\" height=\"28\" rx=\"2\" fill=\"#f8fafc\" stroke=\"#0f172a\" strokeWidth=\"1.5\" />\r\n    </g>}\r\n    {people.includes('kitchen') && <g><circle cx=\"190\" cy=\"330\" r=\"18\" fill=\"#fcd34d\" /><rect x=\"174\" y=\"348\" width=\"32\" height=\"60\" rx=\"8\" fill=\"#e11d48\" /></g>}\r\n    {has('tv') && <g {...tapProps('tv')}>\r\n      <rect x=\"470\" y=\"110\" width=\"130\" height=\"82\" rx=\"6\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"4\" />\r\n      {st.tv === 'on' && <g><rect x=\"478\" y=\"118\" width=\"114\" height=\"66\" fill=\"#38bdf8\" /><circle cx=\"510\" cy=\"146\" r=\"12\" fill=\"#fde047\" /><path d=\"M 478 184 L 520 156 L 550 174 L 592 150 L 592 184 Z\" fill=\"#16a34a\" /></g>}\r\n      <rect x=\"526\" y=\"192\" width=\"18\" height=\"16\" fill=\"#475569\" />\r\n    </g>}\r\n    {bulb('light-living', 530, 40)}\r\n    {roomShade('light-kitchen', 0, 336)}{roomShade('light-living', 344, 336)}\r\n  </g>;\r\n\r\n  return (\r\n    <Panel>\r\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\r\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\r\n        {{ classroom, park, home }[place]()}\r\n        {Object.keys(LOOSE_PICS).map(loose)}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "place": "classroom",
+    "things": [
+     {
+      "id": "marker",
+      "state": "off"
+     },
+     {
+      "id": "glue",
+      "state": "on"
+     },
+     {
+      "id": "crayons",
+      "state": "out"
+     },
+     {
+      "id": "book",
+      "state": "home"
+     }
+    ]
+   },
+   "ask": "Take care of the things in our classroom.",
+   "goal": "The marker has its cap back on and the crayons are in the crayon box; the glue stick stays closed and the book stays on the shelf.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#thing-marker"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-crayons",
+     "to": "#crayon-box"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#thing-crayons",
+     "to": "#crayon-box"
+    }
+   ],
+   "scene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap off",
+     "the glue stick is with its lid on",
+     "the crayons is lying on the floor",
+     "the picture book is in the top shelf"
+    ]
+   },
+   "proofScene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap on",
+     "the glue stick is with its lid on",
+     "the crayons is in the crayon box on the table",
+     "the picture book is in the top shelf"
+    ]
+   },
+   "missScene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap off",
+     "the glue stick is with its lid on",
+     "the crayons is in the crayon box on the table",
+     "the picture book is in the top shelf"
+    ]
+   }
+  },
+  {
+   "params": {
+    "place": "classroom",
+    "things": [
+     {
+      "id": "marker",
+      "state": "on"
+     },
+     {
+      "id": "glue",
+      "state": "on"
+     },
+     {
+      "id": "paint",
+      "state": "off"
+     },
+     {
+      "id": "sink",
+      "state": "on"
+     },
+     {
+      "id": "crayons",
+      "state": "home"
+     },
+     {
+      "id": "book",
+      "state": "out"
+     }
+    ]
+   },
+   "ask": "Take care of our classroom after painting time.",
+   "goal": "The paint pot lid is on, the sink tap is off and the book is on the shelf; the marker and glue stay closed and the crayons stay in their box.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#thing-paint"
+    },
+    {
+     "do": "click",
+     "target": "#thing-sink",
+     "shot": "tap-off"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-book",
+     "to": "#shelf"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#thing-paint"
+    },
+    {
+     "do": "click",
+     "target": "#thing-marker"
+    },
+    {
+     "do": "click",
+     "target": "#thing-sink"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-book",
+     "to": "#shelf"
+    }
+   ],
+   "scene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap on",
+     "the glue stick is with its lid on",
+     "the paint pot is with its lid off",
+     "the sink tap is running",
+     "the crayons is in the crayon box on the table",
+     "the picture book is lying on the floor"
+    ]
+   },
+   "proofScene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap on",
+     "the glue stick is with its lid on",
+     "the paint pot is with its lid on",
+     "the sink tap is turned off",
+     "the crayons is in the crayon box on the table",
+     "the picture book is in the top shelf"
+    ]
+   },
+   "missScene": {
+    "place": "a classroom",
+    "things": [
+     "the red marker is with its cap off",
+     "the glue stick is with its lid on",
+     "the paint pot is with its lid on",
+     "the sink tap is turned off",
+     "the crayons is in the crayon box on the table",
+     "the picture book is in the top shelf"
+    ]
+   }
+  },
+  {
+   "params": {
+    "place": "park",
+    "things": [
+     {
+      "id": "can",
+      "state": "out"
+     },
+     {
+      "id": "paper",
+      "state": "out"
+     },
+     {
+      "id": "peel",
+      "state": "out"
+     },
+     {
+      "id": "fountain",
+      "state": "on"
+     }
+    ]
+   },
+   "ask": "Help take care of our park.",
+   "goal": "The can and the newspaper are in the recycling bin, the banana peel is in the trash bin, and the water fountain is off.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#thing-can",
+     "to": "#recycle"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-paper",
+     "to": "#recycle"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-peel",
+     "to": "#trash",
+     "shot": "sorted"
+    },
+    {
+     "do": "click",
+     "target": "#thing-fountain"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#thing-can",
+     "to": "#trash"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-paper",
+     "to": "#trash"
+    },
+    {
+     "do": "drag",
+     "target": "#thing-peel",
+     "to": "#trash"
+    },
+    {
+     "do": "click",
+     "target": "#thing-fountain"
+    }
+   ],
+   "scene": {
+    "place": "a park",
+    "things": [
+     "the empty can is lying on the grass",
+     "the newspaper is lying on the grass",
+     "the banana peel is lying on the grass",
+     "the water fountain is running with nobody drinking"
+    ]
+   },
+   "proofScene": {
+    "place": "a park",
+    "things": [
+     "the empty can is in the blue recycling bin",
+     "the newspaper is in the blue recycling bin",
+     "the banana peel is in the grey trash bin",
+     "the water fountain is turned off"
+    ]
+   },
+   "missScene": {
+    "place": "a park",
+    "things": [
+     "the empty can is in the grey trash bin",
+     "the newspaper is in the grey trash bin",
+     "the banana peel is in the grey trash bin",
+     "the water fountain is turned off"
+    ]
+   }
+  },
+  {
+   "params": {
+    "place": "home",
+    "people": [],
+    "things": [
+     {
+      "id": "tap",
+      "state": "on"
+     },
+     {
+      "id": "fridge",
+      "state": "on"
+     },
+     {
+      "id": "light-kitchen",
+      "state": "on"
+     },
+     {
+      "id": "light-living",
+      "state": "on"
+     },
+     {
+      "id": "tv",
+      "state": "on"
+     }
+    ]
+   },
+   "ask": "Everyone is going out to the park. Save water and energy before we go.",
+   "goal": "The tap is off, the fridge door is shut, both lights are off and the TV is off, because nobody is home to use them.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#thing-tap"
+    },
+    {
+     "do": "click",
+     "target": "#thing-fridge"
+    },
+    {
+     "do": "click",
+     "target": "#thing-tv"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-kitchen"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-living"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#thing-tv"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-kitchen"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-living"
+    }
+   ],
+   "scene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is running",
+     "the fridge door is open",
+     "the kitchen light is on",
+     "the living room light is on",
+     "the TV is on",
+     "nobody is in the kitchen",
+     "nobody is in the living room"
+    ]
+   },
+   "proofScene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is turned off",
+     "the fridge door is shut",
+     "the kitchen light is off",
+     "the living room light is off",
+     "the TV is off",
+     "nobody is in the kitchen",
+     "nobody is in the living room"
+    ]
+   },
+   "missScene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is running",
+     "the fridge door is open",
+     "the kitchen light is off",
+     "the living room light is off",
+     "the TV is off",
+     "nobody is in the kitchen",
+     "nobody is in the living room"
+    ]
+   }
+  },
+  {
+   "params": {
+    "place": "home",
+    "people": [
+     "living"
+    ],
+    "things": [
+     {
+      "id": "tap",
+      "state": "on"
+     },
+     {
+      "id": "light-kitchen",
+      "state": "on"
+     },
+     {
+      "id": "light-living",
+      "state": "on"
+     },
+     {
+      "id": "tv",
+      "state": "on"
+     }
+    ]
+   },
+   "ask": "Grandma is reading. Save water and energy in our house.",
+   "goal": "The tap, the kitchen light and the TV are off; the living room light stays on because Grandma is reading there.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#thing-tap"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-kitchen"
+    },
+    {
+     "do": "click",
+     "target": "#thing-tv"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#thing-tap"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-kitchen"
+    },
+    {
+     "do": "click",
+     "target": "#thing-tv"
+    },
+    {
+     "do": "click",
+     "target": "#thing-light-living"
+    }
+   ],
+   "scene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is running",
+     "the kitchen light is on",
+     "the living room light is on",
+     "the TV is on",
+     "nobody is in the kitchen",
+     "Grandma is reading a book on the sofa in the living room"
+    ]
+   },
+   "proofScene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is turned off",
+     "the kitchen light is off",
+     "the living room light is on",
+     "the TV is off",
+     "nobody is in the kitchen",
+     "Grandma is reading a book on the sofa in the living room"
+    ]
+   },
+   "missScene": {
+    "place": "a house with a kitchen and a living room",
+    "things": [
+     "the kitchen tap is turned off",
+     "the kitchen light is off",
+     "the living room light is off",
+     "the TV is off",
+     "nobody is in the kitchen",
+     "Grandma is reading a book on the sofa in the living room"
+    ]
+   }
+  }
+ ]
+}

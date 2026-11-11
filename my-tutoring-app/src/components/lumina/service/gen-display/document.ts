@@ -61,15 +61,30 @@ const safe = (js: string) => js.replace(/<\/script/gi, '<\\/script');
 
 export function displayDocument(js: string, params: Record<string, unknown>): string {
   const bootstrap = `
-window.__lumina = { errors: [], scene: null, events: [], controls: {} };
+window.__lumina = { errors: [], scene: null, goal: null, events: [], controls: {} };
 function __post(kind, data) {
   try { var s = JSON.stringify(data); if (s.length > 4000) return; parent.postMessage({ source: 'lumina-display', kind: kind, data: data }, '*'); } catch (e) {}
 }
 window.addEventListener('error', function (e) { window.__lumina.errors.push(String(e.message || e)); __post('error', String(e.message || e)); });
 var lumina = {
   scene: function (facts) { window.__lumina.scene = facts; __post('scene', facts); },
+  goal: function (met) { window.__lumina.goal = !!met; __post('goal', !!met); },
   event: function (type, payload) { window.__lumina.events.push({ type: type, payload: payload }); __post('event', { type: type, payload: payload }); }
-};`;
+};
+// What the child's hands did, for the host (its sounds and its record of the work): a tap on a named element or a
+// button, or a drag that ended somewhere else. Posted by this shell, so a display's author writes nothing for it.
+(function () {
+  var down = null;
+  function nameOf(t) { var el = t && t.closest ? t.closest('[id], button') : null; return el && el.id !== 'root' ? (el.id || (el.textContent || '').trim().slice(0, 40)) : null; }
+  document.addEventListener('pointerdown', function (e) { down = { x: e.clientX, y: e.clientY, id: nameOf(e.target) }; }, true);
+  document.addEventListener('pointerup', function (e) {
+    if (!down) return;
+    var moved = Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 8;
+    if (moved) __post('act', { type: 'drop', id: down.id, to: nameOf(e.target) });
+    else if (down.id) __post('act', { type: 'tap', id: down.id });
+    down = null;
+  }, true);
+})();`;
   const mount = `
 (function () {
   var useState = React.useState, useMemo = React.useMemo, useEffect = React.useEffect, useRef = React.useRef, useCallback = React.useCallback;

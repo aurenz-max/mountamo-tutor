@@ -231,6 +231,7 @@ export type {
   DeepDiveMetrics,
   WonderWalkMetrics,
   PracticeStudioMetrics,
+  AgentCanvasMetrics,
   // Calendar metrics
   CalendarExplorerMetrics,
   TimelineBuilderMetrics,

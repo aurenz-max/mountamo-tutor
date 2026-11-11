@@ -1,0 +1,523 @@
+{
+ "id": "flashlight-room",
+ "title": "Lights Out",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner predicts which toys can still be seen in a dark room by marking the ones the flashlight reaches or that make their own light, which shows that light is needed to see."
+ },
+ "request": {
+  "topic": "Light is needed to see",
+  "grade": "grade 1",
+  "objective": "Predict which objects can be seen in a dark room: only those that light reaches, or that make their own light (1-PS4-2, SCI001-04-d)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A room with the big light still on. The child marks (an eye) every toy that will still be seen once the big light\n  // is off and only the flashlight is on. A toy is seen when the flashlight's light reaches it (inside the beam and\n  // not behind the box) or when it makes its own light.\n  // params.light {x, y, angle (degrees, 0 = right, 90 = down), spread (half-angle)}; params.toys [{id, kind, x, y}];\n  // params.box {x, y, w, h} or null; params.showBeam draws the whole beam (false: only a short stub at the lens).\n  const light = params.light || { x: 70, y: 110, angle: 25, spread: 13 };\n  const toys = Array.isArray(params.toys) ? params.toys : [\n    { id: 'bear', kind: 'bear', x: 330, y: 231 },\n    { id: 'ball', kind: 'ball', x: 200, y: 320 },\n  ];\n  const box = params.box || null;\n  const showBeam = params.showBeam !== false;\n\n  const KINDS = {\n    bear: { name: 'bear', emoji: '🧸' },\n    ball: { name: 'ball', emoji: '⚽' },\n    car: { name: 'car', emoji: '🚗' },\n    duck: { name: 'duck', emoji: '🦆' },\n    white: { name: 'white ball' },\n    glow: { name: 'glow lamp', emits: true },\n  };\n\n  const [marked, setMarked] = useState({});\n\n  const inBox = (x, y) => box && x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h;\n  const reached = toy => {\n    const dx = toy.x - light.x;\n    const dy = toy.y - light.y;\n    const toward = (Math.atan2(dy, dx) * 180) / Math.PI;\n    const off = Math.abs(((toward - light.angle + 540) % 360) - 180);\n    if (off > light.spread) return false;\n    for (let i = 1; i < 60; i++) if (inBox(light.x + (dx * i) / 60, light.y + (dy * i) / 60)) return false;\n    return true;\n  };\n  const seen = toy => !!(KINDS[toy.kind] || {}).emits || reached(toy);\n  const allRight = toys.every(t => !!marked[t.id] === seen(t));\n\n  useEffect(() => {\n    lumina.goal(allRight);\n    lumina.scene({\n      bigLight: 'on now, about to go off',\n      flashlight: 'on',\n      beamDrawn: showBeam ? 'the whole beam' : 'only a short start at the lens',\n      box: box ? 'a box stands in the room' : 'no box',\n      toys: toys.map(t => `${(KINDS[t.kind] || {}).name || t.kind}: ${marked[t.id] ? 'has an eye' : 'no eye'}`),\n    });\n  }, [allRight, marked]);\n\n  const rad = (light.angle * Math.PI) / 180;\n  const beamLen = showBeam ? 900 : 58;\n  const edge = sign => {\n    const a = rad + (sign * light.spread * Math.PI) / 180;\n    return `${light.x + Math.cos(a) * beamLen},${light.y + Math.sin(a) * beamLen}`;\n  };\n\n  const picture = toy => {\n    const kind = KINDS[toy.kind] || {};\n    if (toy.kind === 'white') {\n      return <circle cx={toy.x} cy={toy.y} r=\"19\" fill=\"#ffffff\" stroke=\"#cbd5e1\" strokeWidth=\"2\" />;\n    }\n    if (toy.kind === 'glow') {\n      return (\n        <g>\n          <circle cx={toy.x} cy={toy.y} r=\"34\" fill=\"#fde047\" opacity=\"0.28\" />\n          <rect x={toy.x - 11} y={toy.y - 16} width=\"22\" height=\"30\" rx=\"8\" fill=\"#fde047\" stroke=\"#facc15\" strokeWidth=\"2\" />\n          <rect x={toy.x - 8} y={toy.y + 13} width=\"16\" height=\"6\" rx=\"2\" fill=\"#94a3b8\" />\n        </g>\n      );\n    }\n    return <text x={toy.x} y={toy.y + 14} textAnchor=\"middle\" fontSize=\"40\">{kind.emoji}</text>;\n  };\n\n  return (\n    <Panel title=\"Lights Out\" caption=\"Tap a toy to put an eye on it. Tap it again to take the eye off.\">\n      <svg\n        viewBox=\"0 0 680 380\"\n        style={{ width: '100%', height: 'auto', background: '#3b4a63', borderRadius: 12, border: '1px solid #1e293b', userSelect: 'none' }}\n      >\n        {/* Floor and the big light on the ceiling */}\n        <rect x=\"0\" y=\"352\" width=\"680\" height=\"28\" fill=\"#2a3547\" />\n        <rect x=\"318\" y=\"0\" width=\"44\" height=\"10\" fill=\"#94a3b8\" />\n        <path d=\"M 312 10 L 368 10 L 380 34 L 300 34 Z\" fill=\"#fef9c3\" stroke=\"#fde68a\" strokeWidth=\"2\" />\n        <text x=\"340\" y=\"54\" textAnchor=\"middle\" fill=\"#e2e8f0\" fontSize=\"13\" fontWeight=\"700\">big light</text>\n\n        {/* The flashlight's light */}\n        <polygon points={`${light.x},${light.y} ${edge(-1)} ${edge(1)}`} fill=\"#fde047\" opacity={showBeam ? 0.26 : 0.6} />\n\n        {box && (\n          <g>\n            <rect x={box.x} y={box.y} width={box.w} height={box.h} fill=\"#92400e\" stroke=\"#78350f\" strokeWidth=\"3\" />\n            <line x1={box.x} y1={box.y + box.h / 2} x2={box.x + box.w} y2={box.y + box.h / 2} stroke=\"#78350f\" strokeWidth=\"3\" />\n            <text x={box.x + box.w / 2} y={box.y + 24} textAnchor=\"middle\" fill=\"#fde68a\" fontSize=\"14\" fontWeight=\"700\">box</text>\n          </g>\n        )}\n\n        {/* The flashlight */}\n        <g transform={`translate(${light.x}, ${light.y}) rotate(${light.angle})`}>\n          <rect x=\"-52\" y=\"-9\" width=\"40\" height=\"18\" rx=\"4\" fill=\"#0f172a\" stroke=\"#e2e8f0\" strokeWidth=\"2\" />\n          <path d=\"M -12 -9 L 2 -16 L 2 16 L -12 9 Z\" fill=\"#475569\" stroke=\"#e2e8f0\" strokeWidth=\"2\" />\n          <rect x=\"2\" y=\"-16\" width=\"5\" height=\"32\" fill=\"#fde047\" />\n        </g>\n\n        {toys.map(toy => (\n          <g key={toy.id}>\n            {picture(toy)}\n            <text x={toy.x} y={toy.y + 40} textAnchor=\"middle\" fill=\"#f1f5f9\" fontSize=\"14\" fontWeight=\"700\">\n              {(KINDS[toy.kind] || {}).name || toy.kind}\n            </text>\n            {marked[toy.id] && (\n              <g transform={`translate(${toy.x}, ${toy.y - 40})`}>\n                <circle r=\"17\" fill=\"#0f172a\" stroke=\"#22d3ee\" strokeWidth=\"3\" />\n                <ellipse rx=\"11\" ry=\"7\" fill=\"#f8fafc\" />\n                <circle r=\"4.5\" fill=\"#0f172a\" />\n              </g>\n            )}\n            <rect\n              id={`toy-${toy.id}`}\n              x={toy.x - 34}\n              y={toy.y - 34}\n              width=\"68\"\n              height=\"82\"\n              fill=\"transparent\"\n              style={{ cursor: 'pointer' }}\n              onClick={() => setMarked(prev => ({ ...prev, [toy.id]: !prev[toy.id] }))}\n            />\n          </g>\n        ))}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "showBeam": true,
+    "light": {
+     "x": 70,
+     "y": 110,
+     "angle": 25,
+     "spread": 13
+    },
+    "box": null,
+    "toys": [
+     {
+      "id": "bear",
+      "kind": "bear",
+      "x": 330,
+      "y": 231
+     },
+     {
+      "id": "duck",
+      "kind": "duck",
+      "x": 500,
+      "y": 300
+     },
+     {
+      "id": "ball",
+      "kind": "ball",
+      "x": 200,
+      "y": 320
+     },
+     {
+      "id": "car",
+      "kind": "car",
+      "x": 560,
+      "y": 120
+     }
+    ]
+   },
+   "ask": "The big light is going off. Put an eye on every toy you will still see.",
+   "goal": "The bear and the duck, the two toys in the beam, have an eye; the ball and the car do not.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    },
+    {
+     "do": "click",
+     "target": "#toy-ball"
+    },
+    {
+     "do": "click",
+     "target": "#toy-car"
+    }
+   ],
+   "scene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "the whole beam",
+    "box": "no box",
+    "toys": [
+     "bear: no eye",
+     "duck: no eye",
+     "ball: no eye",
+     "car: no eye"
+    ]
+   },
+   "proofScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "the whole beam",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "duck: has an eye",
+     "ball: no eye",
+     "car: no eye"
+    ]
+   },
+   "missScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "the whole beam",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "duck: has an eye",
+     "ball: has an eye",
+     "car: has an eye"
+    ]
+   }
+  },
+  {
+   "params": {
+    "showBeam": false,
+    "light": {
+     "x": 610,
+     "y": 90,
+     "angle": 150,
+     "spread": 13
+    },
+    "box": null,
+    "toys": [
+     {
+      "id": "car",
+      "kind": "car",
+      "x": 350,
+      "y": 240
+     },
+     {
+      "id": "bear",
+      "kind": "bear",
+      "x": 120,
+      "y": 330
+     },
+     {
+      "id": "duck",
+      "kind": "duck",
+      "x": 560,
+      "y": 320
+     },
+     {
+      "id": "ball",
+      "kind": "ball",
+      "x": 150,
+      "y": 120
+     }
+    ]
+   },
+   "ask": "Only the flashlight will be on. Put an eye on every toy you will still see.",
+   "goal": "The car and the bear, in line with the flashlight, have an eye; the duck and the ball do not. The beam is not drawn.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#toy-car"
+    },
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#toy-car"
+    },
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    },
+    {
+     "do": "click",
+     "target": "#toy-ball"
+    }
+   ],
+   "scene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "car: no eye",
+     "bear: no eye",
+     "duck: no eye",
+     "ball: no eye"
+    ]
+   },
+   "proofScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "car: has an eye",
+     "bear: has an eye",
+     "duck: no eye",
+     "ball: no eye"
+    ]
+   },
+   "missScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "car: has an eye",
+     "bear: has an eye",
+     "duck: has an eye",
+     "ball: has an eye"
+    ]
+   }
+  },
+  {
+   "params": {
+    "showBeam": false,
+    "light": {
+     "x": 70,
+     "y": 300,
+     "angle": -20,
+     "spread": 13
+    },
+    "box": null,
+    "toys": [
+     {
+      "id": "bear",
+      "kind": "bear",
+      "x": 330,
+      "y": 205
+     },
+     {
+      "id": "duck",
+      "kind": "duck",
+      "x": 560,
+      "y": 125
+     },
+     {
+      "id": "white",
+      "kind": "white",
+      "x": 560,
+      "y": 330
+     },
+     {
+      "id": "car",
+      "kind": "car",
+      "x": 200,
+      "y": 110
+     }
+    ]
+   },
+   "ask": "The room will be dark except for the flashlight. Put an eye on each toy you will still see.",
+   "goal": "The bear and the duck have an eye. The white ball is out of the light and has none.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    },
+    {
+     "do": "click",
+     "target": "#toy-white"
+    }
+   ],
+   "scene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: no eye",
+     "duck: no eye",
+     "white ball: no eye",
+     "car: no eye"
+    ]
+   },
+   "proofScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "duck: has an eye",
+     "white ball: no eye",
+     "car: no eye"
+    ]
+   },
+   "missScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "duck: has an eye",
+     "white ball: has an eye",
+     "car: no eye"
+    ]
+   }
+  },
+  {
+   "params": {
+    "showBeam": false,
+    "light": {
+     "x": 70,
+     "y": 110,
+     "angle": 22,
+     "spread": 13
+    },
+    "box": {
+     "x": 300,
+     "y": 150,
+     "w": 80,
+     "h": 140
+    },
+    "toys": [
+     {
+      "id": "duck",
+      "kind": "duck",
+      "x": 240,
+      "y": 180
+     },
+     {
+      "id": "bear",
+      "kind": "bear",
+      "x": 520,
+      "y": 290
+     },
+     {
+      "id": "car",
+      "kind": "car",
+      "x": 560,
+      "y": 100
+     },
+     {
+      "id": "ball",
+      "kind": "ball",
+      "x": 150,
+      "y": 330
+     }
+    ]
+   },
+   "ask": "A box is in the room now. Put an eye on every toy you will still see in the dark.",
+   "goal": "Only the duck has an eye. The bear is in line with the flashlight but behind the box.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#toy-duck"
+    },
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    }
+   ],
+   "scene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "a box stands in the room",
+    "toys": [
+     "duck: no eye",
+     "bear: no eye",
+     "car: no eye",
+     "ball: no eye"
+    ]
+   },
+   "proofScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "a box stands in the room",
+    "toys": [
+     "duck: has an eye",
+     "bear: no eye",
+     "car: no eye",
+     "ball: no eye"
+    ]
+   },
+   "missScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "a box stands in the room",
+    "toys": [
+     "duck: has an eye",
+     "bear: has an eye",
+     "car: no eye",
+     "ball: no eye"
+    ]
+   }
+  },
+  {
+   "params": {
+    "showBeam": false,
+    "light": {
+     "x": 610,
+     "y": 300,
+     "angle": 200,
+     "spread": 13
+    },
+    "box": null,
+    "toys": [
+     {
+      "id": "bear",
+      "kind": "bear",
+      "x": 330,
+      "y": 198
+     },
+     {
+      "id": "car",
+      "kind": "car",
+      "x": 150,
+      "y": 110
+     },
+     {
+      "id": "glow",
+      "kind": "glow",
+      "x": 560,
+      "y": 110
+     },
+     {
+      "id": "ball",
+      "kind": "ball",
+      "x": 130,
+      "y": 330
+     }
+    ]
+   },
+   "ask": "One toy is a glow lamp. Put an eye on everything you will still see in the dark.",
+   "goal": "The bear and the car (in the flashlight light) and the glow lamp (its own light) have an eye; the ball does not.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-car"
+    },
+    {
+     "do": "click",
+     "target": "#toy-glow"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#toy-bear"
+    },
+    {
+     "do": "click",
+     "target": "#toy-car"
+    }
+   ],
+   "scene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: no eye",
+     "car: no eye",
+     "glow lamp: no eye",
+     "ball: no eye"
+    ]
+   },
+   "proofScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "car: has an eye",
+     "glow lamp: has an eye",
+     "ball: no eye"
+    ]
+   },
+   "missScene": {
+    "bigLight": "on now, about to go off",
+    "flashlight": "on",
+    "beamDrawn": "only a short start at the lens",
+    "box": "no box",
+    "toys": [
+     "bear: has an eye",
+     "car: has an eye",
+     "glow lamp: no eye",
+     "ball: no eye"
+    ]
+   }
+  }
+ ]
+}

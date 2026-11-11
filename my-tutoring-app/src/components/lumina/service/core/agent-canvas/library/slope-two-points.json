@@ -1,0 +1,281 @@
+{
+ "id": "slope-two-points",
+ "title": "Slope as Rise over Run",
+ "serves": {
+  "grades": [
+   "7",
+   "8"
+  ],
+  "summary": "Slope as rise over run: the learner counts the rise and the run between two points on a coordinate grid and drags the points to build a line with a given slope (positive, whole-number, fractional and negative). Practises finding, calculating and constructing slope."
+ },
+ "request": {
+  "topic": "Slope of a line",
+  "grade": "grade 8",
+  "objective": "Make a line through two points with a given slope, and see slope as rise over run (8.EE.B.5)"
+ },
+ "source": "function Display({ params, lumina }) {\n  const targetRise = params?.targetRise ?? 3;\n  const targetRun = params?.targetRun ?? 4;\n  const targetSlope = targetRise / targetRun;\n  // Later problems hide the computed slope, so the child reasons from the rise and the run.\n  const showSlope = params?.showSlope ?? true;\n\n  // Coordinate grid bounds: x from -1 to 8, y from -1 to 7\n  const xMin = -1;\n  const xMax = 8;\n  const yMin = -1;\n  const yMax = 7;\n\n  // Grid dimensions in SVG\n  const width = 640;\n  const height = 400;\n  const padLeft = 44;\n  const padRight = 30;\n  const padTop = 30;\n  const padBottom = 40;\n\n  const plotW = width - padLeft - padRight;\n  const plotH = height - padTop - padBottom;\n\n  const toSvgX = (gx) => padLeft + ((gx - xMin) / (xMax - xMin)) * plotW;\n  const toSvgY = (gy) => padTop + ((yMax - gy) / (yMax - yMin)) * plotH;\n  const toGridX = (sx) => Math.round(xMin + ((sx - padLeft) / plotW) * (xMax - xMin));\n  const toGridY = (sy) => Math.round(yMax - ((sy - padTop) / plotH) * (yMax - yMin));\n\n  // Initial distinct points: A at (1, 1), B at (5, 2) -> slope = 1/4\n  const [ptA, setPtA] = useState({ x: 1, y: 1 });\n  const [ptB, setPtB] = useState({ x: 5, y: 2 });\n\n  const leftPt = ptA.x <= ptB.x ? ptA : ptB;\n  const rightPt = ptA.x <= ptB.x ? ptB : ptA;\n\n  const dx = rightPt.x - leftPt.x;\n  const dy = rightPt.y - leftPt.y;\n\n  const isIdentical = ptA.x === ptB.x && ptA.y === ptB.y;\n  const isVertical = dx === 0 && !isIdentical;\n  const currentSlope = dx !== 0 ? dy / dx : null;\n\n  const isGoalMet = !isIdentical && !isVertical && Math.abs(currentSlope - targetSlope) < 0.001;\n\n  useEffect(() => {\n    lumina.goal(isGoalMet);\n    lumina.scene({\n      ptA,\n      ptB,\n      dx,\n      dy,\n      // The tutor sees the computed slope only when the child does.\n      ...(showSlope ? { currentSlope: dx !== 0 ? dy / dx : 'undefined' } : {}),\n      targetSlope: `${targetRise}/${targetRun}`,\n    });\n  }, [ptA, ptB, isGoalMet, dx, dy, targetRise, targetRun]);\n\n  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));\n\n  // Pointer drag handling directly using svgPoint\n  const svgRef = useRef(null);\n  const draggingPin = useRef(null);\n\n  const onPointerDown = (pinKey) => (e) => {\n    draggingPin.current = pinKey;\n    e.currentTarget.setPointerCapture(e.pointerId);\n  };\n\n  const onPointerMove = (e) => {\n    if (!draggingPin.current || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    const gx = clamp(toGridX(pt.x), xMin, xMax);\n    const gy = clamp(toGridY(pt.y), yMin, yMax);\n    if (draggingPin.current === 'A') {\n      setPtA({ x: gx, y: gy });\n    } else if (draggingPin.current === 'B') {\n      setPtB({ x: gx, y: gy });\n    }\n  };\n\n  const onPointerUp = () => {\n    draggingPin.current = null;\n  };\n\n  // Grid lines\n  const gridLinesX = [];\n  for (let x = xMin; x <= xMax; x++) gridLinesX.push(x);\n  const gridLinesY = [];\n  for (let y = yMin; y <= yMax; y++) gridLinesY.push(y);\n\n  // Extended Line through points\n  let extendedLine = null;\n  if (!isIdentical) {\n    if (dx === 0) {\n      extendedLine = {\n        x1: toSvgX(ptA.x),\n        y1: toSvgY(yMin),\n        x2: toSvgX(ptA.x),\n        y2: toSvgY(yMax),\n      };\n    } else {\n      const m = (ptB.y - ptA.y) / (ptB.x - ptA.x);\n      const b = ptA.y - m * ptA.x;\n      extendedLine = {\n        x1: toSvgX(xMin),\n        y1: toSvgY(m * xMin + b),\n        x2: toSvgX(xMax),\n        y2: toSvgY(m * xMax + b),\n      };\n    }\n  }\n\n  return (\n    <Panel title=\"Slope Explorer\">\n      <Stack gap={12}>\n        <Row gap={16}>\n          <div\n            style={{\n              flex: 1,\n              padding: '10px 14px',\n              backgroundColor: '#1e293b',\n              borderRadius: 8,\n              border: '1px solid #334155',\n              display: 'flex',\n              alignItems: 'center',\n              justifyContent: 'space-between',\n            }}\n          >\n            <div>\n              <span style={{ color: '#94a3b8', fontSize: 13, marginRight: 8 }}>Target Slope:</span>\n              <span style={{ color: '#38bdf8', fontWeight: 600, fontSize: 16 }}>\n                <Formula tex={targetRun === 1 ? `m = ${targetRise}` : `m = \\\\frac{${targetRise}}{${targetRun}}`} />\n              </span>\n            </div>\n            {showSlope && <div>\n              <span style={{ color: '#94a3b8', fontSize: 13, marginRight: 8 }}>Current Slope:</span>\n              <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 16 }}>\n                {isIdentical ? (\n                  'Same point'\n                ) : isVertical ? (\n                  'Undefined (run = 0)'\n                ) : (\n                  <Formula\n                    tex={`m = \\\\frac{\\\\text{rise}}{\\\\text{run}} = \\\\frac{${dy}}{${dx}} ${\n                      dx !== 0 && dy % dx === 0 ? '= ' + dy / dx : ''\n                    }`}\n                  />\n                )}\n              </span>\n            </div>}\n          </div>\n        </Row>\n\n        <div\n          style={{\n            position: 'relative',\n            width: '100%',\n            background: '#0f172a',\n            borderRadius: 10,\n            border: '1px solid #1e293b',\n            overflow: 'hidden',\n          }}\n        >\n          <svg\n            ref={svgRef}\n            viewBox={`0 0 ${width} ${height}`}\n            style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none', touchAction: 'none' }}\n            onPointerMove={onPointerMove}\n            onPointerUp={onPointerUp}\n          >\n            <defs>\n              <clipPath id=\"plotClip\">\n                <rect x={padLeft} y={padTop} width={plotW} height={plotH} />\n              </clipPath>\n            </defs>\n\n            {/* Grid lines */}\n            {gridLinesX.map((x) => (\n              <line\n                key={`gx-${x}`}\n                x1={toSvgX(x)}\n                y1={padTop}\n                x2={toSvgX(x)}\n                y2={height - padBottom}\n                stroke={x === 0 ? '#64748b' : '#1e293b'}\n                strokeWidth={x === 0 ? 2 : 1}\n              />\n            ))}\n            {gridLinesY.map((y) => (\n              <line\n                key={`gy-${y}`}\n                x1={padLeft}\n                y1={toSvgY(y)}\n                x2={width - padRight}\n                y2={toSvgY(y)}\n                stroke={y === 0 ? '#64748b' : '#1e293b'}\n                strokeWidth={y === 0 ? 2 : 1}\n              />\n            ))}\n\n            {/* Grid Numbers */}\n            {gridLinesX.map((x) => (\n              <text\n                key={`lx-${x}`}\n                x={toSvgX(x)}\n                y={height - padBottom + 16}\n                fill=\"#64748b\"\n                fontSize=\"11\"\n                textAnchor=\"middle\"\n              >\n                {x}\n              </text>\n            ))}\n            {gridLinesY.map((y) => (\n              <text\n                key={`ly-${y}`}\n                x={padLeft - 10}\n                y={toSvgY(y) + 4}\n                fill=\"#64748b\"\n                fontSize=\"11\"\n                textAnchor=\"end\"\n              >\n                {y}\n              </text>\n            ))}\n\n            {/* Extended Line through points */}\n            {extendedLine && (\n              <line\n                x1={extendedLine.x1}\n                y1={extendedLine.y1}\n                x2={extendedLine.x2}\n                y2={extendedLine.y2}\n                stroke=\"#60a5fa\"\n                strokeWidth={3}\n                clipPath=\"url(#plotClip)\"\n              />\n            )}\n\n            {/* Slope Triangle: Run (horizontal) and Rise (vertical) */}\n            {!isIdentical && dx > 0 && (\n              <g>\n                {/* Horizontal run leg */}\n                <line\n                  x1={toSvgX(leftPt.x)}\n                  y1={toSvgY(leftPt.y)}\n                  x2={toSvgX(rightPt.x)}\n                  y2={toSvgY(leftPt.y)}\n                  stroke=\"#38bdf8\"\n                  strokeWidth=\"3\"\n                />\n                {/* Vertical rise leg */}\n                <line\n                  x1={toSvgX(rightPt.x)}\n                  y1={toSvgY(leftPt.y)}\n                  x2={toSvgX(rightPt.x)}\n                  y2={toSvgY(rightPt.y)}\n                  stroke=\"#fbbf24\"\n                  strokeWidth=\"3\"\n                />\n\n                {/* Triangle fill */}\n                <polygon\n                  points={`\n                    ${toSvgX(leftPt.x)},${toSvgY(leftPt.y)}\n                    ${toSvgX(rightPt.x)},${toSvgY(leftPt.y)}\n                    ${toSvgX(rightPt.x)},${toSvgY(rightPt.y)}\n                  `}\n                  fill=\"rgba(56, 189, 248, 0.08)\"\n                />\n\n                {/* Run Label */}\n                <text\n                  x={(toSvgX(leftPt.x) + toSvgX(rightPt.x)) / 2}\n                  y={toSvgY(leftPt.y) + (dy >= 0 ? 16 : -8)}\n                  fill=\"#38bdf8\"\n                  fontSize=\"12\"\n                  fontWeight=\"600\"\n                  textAnchor=\"middle\"\n                >\n                  run = +{dx}\n                </text>\n\n                {/* Rise Label */}\n                <text\n                  x={toSvgX(rightPt.x) + 8}\n                  y={(toSvgY(leftPt.y) + toSvgY(rightPt.y)) / 2 + 4}\n                  fill=\"#fbbf24\"\n                  fontSize=\"12\"\n                  fontWeight=\"600\"\n                  textAnchor=\"start\"\n                >\n                  rise = {dy >= 0 ? `+${dy}` : dy}\n                </text>\n              </g>\n            )}\n\n            {/* Draggable Point A */}\n            <g\n              id=\"pin-a\"\n              style={{ cursor: 'grab' }}\n              onPointerDown={onPointerDown('A')}\n            >\n              <circle cx={toSvgX(ptA.x)} cy={toSvgY(ptA.y)} r=\"22\" fill=\"#3b82f6\" opacity=\"0.25\" />\n              <circle cx={toSvgX(ptA.x)} cy={toSvgY(ptA.y)} r=\"8\" fill=\"#3b82f6\" stroke=\"#ffffff\" strokeWidth=\"2\" />\n              <text\n                x={toSvgX(ptA.x)}\n                y={toSvgY(ptA.y) - 14}\n                fill=\"#93c5fd\"\n                fontSize=\"12\"\n                fontWeight=\"bold\"\n                textAnchor=\"middle\"\n              >\n                A ({ptA.x}, {ptA.y})\n              </text>\n            </g>\n\n            {/* Draggable Point B */}\n            <g\n              id=\"pin-b\"\n              style={{ cursor: 'grab' }}\n              onPointerDown={onPointerDown('B')}\n            >\n              <circle cx={toSvgX(ptB.x)} cy={toSvgY(ptB.y)} r=\"22\" fill=\"#ec4899\" opacity=\"0.25\" />\n              <circle cx={toSvgX(ptB.x)} cy={toSvgY(ptB.y)} r=\"8\" fill=\"#ec4899\" stroke=\"#ffffff\" strokeWidth=\"2\" />\n              <text\n                x={toSvgX(ptB.x)}\n                y={toSvgY(ptB.y) - 14}\n                fill=\"#f472b6\"\n                fontSize=\"12\"\n                fontWeight=\"bold\"\n                textAnchor=\"middle\"\n              >\n                B ({ptB.x}, {ptB.y})\n              </text>\n            </g>\n          </svg>\n        </div>\n\n        <Row gap={12}>\n          <div style={{ fontSize: 13, color: '#94a3b8' }}>\n            <span style={{ color: '#38bdf8', fontWeight: 600 }}>Run</span> is horizontal distance (left to right).{' '}\n            <span style={{ color: '#fbbf24', fontWeight: 600 }}>Rise</span> is vertical distance (up or down). Drag the pins to adjust.\n          </div>\n        </Row>\n      </Stack>\n    </Panel>\n  );\n}",
+ "problems": [
+  {
+   "params": {
+    "targetRise": 3,
+    "targetRun": 4,
+    "showSlope": true
+   },
+   "ask": "Move the pins so the line has a slope of 3/4.",
+   "goal": "The two pins are at different grid points and rise / run equals 3/4.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": 0,
+     "dy": -80
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": 60,
+     "dy": 0
+    }
+   ],
+   "scene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 2
+    },
+    "dx": 4,
+    "dy": 1,
+    "currentSlope": 0.25,
+    "targetSlope": "3/4"
+   },
+   "proofScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 4
+    },
+    "dx": 4,
+    "dy": 3,
+    "currentSlope": 0.75,
+    "targetSlope": "3/4"
+   },
+   "missScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 6,
+     "y": 2
+    },
+    "dx": 5,
+    "dy": 1,
+    "currentSlope": 0.2,
+    "targetSlope": "3/4"
+   }
+  },
+  {
+   "params": {
+    "targetRise": 2,
+    "targetRun": 1,
+    "showSlope": true
+   },
+   "ask": "Move the pins so the line has a slope of 2.",
+   "goal": "The two pins are at different grid points and rise / run equals 2.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": -132,
+     "dy": -129
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": 0,
+     "dy": -43
+    }
+   ],
+   "scene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 2
+    },
+    "dx": 4,
+    "dy": 1,
+    "currentSlope": 0.25,
+    "targetSlope": "2/1"
+   },
+   "proofScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 3,
+     "y": 5
+    },
+    "dx": 2,
+    "dy": 4,
+    "currentSlope": 2,
+    "targetSlope": "2/1"
+   },
+   "missScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 3
+    },
+    "dx": 4,
+    "dy": 2,
+    "currentSlope": 0.5,
+    "targetSlope": "2/1"
+   }
+  },
+  {
+   "params": {
+    "targetRise": 1,
+    "targetRun": 2,
+    "showSlope": false
+   },
+   "ask": "Make a line with a slope of 1/2. The canvas no longer shows the slope: use the rise and the run.",
+   "goal": "The two pins are at different grid points and rise / run equals 1/2.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": 0,
+     "dy": -43
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": -198,
+     "dy": -43
+    }
+   ],
+   "scene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 2
+    },
+    "dx": 4,
+    "dy": 1,
+    "targetSlope": "1/2"
+   },
+   "proofScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 3
+    },
+    "dx": 4,
+    "dy": 2,
+    "targetSlope": "1/2"
+   },
+   "missScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 2,
+     "y": 3
+    },
+    "dx": 1,
+    "dy": 2,
+    "targetSlope": "1/2"
+   }
+  },
+  {
+   "params": {
+    "targetRise": -2,
+    "targetRun": 3,
+    "showSlope": false
+   },
+   "ask": "Make a line with a slope of -2/3.",
+   "goal": "The two pins are at different grid points and rise / run equals -2/3.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": -66,
+     "dy": 129
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#pin-b",
+     "dx": -66,
+     "dy": -43
+    }
+   ],
+   "scene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 5,
+     "y": 2
+    },
+    "dx": 4,
+    "dy": 1,
+    "targetSlope": "-2/3"
+   },
+   "proofScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 4,
+     "y": -1
+    },
+    "dx": 3,
+    "dy": -2,
+    "targetSlope": "-2/3"
+   },
+   "missScene": {
+    "ptA": {
+     "x": 1,
+     "y": 1
+    },
+    "ptB": {
+     "x": 4,
+     "y": 3
+    },
+    "dx": 3,
+    "dy": 2,
+    "targetSlope": "-2/3"
+   }
+  }
+ ]
+}

@@ -3705,6 +3705,19 @@ export interface NetFolderMetrics extends BasePrimitiveMetrics {
   accuracy: number;
 }
 
+/** Agent canvas: one mode; the program's own goal check judges each canvas. */
+export interface AgentCanvasMetrics extends BasePrimitiveMetrics {
+  type: 'agent-canvas';
+  challengeType: 'canvas';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 /** Practice studio: one mode; each item's surface is the agent's choice (recorded in `surfaces`). */
 export interface PracticeStudioMetrics extends BasePrimitiveMetrics {
   type: 'practice-studio';
@@ -4259,6 +4272,7 @@ export type PrimitiveMetrics =
   | DeepDiveMetrics
   | WonderWalkMetrics
   | PracticeStudioMetrics
+  | AgentCanvasMetrics
   | PassageStudioMetrics
   // Calendar
   | CalendarExplorerMetrics

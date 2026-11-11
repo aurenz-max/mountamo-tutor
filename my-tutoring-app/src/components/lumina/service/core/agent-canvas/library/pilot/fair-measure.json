@@ -1,0 +1,428 @@
+{
+ "id": "fair-measure",
+ "title": "Fair Measure",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner fixes a row of units under a ribbon so they are the same size, end to end, with no gaps or overlaps, then types the length, which shows they can measure length fairly with same-sized units."
+ },
+ "request": {
+  "topic": "Measuring length fairly with same-sized units",
+  "grade": "grade 1",
+  "objective": "Measure a length with same-sized units laid end to end, with no gaps or overlaps, and say why mixed units give a wrong count."
+ },
+ "source": "function Display({ params, lumina }) {\n  const ribbon = params?.ribbon ?? 320;\n  const laid = params?.laid ?? [];\n  const tray = params?.tray ?? ['block'];\n  const WIDTH = { block: 80, clip: 40 };\n  const NAME = { block: 'block', clip: 'clip' };\n  const SNAP = 16;\n  const ORIGIN = 24;\n\n  const [units, setUnits] = useState(() => laid.map((u, i) => ({ id: 'unit-' + i, kind: u.kind, x: u.x })));\n  const nextId = useRef(laid.length);\n  const [typed, setTyped] = useState('');\n  const drag = useRef(null);\n\n  const widthOf = (u) => WIDTH[u.kind];\n\n  useEffect(() => {\n    const row = units.slice().sort((a, b) => a.x - b.x);\n    const oneKind = row.length > 0 && row.every((u) => u.kind === row[0].kind);\n    const touching = row.every((u, i) => (i === 0 ? u.x === 0 : u.x === row[i - 1].x + widthOf(row[i - 1])));\n    const last = row[row.length - 1];\n    const reaches = !!last && last.x + widthOf(last) === ribbon;\n    lumina.goal(oneKind && touching && reaches && typed === String(row.length));\n    lumina.scene({ ribbonLengthInPixels: ribbon, unitsOnTheRibbonLeftToRight: row.map((u) => NAME[u.kind]), trayOffers: tray.map((k) => NAME[k]), numberTyped: typed });\n  }, [units, typed, ribbon]);\n\n  const add = (kind) => {\n    setUnits((list) => {\n      const w = WIDTH[kind];\n      const row = list.slice().sort((a, b) => a.x - b.x);\n      let x = 0;\n      for (const u of row) {\n        if (u.x - x >= w) break;\n        x = Math.max(x, u.x + widthOf(u));\n      }\n      const id = 'unit-' + nextId.current;\n      nextId.current += 1;\n      return list.concat({ id, kind, x });\n    });\n  };\n\n  const settle = (id, rawX) => {\n    setUnits((list) => {\n      const me = list.find((u) => u.id === id);\n      const w = widthOf(me);\n      let best = Math.max(0, Math.round(rawX / 10) * 10);\n      let bestDist = SNAP + 1;\n      const edges = [0];\n      list.forEach((u) => {\n        if (u.id === id) return;\n        edges.push(u.x + widthOf(u));\n        edges.push(u.x - w);\n      });\n      edges.forEach((e) => {\n        const d = Math.abs(e - rawX);\n        if (e >= 0 && d <= SNAP && d < bestDist) { best = e; bestDist = d; }\n      });\n      return list.map((u) => (u.id === id ? { ...u, x: best } : u));\n    });\n  };\n\n  const onDown = (e, u) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    drag.current = { id: u.id, startClient: e.clientX, startX: u.x, moved: false };\n  };\n  const onMove = (e) => {\n    const d = drag.current;\n    if (!d) return;\n    const dx = e.clientX - d.startClient;\n    if (Math.abs(dx) > 5) d.moved = true;\n    if (!d.moved) return;\n    const x = Math.max(0, d.startX + dx);\n    setUnits((list) => list.map((u) => (u.id === d.id ? { ...u, x } : u)));\n  };\n  const onUp = (e) => {\n    const d = drag.current;\n    drag.current = null;\n    if (!d) return;\n    if (!d.moved) {\n      setUnits((list) => list.filter((u) => u.id !== d.id));\n      return;\n    }\n    settle(d.id, Math.max(0, d.startX + (e.clientX - d.startClient)));\n  };\n\n  const pressDigit = (c) => setTyped((t) => (t.length < 2 ? t + c : t));\n  const erase = () => setTyped((t) => t.slice(0, -1));\n\n  const Unit = ({ kind, h }) => {\n    const w = WIDTH[kind];\n    if (kind === 'block') {\n      return <div style={{ width: w - 2, height: h, boxSizing: 'border-box', borderRadius: 7, background: '#3b82f6', border: '2px solid #bfdbfe' }} />;\n    }\n    return (\n      <div style={{ width: w - 2, height: h, boxSizing: 'border-box', borderRadius: 7, background: '#f59e0b', border: '2px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>\n        <div style={{ width: w - 18, height: h - 18, borderRadius: 8, border: '2px solid #78350f' }} />\n      </div>\n    );\n  };\n\n  const line = (x) => ({ position: 'absolute', left: ORIGIN + x - 1, top: 0, width: 2, height: 112, background: '#94a3b8' });\n  const keyStyle = { width: 50, height: 46, borderRadius: 10, border: '1px solid #475569', background: '#1e293b', color: '#f1f5f9', fontSize: 21, fontWeight: 700, cursor: 'pointer' };\n\n  return (\n    <Panel title=\"Fair Measure\" caption=\"Drag a unit to slide it. Tap a unit to take it away. Tap the tray to add one.\">\n      <Stack gap={14}>\n        <div id=\"track\" style={{ position: 'relative', height: 116, width: 660, touchAction: 'none', userSelect: 'none', overflow: 'hidden' }}>\n          <div style={line(0)} />\n          <div style={line(ribbon)} />\n          <div id=\"ribbon\" style={{ position: 'absolute', left: ORIGIN, top: 10, width: ribbon, height: 26, borderRadius: 5, background: '#ec4899' }} />\n          {units.map((u) => (\n            <div\n              key={u.id}\n              id={u.id}\n              onPointerDown={(e) => onDown(e, u)}\n              onPointerMove={onMove}\n              onPointerUp={onUp}\n              onPointerCancel={() => { drag.current = null; }}\n              style={{ position: 'absolute', left: ORIGIN + u.x + 1, top: 56, cursor: 'grab', touchAction: 'none' }}\n            >\n              <Unit kind={u.kind} h={46} />\n            </div>\n          ))}\n        </div>\n\n        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22 }}>\n          <div style={{ display: 'flex', gap: 10 }}>\n            {tray.map((kind) => (\n              <button key={kind} id={'add-' + kind} type=\"button\" onClick={() => add(kind)} style={{ width: 116, height: 76, borderRadius: 12, border: '1px solid #475569', background: '#1e293b', color: '#cbd5e1', fontSize: 15, fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: 'pointer' }}>\n                <Unit kind={kind} h={32} />\n                <span>Add a {NAME[kind]}</span>\n              </button>\n            ))}\n          </div>\n          <div>\n            <div style={{ color: '#94a3b8', fontSize: 15, marginBottom: 4, textAlign: 'center' }}>How long is the ribbon?</div>\n            <div id=\"typed\" style={{ width: 150, height: 54, borderRadius: 12, border: '2px solid #475569', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 800, color: '#f1f5f9' }}>{typed}</div>\n          </div>\n        </div>\n\n        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 50px)', gap: 5, justifyContent: 'center' }}>\n          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => (\n            <button key={d} id={'key-' + d} type=\"button\" style={keyStyle} onClick={() => pressDigit(String(d))}>{d}</button>\n          ))}\n          <button id=\"key-erase\" type=\"button\" style={{ ...keyStyle, gridColumn: 'span 2', width: 105, fontSize: 15 }} onClick={erase}>Erase</button>\n        </div>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "ribbon": 320,
+    "tray": [
+     "block"
+    ],
+    "laid": [
+     {
+      "kind": "block",
+      "x": 0
+     },
+     {
+      "kind": "block",
+      "x": 80
+     },
+     {
+      "kind": "block",
+      "x": 200
+     }
+    ]
+   },
+   "ask": "Someone tried to measure this ribbon with blocks, but it is not a fair measure yet. Fix it, then type how many blocks long the ribbon is.",
+   "goal": "Four blocks end to end from the start line to the end line, and 4 typed. The laid blocks have a gap.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#unit-2",
+     "dx": -40,
+     "dy": 0
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#key-3"
+    }
+   ],
+   "scene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block"
+    ],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block"
+    ],
+    "numberTyped": "4"
+   },
+   "missScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block"
+    ],
+    "numberTyped": "3"
+   }
+  },
+  {
+   "params": {
+    "ribbon": 240,
+    "tray": [
+     "clip"
+    ],
+    "laid": [
+     {
+      "kind": "clip",
+      "x": 0
+     },
+     {
+      "kind": "clip",
+      "x": 20
+     },
+     {
+      "kind": "clip",
+      "x": 60
+     },
+     {
+      "kind": "clip",
+      "x": 100
+     },
+     {
+      "kind": "clip",
+      "x": 140
+     },
+     {
+      "kind": "clip",
+      "x": 180
+     }
+    ]
+   },
+   "ask": "These clips do not make a fair measure yet. Fix them, then type how many clips long the ribbon is.",
+   "goal": "Six clips end to end across the ribbon, and 6 typed. The first two clips overlap, so the row stops short.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#unit-1",
+     "dx": 20,
+     "dy": 0
+    },
+    {
+     "do": "drag",
+     "target": "#unit-2",
+     "dx": 20,
+     "dy": 0
+    },
+    {
+     "do": "drag",
+     "target": "#unit-3",
+     "dx": 20,
+     "dy": 0
+    },
+    {
+     "do": "drag",
+     "target": "#unit-4",
+     "dx": 20,
+     "dy": 0
+    },
+    {
+     "do": "drag",
+     "target": "#unit-5",
+     "dx": 20,
+     "dy": 0
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "scene": {
+    "ribbonLengthInPixels": 240,
+    "unitsOnTheRibbonLeftToRight": [
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip"
+    ],
+    "trayOffers": [
+     "clip"
+    ],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "ribbonLengthInPixels": 240,
+    "unitsOnTheRibbonLeftToRight": [
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip"
+    ],
+    "trayOffers": [
+     "clip"
+    ],
+    "numberTyped": "6"
+   },
+   "missScene": {
+    "ribbonLengthInPixels": 240,
+    "unitsOnTheRibbonLeftToRight": [
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip",
+     "clip"
+    ],
+    "trayOffers": [
+     "clip"
+    ],
+    "numberTyped": "6"
+   }
+  },
+  {
+   "params": {
+    "ribbon": 320,
+    "tray": [
+     "block",
+     "clip"
+    ],
+    "laid": [
+     {
+      "kind": "block",
+      "x": 0
+     },
+     {
+      "kind": "clip",
+      "x": 80
+     },
+     {
+      "kind": "clip",
+      "x": 120
+     },
+     {
+      "kind": "block",
+      "x": 160
+     },
+     {
+      "kind": "block",
+      "x": 240
+     }
+    ]
+   },
+   "ask": "This row reaches the end of the ribbon, but it is not a fair measure. Fix it, then type how long the ribbon is.",
+   "goal": "One kind of unit end to end across the ribbon, and that number typed. The laid row mixes blocks and clips and has no gaps.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#unit-1"
+    },
+    {
+     "do": "click",
+     "target": "#unit-2"
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#key-5"
+    }
+   ],
+   "scene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "clip",
+     "clip",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": "4"
+   },
+   "missScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "clip",
+     "clip",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": "5"
+   }
+  },
+  {
+   "params": {
+    "ribbon": 320,
+    "tray": [
+     "block",
+     "clip"
+    ],
+    "laid": []
+   },
+   "ask": "Measure this ribbon fairly with the units in the tray, then type how long it is.",
+   "goal": "Four blocks or eight clips end to end, and that number typed. Mixed units do not count.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#add-block"
+    },
+    {
+     "do": "click",
+     "target": "#add-clip"
+    },
+    {
+     "do": "click",
+     "target": "#add-clip"
+    },
+    {
+     "do": "click",
+     "target": "#add-clip"
+    },
+    {
+     "do": "click",
+     "target": "#add-clip"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    }
+   ],
+   "scene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": ""
+   },
+   "proofScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "block",
+     "block"
+    ],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": "4"
+   },
+   "missScene": {
+    "ribbonLengthInPixels": 320,
+    "unitsOnTheRibbonLeftToRight": [
+     "block",
+     "block",
+     "clip",
+     "clip",
+     "clip",
+     "clip"
+    ],
+    "trayOffers": [
+     "block",
+     "clip"
+    ],
+    "numberTyped": "6"
+   }
+  }
+ ]
+}

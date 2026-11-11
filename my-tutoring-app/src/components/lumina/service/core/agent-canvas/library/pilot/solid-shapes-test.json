@@ -1,0 +1,1506 @@
+{
+ "id": "solid-shapes-test",
+ "title": "Shape Test",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "Kindergarten: the child tests solid shapes (sphere, cube, box, cylinder, cone) on a ramp and under a block, turning them onto flat or curved faces, then sorts them into rolls, slides or stacks by what each test showed."
+ },
+ "request": {
+  "topic": "Solid shapes that roll, slide and stack",
+  "grade": "kindergarten",
+  "objective": "Find which solid shapes roll, slide and stack by testing them, and use the flat and curved faces to explain why."
+ },
+ "source": "function Display({ params, lumina }) {\r\n  const shapeList = params?.shapes ?? [{ shape: 'sphere' }, { shape: 'cube' }];\r\n  const canTurn = params?.canTurn ?? false;\r\n  const tests = params?.tests ?? ['ramp'];\r\n  const bins = params?.bins ?? [{ id: 'rolls', label: 'Rolls', roll: true }, { id: 'slides', label: 'Slides', roll: false }];\r\n\r\n  const W = 670;\r\n  const H = 450;\r\n  const FLOOR = 300;\r\n  const hasRamp = tests.includes('ramp');\r\n  const hasStack = tests.includes('stack');\r\n  const TABLE_X = hasRamp ? 575 : 335;\r\n  const TABLE_TOP = 236;\r\n  const BLOCK_HOME = { x: 618, y: 104 };\r\n  const SHELF_Y = 104;\r\n  const RAMP_A = { x: 28, y: 186 };\r\n  const RAMP_B = { x: 290, y: FLOOR };\r\n  const RAMP_LEN = Math.hypot(RAMP_B.x - RAMP_A.x, RAMP_B.y - RAMP_A.y);\r\n  const RAMP_DEG = (Math.atan2(RAMP_B.y - RAMP_A.y, RAMP_B.x - RAMP_A.x) * 180) / Math.PI;\r\n  const S_START = 46;\r\n  const ROLL_END = RAMP_LEN + 150;\r\n  const SLIDE_END = RAMP_LEN + 20;\r\n  const RAMP_MS = 1200;\r\n  const FALL_MS = 800;\r\n\r\n  const ORIENTS = { sphere: ['any'], cube: ['face'], box: ['long', 'tall'], cylinder: ['up', 'side'], cone: ['base', 'side'] };\r\n  const SITS = { any: 'curved surface', face: 'flat face', long: 'long flat face', tall: 'small flat face', up: 'flat face', side: 'curved side', base: 'flat face' };\r\n  const rolls = (shape, o) => shape === 'sphere' || ((shape === 'cylinder' || shape === 'cone') && o === 'side');\r\n  const holds = (shape, o) => shape === 'cube' || shape === 'box' || (shape === 'cylinder' && o === 'up');\r\n  const RADIUS = { sphere: 28, cylinder: 26, cone: 26 };\r\n  const TOP = { sphere: { any: 56 }, cube: { face: 58 }, box: { long: 42, tall: 82 }, cylinder: { up: 60, side: 52 }, cone: { base: 64, side: 52 } };\r\n\r\n  const startOrient = (s) => s.sits ?? ORIENTS[s.shape][0];\r\n  const allowed = (s) => (canTurn ? ORIENTS[s.shape] : [startOrient(s)]);\r\n\r\n  const fresh = () => {\r\n    const solids = {};\r\n    const record = {};\r\n    shapeList.forEach((s, i) => {\r\n      solids[s.shape] = { shape: s.shape, orient: startOrient(s), where: 'shelf', slot: i, s: 0, rot: 0, bin: null, order: 0 };\r\n      record[s.shape] = { rolled: false, slid: false, held: false, fell: false };\r\n    });\r\n    return { solids, block: 'home', rampAnim: null, fallAnim: null, record, log: [], order: 0 };\r\n  };\r\n  const [world, setWorld] = useState(fresh);\r\n  const worldRef = useRef(world);\r\n  const put = (fn) => { const next = fn(worldRef.current); worldRef.current = next; setWorld(next); };\r\n  const [now, setNow] = useState(0);\r\n  const [drag, setDrag] = useState(null);\r\n  const dragRef = useRef(null);\r\n  const svgRef = useRef(null);\r\n\r\n  // Ticks while something is moving, so the picture follows the clock.\r\n  useEffect(() => {\r\n    if (!world.rampAnim && !world.fallAnim) return undefined;\r\n    const id = setInterval(() => setNow(performance.now()), 30);\r\n    return () => clearInterval(id);\r\n  }, [world.rampAnim, world.fallAnim]);\r\n\r\n  const binOf = (id) => bins.find((b) => b.id === id);\r\n  const canRoll = (s) => allowed(s).some((o) => rolls(s.shape, o));\r\n  const canStack = (s) => allowed(s).some((o) => holds(s.shape, o));\r\n\r\n  useEffect(() => {\r\n    const list = shapeList.map((s) => ({ spec: s, now: world.solids[s.shape], rec: world.record[s.shape] }));\r\n    const met = list.every(({ spec, now: n, rec }) => {\r\n      if (n.where !== 'bin') return false;\r\n      const b = binOf(n.bin);\r\n      if (!b) return false;\r\n      const rollOk = b.roll == null || (b.roll ? canRoll(spec) && rec.rolled : !canRoll(spec) && (rec.rolled || rec.slid));\r\n      const stackOk = b.stack == null || (b.stack ? canStack(spec) && rec.held : !canStack(spec) && (rec.held || rec.fell));\r\n      return rollOk && stackOk;\r\n    });\r\n    lumina.goal(met);\r\n    const placeName = (n) => (n.where === 'bin' ? 'in the box \"' + (binOf(n.bin)?.label ?? '') + '\"' : n.where === 'ramp' ? 'on the ramp' : n.where === 'table' ? 'on the table' : 'on the shelf');\r\n    lumina.scene({\r\n      shapes: list.map(({ now: n }) => ({ shape: n.shape, sittingOn: SITS[n.orient], place: placeName(n) })),\r\n      testPlaces: tests.map((t) => (t === 'ramp' ? 'a ramp' : 'a table with a block to put on top')),\r\n      shapesCanBeTurned: canTurn,\r\n      sortingBoxes: bins.map((b) => b.label),\r\n      testsWatched: world.log,\r\n      blockIs: world.block === 'top' ? 'on top of the shape on the table' : world.block === 'fall' ? 'falling off' : 'beside the table',\r\n    });\r\n  }, [world]);\r\n\r\n  // ---- geometry ----\r\n  const rampPoint = (s) => {\r\n    if (s <= RAMP_LEN) {\r\n      const t = s / RAMP_LEN;\r\n      return { x: RAMP_A.x + (RAMP_B.x - RAMP_A.x) * t, y: RAMP_A.y + (RAMP_B.y - RAMP_A.y) * t, angle: RAMP_DEG };\r\n    }\r\n    return { x: RAMP_B.x + (s - RAMP_LEN), y: FLOOR, angle: 0 };\r\n  };\r\n  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);\r\n  const nBins = bins.length;\r\n  const BIN_GAP = 14;\r\n  const BIN_W = (W - 20 - BIN_GAP * (nBins - 1)) / nBins;\r\n  const BIN_Y = 326;\r\n  const BIN_H = 118;\r\n  const binX = (j) => 10 + j * (BIN_W + BIN_GAP);\r\n\r\n  const placeOf = (n, w) => {\r\n    if (n.where === 'shelf') return { x: 56 + n.slot * 84, y: SHELF_Y, angle: 0, scale: 1, rot: n.rot };\r\n    if (n.where === 'table') return { x: TABLE_X, y: TABLE_TOP, angle: 0, scale: 1, rot: n.rot };\r\n    if (n.where === 'ramp') {\r\n      const a = w.rampAnim;\r\n      if (a && a.shape === n.shape) {\r\n        const t = Math.min(1, Math.max(0, (now - a.t0) / RAMP_MS));\r\n        const s = a.s0 + (a.s1 - a.s0) * ease(t);\r\n        const p = rampPoint(s);\r\n        const rot = a.roll ? n.rot + ((s - a.s0) / RADIUS[n.shape]) * (180 / Math.PI) : n.rot;\r\n        return { ...p, scale: 1, rot };\r\n      }\r\n      return { ...rampPoint(n.s), scale: 1, rot: n.rot };\r\n    }\r\n    const j = bins.findIndex((b) => b.id === n.bin);\r\n    const mates = Object.values(w.solids).filter((m) => m.where === 'bin' && m.bin === n.bin).sort((a, b) => a.order - b.order);\r\n    const k = mates.findIndex((m) => m.shape === n.shape);\r\n    return { x: binX(j) + 34 + k * 52, y: BIN_Y + BIN_H - 8, angle: 0, scale: 0.6, rot: n.rot };\r\n  };\r\n\r\n  // ---- actions ----\r\n  const finishRamp = (token) => put((w) => {\r\n    const a = w.rampAnim;\r\n    if (!a || a.token !== token) return w;\r\n    const n = w.solids[a.shape];\r\n    const rot = a.roll ? n.rot + ((a.s1 - a.s0) / RADIUS[a.shape]) * (180 / Math.PI) : n.rot;\r\n    const rec = { ...w.record[a.shape], [a.roll ? 'rolled' : 'slid']: true };\r\n    const line = a.shape + ' on its ' + SITS[n.orient] + ', on the ramp: ' + (a.roll ? 'rolled' : 'slid');\r\n    return { ...w, rampAnim: null, solids: { ...w.solids, [a.shape]: { ...n, s: a.s1, rot } }, record: { ...w.record, [a.shape]: rec }, log: w.log.concat(line) };\r\n  });\r\n\r\n  const finishFall = (token) => put((w) => {\r\n    if (!w.fallAnim || w.fallAnim.token !== token) return w;\r\n    const shape = w.fallAnim.shape;\r\n    const n = w.solids[shape];\r\n    const line = 'block on top of the ' + shape + ' on its ' + SITS[n.orient] + ': fell off';\r\n    return { ...w, fallAnim: null, block: 'home', record: { ...w.record, [shape]: { ...w.record[shape], fell: true } }, log: w.log.concat(line) };\r\n  });\r\n\r\n  const inRamp = (p) => hasRamp && p.x < 320 && p.y > 128 && p.y < 318;\r\n  const inTable = (p) => hasStack && Math.abs(p.x - TABLE_X) < 110 && p.y > 128 && p.y < 318;\r\n  const binAt = (p) => {\r\n    if (p.y < BIN_Y - 6) return null;\r\n    for (let j = 0; j < nBins; j += 1) if (p.x >= binX(j) - 6 && p.x <= binX(j) + BIN_W + 6) return bins[j].id;\r\n    return null;\r\n  };\r\n\r\n  const dropSolid = (shape, p) => {\r\n    let token = null;\r\n    put((w) => {\r\n      const solids = { ...w.solids };\r\n      let block = w.block;\r\n      let rampAnim = w.rampAnim;\r\n      let order = w.order;\r\n      const me = { ...solids[shape] };\r\n      if (me.where === 'table' && block === 'top') block = 'home';\r\n      if (inRamp(p)) {\r\n        Object.values(solids).forEach((m) => { if (m.shape !== shape && m.where === 'ramp') solids[m.shape] = { ...m, where: 'shelf' }; });\r\n        const roll = rolls(shape, me.orient);\r\n        token = Math.random();\r\n        me.where = 'ramp';\r\n        me.s = S_START;\r\n        rampAnim = { shape, token, t0: performance.now(), s0: S_START, s1: roll ? ROLL_END : SLIDE_END, roll };\r\n      } else if (inTable(p)) {\r\n        Object.values(solids).forEach((m) => { if (m.shape !== shape && m.where === 'table') solids[m.shape] = { ...m, where: 'shelf' }; });\r\n        if (block === 'top') block = 'home';\r\n        me.where = 'table';\r\n      } else {\r\n        const b = binAt(p);\r\n        if (b) { order += 1; me.where = 'bin'; me.bin = b; me.order = order; } else me.where = 'shelf';\r\n      }\r\n      solids[shape] = me;\r\n      return { ...w, solids, block, rampAnim, order };\r\n    });\r\n    if (token != null) { setNow(performance.now()); setTimeout(() => finishRamp(token), RAMP_MS + 40); }\r\n  };\r\n\r\n  const dropBlock = (p) => {\r\n    const w = worldRef.current;\r\n    const onTable = Object.values(w.solids).find((m) => m.where === 'table');\r\n    if (!inTable(p) || !onTable) { put((x) => ({ ...x, block: 'home' })); return; }\r\n    if (holds(onTable.shape, onTable.orient)) {\r\n      const line = 'block on top of the ' + onTable.shape + ' on its ' + SITS[onTable.orient] + ': stayed on';\r\n      put((x) => ({ ...x, block: 'top', record: { ...x.record, [onTable.shape]: { ...x.record[onTable.shape], held: true } }, log: x.log.concat(line) }));\r\n      return;\r\n    }\r\n    const token = Math.random();\r\n    put((x) => ({ ...x, block: 'fall', fallAnim: { token, shape: onTable.shape, t0: performance.now() } }));\r\n    setNow(performance.now());\r\n    setTimeout(() => finishFall(token), FALL_MS + 40);\r\n  };\r\n\r\n  const turn = (shape) => {\r\n    if (!canTurn) return;\r\n    put((w) => {\r\n      const n = w.solids[shape];\r\n      const list = ORIENTS[shape];\r\n      if (list.length < 2 || (w.rampAnim && w.rampAnim.shape === shape)) return w;\r\n      const next = list[(list.indexOf(n.orient) + 1) % list.length];\r\n      const block = n.where === 'table' && w.block === 'top' ? 'home' : w.block;\r\n      return { ...w, block, solids: { ...w.solids, [shape]: { ...n, orient: next } } };\r\n    });\r\n  };\r\n\r\n  const local = (e) => {\r\n    const box = svgRef.current.getBoundingClientRect();\r\n    return { x: e.clientX - box.left, y: e.clientY - box.top };\r\n  };\r\n\r\n  const grab = (e, what, contact) => {\r\n    const w = worldRef.current;\r\n    if (what === 'block' && w.block === 'fall') return;\r\n    if (what !== 'block' && w.rampAnim && w.rampAnim.shape === what) return;\r\n    e.stopPropagation();\r\n    svgRef.current.setPointerCapture(e.pointerId);\r\n    const p = local(e);\r\n    const d = { what, start: p, p, off: { x: contact.x - p.x, y: contact.y - p.y }, moved: false };\r\n    dragRef.current = d;\r\n    setDrag(d);\r\n  };\r\n  const onMove = (e) => {\r\n    const d = dragRef.current;\r\n    if (!d) return;\r\n    const p = local(e);\r\n    const moved = d.moved || Math.hypot(p.x - d.start.x, p.y - d.start.y) > 6;\r\n    const next = { ...d, p, moved };\r\n    dragRef.current = next;\r\n    setDrag(next);\r\n  };\r\n  const onUp = (e) => {\r\n    const d = dragRef.current;\r\n    dragRef.current = null;\r\n    setDrag(null);\r\n    if (!d) return;\r\n    const p = local(e);\r\n    if (!d.moved) { if (d.what !== 'block') turn(d.what); return; }\r\n    if (d.what === 'block') dropBlock(p); else dropSolid(d.what, p);\r\n  };\r\n\r\n  // ---- drawing ----\r\n  const COLORS = { sphere: ['#f472b6', '#9d174d'], cube: ['#fbbf24', '#a16207'], box: ['#fb923c', '#9a3412'], cylinder: ['#38bdf8', '#075985'], cone: ['#a78bfa', '#5b21b6'] };\r\n  const HIT = { sphere: { any: [-28, -56, 56, 56] }, cube: { face: [-26, -62, 64, 62] }, box: { long: [-40, -46, 92, 46], tall: [-20, -86, 52, 86] }, cylinder: { up: [-24, -63, 48, 63], side: [-26, -72, 86, 72] }, cone: { base: [-28, -64, 56, 64], side: [-26, -52, 94, 52] } };\r\n\r\n  const stripe = (cx, cy, r, rot) => {\r\n    const a = (rot * Math.PI) / 180;\r\n    const dx = Math.cos(a) * r * 0.8;\r\n    const dy = Math.sin(a) * r * 0.8;\r\n    return [\r\n      <line key=\"st\" x1={cx - dx} y1={cy - dy} x2={cx + dx} y2={cy + dy} stroke=\"#f8fafc\" strokeWidth={5} strokeLinecap=\"round\" opacity={0.85} />,\r\n      <circle key=\"dt\" cx={cx + dx} cy={cy + dy} r={5} fill=\"#0f172a\" />,\r\n    ];\r\n  };\r\n\r\n  const art = (shape, o, rot) => {\r\n    const [c, d] = COLORS[shape];\r\n    if (shape === 'sphere') return [<circle key=\"b\" cx={0} cy={-28} r={28} fill={c} />, <circle key=\"h\" cx={-10} cy={-39} r={7} fill=\"#fff\" opacity={0.3} />, ...stripe(0, -28, 28, rot)];\r\n    if (shape === 'cube') return [<rect key=\"f\" x={-26} y={-52} width={52} height={52} fill={c} />, <polygon key=\"t\" points=\"-26,-52 -14,-62 38,-62 26,-52\" fill={c} />, <polygon key=\"t2\" points=\"-26,-52 -14,-62 38,-62 26,-52\" fill=\"#fff\" opacity={0.3} />, <polygon key=\"s\" points=\"26,0 38,-10 38,-62 26,-52\" fill={d} />];\r\n    if (shape === 'box') {\r\n      const fw = o === 'long' ? 40 : 20;\r\n      const fh = o === 'long' ? 36 : 76;\r\n      return [<rect key=\"f\" x={-fw} y={-fh} width={fw * 2} height={fh} fill={c} />, <polygon key=\"t\" points={`${-fw},${-fh} ${-fw + 12},${-fh - 10} ${fw + 12},${-fh - 10} ${fw},${-fh}`} fill={c} />, <polygon key=\"t2\" points={`${-fw},${-fh} ${-fw + 12},${-fh - 10} ${fw + 12},${-fh - 10} ${fw},${-fh}`} fill=\"#fff\" opacity={0.3} />, <polygon key=\"s\" points={`${fw},0 ${fw + 12},-10 ${fw + 12},${-fh - 10} ${fw},${-fh}`} fill={d} />];\r\n    }\r\n    if (shape === 'cylinder' && o === 'up') return [<path key=\"b\" d=\"M -24 -56 L -24 -7 A 24 7 0 0 0 24 -7 L 24 -56 Z\" fill={c} />, <path key=\"sh\" d=\"M 12 -56 L 12 -1 A 24 7 0 0 0 24 -7 L 24 -56 Z\" fill={d} opacity={0.6} />, <ellipse key=\"t\" cx={0} cy={-56} rx={24} ry={7} fill={c} />, <ellipse key=\"t2\" cx={0} cy={-56} rx={24} ry={7} fill=\"#fff\" opacity={0.3} />];\r\n    if (shape === 'cylinder') return [<circle key=\"bk\" cx={34} cy={-46} r={26} fill={d} />, <polygon key=\"bd\" points=\"13.2,-3.6 47.2,-23.6 20.8,-68.4 -13.2,-48.4\" fill={d} />, <line key=\"hl\" x1={-13.2} y1={-48.4} x2={20.8} y2={-68.4} stroke={c} strokeWidth={3} opacity={0.7} />, <circle key=\"f\" cx={0} cy={-26} r={26} fill={c} />, <circle key=\"f2\" cx={0} cy={-26} r={26} fill=\"#fff\" opacity={0.18} />, ...stripe(0, -26, 26, rot)];\r\n    if (shape === 'cone' && o === 'base') return [<ellipse key=\"b\" cx={0} cy={-6} rx={28} ry={7} fill={d} />, <polygon key=\"t\" points=\"0,-64 -28,-6 28,-6\" fill={c} />, <polygon key=\"sh\" points=\"0,-64 10,-6 28,-6\" fill={d} opacity={0.5} />];\r\n    return [<polygon key=\"bd\" points=\"66,-36 3.9,-0.3 -3.9,-51.7\" fill={d} />, <line key=\"hl\" x1={-3.9} y1={-51.7} x2={66} y2={-36} stroke={c} strokeWidth={3} opacity={0.7} />, <circle key=\"f\" cx={0} cy={-26} r={26} fill={c} />, <circle key=\"f2\" cx={0} cy={-26} r={26} fill=\"#fff\" opacity={0.18} />, ...stripe(0, -26, 26, rot)];\r\n  };\r\n\r\n  const solidAt = (n, place, isDragged) => {\r\n    const hb = HIT[n.shape][n.orient];\r\n    return (\r\n      <g key={n.shape} id={'solid-' + n.shape} transform={`translate(${place.x} ${place.y}) rotate(${place.angle}) scale(${place.scale})`} style={{ cursor: 'grab', touchAction: 'none' }} opacity={isDragged ? 0.92 : 1}\r\n        onPointerDown={(e) => grab(e, n.shape, { x: place.x, y: place.y })}>\r\n        <rect x={hb[0] - 6} y={hb[1] - 6} width={hb[2] + 12} height={hb[3] + 8} fill=\"transparent\" />\r\n        {art(n.shape, n.orient, place.rot)}\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const blockPlace = () => {\r\n    const w = world;\r\n    const onTable = Object.values(w.solids).find((m) => m.where === 'table');\r\n    if (w.block === 'top' && onTable) return { x: TABLE_X, y: TABLE_TOP - TOP[onTable.shape][onTable.orient], angle: 0 };\r\n    if (w.block === 'fall' && w.fallAnim && onTable) {\r\n      const t = Math.min(1, Math.max(0, (now - w.fallAnim.t0) / FALL_MS));\r\n      const y0 = TABLE_TOP - TOP[onTable.shape][onTable.orient];\r\n      const x = TABLE_X - 95 * t;\r\n      const y = y0 + (FLOOR - y0) * t * t - 30 * Math.sin(Math.PI * t) * (1 - t);\r\n      return { x, y, angle: -85 * t };\r\n    }\r\n    return { ...BLOCK_HOME, angle: 0 };\r\n  };\r\n\r\n  const binIcon = (b, x, y) => {\r\n    const parts = [];\r\n    let cx = x;\r\n    if (b.roll != null) {\r\n      parts.push(\r\n        <g key=\"r\" transform={`translate(${cx} ${y})`}>\r\n          <circle cx={0} cy={0} r={9} fill=\"none\" stroke=\"#cbd5e1\" strokeWidth={2} />\r\n          {b.roll ? <path d=\"M 12 -6 A 13 13 0 0 1 4 12\" fill=\"none\" stroke=\"#cbd5e1\" strokeWidth={2.5} /> : <line x1={-14} y1={13} x2={14} y2={13} stroke=\"#cbd5e1\" strokeWidth={2.5} />}\r\n          {b.roll ? <polygon points=\"0,12 7,7 7,16\" fill=\"#cbd5e1\" /> : null}\r\n          {!b.roll ? <line x1={-10} y1={-10} x2={10} y2={10} stroke=\"#f87171\" strokeWidth={3} /> : null}\r\n        </g>,\r\n      );\r\n      cx += 34;\r\n    }\r\n    if (b.stack != null) {\r\n      parts.push(\r\n        <g key=\"s\" transform={`translate(${cx} ${y})`}>\r\n          <rect x={-9} y={0} width={18} height={11} fill=\"none\" stroke=\"#cbd5e1\" strokeWidth={2} />\r\n          {b.stack ? <rect x={-9} y={-12} width={18} height={11} fill=\"none\" stroke=\"#cbd5e1\" strokeWidth={2} /> : <rect x={4} y={-14} width={18} height={11} fill=\"none\" stroke=\"#cbd5e1\" strokeWidth={2} transform=\"rotate(35 13 -8)\" />}\r\n        </g>,\r\n      );\r\n    }\r\n    return parts;\r\n  };\r\n\r\n  const solids = Object.values(world.solids);\r\n  const dragged = drag && drag.moved && drag.what !== 'block' ? drag.what : null;\r\n  const bp = drag && drag.moved && drag.what === 'block' ? { x: drag.p.x + drag.off.x, y: drag.p.y + drag.off.y, angle: 0 } : blockPlace();\r\n\r\n  const caption = (hasRamp && hasStack ? 'Drag a shape onto the ramp or the table to test it. On the table, put the block on top.' : hasRamp ? 'Drag a shape onto the ramp to test it.' : 'Drag a shape onto the table, then put the block on top of it.')\r\n    + (canTurn ? ' Tap a shape to turn it onto another side.' : '') + ' Drag each shape into a box.';\r\n\r\n  return (\r\n    <Panel title=\"Shape Test\" caption={caption}>\r\n      <svg ref={svgRef} id=\"world\" width={W} height={H} style={{ display: 'block', touchAction: 'none', userSelect: 'none' }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>\r\n        <rect x={10} y={SHELF_Y} width={Math.max(200, shapeList.length * 84 + 10)} height={8} rx={3} fill=\"#64748b\" />\r\n        {hasRamp ? (\r\n          <g>\r\n            <polygon points={`${RAMP_A.x},${RAMP_A.y} ${RAMP_B.x},${RAMP_B.y} ${RAMP_A.x},${RAMP_B.y}`} fill=\"#334155\" stroke=\"#94a3b8\" strokeWidth={2} />\r\n            <circle cx={rampPoint(S_START).x + 11} cy={rampPoint(S_START).y - 30} r={32} fill=\"none\" stroke=\"#64748b\" strokeWidth={2} strokeDasharray=\"5 5\" />\r\n            <rect id=\"ramp-top\" x={40} y={122} width={110} height={70} fill=\"transparent\" pointerEvents=\"none\" />\r\n          </g>\r\n        ) : null}\r\n        <line x1={10} y1={FLOOR} x2={W - 10} y2={FLOOR} stroke=\"#94a3b8\" strokeWidth={2} />\r\n        {hasStack ? (\r\n          <g>\r\n            <rect x={TABLE_X - 62} y={TABLE_TOP} width={124} height={10} rx={2} fill=\"#a8a29e\" />\r\n            <rect x={TABLE_X - 54} y={TABLE_TOP + 10} width={8} height={FLOOR - TABLE_TOP - 10} fill=\"#78716c\" />\r\n            <rect x={TABLE_X + 46} y={TABLE_TOP + 10} width={8} height={FLOOR - TABLE_TOP - 10} fill=\"#78716c\" />\r\n            <rect id=\"table-top\" x={TABLE_X - 60} y={150} width={120} height={84} fill=\"transparent\" pointerEvents=\"none\" />\r\n            <rect x={BLOCK_HOME.x - 40} y={BLOCK_HOME.y} width={80} height={8} rx={3} fill=\"#64748b\" />\r\n          </g>\r\n        ) : null}\r\n\r\n        {bins.map((b, j) => (\r\n          <g key={b.id}>\r\n            <rect id={'bin-' + b.id} x={binX(j)} y={BIN_Y} width={BIN_W} height={BIN_H} rx={12} fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth={2} strokeDasharray=\"6 5\" />\r\n            <text x={binX(j) + 14} y={BIN_Y + 26} fill=\"#f1f5f9\" fontSize={18} fontWeight={700}>{b.label}</text>\r\n            {binIcon(b, binX(j) + 24, BIN_Y + 48)}\r\n          </g>\r\n        ))}\r\n\r\n        {solids.filter((n) => n.shape !== dragged).map((n) => solidAt(n, placeOf(n, world), false))}\r\n\r\n        {hasStack ? (\r\n          <g id=\"block\" transform={`translate(${bp.x} ${bp.y}) rotate(${bp.angle})`} style={{ cursor: 'grab' }} onPointerDown={(e) => grab(e, 'block', { x: bp.x, y: bp.y })}>\r\n            <rect x={-30} y={-26} width={60} height={30} fill=\"transparent\" />\r\n            <rect x={-24} y={-20} width={48} height={20} rx={2} fill=\"#ef4444\" stroke=\"#7f1d1d\" strokeWidth={2} />\r\n          </g>\r\n        ) : null}\r\n\r\n        {dragged ? solidAt(world.solids[dragged], { x: drag.p.x + drag.off.x, y: drag.p.y + drag.off.y, angle: 0, scale: 1, rot: world.solids[dragged].rot }, true) : null}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "shapes": [
+     {
+      "shape": "sphere"
+     },
+     {
+      "shape": "cube"
+     }
+    ],
+    "canTurn": false,
+    "tests": [
+     "ramp"
+    ],
+    "bins": [
+     {
+      "id": "rolls",
+      "label": "Rolls",
+      "roll": true
+     },
+     {
+      "id": "slides",
+      "label": "Slides",
+      "roll": false
+     }
+    ]
+   },
+   "ask": "Test both shapes on the ramp. Put each one in the box for what it did: rolls or slides.",
+   "goal": "Both tested on the ramp; the sphere in Rolls, the cube in Slides. Both go down the ramp, so going down is not rolling: only the sphere turns over as it goes.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 60,
+     "shot": "mid-roll"
+    },
+    {
+     "do": "wait",
+     "ms": 1300,
+     "shot": "sphere-rolled"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-rolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400,
+     "shot": "cube-slid"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-slides"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-rolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-rolls"
+    }
+   ],
+   "scene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [],
+    "blockIs": "beside the table"
+   },
+   "proofScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid"
+    ],
+    "blockIs": "beside the table"
+   },
+   "missScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Rolls\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid"
+    ],
+    "blockIs": "beside the table"
+   }
+  },
+  {
+   "params": {
+    "shapes": [
+     {
+      "shape": "sphere"
+     },
+     {
+      "shape": "cube"
+     },
+     {
+      "shape": "cylinder",
+      "sits": "up"
+     },
+     {
+      "shape": "cone",
+      "sits": "base"
+     }
+    ],
+    "canTurn": false,
+    "tests": [
+     "ramp"
+    ],
+    "bins": [
+     {
+      "id": "rolls",
+      "label": "Rolls",
+      "roll": true
+     },
+     {
+      "id": "slides",
+      "label": "Slides",
+      "roll": false
+     }
+    ]
+   },
+   "ask": "Test each shape on the ramp the way it is sitting. Sort them: rolls or slides.",
+   "goal": "All four tested as they sit. Sphere in Rolls; cube, standing cylinder and cone on its base in Slides.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-rolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-slides"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400,
+     "shot": "cylinder-slid"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-slides"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-slides",
+     "shot": "sorted"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-rolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-slides"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-rolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-slides"
+    }
+   ],
+   "scene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [],
+    "blockIs": "beside the table"
+   },
+   "proofScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid",
+     "cylinder on its flat face, on the ramp: slid",
+     "cone on its flat face, on the ramp: slid"
+    ],
+    "blockIs": "beside the table"
+   },
+   "missScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "in the box \"Rolls\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "in the box \"Slides\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": false,
+    "sortingBoxes": [
+     "Rolls",
+     "Slides"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid",
+     "cylinder on its flat face, on the ramp: slid",
+     "cone on its flat face, on the ramp: slid"
+    ],
+    "blockIs": "beside the table"
+   }
+  },
+  {
+   "params": {
+    "shapes": [
+     {
+      "shape": "sphere"
+     },
+     {
+      "shape": "cube"
+     },
+     {
+      "shape": "cylinder",
+      "sits": "up"
+     },
+     {
+      "shape": "cone",
+      "sits": "base"
+     }
+    ],
+    "canTurn": true,
+    "tests": [
+     "ramp"
+    ],
+    "bins": [
+     {
+      "id": "canroll",
+      "label": "Can roll",
+      "roll": true
+     },
+     {
+      "id": "cannotroll",
+      "label": "Cannot roll",
+      "roll": false
+     }
+    ]
+   },
+   "ask": "Find out which shapes can roll. Sort them: can roll or cannot roll.",
+   "goal": "Sphere, cylinder and cone in Can roll, each seen rolling (cylinder and cone only roll on their curved side); cube in Cannot roll after a test.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-canroll"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-cannotroll"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cylinder",
+     "shot": "cylinder-turned"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-canroll"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400,
+     "shot": "cone-slid"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cone"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400,
+     "shot": "cone-rolled"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-canroll"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-canroll"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-cannotroll"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cylinder"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-canroll"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-cannotroll"
+    }
+   ],
+   "scene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Can roll",
+     "Cannot roll"
+    ],
+    "testsWatched": [],
+    "blockIs": "beside the table"
+   },
+   "proofScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Can roll\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Cannot roll\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "in the box \"Can roll\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "curved side",
+      "place": "in the box \"Can roll\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Can roll",
+     "Cannot roll"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid",
+     "cylinder on its curved side, on the ramp: rolled",
+     "cone on its flat face, on the ramp: slid",
+     "cone on its curved side, on the ramp: rolled"
+    ],
+    "blockIs": "beside the table"
+   },
+   "missScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Can roll\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Cannot roll\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "in the box \"Can roll\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "in the box \"Cannot roll\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Can roll",
+     "Cannot roll"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "cube on its flat face, on the ramp: slid",
+     "cylinder on its curved side, on the ramp: rolled",
+     "cone on its flat face, on the ramp: slid"
+    ],
+    "blockIs": "beside the table"
+   }
+  },
+  {
+   "params": {
+    "shapes": [
+     {
+      "shape": "sphere"
+     },
+     {
+      "shape": "cube"
+     },
+     {
+      "shape": "box",
+      "sits": "long"
+     },
+     {
+      "shape": "cylinder",
+      "sits": "side"
+     },
+     {
+      "shape": "cone",
+      "sits": "base"
+     }
+    ],
+    "canTurn": true,
+    "tests": [
+     "stack"
+    ],
+    "bins": [
+     {
+      "id": "stacks",
+      "label": "Stacks",
+      "stack": true
+     },
+     {
+      "id": "nostack",
+      "label": "Does not stack",
+      "stack": false
+     }
+    ]
+   },
+   "ask": "Find out which shapes can hold the red block on top. Sort them: stacks or does not stack.",
+   "goal": "Cube, box and cylinder (standing on its flat face) in Stacks, each seen holding the block; sphere and cone in Does not stack after a test.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000,
+     "shot": "sphere-fell"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-nostack"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top",
+     "shot": "cube-held"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-stacks"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-box",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-box",
+     "to": "#bin-stacks"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cylinder"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top",
+     "shot": "cylinder-held"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-stacks"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-nostack"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-nostack"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-stacks"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-nostack"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-box",
+     "to": "#bin-nostack"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-nostack"
+    }
+   ],
+   "scene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "box",
+      "sittingOn": "long flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     }
+    ],
+    "testPlaces": [
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Stacks",
+     "Does not stack"
+    ],
+    "testsWatched": [],
+    "blockIs": "beside the table"
+   },
+   "proofScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Does not stack\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Stacks\""
+     },
+     {
+      "shape": "box",
+      "sittingOn": "long flat face",
+      "place": "in the box \"Stacks\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "in the box \"Stacks\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "in the box \"Does not stack\""
+     }
+    ],
+    "testPlaces": [
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Stacks",
+     "Does not stack"
+    ],
+    "testsWatched": [
+     "block on top of the sphere on its curved surface: fell off",
+     "block on top of the cube on its flat face: stayed on",
+     "block on top of the box on its long flat face: stayed on",
+     "block on top of the cylinder on its flat face: stayed on",
+     "block on top of the cone on its flat face: fell off"
+    ],
+    "blockIs": "beside the table"
+   },
+   "missScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Does not stack\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Stacks\""
+     },
+     {
+      "shape": "box",
+      "sittingOn": "long flat face",
+      "place": "in the box \"Does not stack\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "in the box \"Does not stack\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "in the box \"Does not stack\""
+     }
+    ],
+    "testPlaces": [
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Stacks",
+     "Does not stack"
+    ],
+    "testsWatched": [
+     "block on top of the sphere on its curved surface: fell off",
+     "block on top of the cube on its flat face: stayed on",
+     "block on top of the cylinder on its curved side: fell off",
+     "block on top of the cone on its flat face: fell off"
+    ],
+    "blockIs": "beside the table"
+   }
+  },
+  {
+   "params": {
+    "shapes": [
+     {
+      "shape": "sphere"
+     },
+     {
+      "shape": "cube"
+     },
+     {
+      "shape": "cylinder",
+      "sits": "up"
+     },
+     {
+      "shape": "cone",
+      "sits": "base"
+     }
+    ],
+    "canTurn": true,
+    "tests": [
+     "ramp",
+     "stack"
+    ],
+    "bins": [
+     {
+      "id": "onlyrolls",
+      "label": "Only rolls",
+      "roll": true,
+      "stack": false
+     },
+     {
+      "id": "onlystacks",
+      "label": "Only stacks",
+      "roll": false,
+      "stack": true
+     },
+     {
+      "id": "both",
+      "label": "Rolls and stacks",
+      "roll": true,
+      "stack": true
+     }
+    ]
+   },
+   "ask": "Test each shape on the ramp and with the block. Sort them: only rolls, only stacks, or rolls and stacks.",
+   "goal": "Sphere and cone in Only rolls, cube in Only stacks, cylinder in Rolls and stacks; every shape given both tests, and the cylinder seen both rolling and holding the block.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-onlyrolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-onlystacks"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top",
+     "shot": "cylinder-held"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cylinder"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400,
+     "shot": "cylinder-rolled"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-both"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "click",
+     "target": "#solid-cone"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-onlyrolls",
+     "shot": "sorted"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-sphere",
+     "to": "#bin-onlyrolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cube",
+     "to": "#bin-onlystacks"
+    },
+    {
+     "do": "click",
+     "target": "#solid-cylinder"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cylinder",
+     "to": "#bin-onlyrolls"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "click",
+     "target": "#solid-cone"
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#ramp-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1400
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#table-top"
+    },
+    {
+     "do": "drag",
+     "target": "#block",
+     "to": "#table-top"
+    },
+    {
+     "do": "wait",
+     "ms": 1000
+    },
+    {
+     "do": "drag",
+     "target": "#solid-cone",
+     "to": "#bin-onlyrolls"
+    }
+   ],
+   "scene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "flat face",
+      "place": "on the shelf"
+     }
+    ],
+    "testPlaces": [
+     "a ramp",
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Only rolls",
+     "Only stacks",
+     "Rolls and stacks"
+    ],
+    "testsWatched": [],
+    "blockIs": "beside the table"
+   },
+   "proofScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Only rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Only stacks\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "in the box \"Rolls and stacks\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "curved side",
+      "place": "in the box \"Only rolls\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp",
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Only rolls",
+     "Only stacks",
+     "Rolls and stacks"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "block on top of the sphere on its curved surface: fell off",
+     "cube on its flat face, on the ramp: slid",
+     "block on top of the cube on its flat face: stayed on",
+     "block on top of the cylinder on its flat face: stayed on",
+     "cylinder on its curved side, on the ramp: rolled",
+     "cone on its flat face, on the ramp: slid",
+     "cone on its curved side, on the ramp: rolled",
+     "block on top of the cone on its curved side: fell off"
+    ],
+    "blockIs": "beside the table"
+   },
+   "missScene": {
+    "shapes": [
+     {
+      "shape": "sphere",
+      "sittingOn": "curved surface",
+      "place": "in the box \"Only rolls\""
+     },
+     {
+      "shape": "cube",
+      "sittingOn": "flat face",
+      "place": "in the box \"Only stacks\""
+     },
+     {
+      "shape": "cylinder",
+      "sittingOn": "curved side",
+      "place": "in the box \"Only rolls\""
+     },
+     {
+      "shape": "cone",
+      "sittingOn": "curved side",
+      "place": "in the box \"Only rolls\""
+     }
+    ],
+    "testPlaces": [
+     "a ramp",
+     "a table with a block to put on top"
+    ],
+    "shapesCanBeTurned": true,
+    "sortingBoxes": [
+     "Only rolls",
+     "Only stacks",
+     "Rolls and stacks"
+    ],
+    "testsWatched": [
+     "sphere on its curved surface, on the ramp: rolled",
+     "block on top of the sphere on its curved surface: fell off",
+     "cube on its flat face, on the ramp: slid",
+     "block on top of the cube on its flat face: stayed on",
+     "cylinder on its curved side, on the ramp: rolled",
+     "cone on its flat face, on the ramp: slid",
+     "cone on its curved side, on the ramp: rolled",
+     "block on top of the cone on its curved side: fell off"
+    ],
+    "blockIs": "beside the table"
+   }
+  }
+ ]
+}

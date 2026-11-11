@@ -1,0 +1,233 @@
+{
+ "id": "lever-trade",
+ "title": "Levers and the Force-Distance Trade",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner places the fulcrum and the push on a lever so a small force lifts a heavy boulder a required height, which shows the trade between force and distance in a lever."
+ },
+ "request": {
+  "topic": "Levers",
+  "grade": "grade 4",
+  "objective": "Place the fulcrum and the effort so a small force lifts a heavy load, and explain the trade between force and distance"
+ },
+ "source": "function Display({ params, lumina }) {\n  const boulderWeight = params?.boulderWeight ?? 300;\n  const maxPush = params?.maxPush ?? 60;\n  const minLiftCm = params?.minLiftCm ?? 0;\n  const showArms = params?.showArms !== false;\n  const canTest = params?.canTest !== false;\n  const totalSlots = 10;\n\n  // Fulcrum position: slot 1 to 9 (boulder at slot 0, push at slot 10)\n  const [fulcrumSlot, setFulcrumSlot] = useState(5);\n  const [isPushing, setIsPushing] = useState(false);\n  const [tested, setTested] = useState(false);\n  const timer = useRef(null);\n\n  const loadArm = fulcrumSlot;\n  const effortArm = totalSlots - fulcrumSlot;\n  const canLift = boulderWeight * loadArm <= maxPush * effortArm;\n\n  // The hand moves 12 cm for each unit of effort arm; the boulder rises 12 cm for each unit of load arm.\n  const pushCm = effortArm * 12;\n  const liftCm = loadArm * 12;\n\n  // A right placement is right whether or not the child has tested it, so the moving boulder is not the verdict.\n  const wiredRight = canLift && liftCm >= minLiftCm;\n\n  useEffect(() => {\n    lumina.goal(wiredRight);\n    lumina.scene({\n      boulderN: boulderWeight,\n      strongestPushN: maxPush,\n      fulcrumSlot,\n      ...(showArms ? { loadArm, effortArm } : {}),\n      ...(minLiftCm ? { mustRiseCm: minLiftCm } : {}),\n      lastPush: tested ? (canLift ? { boulder: 'rose', handMovedCm: pushCm, boulderRoseCm: liftCm } : { boulder: 'did not move' }) : 'none yet',\n    });\n  }, [wiredRight, boulderWeight, maxPush, fulcrumSlot, loadArm, effortArm, tested, canLift, pushCm, liftCm, minLiftCm, showArms]);\n\n  const beamLeft = 90;\n  const beamRight = 590;\n  const beamLength = beamRight - beamLeft;\n  const slotStep = beamLength / totalSlots;\n  const fulcrumX = beamLeft + fulcrumSlot * slotStep;\n\n  const moved = isPushing || tested;\n  // The beam turns until its push end reaches the ground.\n  const tiltAngle = moved ? (canLift ? Math.min(14, (Math.atan(44 / (beamRight - fulcrumX)) * 180) / Math.PI) : 1.2) : 0;\n\n  const moveFulcrum = ({ x }) => {\n    clearTimeout(timer.current);\n    setIsPushing(false);\n    setTested(false);\n    setFulcrumSlot(Math.max(1, Math.min(totalSlots - 1, Math.round((x - beamLeft) / slotStep))));\n  };\n\n  const pushDown = () => {\n    if (isPushing) return;\n    setIsPushing(true);\n    timer.current = setTimeout(() => { setIsPushing(false); setTested(true); }, 900);\n  };\n\n  useEffect(() => () => clearTimeout(timer.current), []);\n\n  const card = { background: '#1e293b', padding: '10px 14px', borderRadius: 8, border: '1px solid #334155' };\n  const cardHead = { fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 };\n  const big = { fontSize: 22, fontWeight: 700, color: '#f1f5f9' };\n  const small = { fontSize: 13, color: '#cbd5e1' };\n\n  return (\n    <Panel title=\"Boulder and Lever\" caption={canTest ? 'Drag the fulcrum along the ground. Tap PUSH to try the lever.' : 'Drag the fulcrum along the ground.'}>\n      <Stack gap={12}>\n        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>\n          <div style={card}>\n            <div style={cardHead}>Boulder</div>\n            <div style={big}>{boulderWeight} N</div>\n            {minLiftCm > 0 && <div style={small}>Must rise at least {minLiftCm} cm</div>}\n          </div>\n          <div style={card}>\n            <div style={cardHead}>Your strongest push</div>\n            <div style={big}>{maxPush} N</div>\n          </div>\n          <div style={card}>\n            <div style={cardHead}>Last push</div>\n            {!tested && <div style={small}>{canTest ? 'None yet' : 'No test pushes here'}</div>}\n            {tested && canLift && <div style={small}>Your hand moved {pushCm} cm. The boulder rose {liftCm} cm.</div>}\n            {tested && !canLift && <div style={small}>The boulder did not move.</div>}\n          </div>\n        </div>\n\n        <div style={{ background: '#0f172a', borderRadius: 10, border: '1px solid #1e293b', overflow: 'hidden' }}>\n          <svg viewBox=\"0 0 680 300\" style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none', touchAction: 'none' }}>\n            <rect x=\"0\" y=\"240\" width=\"680\" height=\"60\" fill=\"#1e293b\" />\n            <line x1=\"0\" y1=\"240\" x2=\"680\" y2=\"240\" stroke=\"#475569\" strokeWidth=\"2\" />\n\n            {Array.from({ length: totalSlots + 1 }).map((_, i) => {\n              const sx = beamLeft + i * slotStep;\n              return (\n                <g key={i}>\n                  <circle id={`slot-${i}`} cx={sx} cy=\"240\" r=\"2\" fill=\"transparent\" pointerEvents=\"none\" />\n                  <line x1={sx} y1=\"237\" x2={sx} y2=\"243\" stroke=\"#64748b\" strokeWidth=\"2\" />\n                  <text x={sx} y=\"258\" fill=\"#94a3b8\" fontSize=\"12\" textAnchor=\"middle\">{i}</text>\n                </g>\n              );\n            })}\n\n            <g transform={`rotate(${tiltAngle}, ${fulcrumX}, 196)`}>\n              <rect x={beamLeft} y={189} width={beamLength} height={14} rx={4} fill=\"#e2e8f0\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" />\n\n              {showArms && !moved && (\n                <g>\n                  <line x1={beamLeft + 6} y1=\"212\" x2={fulcrumX - 8} y2=\"212\" stroke=\"#f87171\" strokeWidth=\"2\" strokeDasharray=\"3,3\" />\n                  <text x={(beamLeft + fulcrumX) / 2} y=\"228\" fill=\"#f87171\" fontSize=\"12\" fontWeight=\"600\" textAnchor=\"middle\">{loadArm}</text>\n                  <line x1={fulcrumX + 8} y1=\"212\" x2={beamRight - 6} y2=\"212\" stroke=\"#38bdf8\" strokeWidth=\"2\" strokeDasharray=\"3,3\" />\n                  <text x={(fulcrumX + beamRight) / 2} y=\"228\" fill=\"#38bdf8\" fontSize=\"12\" fontWeight=\"600\" textAnchor=\"middle\">{effortArm}</text>\n                </g>\n              )}\n\n              <g id=\"boulder\" transform={`translate(${beamLeft + 8}, 189)`}>\n                <circle cx=\"0\" cy=\"-35\" r=\"35\" fill=\"#64748b\" stroke=\"#475569\" strokeWidth=\"2\" />\n                <text x=\"0\" y=\"-30\" fill=\"#f8fafc\" fontSize=\"14\" fontWeight=\"800\" textAnchor=\"middle\">{boulderWeight} N</text>\n              </g>\n\n              <g id={canTest ? 'effort-handle' : undefined} transform={`translate(${beamRight - 8}, 189)`} style={canTest ? { cursor: 'pointer' } : undefined} onClick={canTest ? pushDown : undefined}>\n                <circle cx=\"0\" cy=\"-16\" r=\"24\" fill=\"transparent\" />\n                <circle cx=\"0\" cy=\"-6\" r=\"14\" fill=\"#38bdf8\" stroke=\"#0284c7\" strokeWidth=\"2\" />\n                {canTest && <text x=\"0\" y=\"-33\" fill=\"#38bdf8\" fontSize=\"12\" fontWeight=\"800\" textAnchor=\"middle\">PUSH</text>}\n              </g>\n            </g>\n\n            <Handle id=\"fulcrum\" x={fulcrumX} y={240} r={24} onDrag={moveFulcrum} onDrop={moveFulcrum}>\n              <polygon points=\"-24,0 24,0 0,-44\" fill=\"#f59e0b\" stroke=\"#d97706\" strokeWidth=\"2\" />\n              <text x=\"0\" y=\"36\" fill=\"#f59e0b\" fontSize=\"12\" fontWeight=\"700\" textAnchor=\"middle\">Fulcrum</text>\n            </Handle>\n\n            {moved && canLift && (\n              <g>\n                <line x1={beamLeft - 30} y1=\"210\" x2={beamLeft - 30} y2=\"155\" stroke=\"#38bdf8\" strokeWidth=\"3\" />\n                <polygon points={`${beamLeft - 34},160 ${beamLeft - 26},160 ${beamLeft - 30},150`} fill=\"#38bdf8\" />\n                <line x1={beamRight + 30} y1=\"165\" x2={beamRight + 30} y2=\"225\" stroke=\"#38bdf8\" strokeWidth=\"3\" />\n                <polygon points={`${beamRight + 26},220 ${beamRight + 34},220 ${beamRight + 30},230`} fill=\"#38bdf8\" />\n              </g>\n            )}\n          </svg>\n        </div>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "boulderWeight": 200,
+    "maxPush": 100,
+    "minLiftCm": 0,
+    "showArms": true,
+    "canTest": true
+   },
+   "ask": "Move the fulcrum so your push can lift the boulder.",
+   "goal": "The push needed is at most the strongest push: the fulcrum is at slot 1, 2 or 3.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-2"
+    },
+    {
+     "do": "click",
+     "target": "#effort-handle"
+    },
+    {
+     "do": "wait",
+     "ms": 1100
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-8"
+    },
+    {
+     "do": "click",
+     "target": "#effort-handle"
+    },
+    {
+     "do": "wait",
+     "ms": 1100
+    }
+   ],
+   "scene": {
+    "boulderN": 200,
+    "strongestPushN": 100,
+    "fulcrumSlot": 5,
+    "loadArm": 5,
+    "effortArm": 5,
+    "lastPush": "none yet"
+   },
+   "proofScene": {
+    "boulderN": 200,
+    "strongestPushN": 100,
+    "fulcrumSlot": 2,
+    "loadArm": 2,
+    "effortArm": 8,
+    "lastPush": {
+     "boulder": "rose",
+     "handMovedCm": 96,
+     "boulderRoseCm": 24
+    }
+   },
+   "missScene": {
+    "boulderN": 200,
+    "strongestPushN": 100,
+    "fulcrumSlot": 8,
+    "loadArm": 8,
+    "effortArm": 2,
+    "lastPush": {
+     "boulder": "did not move"
+    }
+   }
+  },
+  {
+   "params": {
+    "boulderWeight": 300,
+    "maxPush": 100,
+    "minLiftCm": 24,
+    "showArms": true,
+    "canTest": true
+   },
+   "ask": "Use your push to lift the boulder at least 24 cm.",
+   "goal": "The push is enough and the boulder rises at least 24 cm: the fulcrum is at slot 2.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-1"
+    }
+   ],
+   "scene": {
+    "boulderN": 300,
+    "strongestPushN": 100,
+    "fulcrumSlot": 5,
+    "loadArm": 5,
+    "effortArm": 5,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   },
+   "proofScene": {
+    "boulderN": 300,
+    "strongestPushN": 100,
+    "fulcrumSlot": 2,
+    "loadArm": 2,
+    "effortArm": 8,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   },
+   "missScene": {
+    "boulderN": 300,
+    "strongestPushN": 100,
+    "fulcrumSlot": 1,
+    "loadArm": 1,
+    "effortArm": 9,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   }
+  },
+  {
+   "params": {
+    "boulderWeight": 120,
+    "maxPush": 80,
+    "minLiftCm": 36,
+    "showArms": false,
+    "canTest": true
+   },
+   "ask": "Use your push to lift the boulder at least 36 cm.",
+   "goal": "The push is enough and the boulder rises at least 36 cm: the fulcrum is at slot 3 or 4.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-6"
+    }
+   ],
+   "scene": {
+    "boulderN": 120,
+    "strongestPushN": 80,
+    "fulcrumSlot": 5,
+    "mustRiseCm": 36,
+    "lastPush": "none yet"
+   },
+   "proofScene": {
+    "boulderN": 120,
+    "strongestPushN": 80,
+    "fulcrumSlot": 4,
+    "mustRiseCm": 36,
+    "lastPush": "none yet"
+   },
+   "missScene": {
+    "boulderN": 120,
+    "strongestPushN": 80,
+    "fulcrumSlot": 6,
+    "mustRiseCm": 36,
+    "lastPush": "none yet"
+   }
+  },
+  {
+   "params": {
+    "boulderWeight": 400,
+    "maxPush": 100,
+    "minLiftCm": 24,
+    "showArms": false,
+    "canTest": false
+   },
+   "ask": "You get no test push this time. Put the fulcrum where your push will lift the boulder at least 24 cm.",
+   "goal": "The push is enough and the boulder rises at least 24 cm: the fulcrum is at slot 2.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#fulcrum",
+     "to": "#slot-3"
+    }
+   ],
+   "scene": {
+    "boulderN": 400,
+    "strongestPushN": 100,
+    "fulcrumSlot": 5,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   },
+   "proofScene": {
+    "boulderN": 400,
+    "strongestPushN": 100,
+    "fulcrumSlot": 2,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   },
+   "missScene": {
+    "boulderN": 400,
+    "strongestPushN": 100,
+    "fulcrumSlot": 3,
+    "mustRiseCm": 24,
+    "lastPush": "none yet"
+   }
+  }
+ ]
+}

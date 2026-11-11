@@ -1,0 +1,483 @@
+{
+ "id": "night-sky-orbit",
+ "title": "Night Sky",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner moves Earth around the Sun so a named star pattern is in the night sky, which shows that the stars we see at night change through the year as Earth orbits the Sun."
+ },
+ "request": {
+  "topic": "Why the star patterns we see change through the year",
+  "grade": "grade 1",
+  "objective": "Explain why we see different star patterns at different times of the year: Earth goes around the Sun, and at night we look out the side of Earth that faces away from the Sun, so the stars on that side change as Earth moves (SCI003-04-d, connecting seasonal sky changes to Earth's orbit)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // A top-down model: the Sun in the middle, Earth on a round path, star patterns far out around the edge.\r\n  // Angles are degrees clockwise from the top of the picture (12 o'clock = 0, 3 o'clock = 90).\r\n  // params.patterns: [{ name, at }] where at is the pattern's angle; params.earthStart: Earth's angle at rest;\r\n  // params.earthSize: Earth's radius in px; params.find: 'night' (every target in the night sky) or 'day'\r\n  // (every target up in the daytime sky, on the Sun side); params.targets: pattern names the ask names.\r\n  const patterns = (Array.isArray(params?.patterns) && params.patterns.length ? params.patterns : [\r\n    { name: 'Lion', at: 0 }, { name: 'Swan', at: 90 }, { name: 'Horse', at: 180 }, { name: 'Hunter', at: 270 },\r\n  ]).slice(0, 4);\r\n  const earthStart = typeof params?.earthStart === 'number' ? params.earthStart : 210;\r\n  const earthSize = typeof params?.earthSize === 'number' ? params.earthSize : 22;\r\n  const find = params?.find === 'day' ? 'day' : 'night';\r\n  const targets = Array.isArray(params?.targets) && params.targets.length ? params.targets : [patterns[0].name];\r\n\r\n  // A pattern is in the night sky when its direction is within TOL degrees of straight out from Earth's dark side\r\n  // (the stars are treated as very far away, so only the directions matter). It is up in the daytime sky when it\r\n  // is within TOL degrees of the direction to the Sun.\r\n  const TOL = 45;\r\n  const W = 680, H = 520, CX = 340, CY = 260, ORBIT = 120, FAR = 190;\r\n\r\n  const [deg, setDeg] = useState(((earthStart % 360) + 360) % 360);\r\n\r\n  const norm = (a) => ((a % 360) + 360) % 360;\r\n  const apart = (a, b) => { const d = Math.abs(norm(a) - norm(b)); return d > 180 ? 360 - d : d; };\r\n  const pointAt = (a, r) => ({ x: CX + r * Math.sin((a * Math.PI) / 180), y: CY - r * Math.cos((a * Math.PI) / 180) });\r\n  const clock = (a) => {\r\n    const h = norm(a) / 30;\r\n    const near = Math.round(h);\r\n    const name = (n) => String(((n + 11) % 12) + 1);\r\n    if (Math.abs(h - near) * 30 <= 7.5) return name(near) + \" o'clock\";\r\n    return 'between ' + name(Math.floor(h)) + ' and ' + name(Math.floor(h) + 1) + \" o'clock\";\r\n  };\r\n\r\n  const earth = pointAt(deg, ORBIT);\r\n\r\n  useEffect(() => {\r\n    const byName = Object.fromEntries(patterns.map((p) => [p.name, p]));\r\n    const met = targets.every((n) => {\r\n      const p = byName[n];\r\n      if (!p) return false;\r\n      return find === 'night' ? apart(p.at, deg) <= TOL : apart(p.at, deg + 180) <= TOL;\r\n    });\r\n    lumina.goal(met);\r\n    lumina.scene({\r\n      view: 'from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge',\r\n      earthOnPath: clock(deg),\r\n      earthBrightHalf: 'faces the Sun',\r\n      earthDarkHalf: 'faces away from the Sun, out toward ' + clock(deg),\r\n      starPatterns: patterns.map((p) => ({ name: p.name, at: clock(p.at) })),\r\n    });\r\n  }, [deg]);\r\n\r\n  const move = ({ x, y }) => {\r\n    const a = (Math.atan2(x - CX, -(y - CY)) * 180) / Math.PI;\r\n    setDeg(norm(a));\r\n  };\r\n\r\n  // Star pictures, stars as [x, y] and lines as [i, j], drawn about the pattern's centre.\r\n  const SHAPES = {\r\n    Hunter: { stars: [[-12, -20], [12, -18], [-5, 0], [0, 1], [5, 2], [-14, 22], [14, 20], [0, -30]], lines: [[0, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6], [0, 7], [1, 7]] },\r\n    Lion: { stars: [[-24, -10], [-18, -20], [-10, -12], [4, -8], [20, -6], [28, 4], [-10, 14], [18, 14]], lines: [[0, 1], [1, 2], [0, 2], [2, 3], [3, 4], [4, 5], [2, 6], [4, 7]] },\r\n    Swan: { stars: [[0, -26], [0, -10], [0, 4], [0, 22], [-24, -6], [-11, -4], [11, -4], [24, -6]], lines: [[0, 1], [1, 2], [2, 3], [4, 5], [5, 2], [2, 6], [6, 7]] },\r\n    Horse: { stars: [[-12, -4], [14, -4], [14, 12], [-12, 12], [-20, -18], [-30, -12], [-12, 26], [14, 26]], lines: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 4], [4, 5], [3, 6], [2, 7]] },\r\n  };\r\n  const fallback = { stars: [[-16, -10], [0, -18], [16, -8], [8, 12], [-10, 14]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]] };\r\n\r\n  // Earth: a dark disc with the half that faces the Sun lit. The lit half is the right half of the disc, turned\r\n  // so that its right points at the Sun.\r\n  const sunward = (Math.atan2(CY - earth.y, CX - earth.x) * 180) / Math.PI;\r\n  const R = earthSize;\r\n\r\n  const spots = [];\r\n  for (let a = 0; a < 360; a += 15) spots.push({ a, ...pointAt(a, ORBIT) });\r\n\r\n  return (\r\n    <Panel title=\"Night Sky\" caption=\"Drag Earth along its path.\">\r\n      <div style={{ width: '100%', background: '#0b1226', borderRadius: 12, overflow: 'hidden' }}>\r\n        <svg viewBox={'0 0 ' + W + ' ' + H} style={{ width: '100%', display: 'block', userSelect: 'none', touchAction: 'none' }}>\r\n          <circle cx={CX} cy={CY} r={ORBIT} fill=\"none\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 8\" />\r\n\r\n          <g>\r\n            {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => {\r\n              const p1 = pointAt(a, 38), p2 = pointAt(a, 52);\r\n              return <line key={a} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y} stroke=\"#fbbf24\" strokeWidth=\"4\" strokeLinecap=\"round\" />;\r\n            })}\r\n            <circle cx={CX} cy={CY} r=\"30\" fill=\"#fbbf24\" stroke=\"#fde68a\" strokeWidth=\"3\" />\r\n            <text x={CX} y={CY + 6} fill=\"#78350f\" fontSize=\"17\" fontWeight=\"700\" textAnchor=\"middle\">Sun</text>\r\n          </g>\r\n\r\n          {patterns.map((p) => {\r\n            const c = pointAt(p.at, FAR);\r\n            const shape = SHAPES[p.name] || fallback;\r\n            return (\r\n              <g key={p.name} id={'pattern-' + p.name.toLowerCase()}>\r\n                {shape.lines.map(([i, j], k) => (\r\n                  <line key={k} x1={c.x + shape.stars[i][0]} y1={c.y + shape.stars[i][1]} x2={c.x + shape.stars[j][0]} y2={c.y + shape.stars[j][1]} stroke=\"#64748b\" strokeWidth=\"1.6\" />\r\n                ))}\r\n                {shape.stars.map(([x, y], k) => (\r\n                  <circle key={k} cx={c.x + x} cy={c.y + y} r={k % 3 === 0 ? 3.2 : 2.5} fill=\"#f1f5f9\" />\r\n                ))}\r\n                <text x={c.x} y={c.y < CY - FAR / 2 ? c.y - 34 : c.y + 46} fill=\"#e2e8f0\" fontSize=\"17\" fontWeight=\"600\" textAnchor=\"middle\">{p.name}</text>\r\n              </g>\r\n            );\r\n          })}\r\n\r\n          {spots.map((s) => (\r\n            <circle key={s.a} id={'spot-' + s.a} cx={s.x} cy={s.y} r=\"1\" fill=\"transparent\" pointerEvents=\"none\" />\r\n          ))}\r\n\r\n          <Handle id=\"earth\" x={earth.x} y={earth.y} r={Math.max(R, 22)} onDrag={move} onDrop={move}>\r\n            <g transform={'rotate(' + sunward + ')'}>\r\n              <circle cx=\"0\" cy=\"0\" r={R} fill=\"#111827\" stroke=\"#94a3b8\" strokeWidth=\"2\" />\r\n              <path d={'M 0 ' + -R + ' A ' + R + ' ' + R + ' 0 0 1 0 ' + R + ' Z'} fill=\"#60a5fa\" />\r\n              <path d={'M ' + R * 0.15 + ' ' + -R * 0.45 + ' q ' + R * 0.35 + ' ' + R * 0.1 + ' ' + R * 0.4 + ' ' + R * 0.5 + ' q ' + -R * 0.2 + ' ' + R * 0.3 + ' ' + -R * 0.4 + ' ' + R * 0.15 + ' Z'} fill=\"#4ade80\" />\r\n              <line x1=\"0\" y1={-R} x2=\"0\" y2={R} stroke=\"#cbd5e1\" strokeWidth=\"1.5\" />\r\n            </g>\r\n          </Handle>\r\n        </svg>\r\n      </div>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "patterns": [
+     {
+      "name": "Lion",
+      "at": 0
+     },
+     {
+      "name": "Swan",
+      "at": 90
+     },
+     {
+      "name": "Horse",
+      "at": 180
+     },
+     {
+      "name": "Hunter",
+      "at": 270
+     }
+    ],
+    "earthStart": 210,
+    "earthSize": 32,
+    "find": "night",
+    "targets": [
+     "Lion"
+    ]
+   },
+   "ask": "Move Earth so you can see the Lion at night.",
+   "goal": "Earth sits within 45 degrees of 12 o'clock, so the Lion lies out past Earth's dark half.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-180"
+    }
+   ],
+   "scene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "7 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 7 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "proofScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "12 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 12 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "missScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "6 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 6 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "patterns": [
+     {
+      "name": "Lion",
+      "at": 0
+     },
+     {
+      "name": "Swan",
+      "at": 90
+     },
+     {
+      "name": "Horse",
+      "at": 180
+     },
+     {
+      "name": "Hunter",
+      "at": 270
+     }
+    ],
+    "earthStart": 90,
+    "earthSize": 22,
+    "find": "night",
+    "targets": [
+     "Horse"
+    ]
+   },
+   "ask": "Move Earth so you can see the Horse at night.",
+   "goal": "Earth sits within 45 degrees of 6 o'clock, a quarter turn from where it started beside the Swan.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-180"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-120"
+    }
+   ],
+   "scene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "3 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 3 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "proofScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "6 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 6 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "missScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "4 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 4 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "patterns": [
+     {
+      "name": "Lion",
+      "at": 0
+     },
+     {
+      "name": "Swan",
+      "at": 90
+     },
+     {
+      "name": "Horse",
+      "at": 180
+     },
+     {
+      "name": "Hunter",
+      "at": 270
+     }
+    ],
+    "earthStart": 240,
+    "earthSize": 22,
+    "find": "day",
+    "targets": [
+     "Hunter"
+    ]
+   },
+   "ask": "Move Earth so the Hunter is up in the day sky.",
+   "goal": "Earth sits within 45 degrees of 3 o'clock, so the Hunter lies past the Sun from Earth's bright half and is not in the night sky.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-90"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-270"
+    }
+   ],
+   "scene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "8 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 8 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "proofScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "3 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 3 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   },
+   "missScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "9 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 9 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "12 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "3 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "6 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "9 o'clock"
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "patterns": [
+     {
+      "name": "Lion",
+      "at": 330
+     },
+     {
+      "name": "Swan",
+      "at": 30
+     },
+     {
+      "name": "Horse",
+      "at": 150
+     },
+     {
+      "name": "Hunter",
+      "at": 240
+     }
+    ],
+    "earthStart": 210,
+    "earthSize": 22,
+    "find": "night",
+    "targets": [
+     "Lion",
+     "Swan"
+    ]
+   },
+   "ask": "Move Earth so you can see the Lion and the Swan at night.",
+   "goal": "Earth sits within 15 degrees of 12 o'clock, between the Lion and the Swan, so both lie out past its dark half.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#earth",
+     "to": "#spot-330"
+    }
+   ],
+   "scene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "7 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 7 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "11 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "1 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "5 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "8 o'clock"
+     }
+    ]
+   },
+   "proofScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "12 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 12 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "11 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "1 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "5 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "8 o'clock"
+     }
+    ]
+   },
+   "missScene": {
+    "view": "from above: the Sun in the middle, Earth on a round path around it, star patterns far out around the edge",
+    "earthOnPath": "11 o'clock",
+    "earthBrightHalf": "faces the Sun",
+    "earthDarkHalf": "faces away from the Sun, out toward 11 o'clock",
+    "starPatterns": [
+     {
+      "name": "Lion",
+      "at": "11 o'clock"
+     },
+     {
+      "name": "Swan",
+      "at": "1 o'clock"
+     },
+     {
+      "name": "Horse",
+      "at": "5 o'clock"
+     },
+     {
+      "name": "Hunter",
+      "at": "8 o'clock"
+     }
+    ]
+   }
+  }
+ ]
+}

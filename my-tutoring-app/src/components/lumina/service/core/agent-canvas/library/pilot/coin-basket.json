@@ -1,0 +1,483 @@
+{
+ "id": "coin-basket",
+ "title": "Coin Basket",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child shops with a few coins for a meal, a cold day, a storm kit or a beach trip, buying what the situation needs before what is only wanted and putting things back when the coins run out, which shows needs versus wants and choosing with limited money."
+ },
+ "request": {
+  "topic": "Needs and wants with a limited amount of money",
+  "grade": "kindergarten",
+  "objective": "With a fixed number of coins, buy what is needed for a situation (a meal, a cold day, a storm, a hot trip) before anything that is only wanted, putting things back when the coins run out. (SS002-01-D, SS002-01-F, SS002-01-H, SS002-03-G, SS002-01-B)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A shop shelf, a purse of coins and a basket. Drag a thing into the basket to buy it: its coins leave the purse.\n  // A thing that costs more coins than are left will not go in. Drag it out of the basket to put it back and get the\n  // coins back. Nothing says which things are needed: the situation in the ask does.\n  // params.coins: coins in the purse. params.items: [{ id, pic, name, price, need }]. params.story: the situation, for the tutor.\n  const coins = Math.max(1, Math.min(10, Number(params.coins) || 5));\n  const items = (Array.isArray(params.items) ? params.items : [\n    { id: 'bread', pic: '🍞', name: 'bread', price: 2, need: true },\n    { id: 'toy', pic: '🚗', name: 'toy car', price: 3, need: false },\n  ]).slice(0, 6).map(it => ({ ...it, price: Math.max(1, Math.min(5, Number(it.price) || 1)) }));\n  const story = params.story || 'shopping';\n  const W = 680, H = 500, SHELF_Y = 120, BASKET = { x: 150, y: 340, w: 380, h: 140 };\n\n  const [inBasket, setInBasket] = useState([]);\n  const [bounce, setBounce] = useState(null);\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n  const spent = inBasket.reduce((s, id) => s + items.find(i => i.id === id).price, 0);\n  const left = coins - spent;\n  const goalMet = items.filter(i => i.need).every(i => inBasket.includes(i.id));\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      situation: story,\n      purse: left + ' of ' + coins + ' coins left',\n      shelf: items.filter(i => !inBasket.includes(i.id)).map(i => i.name + ' (' + i.price + (i.price === 1 ? ' coin)' : ' coins)')),\n      basket: inBasket.map(id => items.find(i => i.id === id).name),\n      lastTry: bounce ? 'the ' + items.find(i => i.id === bounce).name + ' costs more coins than are left in the purse, so it stayed on the shelf' : null,\n    });\n  }, [inBasket, bounce, goalMet]);\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y - 20 && p.y <= r.y + r.h;\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const p = pointOf(e), id = drag.id, it = items.find(i => i.id === id);\n    setDrag(null);\n    const wasIn = inBasket.includes(id), dropIn = inRect(p, BASKET);\n    if (dropIn && !wasIn) {\n      if (it.price <= left) { setInBasket(b => [...b, id]); setBounce(null); } else setBounce(id);\n    } else if (!dropIn && wasIn) { setInBasket(b => b.filter(x => x !== id)); setBounce(null); }\n  };\n\n  const CARD = 96, gap = 14, x0 = (W - (items.length * CARD + (items.length - 1) * gap)) / 2;\n  const shelfAt = i => ({ x: x0 + i * (CARD + gap) + CARD / 2, y: SHELF_Y + 70 });\n  const basketAt = k => ({ x: BASKET.x + 60 + (k % 4) * 88, y: BASKET.y + 52 + Math.floor(k / 4) * 60 });\n  const coinRow = (n, cx, y, r) => Array.from({ length: n }, (_, k) => (\n    <circle key={k} cx={cx + (k - (n - 1) / 2) * (r * 2 + 4)} cy={y} r={r} fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2\" />));\n\n  const itemPic = (it, i) => {\n    const held = drag && drag.id === it.id && drag.x !== undefined;\n    const k = inBasket.indexOf(it.id);\n    const p = held ? { x: drag.x, y: drag.y } : k >= 0 ? basketAt(k) : shelfAt(i);\n    const small = k >= 0 && !held;\n    return <g key={it.id} id={'item-' + it.id} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.1 : small ? 0.8 : 1})`}\n      style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => grab(it.id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <rect x=\"-44\" y=\"-50\" width=\"88\" height=\"100\" rx=\"12\" fill=\"#1e293b\" stroke={bounce === it.id ? '#94a3b8' : '#475569'} strokeWidth=\"2\" />\n      <text y=\"2\" textAnchor=\"middle\" fontSize=\"44\" dominantBaseline=\"middle\">{it.pic}</text>\n      {k < 0 && <g>{coinRow(it.price, 0, 38, 6)}</g>}\n    </g>;\n  };\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        {/* purse */}\n        <g id=\"purse\">\n          <rect x=\"20\" y=\"14\" width={Math.max(150, coins * 30 + 60)} height=\"70\" rx=\"16\" fill=\"#7c2d12\" stroke=\"#431407\" strokeWidth=\"3\" />\n          <path d=\"M 40 14 Q 60 -4 80 14\" fill=\"none\" stroke=\"#431407\" strokeWidth=\"4\" />\n          {Array.from({ length: left }, (_, k) => <circle key={k} cx={52 + k * 30} cy=\"49\" r=\"12\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2.5\" />)}\n        </g>\n        {/* shelf */}\n        <rect x=\"20\" y={SHELF_Y + 128} width={W - 40} height=\"14\" rx=\"4\" fill=\"#92400e\" />\n        {/* basket */}\n        <g id=\"basket\">\n          <path d={`M ${BASKET.x} ${BASKET.y} L ${BASKET.x + BASKET.w} ${BASKET.y} L ${BASKET.x + BASKET.w - 30} ${BASKET.y + BASKET.h} L ${BASKET.x + 30} ${BASKET.y + BASKET.h} Z`}\n            fill=\"#a16207\" stroke=\"#713f12\" strokeWidth=\"3\" opacity=\"0.9\" />\n          {[1, 2, 3].map(r => <line key={r} x1={BASKET.x + 10 * r} y1={BASKET.y + 35 * r} x2={BASKET.x + BASKET.w - 10 * r} y2={BASKET.y + 35 * r} stroke=\"#713f12\" strokeWidth=\"2\" />)}\n          <path d={`M ${BASKET.x + 60} ${BASKET.y} Q ${BASKET.x + BASKET.w / 2} ${BASKET.y - 70} ${BASKET.x + BASKET.w - 60} ${BASKET.y}`} fill=\"none\" stroke=\"#713f12\" strokeWidth=\"6\" />\n        </g>\n        {items.map((it, i) => (inBasket.includes(it.id) ? null : itemPic(it, i)))}\n        {items.map((it, i) => (inBasket.includes(it.id) ? itemPic(it, i) : null))}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "coins": 5,
+    "story": "buying lunch for the family",
+    "items": [
+     {
+      "id": "bread",
+      "pic": "🍞",
+      "name": "bread",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "toy",
+      "pic": "🚗",
+      "name": "toy car",
+      "price": 3,
+      "need": false
+     },
+     {
+      "id": "milk",
+      "pic": "🥛",
+      "name": "milk",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "lolly",
+      "pic": "🍭",
+      "name": "lollipop",
+      "price": 1,
+      "need": false
+     }
+    ]
+   },
+   "ask": "We need lunch for the family. Use your coins to shop.",
+   "goal": "Bread and milk are in the basket. A lollipop may join them with the coin that is left; the toy car first leaves too few coins for both foods.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-bread",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-milk",
+     "to": "#basket"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-toy",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-bread",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-milk",
+     "to": "#basket"
+    }
+   ],
+   "scene": {
+    "situation": "buying lunch for the family",
+    "purse": "5 of 5 coins left",
+    "shelf": [
+     "bread (2 coins)",
+     "toy car (3 coins)",
+     "milk (2 coins)",
+     "lollipop (1 coin)"
+    ],
+    "basket": [],
+    "lastTry": null
+   },
+   "proofScene": {
+    "situation": "buying lunch for the family",
+    "purse": "1 of 5 coins left",
+    "shelf": [
+     "toy car (3 coins)",
+     "lollipop (1 coin)"
+    ],
+    "basket": [
+     "bread",
+     "milk"
+    ],
+    "lastTry": null
+   },
+   "missScene": {
+    "situation": "buying lunch for the family",
+    "purse": "0 of 5 coins left",
+    "shelf": [
+     "milk (2 coins)",
+     "lollipop (1 coin)"
+    ],
+    "basket": [
+     "toy car",
+     "bread"
+    ],
+    "lastTry": "the milk costs more coins than are left in the purse, so it stayed on the shelf"
+   }
+  },
+  {
+   "params": {
+    "coins": 6,
+    "story": "a snowy, cold day; the child is going outside",
+    "items": [
+     {
+      "id": "sled",
+      "pic": "🛷",
+      "name": "sled",
+      "price": 3,
+      "need": false
+     },
+     {
+      "id": "coat",
+      "pic": "🧥",
+      "name": "warm coat",
+      "price": 3,
+      "need": true
+     },
+     {
+      "id": "balloon",
+      "pic": "🎈",
+      "name": "balloon",
+      "price": 1,
+      "need": false
+     },
+     {
+      "id": "mittens",
+      "pic": "🧤",
+      "name": "mittens",
+      "price": 2,
+      "need": true
+     }
+    ]
+   },
+   "ask": "It is snowing and very cold outside. Shop for what you need to go out.",
+   "goal": "The warm coat and the mittens are in the basket. The sled first leaves too few coins for the coat.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-coat",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-mittens",
+     "to": "#basket"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-sled",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-mittens",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-coat",
+     "to": "#basket"
+    }
+   ],
+   "scene": {
+    "situation": "a snowy, cold day; the child is going outside",
+    "purse": "6 of 6 coins left",
+    "shelf": [
+     "sled (3 coins)",
+     "warm coat (3 coins)",
+     "balloon (1 coin)",
+     "mittens (2 coins)"
+    ],
+    "basket": [],
+    "lastTry": null
+   },
+   "proofScene": {
+    "situation": "a snowy, cold day; the child is going outside",
+    "purse": "1 of 6 coins left",
+    "shelf": [
+     "sled (3 coins)",
+     "balloon (1 coin)"
+    ],
+    "basket": [
+     "warm coat",
+     "mittens"
+    ],
+    "lastTry": null
+   },
+   "missScene": {
+    "situation": "a snowy, cold day; the child is going outside",
+    "purse": "1 of 6 coins left",
+    "shelf": [
+     "warm coat (3 coins)",
+     "balloon (1 coin)"
+    ],
+    "basket": [
+     "sled",
+     "mittens"
+    ],
+    "lastTry": "the warm coat costs more coins than are left in the purse, so it stayed on the shelf"
+   }
+  },
+  {
+   "params": {
+    "coins": 5,
+    "story": "packing an emergency kit in case the lights go out in a storm",
+    "items": [
+     {
+      "id": "water",
+      "pic": "💧",
+      "name": "bottle of water",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "game",
+      "pic": "🎮",
+      "name": "video game",
+      "price": 4,
+      "need": false
+     },
+     {
+      "id": "torch",
+      "pic": "🔦",
+      "name": "flashlight",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "candy",
+      "pic": "🍬",
+      "name": "candy",
+      "price": 1,
+      "need": false
+     },
+     {
+      "id": "bandage",
+      "pic": "🩹",
+      "name": "bandages",
+      "price": 1,
+      "need": true
+     }
+    ]
+   },
+   "ask": "A big storm is coming. Fill an emergency kit with your coins.",
+   "goal": "Water, the flashlight and bandages are in the basket, which uses all five coins. Candy leaves too few coins for the bandages.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-water",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-torch",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-bandage",
+     "to": "#basket"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-water",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-torch",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-candy",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-bandage",
+     "to": "#basket"
+    }
+   ],
+   "scene": {
+    "situation": "packing an emergency kit in case the lights go out in a storm",
+    "purse": "5 of 5 coins left",
+    "shelf": [
+     "bottle of water (2 coins)",
+     "video game (4 coins)",
+     "flashlight (2 coins)",
+     "candy (1 coin)",
+     "bandages (1 coin)"
+    ],
+    "basket": [],
+    "lastTry": null
+   },
+   "proofScene": {
+    "situation": "packing an emergency kit in case the lights go out in a storm",
+    "purse": "0 of 5 coins left",
+    "shelf": [
+     "video game (4 coins)",
+     "candy (1 coin)"
+    ],
+    "basket": [
+     "bottle of water",
+     "flashlight",
+     "bandages"
+    ],
+    "lastTry": null
+   },
+   "missScene": {
+    "situation": "packing an emergency kit in case the lights go out in a storm",
+    "purse": "0 of 5 coins left",
+    "shelf": [
+     "video game (4 coins)",
+     "bandages (1 coin)"
+    ],
+    "basket": [
+     "bottle of water",
+     "flashlight",
+     "candy"
+    ],
+    "lastTry": "the bandages costs more coins than are left in the purse, so it stayed on the shelf"
+   }
+  },
+  {
+   "params": {
+    "coins": 7,
+    "story": "a hot, sunny day trip to the beach",
+    "items": [
+     {
+      "id": "ball",
+      "pic": "🏐",
+      "name": "beach ball",
+      "price": 2,
+      "need": false
+     },
+     {
+      "id": "hat",
+      "pic": "👒",
+      "name": "sun hat",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "icecream",
+      "pic": "🍦",
+      "name": "ice cream",
+      "price": 1,
+      "need": false
+     },
+     {
+      "id": "water",
+      "pic": "💧",
+      "name": "bottle of water",
+      "price": 2,
+      "need": true
+     },
+     {
+      "id": "sunscreen",
+      "pic": "🧴",
+      "name": "sunscreen",
+      "price": 2,
+      "need": true
+     }
+    ]
+   },
+   "ask": "We are going to the beach on a hot, sunny day. Shop for the trip.",
+   "goal": "The sun hat, water and sunscreen are in the basket; with the one coin left the ice cream may join them. The beach ball first leaves too few coins for all three.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-water",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-sunscreen",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-icecream",
+     "to": "#basket"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-ball",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-water",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-sunscreen",
+     "to": "#basket"
+    }
+   ],
+   "scene": {
+    "situation": "a hot, sunny day trip to the beach",
+    "purse": "7 of 7 coins left",
+    "shelf": [
+     "beach ball (2 coins)",
+     "sun hat (2 coins)",
+     "ice cream (1 coin)",
+     "bottle of water (2 coins)",
+     "sunscreen (2 coins)"
+    ],
+    "basket": [],
+    "lastTry": null
+   },
+   "proofScene": {
+    "situation": "a hot, sunny day trip to the beach",
+    "purse": "0 of 7 coins left",
+    "shelf": [
+     "beach ball (2 coins)"
+    ],
+    "basket": [
+     "sun hat",
+     "bottle of water",
+     "sunscreen",
+     "ice cream"
+    ],
+    "lastTry": null
+   },
+   "missScene": {
+    "situation": "a hot, sunny day trip to the beach",
+    "purse": "1 of 7 coins left",
+    "shelf": [
+     "ice cream (1 coin)",
+     "sunscreen (2 coins)"
+    ],
+    "basket": [
+     "beach ball",
+     "bottle of water",
+     "sun hat"
+    ],
+    "lastTry": "the sunscreen costs more coins than are left in the purse, so it stayed on the shelf"
+   }
+  }
+ ]
+}

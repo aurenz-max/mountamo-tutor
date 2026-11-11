@@ -1,0 +1,206 @@
+{
+ "id": "fraction-number-line",
+ "title": "Fractions on a Number Line",
+ "serves": {
+  "grades": [
+   "3"
+  ],
+  "summary": "The learner partitions 0 to 1 into equal parts and drags a marker to a fraction (including fractions greater than 1 and equivalent fractions) on a number line."
+ },
+ "request": {
+  "topic": "Fractions on a number line",
+  "grade": "grade 3",
+  "objective": "Partition the interval from 0 to 1 into equal parts and place a fraction on the number line (3.NF.A.2)"
+ },
+ "source": "function Display({ params, lumina }) {\n  const targetNum = params?.targetNumerator ?? 3;\n  const targetDen = params?.targetDenominator ?? 4;\n  const showTicks = params?.showTicks !== false;\n  const wholes = params?.wholes ?? 1;\n\n  const [parts, setParts] = useState(params?.startParts ?? 2);\n  const [markerPos, setMarkerPos] = useState(0);\n\n  const total = parts * wholes;\n\n  const handlePartsChange = (newParts) => {\n    setParts(newParts);\n    setMarkerPos((m) => Math.min(m, newParts * wholes));\n  };\n\n  useEffect(() => {\n    lumina.goal(parts === targetDen && markerPos === targetNum);\n    lumina.scene({ wholesOnLine: wholes, equalPartsInEachWhole: parts, markerOnTick: markerPos });\n  }, [parts, markerPos, targetNum, targetDen, wholes]);\n\n  const lineStart = 80;\n  const lineEnd = 600;\n  const lineWidth = lineEnd - lineStart;\n  const lineY = 160;\n\n  const tickPositions = useMemo(() => {\n    const pos = [];\n    for (let i = 0; i <= total; i++) pos.push(lineStart + (lineWidth * i) / total);\n    return pos;\n  }, [total, lineStart, lineWidth]);\n\n  const currentMarkerX = tickPositions[markerPos] ?? lineStart;\n\n  const handleDrag = ({ x }) => {\n    let closestIndex = 0;\n    let minDiff = Infinity;\n    tickPositions.forEach((tx, idx) => {\n      const diff = Math.abs(x - tx);\n      if (diff < minDiff) { minDiff = diff; closestIndex = idx; }\n    });\n    setMarkerPos(closestIndex);\n  };\n\n  return (\n    <Panel title=\"Fractions on a Number Line\" caption=\"Choose how many equal parts each whole has, then drag the marker.\">\n      <Stack gap={16}>\n        <div>\n          <div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 8 }}>Equal parts in each whole:</div>\n          <Row gap={8}>\n            {[2, 3, 4, 5, 6, 8].map((n) => (\n              <button\n                key={n}\n                id={`btn-parts-${n}`}\n                onClick={() => handlePartsChange(n)}\n                style={{\n                  minWidth: 44, minHeight: 44, padding: '8px 16px', borderRadius: 8,\n                  border: parts === n ? '2px solid #38bdf8' : '1px solid #334155',\n                  background: parts === n ? '#0284c7' : '#1e293b',\n                  color: '#ffffff', fontWeight: 'bold', fontSize: 16, cursor: 'pointer',\n                }}\n              >\n                {n}\n              </button>\n            ))}\n          </Row>\n        </div>\n\n        <div style={{ width: '100%', height: 280, background: '#1e293b', borderRadius: 12, overflow: 'hidden' }}>\n          <svg viewBox=\"0 0 680 280\" style={{ width: '100%', height: '100%', userSelect: 'none', touchAction: 'none' }}>\n            {Array.from({ length: total }).map((_, i) => {\n              const x1 = tickPositions[i];\n              const x2 = tickPositions[i + 1];\n              const isCovered = i < markerPos;\n              return (\n                <g key={i}>\n                  <rect x={x1 + 3} y={lineY - 14} width={x2 - x1 - 6} height={28} rx={4} fill={isCovered ? '#0284c7' : '#334155'} opacity={0.5} />\n                  {showTicks && (\n                    <text x={(x1 + x2) / 2} y={lineY - 24} fill={isCovered ? '#38bdf8' : '#94a3b8'} fontSize=\"13\" textAnchor=\"middle\" fontWeight=\"600\">\n                      1/{parts}\n                    </text>\n                  )}\n                </g>\n              );\n            })}\n\n            <line x1={lineStart - 30} y1={lineY} x2={lineEnd + 30} y2={lineY} stroke=\"#64748b\" strokeWidth=\"4\" strokeLinecap=\"round\" />\n            <polygon points={`${lineStart - 35},${lineY} ${lineStart - 25},${lineY - 6} ${lineStart - 25},${lineY + 6}`} fill=\"#64748b\" />\n            <polygon points={`${lineEnd + 35},${lineY} ${lineEnd + 25},${lineY - 6} ${lineEnd + 25},${lineY + 6}`} fill=\"#64748b\" />\n\n            {tickPositions.map((tx, idx) => {\n              const isWhole = idx % parts === 0;\n              return (\n                <g key={idx}>\n                  <circle id={`tick-${idx}`} cx={tx} cy={lineY} r=\"2\" fill=\"transparent\" pointerEvents=\"none\" />\n                  <line x1={tx} y1={lineY - (isWhole ? 16 : 10)} x2={tx} y2={lineY + (isWhole ? 16 : 10)} stroke=\"#cbd5e1\" strokeWidth={isWhole ? '4' : '2'} />\n                  {(isWhole || showTicks) && (\n                    <text x={tx} y={lineY + 36} fill=\"#cbd5e1\" fontSize={isWhole ? '16' : '14'} fontWeight={isWhole ? '700' : '400'} textAnchor=\"middle\">\n                      {isWhole ? idx / parts : `${idx}/${parts}`}\n                    </text>\n                  )}\n                </g>\n              );\n            })}\n\n            <Handle id=\"fraction-marker\" x={currentMarkerX} y={lineY} r={24} color=\"cyan\" onDrag={handleDrag} onDrop={handleDrag}>\n              <g>\n                <circle cx=\"0\" cy=\"0\" r=\"10\" fill=\"#38bdf8\" stroke=\"#ffffff\" strokeWidth=\"2.5\" />\n                <line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"-44\" stroke=\"#38bdf8\" strokeWidth=\"3\" />\n                <path d=\"M 0 -44 L 28 -34 L 0 -24 Z\" fill=\"#38bdf8\" />\n              </g>\n            </Handle>\n          </svg>\n        </div>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "targetNumerator": 3,
+    "targetDenominator": 4,
+    "showTicks": true,
+    "wholes": 1,
+    "startParts": 2
+   },
+   "ask": "Put the marker at 3/4 on the number line.",
+   "goal": "Each whole has 4 equal parts and the marker is on the third tick.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#btn-parts-4"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#btn-parts-3"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-3"
+    }
+   ],
+   "scene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 2,
+    "markerOnTick": 0
+   },
+   "proofScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 4,
+    "markerOnTick": 3
+   },
+   "missScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 3,
+    "markerOnTick": 3
+   }
+  },
+  {
+   "params": {
+    "targetNumerator": 2,
+    "targetDenominator": 3,
+    "showTicks": false,
+    "wholes": 1,
+    "startParts": 4
+   },
+   "ask": "Put the marker at 2/3 on the number line.",
+   "goal": "Each whole has 3 equal parts and the marker is on the second tick.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#btn-parts-3"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-2"
+    }
+   ],
+   "scene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 4,
+    "markerOnTick": 0
+   },
+   "proofScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 3,
+    "markerOnTick": 2
+   },
+   "missScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 4,
+    "markerOnTick": 2
+   }
+  },
+  {
+   "params": {
+    "targetNumerator": 5,
+    "targetDenominator": 4,
+    "showTicks": false,
+    "wholes": 2,
+    "startParts": 2
+   },
+   "ask": "Put the marker at 5/4 on the number line.",
+   "goal": "Each whole has 4 equal parts and the marker is on the fifth tick, past 1.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#btn-parts-4"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#btn-parts-5"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-4"
+    }
+   ],
+   "scene": {
+    "wholesOnLine": 2,
+    "equalPartsInEachWhole": 2,
+    "markerOnTick": 0
+   },
+   "proofScene": {
+    "wholesOnLine": 2,
+    "equalPartsInEachWhole": 4,
+    "markerOnTick": 5
+   },
+   "missScene": {
+    "wholesOnLine": 2,
+    "equalPartsInEachWhole": 5,
+    "markerOnTick": 4
+   }
+  },
+  {
+   "params": {
+    "targetNumerator": 3,
+    "targetDenominator": 6,
+    "showTicks": false,
+    "wholes": 1,
+    "startParts": 3
+   },
+   "ask": "Split each whole into sixths and put the marker at a point equal to 1/2.",
+   "goal": "Each whole has 6 equal parts and the marker is on the third tick.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#btn-parts-6"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#btn-parts-6"
+    },
+    {
+     "do": "drag",
+     "target": "#fraction-marker",
+     "to": "#tick-1"
+    }
+   ],
+   "scene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 3,
+    "markerOnTick": 0
+   },
+   "proofScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 6,
+    "markerOnTick": 3
+   },
+   "missScene": {
+    "wholesOnLine": 1,
+    "equalPartsInEachWhole": 6,
+    "markerOnTick": 1
+   }
+  }
+ ]
+}

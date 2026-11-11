@@ -117,14 +117,15 @@ export const generateExhibitManifestWithObjectivesStreaming = async (
   gradeLevel: string,
   objectives: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>,
   callbacks?: ManifestProgressCallback,
-  studentContext?: StudentGenerationContext | null
+  studentContext?: StudentGenerationContext | null,
+  studentId?: string,
 ): Promise<ExhibitManifest> => {
   const response = await fetch('/api/lumina/manifest-stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ topic, gradeLevel, objectives, studentContext }),
+    body: JSON.stringify({ topic, gradeLevel, objectives, studentContext, studentId }),
   });
 
   if (!response.ok) {

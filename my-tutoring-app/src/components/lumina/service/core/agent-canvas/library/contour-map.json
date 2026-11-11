@@ -1,0 +1,448 @@
+{
+ "id": "contour-map",
+ "title": "Contour Map",
+ "serves": {
+  "grades": [
+   "4",
+   "5"
+  ],
+  "summary": "The learner drags a flag or tent onto a contour map to mark the highest ground, the steepest slope, or flat ground, which shows they can read contour lines for height and steepness."
+ },
+ "request": {
+  "topic": "Reading contour lines on a topographic map",
+  "grade": "grade 4",
+  "objective": "Read contour lines for height and steepness: lines close together mean steep ground, lines far apart mean flat ground, and the innermost closed line is the top (SCI004-05-a)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A hill is a centre, a height in metres, a reach in map units to the east, west, north and south, and a profile:\n  // [distance from the centre as a share of the reach, height as a share of the top], from [0, 1] down to [1, 0].\n  const hills = params?.hills ?? [{ name: 'the hill', cx: 340, cy: 205, height: 60, e: 200, w: 170, n: 150, s: 150, profile: [[0, 1], [1, 0]] }];\n  const find = params?.find ?? 'top'; // 'top' | 'steepest' | 'flat'\n  const interval = params?.interval ?? 10;\n  const labelEvery = params?.labelEvery ?? 1;\n  const markerKind = params?.marker ?? 'flag';\n  const minHeight = params?.minHeight ?? 0;\n\n  const W = 680, H = 420, START = { x: 36, y: 392 };\n  const [pos, setPos] = useState(START);\n  const [placed, setPlaced] = useState(false);\n\n  const shareOf = (hl, x, y) => {\n    const dx = x - hl.cx, dy = y - hl.cy;\n    const rx = dx >= 0 ? hl.e : hl.w, ry = dy <= 0 ? hl.n : hl.s;\n    return Math.sqrt((dx / rx) * (dx / rx) + (dy / ry) * (dy / ry));\n  };\n  const heightShare = (profile, t) => {\n    if (t >= 1) return 0;\n    for (let i = 0; i < profile.length - 1; i++) {\n      const a = profile[i], b = profile[i + 1];\n      if (t <= b[0]) return a[1] + ((b[1] - a[1]) * (t - a[0])) / (b[0] - a[0]);\n    }\n    return 0;\n  };\n  const shareAtHeight = (profile, f) => {\n    for (let i = 0; i < profile.length - 1; i++) {\n      const a = profile[i], b = profile[i + 1];\n      if (f <= a[1] && f >= b[1]) return a[1] === b[1] ? a[0] : a[0] + ((b[0] - a[0]) * (a[1] - f)) / (a[1] - b[1]);\n    }\n    return 1;\n  };\n  const hillHeight = (hl, x, y) => hl.height * heightShare(hl.profile, shareOf(hl, x, y));\n  const heightAt = (x, y) => Math.max(0, ...hills.map((hl) => hillHeight(hl, x, y)));\n  // Steepness: the largest change in height over a short step in any of 16 directions.\n  const slopeAt = (x, y) => {\n    const here = heightAt(x, y), d = 3;\n    let most = 0;\n    for (let k = 0; k < 16; k++) {\n      const a = (k * Math.PI) / 8;\n      most = Math.max(most, Math.abs(heightAt(x + d * Math.cos(a), y + d * Math.sin(a)) - here) / d);\n    }\n    return most;\n  };\n\n  const map = useMemo(() => {\n    let steepest = 0, flattest = Infinity, topLine = 0;\n    for (const hl of hills) for (let L = interval; L < hl.height; L += interval) topLine = Math.max(topLine, L);\n    for (let x = 6; x < W; x += 6) for (let y = 6; y < H; y += 6) {\n      const h = heightAt(x, y);\n      if (h <= 0) continue;\n      const s = slopeAt(x, y);\n      steepest = Math.max(steepest, s);\n      if (h > minHeight) flattest = Math.min(flattest, s);\n    }\n    return { steepest, flattest, topLine };\n  }, [hills, interval, minHeight]);\n\n  const lines = useMemo(() => hills.flatMap((hl, hi) => {\n    const widest = [['e', 1, 0], ['w', -1, 0], ['n', 0, -1], ['s', 0, 1]].sort((a, b) => hl[b[0]] - hl[a[0]])[0];\n    const out = [];\n    for (let L = interval; L < hl.height; L += interval) {\n      const t = shareAtHeight(hl.profile, L / hl.height);\n      const pts = [];\n      for (let k = 0; k < 96; k++) {\n        const a = (k * Math.PI) / 48, c = Math.cos(a), s = Math.sin(a);\n        pts.push((hl.cx + t * (c >= 0 ? hl.e : hl.w) * c).toFixed(1) + ',' + (hl.cy + t * (s <= 0 ? hl.n : hl.s) * s).toFixed(1));\n      }\n      const index = Math.round(L / interval) % labelEvery === 0;\n      out.push({ key: hi + '-' + L, L, index, points: pts.join(' '), lx: hl.cx + t * hl[widest[0]] * widest[1], ly: hl.cy + t * hl[widest[0]] * widest[2] });\n    }\n    return out;\n  }), [hills, interval, labelEvery]);\n\n  const spots = useMemo(() => {\n    const out = [];\n    for (let x = 20; x < W; x += 20) for (let y = 20; y < H; y += 20) out.push({ x, y });\n    return out;\n  }, []);\n\n  const here = heightAt(pos.x, pos.y);\n  const onHill = hills.find((hl) => hillHeight(hl, pos.x, pos.y) > 0 && hillHeight(hl, pos.x, pos.y) === here);\n\n  useEffect(() => {\n    const steep = slopeAt(pos.x, pos.y);\n    const met = !placed ? false\n      : find === 'top' ? here >= map.topLine\n      : find === 'steepest' ? steep >= 0.9 * map.steepest\n      : here > minHeight && steep <= 1.5 * map.flattest;\n    lumina.goal(met);\n    let side = null;\n    if (onHill) {\n      const dx = (pos.x - onHill.cx) / (pos.x >= onHill.cx ? onHill.e : onHill.w), dy = (pos.y - onHill.cy) / (pos.y <= onHill.cy ? onHill.n : onHill.s);\n      side = Math.abs(dx) < 0.12 && Math.abs(dy) < 0.12 ? 'middle' : Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east side' : 'west side') : (dy < 0 ? 'north side' : 'south side');\n    }\n    lumina.scene({\n      hillsOnMap: hills.length,\n      metresBetweenLines: interval,\n      linesLabelled: labelEvery === 1 ? 'every line' : 'every ' + labelEvery + ' lines',\n      hills: hills.map((hl) => ({ name: hl.name, lines: Math.ceil(hl.height / interval) - 1 })),\n      marker: markerKind,\n      markerIsOnTheMap: placed,\n      markerOn: !placed ? 'the corner, not placed yet' : onHill ? onHill.name : 'ground outside the lines',\n      markerSide: side,\n      linesAroundMarker: onHill ? Math.floor(here / interval) : 0,\n    });\n  }, [pos, placed, find, hills, interval, labelEvery, minHeight, map]);\n\n  const move = ({ x, y }) => {\n    setPos({ x: Math.max(14, Math.min(W - 14, x)), y: Math.max(14, Math.min(H - 14, y)) });\n    setPlaced(true);\n  };\n\n  return (\n    <Panel title=\"Contour Map\" caption={'Drag the ' + markerKind + ' onto the map.'}>\n      <Stack gap={10}>\n        <div style={{ width: '100%', background: '#1e293b', borderRadius: 12, overflow: 'hidden' }}>\n          <svg viewBox={'0 0 ' + W + ' ' + H} style={{ width: '100%', display: 'block', userSelect: 'none', touchAction: 'none' }}>\n            {lines.map((ln) => (\n              <polygon key={ln.key} points={ln.points} fill=\"none\" stroke=\"#d6b88a\" strokeWidth={ln.index && labelEvery > 1 ? 2.6 : 1.4} />\n            ))}\n            {lines.filter((ln) => ln.index).map((ln) => (\n              <g key={'t' + ln.key}>\n                <rect x={ln.lx - 13} y={ln.ly - 8} width={26} height={16} rx={3} fill=\"#1e293b\" />\n                <text x={ln.lx} y={ln.ly + 4} fill=\"#f1f5f9\" fontSize=\"12\" fontWeight=\"600\" textAnchor=\"middle\">{ln.L}</text>\n              </g>\n            ))}\n            {spots.map((p) => (\n              <circle key={p.x + '-' + p.y} id={'spot-' + p.x + '-' + p.y} cx={p.x} cy={p.y} r=\"1\" fill=\"transparent\" pointerEvents=\"none\" />\n            ))}\n            <Handle id=\"marker\" x={pos.x} y={pos.y} r={24} onDrag={move} onDrop={move}>\n              {markerKind === 'tent' ? (\n                <g>\n                  <path d=\"M -16 8 L 0 -18 L 16 8 Z\" fill=\"#fbbf24\" stroke=\"#f8fafc\" strokeWidth=\"2\" strokeLinejoin=\"round\" />\n                  <path d=\"M 0 -18 L 0 8\" stroke=\"#0f172a\" strokeWidth=\"2\" />\n                  <circle cx=\"0\" cy=\"0\" r=\"3\" fill=\"#f8fafc\" />\n                </g>\n              ) : (\n                <g>\n                  <line x1=\"0\" y1=\"0\" x2=\"0\" y2=\"-26\" stroke=\"#f8fafc\" strokeWidth=\"3\" strokeLinecap=\"round\" />\n                  <path d=\"M 0 -26 L 20 -19 L 0 -12 Z\" fill=\"#22d3ee\" stroke=\"#f8fafc\" strokeWidth=\"1.5\" strokeLinejoin=\"round\" />\n                  <circle cx=\"0\" cy=\"0\" r=\"4\" fill=\"#f8fafc\" />\n                </g>\n              )}\n            </Handle>\n          </svg>\n        </div>\n        <div style={{ color: '#cbd5e1', fontSize: 14, lineHeight: 1.4 }}>\n          <b style={{ color: '#d6b88a' }}>Key:</b> each line joins ground at one height. The number on a line is its height in metres. From one line to the next, the height changes by {interval} m.\n          {labelEvery > 1 ? ' Only the thick lines have numbers.' : ''}\n        </div>\n      </Stack>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "find": "top",
+    "marker": "flag",
+    "interval": 10,
+    "labelEvery": 1,
+    "hills": [
+     {
+      "name": "the hill",
+      "cx": 340,
+      "cy": 205,
+      "height": 60,
+      "e": 200,
+      "w": 170,
+      "n": 150,
+      "s": 150,
+      "profile": [
+       [
+        0,
+        1
+       ],
+       [
+        1,
+        0
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Plant the flag on the highest ground on the map.",
+   "goal": "The flag is inside the innermost line, the 50 m line.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-340-200"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-200-200"
+    }
+   ],
+   "scene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 5
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": false,
+    "markerOn": "the corner, not placed yet",
+    "markerSide": null,
+    "linesAroundMarker": 0
+   },
+   "proofScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 5
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "middle",
+    "linesAroundMarker": 5
+   },
+   "missScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 5
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "west side",
+    "linesAroundMarker": 1
+   }
+  },
+  {
+   "params": {
+    "find": "steepest",
+    "marker": "flag",
+    "interval": 10,
+    "labelEvery": 1,
+    "hills": [
+     {
+      "name": "the hill",
+      "cx": 300,
+      "cy": 205,
+      "height": 70,
+      "e": 230,
+      "w": 90,
+      "n": 130,
+      "s": 130,
+      "profile": [
+       [
+        0,
+        0.999
+       ],
+       [
+        0.2,
+        0.93
+       ],
+       [
+        1,
+        0
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Plant the flag on the steepest part of the hill.",
+   "goal": "The flag is on the west slope, where the lines are closest together.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-240-200"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-300-200"
+    }
+   ],
+   "scene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 6
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": false,
+    "markerOn": "the corner, not placed yet",
+    "markerSide": null,
+    "linesAroundMarker": 0
+   },
+   "proofScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 6
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "west side",
+    "linesAroundMarker": 2
+   },
+   "missScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every line",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 6
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "middle",
+    "linesAroundMarker": 6
+   }
+  },
+  {
+   "params": {
+    "find": "flat",
+    "marker": "tent",
+    "interval": 10,
+    "labelEvery": 2,
+    "minHeight": 40,
+    "hills": [
+     {
+      "name": "the hill",
+      "cx": 340,
+      "cy": 205,
+      "height": 80,
+      "e": 200,
+      "w": 180,
+      "n": 170,
+      "s": 170,
+      "profile": [
+       [
+        0,
+        1
+       ],
+       [
+        0.15,
+        0.75
+       ],
+       [
+        0.6,
+        0.65
+       ],
+       [
+        1,
+        0
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Pitch the tent on flat ground that is higher than 40 m.",
+   "goal": "The tent is on the shelf between the 60 m and 50 m lines, where the lines are far apart.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-420-200"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-340-340"
+    }
+   ],
+   "scene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 7
+     }
+    ],
+    "marker": "tent",
+    "markerIsOnTheMap": false,
+    "markerOn": "the corner, not placed yet",
+    "markerSide": null,
+    "linesAroundMarker": 0
+   },
+   "proofScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 7
+     }
+    ],
+    "marker": "tent",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "east side",
+    "linesAroundMarker": 5
+   },
+   "missScene": {
+    "hillsOnMap": 1,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the hill",
+      "lines": 7
+     }
+    ],
+    "marker": "tent",
+    "markerIsOnTheMap": true,
+    "markerOn": "the hill",
+    "markerSide": "south side",
+    "linesAroundMarker": 2
+   }
+  },
+  {
+   "params": {
+    "find": "steepest",
+    "marker": "flag",
+    "interval": 10,
+    "labelEvery": 2,
+    "hills": [
+     {
+      "name": "the west hill",
+      "cx": 180,
+      "cy": 205,
+      "height": 70,
+      "e": 150,
+      "w": 140,
+      "n": 150,
+      "s": 150,
+      "profile": [
+       [
+        0,
+        0.999
+       ],
+       [
+        0.2,
+        0.93
+       ],
+       [
+        1,
+        0
+       ]
+      ]
+     },
+     {
+      "name": "the east hill",
+      "cx": 500,
+      "cy": 215,
+      "height": 50,
+      "e": 50,
+      "w": 110,
+      "n": 90,
+      "s": 90,
+      "profile": [
+       [
+        0,
+        0.999
+       ],
+       [
+        0.2,
+        0.93
+       ],
+       [
+        1,
+        0
+       ]
+      ]
+     }
+    ]
+   },
+   "ask": "Plant the flag on the steepest slope on the map.",
+   "goal": "The flag is on the east side of the lower hill, where the lines are closest together.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-540-220"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#marker",
+     "to": "#spot-100-200"
+    }
+   ],
+   "scene": {
+    "hillsOnMap": 2,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the west hill",
+      "lines": 6
+     },
+     {
+      "name": "the east hill",
+      "lines": 4
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": false,
+    "markerOn": "the corner, not placed yet",
+    "markerSide": null,
+    "linesAroundMarker": 0
+   },
+   "proofScene": {
+    "hillsOnMap": 2,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the west hill",
+      "lines": 6
+     },
+     {
+      "name": "the east hill",
+      "lines": 4
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the east hill",
+    "markerSide": "east side",
+    "linesAroundMarker": 1
+   },
+   "missScene": {
+    "hillsOnMap": 2,
+    "metresBetweenLines": 10,
+    "linesLabelled": "every 2 lines",
+    "hills": [
+     {
+      "name": "the west hill",
+      "lines": 6
+     },
+     {
+      "name": "the east hill",
+      "lines": 4
+     }
+    ],
+    "marker": "flag",
+    "markerIsOnTheMap": true,
+    "markerOn": "the west hill",
+    "markerSide": "west side",
+    "linesAroundMarker": 3
+   }
+  }
+ ]
+}

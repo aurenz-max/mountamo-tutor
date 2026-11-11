@@ -1,0 +1,455 @@
+{
+ "id": "shadow-materials",
+ "title": "Shadow Maker",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner puts a material in a beam of light to make a dark, faint or no shadow on the wall, which shows that materials block all, some or almost none of the light."
+ },
+ "request": {
+  "topic": "Materials that block light and make shadows",
+  "grade": "grade 1",
+  "objective": "Predict the shadow a material makes when it is put in a beam of light: a dark shadow (lets no light through), a faint shadow (lets some through), or no shadow (lets nearly all through). NGSS 1-PS4-3 (SCI001-05-c)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // One to three beams. Each beam: a flashlight, an empty holder, a wall with a card that shows the shadow asked for.\r\n  // The child drags a sheet of material from the tray into each holder. The wall shows only a dashed outline of where\r\n  // a shadow would fall, never the shadow itself, so the choice is a prediction.\r\n  // params.beams: [{ want: 'dark' | 'faint' | 'none' }], 1-3 of them. params.tray: material keys, 3-5 of them.\r\n  const beams = (Array.isArray(params.beams) && params.beams.length ? params.beams : [{ want: 'dark' }])\r\n    .slice(0, 3)\r\n    .map(b => ({ want: b && (b.want === 'faint' || b.want === 'none') ? b.want : 'dark' }));\r\n\r\n  // The model. Each material has one number: how much of the light it lets through (0 to 1). The shadow follows from\r\n  // it: almost none through is a dark shadow, nearly all through is no shadow, anything between is a faint shadow.\r\n  const MATERIALS = {\r\n    cardboard: { pass: 0.0, label: 'Cardboard' },\r\n    whitecard: { pass: 0.02, label: 'White card' },\r\n    foil: { pass: 0.0, label: 'Foil' },\r\n    glass: { pass: 0.92, label: 'Glass' },\r\n    block: { pass: 0.85, label: 'Glass block' },\r\n    wrap: { pass: 0.9, label: 'Wrap' },\r\n    wax: { pass: 0.4, label: 'Wax paper' },\r\n    tissue: { pass: 0.5, label: 'Tissue' },\r\n  };\r\n  const DARK_BELOW = 0.15, NONE_ABOVE = 0.75;\r\n  const shadowOf = key => {\r\n    if (!key) return null;\r\n    const p = MATERIALS[key].pass;\r\n    return p < DARK_BELOW ? 'dark' : p > NONE_ABOVE ? 'none' : 'faint';\r\n  };\r\n  const tray = (Array.isArray(params.tray) ? params.tray : ['cardboard', 'glass', 'wrap'])\r\n    .filter(k => MATERIALS[k]).slice(0, 5);\r\n\r\n  const [inHolder, setInHolder] = useState(() => beams.map(() => null));\r\n  const [drag, setDrag] = useState(null); // { key, x, y }\r\n  const svgRef = useRef(null);\r\n\r\n  const goalMet = beams.every((b, i) => shadowOf(inHolder[i]) === b.want);\r\n  const WANT_WORDS = { dark: 'a dark shadow', faint: 'a faint shadow', none: 'no shadow' };\r\n  const beamName = i => (beams.length === 1 ? 'the beam' : ['top beam', 'middle beam', 'bottom beam'][i]);\r\n\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    lumina.scene({\r\n      beams: beams.map((b, i) => ({\r\n        beam: beamName(i),\r\n        wallCardShows: WANT_WORDS[b.want],\r\n        holder: inHolder[i] ? MATERIALS[inHolder[i]].label : 'empty',\r\n      })),\r\n      tray: tray.filter(k => !inHolder.includes(k)).map(k => MATERIALS[k].label),\r\n      wall: 'each wall shows only a dashed outline where a shadow would fall',\r\n    });\r\n  }, [goalMet, inHolder]);\r\n\r\n  // ---------- layout ----------\r\n  const W = 680;\r\n  const LANE_H = beams.length === 1 ? 260 : 150;\r\n  const TRAY_Y = beams.length * LANE_H + 8;\r\n  const TRAY_H = 136;\r\n  const H = TRAY_Y + TRAY_H;\r\n  const cy = i => i * LANE_H + LANE_H / 2 - 3;\r\n  const holderAt = i => ({ x: 300, y: cy(i) });\r\n  const slotX = i => (W / (tray.length + 1)) * (i + 1);\r\n  const slot = i => ({ x: slotX(i), y: TRAY_Y + 56 });\r\n\r\n  const where = key => {\r\n    if (drag && drag.key === key && drag.x !== undefined) return { x: drag.x, y: drag.y };\r\n    const h = inHolder.indexOf(key);\r\n    return h >= 0 ? holderAt(h) : slot(tray.indexOf(key));\r\n  };\r\n\r\n  const onDown = (key, e) => {\r\n    e.currentTarget.setPointerCapture(e.pointerId);\r\n    setDrag({ key });\r\n  };\r\n  const onMove = e => {\r\n    if (!drag || !svgRef.current) return;\r\n    const pt = svgPoint(svgRef.current, e);\r\n    setDrag(d => (d ? { ...d, x: pt.x, y: pt.y } : null));\r\n  };\r\n  const onUp = e => {\r\n    if (!drag || !svgRef.current) return;\r\n    const pt = svgPoint(svgRef.current, e);\r\n    let target = -1, best = 70;\r\n    beams.forEach((_, i) => {\r\n      const h = holderAt(i);\r\n      const d = Math.hypot(h.x - pt.x, h.y - pt.y);\r\n      if (d < best) { best = d; target = i; }\r\n    });\r\n    setInHolder(prev => {\r\n      const next = prev.map(k => (k === drag.key ? null : k));\r\n      if (target >= 0) next[target] = drag.key;\r\n      return next;\r\n    });\r\n    setDrag(null);\r\n  };\r\n\r\n  // ---------- pictures ----------\r\n  // The patterned card each tray sheet stands on, so how much a sheet lets through can be seen, not read.\r\n  const pattern = () => (\r\n    <g>\r\n      <rect x=\"-38\" y=\"-42\" width=\"76\" height=\"84\" rx=\"6\" fill=\"#f8fafc\" />\r\n      <rect x=\"-30\" y=\"-42\" width=\"12\" height=\"84\" fill=\"#ef4444\" />\r\n      <rect x=\"-6\" y=\"-42\" width=\"12\" height=\"84\" fill=\"#2563eb\" />\r\n      <rect x=\"18\" y=\"-42\" width=\"12\" height=\"84\" fill=\"#16a34a\" />\r\n      <circle cx=\"0\" cy=\"-20\" r=\"7\" fill=\"#111827\" />\r\n      <circle cx=\"0\" cy=\"20\" r=\"7\" fill=\"#111827\" />\r\n    </g>\r\n  );\r\n\r\n  const SW = 46, SH = 62;\r\n  const sheet = (key, onPattern) => {\r\n    const r = { x: -SW / 2, y: -SH / 2, width: SW, height: SH };\r\n    if (key === 'cardboard') return (\r\n      <g>\r\n        <rect {...r} rx=\"2\" fill=\"#b45309\" stroke=\"#78350f\" strokeWidth=\"2\" />\r\n        {[-14, -4, 6, 16].map(y => <line key={y} x1={-SW / 2 + 4} y1={y} x2={SW / 2 - 4} y2={y} stroke=\"#92400e\" strokeWidth=\"2\" />)}\r\n      </g>\r\n    );\r\n    if (key === 'whitecard') return (\r\n      <g>\r\n        <rect {...r} rx=\"2\" fill=\"#ffffff\" stroke=\"#cbd5e1\" strokeWidth=\"2\" />\r\n        <line x1={-SW / 2 + 5} y1={SH / 2 - 6} x2={SW / 2 - 5} y2={SH / 2 - 6} stroke=\"#e2e8f0\" strokeWidth=\"2\" />\r\n      </g>\r\n    );\r\n    if (key === 'foil') return (\r\n      <g>\r\n        <rect {...r} rx=\"1\" fill=\"url(#foil-shine)\" stroke=\"#64748b\" strokeWidth=\"1\" />\r\n        <path d=\"M -18 -20 L -6 -12 L -14 0 L 2 8 L -8 22\" fill=\"none\" stroke=\"#f8fafc\" strokeWidth=\"1.5\" opacity=\"0.8\" />\r\n        <path d=\"M 8 -26 L 16 -10 L 6 4 L 18 18\" fill=\"none\" stroke=\"#475569\" strokeWidth=\"1.2\" opacity=\"0.7\" />\r\n      </g>\r\n    );\r\n    if (key === 'glass') return (\r\n      <g>\r\n        <rect {...r} rx=\"2\" fill=\"#e0f2fe\" opacity=\"0.1\" />\r\n        <rect {...r} rx=\"2\" fill=\"none\" stroke=\"#38bdf8\" strokeWidth=\"2.5\" />\r\n        <line x1=\"-14\" y1=\"-22\" x2=\"-4\" y2=\"-30\" stroke=\"#ffffff\" strokeWidth=\"2.5\" opacity=\"0.9\" />\r\n        <line x1=\"-16\" y1=\"-10\" x2=\"2\" y2=\"-26\" stroke=\"#ffffff\" strokeWidth=\"1.5\" opacity=\"0.7\" />\r\n      </g>\r\n    );\r\n    if (key === 'block') {\r\n      const D = 12; // depth of the thick block\r\n      return (\r\n        <g>\r\n          <path d={`M ${-SW / 2} ${-SH / 2} l ${D} ${-D} l ${SW} 0 l ${-D} ${D} Z`} fill=\"#bae6fd\" opacity=\"0.5\" stroke=\"#38bdf8\" strokeWidth=\"2\" />\r\n          <path d={`M ${SW / 2} ${-SH / 2} l ${D} ${-D} l 0 ${SH} l ${-D} ${D} Z`} fill=\"#7dd3fc\" opacity=\"0.5\" stroke=\"#38bdf8\" strokeWidth=\"2\" />\r\n          <rect {...r} fill=\"#e0f2fe\" opacity=\"0.12\" />\r\n          <rect {...r} fill=\"none\" stroke=\"#38bdf8\" strokeWidth=\"3\" />\r\n          <line x1=\"-14\" y1=\"-22\" x2=\"-4\" y2=\"-30\" stroke=\"#ffffff\" strokeWidth=\"2.5\" opacity=\"0.9\" />\r\n        </g>\r\n      );\r\n    }\r\n    if (key === 'wrap') return (\r\n      <g>\r\n        <rect {...r} rx=\"2\" fill=\"#f1f5f9\" opacity=\"0.08\" />\r\n        <path d={`M ${-SW / 2} ${-SH / 2 + 2} q 6 -4 12 0 t 12 0 t 12 0 t 10 0`} fill=\"none\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" opacity=\"0.9\" />\r\n        <path d={`M ${-SW / 2 + 2} ${-SH / 2} L ${-SW / 2 + 4} ${SH / 2} L ${SW / 2 - 2} ${SH / 2 - 2} L ${SW / 2} ${-SH / 2 + 2}`} fill=\"none\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" opacity=\"0.8\" />\r\n        <path d=\"M -12 -18 L -2 -6 M 6 10 L 14 20 M -10 14 L -4 22\" stroke=\"#ffffff\" strokeWidth=\"1.2\" opacity=\"0.6\" />\r\n      </g>\r\n    );\r\n    // Frosted sheets: what is behind shows only as a blur.\r\n    const tint = key === 'wax' ? '#fefce8' : '#fdf4ff';\r\n    return (\r\n      <g>\r\n        {onPattern && <g clipPath=\"url(#sheet-clip)\" filter=\"url(#frost)\">{pattern()}</g>}\r\n        <rect {...r} rx=\"2\" fill={tint} opacity={onPattern ? 0.62 : 0.55} />\r\n        <rect {...r} rx=\"2\" fill=\"none\" stroke=\"#f8fafc\" strokeWidth=\"1.5\" opacity=\"0.9\" />\r\n        {key === 'tissue'\r\n          ? <path d=\"M -16 -24 L -8 -14 L -14 -2 M 4 -22 L 12 -8 M -6 8 L 4 18 L -2 26 M 10 6 L 16 20\" fill=\"none\" stroke=\"#e9d5ff\" strokeWidth=\"1.2\" />\r\n          : <path d=\"M -18 -26 L 18 -26 M -18 26 L 18 26\" stroke=\"#fef08a\" strokeWidth=\"1\" opacity=\"0.6\" />}\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const flashlight = y => (\r\n    <g transform={`translate(52, ${y})`}>\r\n      <rect x=\"-30\" y=\"-13\" width=\"56\" height=\"26\" rx=\"6\" fill=\"#334155\" stroke=\"#94a3b8\" strokeWidth=\"2\" />\r\n      <rect x=\"-14\" y=\"-17\" width=\"12\" height=\"6\" rx=\"2\" fill=\"#f97316\" />\r\n      <path d=\"M 26 -13 L 44 -22 L 44 22 L 26 13 Z\" fill=\"#475569\" stroke=\"#94a3b8\" strokeWidth=\"2\" />\r\n      <rect x=\"42\" y=\"-22\" width=\"6\" height=\"44\" rx=\"2\" fill=\"#fef9c3\" />\r\n    </g>\r\n  );\r\n\r\n  // A small picture of a shadow on a lit wall: the card the child matches, drawn not written.\r\n  const shadowCard = (want, x, y) => (\r\n    <g transform={`translate(${x}, ${y})`}>\r\n      <rect x=\"-50\" y=\"-48\" width=\"100\" height=\"96\" rx=\"10\" fill=\"#1e293b\" stroke=\"#fbbf24\" strokeWidth=\"2\" />\r\n      <rect x=\"-34\" y=\"-38\" width=\"68\" height=\"56\" rx=\"4\" fill=\"#e7e5e4\" />\r\n      <ellipse cx=\"0\" cy=\"-10\" rx=\"30\" ry=\"24\" fill=\"#fde68a\" />\r\n      {want === 'dark' && <rect x=\"-11\" y=\"-26\" width=\"22\" height=\"32\" rx=\"2\" fill=\"#111827\" />}\r\n      {want === 'faint' && <rect x=\"-11\" y=\"-26\" width=\"22\" height=\"32\" rx=\"2\" fill=\"#78716c\" opacity=\"0.45\" />}\r\n      <text x=\"0\" y=\"38\" textAnchor=\"middle\" fill=\"#f8fafc\" fontSize=\"16\" fontWeight=\"700\">\r\n        {want === 'dark' ? 'Dark' : want === 'faint' ? 'Faint' : 'None'}\r\n      </text>\r\n    </g>\r\n  );\r\n\r\n  const lane = (b, i) => {\r\n    const top = i * LANE_H;\r\n    const y = cy(i);\r\n    const half = Math.min(64, LANE_H / 2 - 22);\r\n    const h = holderAt(i);\r\n    const outW = 30, outH = 44;\r\n    return (\r\n      <g key={i}>\r\n        <rect x=\"0\" y={top} width={W} height={LANE_H - 6} rx=\"12\" fill=\"#0b1224\" />\r\n        {/* the beam: the same whatever is in the holder */}\r\n        <path d={`M 100 ${y - 14} L 100 ${y + 14} L 474 ${y + half} L 474 ${y - half} Z`} fill=\"#fde68a\" opacity=\"0.16\" />\r\n        {flashlight(y)}\r\n        {/* the holder: a stand with a clip */}\r\n        <line x1={h.x} y1={y + 40} x2={h.x} y2={top + LANE_H - 14} stroke=\"#64748b\" strokeWidth=\"5\" />\r\n        <rect x={h.x - 26} y={top + LANE_H - 18} width=\"52\" height=\"8\" rx=\"3\" fill=\"#64748b\" />\r\n        <rect id={`holder-${i + 1}`} x={h.x - 32} y={y - 40} width=\"64\" height=\"80\" rx=\"6\"\r\n          fill=\"rgba(251,191,36,0.06)\" stroke=\"#fbbf24\" strokeWidth=\"2\" strokeDasharray=\"6 4\" />\r\n        {/* the wall: lit, with only an outline where a shadow would fall */}\r\n        <rect x=\"474\" y={top + 10} width=\"74\" height={LANE_H - 26} rx=\"4\" fill=\"#d6d3d1\" />\r\n        <ellipse cx=\"511\" cy={y} rx=\"34\" ry={half} fill=\"#fde68a\" opacity=\"0.55\" />\r\n        <rect x={511 - outW / 2} y={y - outH / 2} width={outW} height={outH} rx=\"2\" fill=\"none\"\r\n          stroke=\"#57534e\" strokeWidth=\"2\" strokeDasharray=\"4 3\" />\r\n        {shadowCard(b.want, 616, y)}\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const item = (key, idx) => {\r\n    const at = where(key);\r\n    const dragging = drag && drag.key === key && drag.x !== undefined;\r\n    const inTray = inHolder.indexOf(key) < 0 && !dragging;\r\n    return (\r\n      <g key={key} id={`mat-${key}`} transform={`translate(${at.x}, ${at.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\r\n        onPointerDown={e => onDown(key, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\r\n        <rect x=\"-34\" y=\"-40\" width=\"68\" height=\"80\" fill=\"transparent\" />\r\n        {sheet(key, inTray)}\r\n      </g>\r\n    );\r\n  };\r\n\r\n  return (\r\n    <Panel>\r\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\r\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\r\n        <defs>\r\n          <filter id=\"frost\" x=\"-20%\" y=\"-20%\" width=\"140%\" height=\"140%\"><feGaussianBlur stdDeviation=\"3.5\" /></filter>\r\n          <clipPath id=\"sheet-clip\"><rect x={-SW / 2} y={-SH / 2} width={SW} height={SH} /></clipPath>\r\n          <linearGradient id=\"foil-shine\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\r\n            <stop offset=\"0\" stopColor=\"#e2e8f0\" />\r\n            <stop offset=\"0.5\" stopColor=\"#94a3b8\" />\r\n            <stop offset=\"1\" stopColor=\"#cbd5e1\" />\r\n          </linearGradient>\r\n        </defs>\r\n        {beams.map(lane)}\r\n        <rect x=\"0\" y={TRAY_Y} width={W} height={TRAY_H - 6} rx=\"12\" fill=\"rgba(30,41,59,0.6)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\r\n        {tray.map((k, i) => (\r\n          <g key={`slot-${k}`} transform={`translate(${slot(i).x}, ${slot(i).y})`} opacity={inHolder.includes(k) ? 0.25 : 1}>\r\n            {pattern()}\r\n            {!inHolder.includes(k) && <text y=\"62\" textAnchor=\"middle\" fill=\"#e2e8f0\" fontSize=\"15\" fontWeight=\"600\">{MATERIALS[k].label}</text>}\r\n          </g>\r\n        ))}\r\n        {tray.map(item)}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "beams": [
+     {
+      "want": "dark"
+     }
+    ],
+    "tray": [
+     "glass",
+     "cardboard",
+     "wrap"
+    ]
+   },
+   "ask": "Make a dark shadow on the wall.",
+   "goal": "Cardboard is in the holder: it lets no light through, so it makes a dark shadow. Clear glass and plastic wrap let nearly all the light through.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-cardboard",
+     "to": "#holder-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-glass",
+     "to": "#holder-1"
+    }
+   ],
+   "scene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "empty"
+     }
+    ],
+    "tray": [
+     "Glass",
+     "Cardboard",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "proofScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Cardboard"
+     }
+    ],
+    "tray": [
+     "Glass",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "missScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Glass"
+     }
+    ],
+    "tray": [
+     "Cardboard",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   }
+  },
+  {
+   "params": {
+    "beams": [
+     {
+      "want": "none"
+     }
+    ],
+    "tray": [
+     "whitecard",
+     "foil",
+     "wax",
+     "wrap"
+    ]
+   },
+   "ask": "Make no shadow on the wall.",
+   "goal": "Plastic wrap is in the holder: it lets nearly all the light through, so there is no shadow. White card and thin foil block the light; wax paper lets some through.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-wrap",
+     "to": "#holder-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-whitecard",
+     "to": "#holder-1"
+    }
+   ],
+   "scene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "no shadow",
+      "holder": "empty"
+     }
+    ],
+    "tray": [
+     "White card",
+     "Foil",
+     "Wax paper",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "proofScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "no shadow",
+      "holder": "Wrap"
+     }
+    ],
+    "tray": [
+     "White card",
+     "Foil",
+     "Wax paper"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "missScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "no shadow",
+      "holder": "White card"
+     }
+    ],
+    "tray": [
+     "Foil",
+     "Wax paper",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   }
+  },
+  {
+   "params": {
+    "beams": [
+     {
+      "want": "faint"
+     }
+    ],
+    "tray": [
+     "cardboard",
+     "glass",
+     "wax",
+     "wrap"
+    ]
+   },
+   "ask": "Make a faint shadow on the wall.",
+   "goal": "Wax paper is in the holder: it lets some light through, so the shadow is faint. Cardboard makes a dark one; glass and wrap make none.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-wax",
+     "to": "#holder-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-glass",
+     "to": "#holder-1"
+    }
+   ],
+   "scene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "empty"
+     }
+    ],
+    "tray": [
+     "Cardboard",
+     "Glass",
+     "Wax paper",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "proofScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "Wax paper"
+     }
+    ],
+    "tray": [
+     "Cardboard",
+     "Glass",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "missScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "Glass"
+     }
+    ],
+    "tray": [
+     "Cardboard",
+     "Wax paper",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   }
+  },
+  {
+   "params": {
+    "beams": [
+     {
+      "want": "dark"
+     }
+    ],
+    "tray": [
+     "block",
+     "tissue",
+     "foil",
+     "wrap"
+    ]
+   },
+   "ask": "Make a dark shadow with these new sheets.",
+   "goal": "Thin foil is in the holder: it lets no light through however thin it is. The thick glass block lets nearly all the light through, so thickness does not decide the shadow.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-foil",
+     "to": "#holder-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-block",
+     "to": "#holder-1"
+    }
+   ],
+   "scene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "empty"
+     }
+    ],
+    "tray": [
+     "Glass block",
+     "Tissue",
+     "Foil",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "proofScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Foil"
+     }
+    ],
+    "tray": [
+     "Glass block",
+     "Tissue",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "missScene": {
+    "beams": [
+     {
+      "beam": "the beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Glass block"
+     }
+    ],
+    "tray": [
+     "Tissue",
+     "Foil",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   }
+  },
+  {
+   "params": {
+    "beams": [
+     {
+      "want": "dark"
+     },
+     {
+      "want": "faint"
+     },
+     {
+      "want": "none"
+     }
+    ],
+    "tray": [
+     "glass",
+     "wax",
+     "cardboard",
+     "tissue",
+     "wrap"
+    ]
+   },
+   "ask": "Give each wall the shadow on its card.",
+   "goal": "The top holder has a sheet that blocks the light (cardboard), the middle one a sheet that lets some through (wax paper or tissue), the bottom one a sheet that lets nearly all through (glass or wrap).",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-cardboard",
+     "to": "#holder-1"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-tissue",
+     "to": "#holder-2"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-glass",
+     "to": "#holder-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-cardboard",
+     "to": "#holder-1"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-glass",
+     "to": "#holder-2"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-wax",
+     "to": "#holder-3"
+    }
+   ],
+   "scene": {
+    "beams": [
+     {
+      "beam": "top beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "empty"
+     },
+     {
+      "beam": "middle beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "empty"
+     },
+     {
+      "beam": "bottom beam",
+      "wallCardShows": "no shadow",
+      "holder": "empty"
+     }
+    ],
+    "tray": [
+     "Glass",
+     "Wax paper",
+     "Cardboard",
+     "Tissue",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "proofScene": {
+    "beams": [
+     {
+      "beam": "top beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Cardboard"
+     },
+     {
+      "beam": "middle beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "Tissue"
+     },
+     {
+      "beam": "bottom beam",
+      "wallCardShows": "no shadow",
+      "holder": "Glass"
+     }
+    ],
+    "tray": [
+     "Wax paper",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   },
+   "missScene": {
+    "beams": [
+     {
+      "beam": "top beam",
+      "wallCardShows": "a dark shadow",
+      "holder": "Cardboard"
+     },
+     {
+      "beam": "middle beam",
+      "wallCardShows": "a faint shadow",
+      "holder": "Glass"
+     },
+     {
+      "beam": "bottom beam",
+      "wallCardShows": "no shadow",
+      "holder": "Wax paper"
+     }
+    ],
+    "tray": [
+     "Tissue",
+     "Wrap"
+    ],
+    "wall": "each wall shows only a dashed outline where a shadow would fall"
+   }
+  }
+ ]
+}

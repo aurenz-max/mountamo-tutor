@@ -4,7 +4,7 @@ import { generateExhibitManifestStreaming } from '@/components/lumina/service/ma
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, gradeLevel, objectives, studentContext } = body;
+    const { topic, gradeLevel, objectives, studentContext, studentId } = body;
 
     // Create a TransformStream for streaming the response
     const encoder = new TextEncoder();
@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
             onProgress: (message: string) => safeWrite({ type: 'progress', message }),
             onThinking: (thought: string) => safeWrite({ type: 'thinking', thought }),
             onPartialManifest: (partial) => safeWrite({ type: 'partial', manifest: partial }),
-          }
+          },
+          // The student decides only whether pilot canvases are offered (agent-canvas/pilotVotes.ts).
+          { studentId: typeof studentId === 'string' || typeof studentId === 'number' ? String(studentId) : null },
         );
         await safeWrite({ type: 'complete', manifest });
       } catch (error: any) {

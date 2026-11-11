@@ -1,0 +1,418 @@
+{
+ "id": "sound-bridge",
+ "title": "Tap Bridge",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner builds a bridge from metal, wood, sponge or blanket so a soft tap reaches a listener or does not, which shows that hard solids carry sound and soft materials do not."
+ },
+ "request": {
+  "topic": "Materials that carry sound",
+  "grade": "grade 1",
+  "objective": "Predict which material will carry a soft tap to a listener and which will not: hard solids such as metal and wood carry it, soft materials such as sponge and blanket do not, and metal carries it farther than wood. NGSS 1-PS4-1 (SCI001-03-b)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // One or two lanes. Each lane: a squirrel taps softly on a post, a listener is at a second post, and there is a gap\n  // between the posts. The child drags a bridge from the tray into the gap. Nothing shows whether the taps arrive:\n  // the choice is a prediction.\n  // params.lanes: [{ want: 'hear' | 'quiet', far: boolean }], 1-2 of them. params.tray: material keys, 2-4 of them.\n  const lanes = (Array.isArray(params.lanes) && params.lanes.length ? params.lanes : [{ want: 'hear', far: false }])\n    .slice(0, 2)\n    .map(l => ({ want: l && l.want === 'quiet' ? 'quiet' : 'hear', far: !!(l && l.far) }));\n\n  // The model. Each bridge has one number: how much of a tap it carries along (0 to 1). An empty gap is air.\n  // A long gap loses more on the way. The listener hears the tap when what arrives is at least HEARD.\n  const MATERIALS = {\n    metal: { carry: 0.9, label: 'Metal' },\n    wire: { carry: 0.85, label: 'Wire' },\n    wood: { carry: 0.65, label: 'Wood' },\n    cloth: { carry: 0.1, label: 'Blanket' },\n    foam: { carry: 0.05, label: 'Sponge' },\n    fatfoam: { carry: 0.03, label: 'Big sponge' },\n  };\n  const AIR = 0.2, FAR_LOSS = 0.3, HEARD = 0.4;\n  const arrives = (key, far) => (key ? MATERIALS[key].carry : AIR) - (far ? FAR_LOSS : 0);\n  const tray = (Array.isArray(params.tray) ? params.tray : ['foam', 'wood', 'cloth']).filter(k => MATERIALS[k]).slice(0, 4);\n\n  const [inGap, setInGap] = useState(() => lanes.map(() => null));\n  const [drag, setDrag] = useState(null); // { key, x, y }\n  const svgRef = useRef(null);\n\n  // A sleeper's lane needs a bridge too: the goal is a bridge that does not carry the taps, not an empty gap.\n  const laneMet = (l, i) => (l.want === 'hear'\n    ? arrives(inGap[i], l.far) >= HEARD\n    : !!inGap[i] && arrives(inGap[i], l.far) < HEARD);\n  const goalMet = lanes.every(laneMet);\n  const laneName = i => (lanes.length === 1 ? 'the lane' : ['top lane', 'bottom lane'][i]);\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      lanes: lanes.map((l, i) => ({\n        lane: laneName(i),\n        listener: l.want === 'hear' ? 'a bunny who wants to hear the taps' : 'a sleeping cat who must not be woken',\n        gap: l.far ? 'long' : 'short',\n        bridge: inGap[i] ? MATERIALS[inGap[i]].label : 'empty',\n      })),\n      tray: tray.filter(k => !inGap.includes(k)).map(k => MATERIALS[k].label),\n    });\n  }, [goalMet, inGap]);\n\n  // ---------- layout ----------\n  const W = 680;\n  const LANE_H = lanes.length === 1 ? 230 : 168;\n  const TRAY_Y = lanes.length * LANE_H + 8;\n  const TRAY_H = 124;\n  const H = TRAY_Y + TRAY_H;\n  const POST_L = 128;\n  const postR = l => (l.far ? 548 : 388);\n  const barY = i => i * LANE_H + LANE_H / 2 + 6;\n  const gapOf = i => ({ x1: POST_L + 9, x2: postR(lanes[i]) - 9, y: barY(i) });\n  const slot = i => ({ x: (W / (tray.length + 1)) * (i + 1), y: TRAY_Y + 44 });\n  const TRAY_LEN = 116;\n\n  const onDown = (key, e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    setDrag({ key });\n  };\n  const onMove = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    setDrag(d => (d ? { ...d, x: pt.x, y: pt.y } : null));\n  };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = svgPoint(svgRef.current, e);\n    const target = lanes.findIndex((_, i) => {\n      const g = gapOf(i);\n      return pt.x >= g.x1 - 24 && pt.x <= g.x2 + 24 && Math.abs(pt.y - g.y) <= 52;\n    });\n    setInGap(prev => {\n      const next = prev.map(k => (k === drag.key ? null : k));\n      if (target >= 0) next[target] = drag.key;\n      return next;\n    });\n    setDrag(null);\n  };\n\n  // ---------- pictures ----------\n  // A bridge of a given length, centred on 0,0.\n  const bar = (key, len) => {\n    const x = -len / 2;\n    if (key === 'metal') return (\n      <g>\n        <rect x={x} y=\"-11\" width={len} height=\"22\" rx=\"2\" fill=\"url(#steel)\" stroke=\"#334155\" strokeWidth=\"2\" />\n        <rect x={x} y=\"-11\" width={len} height=\"5\" fill=\"#f1f5f9\" opacity=\"0.7\" />\n        {[0.12, 0.5, 0.88].map(f => <circle key={f} cx={x + len * f} cy=\"3\" r=\"3\" fill=\"#475569\" />)}\n      </g>\n    );\n    if (key === 'wire') return (\n      <g>\n        <line x1={x} y1=\"0\" x2={x + len} y2=\"0\" stroke=\"#e2e8f0\" strokeWidth=\"3.5\" />\n        <circle cx={x + 4} cy=\"0\" r=\"6\" fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"3\" />\n        <circle cx={x + len - 4} cy=\"0\" r=\"6\" fill=\"none\" stroke=\"#e2e8f0\" strokeWidth=\"3\" />\n      </g>\n    );\n    if (key === 'wood') return (\n      <g>\n        <rect x={x} y=\"-12\" width={len} height=\"24\" rx=\"3\" fill=\"#b45309\" stroke=\"#78350f\" strokeWidth=\"2\" />\n        <path d={`M ${x + 8} -4 H ${x + len - 8} M ${x + 14} 5 H ${x + len - 20}`} stroke=\"#92400e\" strokeWidth=\"2\" fill=\"none\" />\n        <ellipse cx={x + len * 0.3} cy=\"0\" rx=\"6\" ry=\"3\" fill=\"none\" stroke=\"#78350f\" strokeWidth=\"1.5\" />\n      </g>\n    );\n    if (key === 'cloth') {\n      const n = Math.max(3, Math.round(len / 26));\n      const w = len / n;\n      return (\n        <g>\n          <rect x={x} y=\"-14\" width={len} height=\"28\" rx=\"14\" fill=\"#dc2626\" stroke=\"#7f1d1d\" strokeWidth=\"2\" />\n          {Array.from({ length: n - 1 }, (_, j) => (\n            <path key={j} d={`M ${x + w * (j + 1)} -14 q 6 14 0 28`} fill=\"none\" stroke=\"#fecaca\" strokeWidth=\"2.5\" />\n          ))}\n        </g>\n      );\n    }\n    const fat = key === 'fatfoam';\n    const h = fat ? 26 : 13;\n    const n = Math.max(4, Math.round(len / 16));\n    return (\n      <g>\n        <rect x={x} y={-h} width={len} height={h * 2} rx=\"8\" fill=\"#facc15\" stroke=\"#a16207\" strokeWidth=\"2\" />\n        {Array.from({ length: n }, (_, j) => (\n          <circle key={j} cx={x + (len / n) * (j + 0.5)} cy={(j % 2 ? 0.4 : -0.35) * h} r={fat ? 4.5 : 3} fill=\"#a16207\" opacity=\"0.75\" />\n        ))}\n        {fat && Array.from({ length: n - 1 }, (_, j) => (\n          <circle key={`b${j}`} cx={x + (len / n) * (j + 1)} cy={(j % 2 ? -0.6 : 0.65) * h} r=\"3\" fill=\"#a16207\" opacity=\"0.6\" />\n        ))}\n      </g>\n    );\n  };\n\n  const post = (x, y) => (\n    <g>\n      <rect x={x - 9} y={y - 46} width=\"18\" height=\"92\" rx=\"3\" fill=\"#78716c\" stroke=\"#d6d3d1\" strokeWidth=\"2\" />\n      <rect x={x - 16} y={y + 44} width=\"32\" height=\"8\" rx=\"3\" fill=\"#57534e\" />\n    </g>\n  );\n\n  const lane = (l, i) => {\n    const top = i * LANE_H;\n    const y = barY(i);\n    const g = gapOf(i);\n    const pr = postR(l);\n    return (\n      <g key={i}>\n        <rect x=\"0\" y={top} width={W} height={LANE_H - 6} rx=\"12\" fill=\"#0b1224\" />\n        <rect x=\"0\" y={y + 52} width={W} height={top + LANE_H - 6 - (y + 52)} rx=\"0\" fill=\"#14532d\" opacity=\"0.55\" />\n        {/* the tapper */}\n        <text x=\"56\" y={y + 14} textAnchor=\"middle\" fontSize=\"44\">🐿️</text>\n        <g transform={`translate(${POST_L - 22}, ${y - 26}) rotate(-35)`}>\n          <rect x=\"-3\" y=\"0\" width=\"6\" height=\"26\" rx=\"2\" fill=\"#d6d3d1\" />\n          <rect x=\"-9\" y=\"-8\" width=\"18\" height=\"10\" rx=\"2\" fill=\"#94a3b8\" />\n        </g>\n        <path d={`M ${POST_L - 30} ${y - 46} l -7 -7 M ${POST_L - 20} ${y - 50} l 0 -10 M ${POST_L - 10} ${y - 46} l 7 -7`}\n          stroke=\"#fde68a\" strokeWidth=\"2.5\" strokeLinecap=\"round\" />\n        {post(POST_L, y)}\n        {post(pr, y)}\n        {/* the gap between the posts */}\n        <rect id={`gap-${i + 1}`} x={g.x1} y={y - 24} width={g.x2 - g.x1} height=\"48\" rx=\"8\"\n          fill=\"rgba(251,191,36,0.05)\" stroke=\"#fbbf24\" strokeWidth=\"2\" strokeDasharray=\"7 5\" />\n        {/* the listener */}\n        {l.want === 'hear' ? (\n          <g>\n            <text x={pr + 42} y={y + 16} textAnchor=\"middle\" fontSize=\"44\">🐰</text>\n            <text x={pr + 84} y={y - 20} textAnchor=\"middle\" fontSize=\"28\">👂</text>\n          </g>\n        ) : (\n          <g>\n            <ellipse cx={pr + 50} cy={y + 30} rx=\"40\" ry=\"14\" fill=\"#7c3aed\" opacity=\"0.7\" />\n            <text x={pr + 50} y={y + 26} textAnchor=\"middle\" fontSize=\"40\">🐱</text>\n            <text x={pr + 92} y={y - 16} textAnchor=\"middle\" fontSize=\"28\">💤</text>\n          </g>\n        )}\n      </g>\n    );\n  };\n\n  const item = key => {\n    const dragging = drag && drag.key === key && drag.x !== undefined;\n    const lane_i = inGap.indexOf(key);\n    let at, len;\n    if (dragging) { at = { x: drag.x, y: drag.y }; len = TRAY_LEN; }\n    else if (lane_i >= 0) { const g = gapOf(lane_i); at = { x: (g.x1 + g.x2) / 2, y: g.y }; len = g.x2 - g.x1; }\n    else { at = slot(tray.indexOf(key)); len = TRAY_LEN; }\n    return (\n      <g key={key} id={`mat-${key}`} transform={`translate(${at.x}, ${at.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n        onPointerDown={e => onDown(key, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n        <rect x={-len / 2} y=\"-30\" width={len} height=\"60\" fill=\"transparent\" />\n        {bar(key, len)}\n      </g>\n    );\n  };\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <defs>\n          <linearGradient id=\"steel\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n            <stop offset=\"0\" stopColor=\"#e2e8f0\" />\n            <stop offset=\"0.5\" stopColor=\"#94a3b8\" />\n            <stop offset=\"1\" stopColor=\"#64748b\" />\n          </linearGradient>\n        </defs>\n        {lanes.map(lane)}\n        <rect x=\"0\" y={TRAY_Y} width={W} height={TRAY_H - 6} rx=\"12\" fill=\"rgba(30,41,59,0.6)\" stroke=\"#334155\" strokeDasharray=\"5 5\" />\n        {tray.map((k, i) => !inGap.includes(k) && (\n          <text key={`label-${k}`} x={slot(i).x} y={TRAY_Y + 98} textAnchor=\"middle\" fill=\"#e2e8f0\" fontSize=\"15\" fontWeight=\"600\">\n            {MATERIALS[k].label}\n          </text>\n        ))}\n        {tray.map(item)}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "lanes": [
+     {
+      "want": "hear",
+      "far": false
+     }
+    ],
+    "tray": [
+     "foam",
+     "wood",
+     "cloth"
+    ]
+   },
+   "ask": "The squirrel taps very softly. Help the bunny hear the taps.",
+   "goal": "The wood bridge is in the gap: wood carries the tap to the bunny's post. Sponge and blanket soak it up, and the air in an empty gap is not enough for a soft tap.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-wood",
+     "to": "#gap-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-foam",
+     "to": "#gap-1"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "short",
+      "bridge": "empty"
+     }
+    ],
+    "tray": [
+     "Sponge",
+     "Wood",
+     "Blanket"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "short",
+      "bridge": "Wood"
+     }
+    ],
+    "tray": [
+     "Sponge",
+     "Blanket"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "short",
+      "bridge": "Sponge"
+     }
+    ],
+    "tray": [
+     "Wood",
+     "Blanket"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "want": "quiet",
+      "far": false
+     }
+    ],
+    "tray": [
+     "metal",
+     "foam",
+     "wood"
+    ]
+   },
+   "ask": "Build a bridge that will not carry the taps to the sleeping cat.",
+   "goal": "The sponge bridge is in the gap: it soaks up the tap. Metal and wood would carry it to the cat.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-foam",
+     "to": "#gap-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-metal",
+     "to": "#gap-1"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "empty"
+     }
+    ],
+    "tray": [
+     "Metal",
+     "Sponge",
+     "Wood"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "Sponge"
+     }
+    ],
+    "tray": [
+     "Metal",
+     "Wood"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "Metal"
+     }
+    ],
+    "tray": [
+     "Sponge",
+     "Wood"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "want": "hear",
+      "far": true
+     }
+    ],
+    "tray": [
+     "wood",
+     "cloth",
+     "metal"
+    ]
+   },
+   "ask": "The bunny is far away now. Help the bunny hear the soft taps.",
+   "goal": "The metal bridge is in the gap: metal carries the tap the whole long way. Wood loses too much over this distance.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-metal",
+     "to": "#gap-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-wood",
+     "to": "#gap-1"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "empty"
+     }
+    ],
+    "tray": [
+     "Wood",
+     "Blanket",
+     "Metal"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Metal"
+     }
+    ],
+    "tray": [
+     "Wood",
+     "Blanket"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Wood"
+     }
+    ],
+    "tray": [
+     "Blanket",
+     "Metal"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "want": "hear",
+      "far": true
+     }
+    ],
+    "tray": [
+     "fatfoam",
+     "wire",
+     "wood"
+    ]
+   },
+   "ask": "Help the far-away bunny hear the soft taps.",
+   "goal": "The thin wire is in the gap: a tight metal wire carries the tap far. The big sponge is thick but soaks the tap up.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-wire",
+     "to": "#gap-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-fatfoam",
+     "to": "#gap-1"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "empty"
+     }
+    ],
+    "tray": [
+     "Big sponge",
+     "Wire",
+     "Wood"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Wire"
+     }
+    ],
+    "tray": [
+     "Big sponge",
+     "Wood"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "the lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Big sponge"
+     }
+    ],
+    "tray": [
+     "Wire",
+     "Wood"
+    ]
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "want": "hear",
+      "far": true
+     },
+     {
+      "want": "quiet",
+      "far": false
+     }
+    ],
+    "tray": [
+     "metal",
+     "foam",
+     "wood"
+    ]
+   },
+   "ask": "The bunny wants to hear the taps. The cat must stay asleep. Build both bridges.",
+   "goal": "Metal is in the top gap (it carries the tap the long way) and sponge is in the bottom gap (it soaks the tap up).",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#mat-metal",
+     "to": "#gap-1"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-foam",
+     "to": "#gap-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#mat-foam",
+     "to": "#gap-1"
+    },
+    {
+     "do": "drag",
+     "target": "#mat-metal",
+     "to": "#gap-2"
+    }
+   ],
+   "scene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "empty"
+     },
+     {
+      "lane": "bottom lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "empty"
+     }
+    ],
+    "tray": [
+     "Metal",
+     "Sponge",
+     "Wood"
+    ]
+   },
+   "proofScene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Metal"
+     },
+     {
+      "lane": "bottom lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "Sponge"
+     }
+    ],
+    "tray": [
+     "Wood"
+    ]
+   },
+   "missScene": {
+    "lanes": [
+     {
+      "lane": "top lane",
+      "listener": "a bunny who wants to hear the taps",
+      "gap": "long",
+      "bridge": "Sponge"
+     },
+     {
+      "lane": "bottom lane",
+      "listener": "a sleeping cat who must not be woken",
+      "gap": "short",
+      "bridge": "Metal"
+     }
+    ],
+    "tray": [
+     "Wood"
+    ]
+   }
+  }
+ ]
+}

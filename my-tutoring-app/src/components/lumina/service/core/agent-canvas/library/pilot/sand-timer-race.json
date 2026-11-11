@@ -1,0 +1,652 @@
+{
+ "id": "sand-timer-race",
+ "title": "Sand Timer Race",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child flips sand timers to time animals and a tower-builder, then shows which was done first, which took longer, or how many timers a long walk needed."
+ },
+ "request": {
+  "topic": "Timing activities with a sand timer",
+  "grade": "kindergarten",
+  "objective": "Use a sand timer to compare how long two simple activities take, and predict whether an activity will finish before the sand runs out."
+ },
+ "source": "function Display({ params, lumina }) {\r\n  const lanes = params?.lanes ?? [\r\n    { name: 'frog', who: '🐸', move: 'hop', steps: 3, ms: 4200, reach: 1, pad: 'green' },\r\n  ];\r\n  const timerMs = params?.timerMs ?? 3000;\r\n  const answer = params?.answer ?? 'first';\r\n  const predict = params?.predict ?? false;\r\n  const inTurn = params?.inTurn ?? false;\r\n  const refill = params?.refill ?? false;\r\n  const flagWord = params?.flagWord ?? 'Done first';\r\n\r\n  const n = lanes.length;\r\n  const TIMER_W = answer === 'first' ? 150 : 96;\r\n  const TRACK_W = 646 - TIMER_W;\r\n  const LANE_H = answer === 'count' ? 170 : answer === 'first' ? 200 : 140;\r\n  const GROUND = LANE_H - 26;\r\n\r\n  const [start, setStart] = useState(() => lanes.map(() => null));\r\n  const [flips, setFlips] = useState(() => lanes.map(() => []));\r\n  const [now, setNow] = useState(() => performance.now());\r\n  const [zone, setZone] = useState(null);\r\n  const [zoneAtFirstFlip, setZoneAtFirstFlip] = useState(undefined);\r\n  const [drag, setDrag] = useState(null);\r\n  const [chosen, setChosen] = useState(null);\r\n  const worldRef = useRef(null);\r\n  const zoneRefs = useRef({});\r\n\r\n  useEffect(() => {\r\n    let id = 0;\r\n    const tick = () => { setNow(performance.now()); id = requestAnimationFrame(tick); };\r\n    id = requestAnimationFrame(tick);\r\n    return () => cancelAnimationFrame(id);\r\n  }, []);\r\n\r\n  const dur = lanes.map((l) => l.ms ?? 3000);\r\n  const doneAt = start.map((s, i) => (s == null ? null : s + dur[i]));\r\n  const done = doneAt.map((d) => d != null && now >= d);\r\n  const allDone = done.every(Boolean);\r\n\r\n  // Sand left in the top bulb (0..1). Before the first flip all the sand sits in the bottom.\r\n  // When the lane's activity is done its timer stops (a hand shows on it), so the sand stays where it was.\r\n  const sandAt = (i) => {\r\n    const f = flips[i];\r\n    if (!f.length) return 0;\r\n    const stopAt = done[i] ? doneAt[i] : now;\r\n    const last = f[f.length - 1];\r\n    return Math.max(0, Math.min(1, 1 - (stopAt - last) / timerMs));\r\n  };\r\n  const sand = lanes.map((_, i) => sandAt(i));\r\n\r\n  const canStart = (i) => start[i] == null && (!predict || zone != null) && (!inTurn || i === 0 || done[i - 1]);\r\n  const canRefill = (i) => refill && start[i] != null && !done[i] && sand[i] <= 0;\r\n  const timerLive = (i) => canStart(i) || canRefill(i);\r\n\r\n  const tapTimer = (i) => {\r\n    const t = performance.now();\r\n    if (start[i] == null) {\r\n      if (!canStart(i)) return;\r\n      if (zoneAtFirstFlip === undefined) setZoneAtFirstFlip(zone);\r\n      setStart((s) => s.map((v, k) => (k === i ? t : v)));\r\n      setFlips((f) => f.map((v, k) => (k === i ? [t] : v)));\r\n      return;\r\n    }\r\n    // Flip again only when the sand has run out and the activity is still going.\r\n    const f = flips[i];\r\n    const left = 1 - (t - f[f.length - 1]) / timerMs;\r\n    if (!refill || left > 0 || t >= doneAt[i]) return;\r\n    setFlips((fl) => fl.map((v, k) => (k === i ? v.concat([t]) : v)));\r\n  };\r\n\r\n  // What the child can see, in words. Sand amounts are coarse, the way an eye reads a timer.\r\n  const sandWords = (i) => {\r\n    if (!flips[i].length) return 'not flipped yet';\r\n    const r = sand[i];\r\n    if (!done[i]) return r > 0 ? 'sand falling' : 'sand ran out';\r\n    if (r <= 0) return 'stopped, top empty';\r\n    if (r < 0.34) return 'stopped, a little sand left on top';\r\n    if (r < 0.67) return 'stopped, about half the sand left on top';\r\n    return 'stopped, a lot of sand left on top';\r\n  };\r\n  const zoneName = (z) => {\r\n    if (z == null) return null;\r\n    const [kind, k] = z.split('-');\r\n    if (kind === 'timer' && answer === 'first') return 'the sand timer';\r\n    return lanes[Number(k)].name;\r\n  };\r\n  const facts = JSON.stringify({\r\n    lanes: lanes.map((l, i) => ({ who: l.name, started: start[i] != null, finished: done[i], timer: sandWords(i), timersFlipped: flips[i].length })),\r\n    flag: zoneName(zone),\r\n    guess: zoneAtFirstFlip === undefined ? null : zoneName(zoneAtFirstFlip),\r\n    chosen,\r\n  });\r\n\r\n  useEffect(() => {\r\n    const f = JSON.parse(facts);\r\n    let met = false;\r\n    if (answer === 'first') {\r\n      const right = dur[0] < timerMs ? 'lane-0' : 'timer-0';\r\n      met = allDone && zone === right;\r\n    } else if (answer === 'longer') {\r\n      let best = 0;\r\n      dur.forEach((d, i) => { if (d > dur[best]) best = i; });\r\n      met = allDone && zone != null && Number(zone.split('-')[1]) === best;\r\n    } else {\r\n      const needed = Math.ceil(dur[0] / timerMs);\r\n      met = allDone && flips[0].length === needed && chosen === needed;\r\n    }\r\n    lumina.goal(met);\r\n    const scene = {\r\n      oneSandTimer: 'each sand timer is the same size',\r\n      activities: f.lanes,\r\n      flagWord: answer === 'count' ? null : flagWord,\r\n      flagIsOn: f.flag,\r\n    };\r\n    if (predict) scene.flagPlacedBeforeTiming = f.guess;\r\n    if (answer === 'count') scene.numberTapped = chosen;\r\n    if (inTurn) scene.order = 'the ' + lanes[0].name + ' goes first, the others wait their turn';\r\n    lumina.scene(scene);\r\n  }, [facts]);\r\n\r\n  const flagVisible = answer !== 'count' && (predict || allDone);\r\n\r\n  // Drag the flag: it follows the pointer and lands on whatever spot is under it.\r\n  const local = (e) => {\r\n    const b = worldRef.current.getBoundingClientRect();\r\n    return { x: e.clientX - b.left, y: e.clientY - b.top };\r\n  };\r\n  const zoneUnder = (e) => {\r\n    const keys = Object.keys(zoneRefs.current);\r\n    for (const key of keys.filter((k) => k.startsWith('timer')).concat(keys.filter((k) => k.startsWith('lane')))) {\r\n      const el = zoneRefs.current[key];\r\n      if (!el) continue;\r\n      const r = el.getBoundingClientRect();\r\n      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {\r\n        if (key.startsWith('timer') && answer !== 'first') return 'lane-' + key.split('-')[1];\r\n        return key;\r\n      }\r\n    }\r\n    return null;\r\n  };\r\n  const onFlagDown = (e) => { e.currentTarget.setPointerCapture(e.pointerId); setDrag(local(e)); };\r\n  const onFlagMove = (e) => { if (drag) setDrag(local(e)); };\r\n  const onFlagUp = (e) => { if (!drag) return; setDrag(null); setZone(zoneUnder(e)); };\r\n\r\n  const flag = (ghost) => (\r\n    <div\r\n      id={ghost ? undefined : 'flag'}\r\n      onPointerDown={ghost ? undefined : onFlagDown}\r\n      onPointerMove={ghost ? undefined : onFlagMove}\r\n      onPointerUp={ghost ? undefined : onFlagUp}\r\n      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', minHeight: 44, borderRadius: 22, background: '#fbbf24', color: '#1e293b', fontWeight: 800, fontSize: 17, cursor: 'grab', touchAction: 'none', userSelect: 'none', boxShadow: '0 2px 8px rgba(0,0,0,.4)', opacity: drag && !ghost ? 0.25 : 1, whiteSpace: 'nowrap' }}\r\n    >\r\n      <span style={{ fontSize: 20 }}>🏅</span>{flagWord}\r\n    </div>\r\n  );\r\n  const flagHere = (z) => (flagVisible && zone === z ? flag(false) : null);\r\n\r\n  const hourglass = (i) => {\r\n    const r = sand[i];\r\n    const laid = done[i];\r\n    const running = flips[i].length > 0 && !laid && r > 0;\r\n    const topY = 45 - 35 * r;\r\n    const halfTop = (y) => 2 + (24 * (45 - y)) / 37;\r\n    const halfBot = (y) => 2 + (24 * (y - 45)) / 37;\r\n    const botY = 82 - 35 * (1 - r);\r\n    const live = timerLive(i);\r\n    return (\r\n      <div\r\n        id={'timer-' + i}\r\n        ref={(el) => { zoneRefs.current['timer-' + i] = el; }}\r\n        onClick={() => tapTimer(i)}\r\n        style={{ position: 'relative', width: TIMER_W, height: LANE_H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: answer === 'first' ? 'flex-start' : 'center', paddingTop: answer === 'first' ? 12 : 0, boxSizing: 'border-box', cursor: live ? 'pointer' : 'default', opacity: live || flips[i].length ? 1 : 0.4, borderRadius: 14, border: live ? '2px dashed #fbbf24' : '2px solid transparent' }}\r\n      >\r\n        <svg width=\"64\" height=\"90\" viewBox=\"0 0 64 90\">\r\n          <rect x=\"6\" y=\"2\" width=\"52\" height=\"6\" rx=\"2\" fill=\"#a16207\" />\r\n          <rect x=\"6\" y=\"82\" width=\"52\" height=\"6\" rx=\"2\" fill=\"#a16207\" />\r\n          <path d=\"M8 8 L56 8 L34 45 L56 82 L8 82 L30 45 Z\" fill=\"rgba(186,230,253,0.12)\" stroke=\"#bae6fd\" strokeWidth=\"2\" strokeLinejoin=\"round\" />\r\n          {r > 0 ? <polygon points={(32 - halfTop(topY)) + ',' + topY + ' ' + (32 + halfTop(topY)) + ',' + topY + ' 33,45 31,45'} fill=\"#fcd34d\" /> : null}\r\n          {r < 1 ? <polygon points={(32 - halfBot(botY)) + ',' + botY + ' ' + (32 + halfBot(botY)) + ',' + botY + ' ' + (32 + halfBot(82)) + ',82 ' + (32 - halfBot(82)) + ',82'} fill=\"#fcd34d\" /> : null}\r\n          {running ? <line x1=\"32\" y1=\"45\" x2=\"32\" y2={botY} stroke=\"#fcd34d\" strokeWidth=\"1.5\" /> : null}\r\n        </svg>\r\n        {laid && r > 0 ? <div style={{ position: 'absolute', top: 10, right: answer === 'first' ? 32 : 2, fontSize: 24 }}>✋</div> : null}\r\n        {refill && flips[i].length ? (\r\n          <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>\r\n            {flips[i].map((_, k) => <div key={k} style={{ width: 10, height: 10, borderRadius: 5, background: '#fcd34d' }} />)}\r\n          </div>\r\n        ) : null}\r\n        {answer === 'first' ? <div style={{ marginTop: 10, minHeight: 48, display: 'flex', justifyContent: 'center' }}>{flagHere('timer-' + i)}</div> : null}\r\n      </div>\r\n    );\r\n  };\r\n\r\n  const actor = (i) => {\r\n    const l = lanes[i];\r\n    const s = start[i];\r\n    const p = s == null ? 0 : Math.max(0, Math.min(1, (now - s) / dur[i]));\r\n    const x0 = 40;\r\n    const dist = (l.reach ?? 1) * (TRACK_W - 110);\r\n    const mirror = l.mirror ? 'scale(-1,1)' : '';\r\n    if (l.move === 'stack') {\r\n      const steps = l.steps ?? 10;\r\n      const placed = Math.floor(p * steps + 1e-9);\r\n      const bh = Math.min(11, (GROUND - 10) / steps);\r\n      return (\r\n        <g>\r\n          <text x={x0} y={GROUND} textAnchor=\"middle\" fontSize=\"38\">{l.who}</text>\r\n          {Array.from({ length: placed }, (_, k) => (\r\n            <rect key={k} x={x0 + 50 + (k % 2) * 3} y={GROUND - (k + 1) * bh} width=\"34\" height={bh - 1} rx=\"2\" fill={['#f87171', '#60a5fa', '#4ade80', '#facc15'][k % 4]} />\r\n          ))}\r\n          <rect x={x0 + 40} y={GROUND} width=\"60\" height=\"3\" fill=\"#64748b\" />\r\n        </g>\r\n      );\r\n    }\r\n    let x = x0 + dist * p;\r\n    let y = GROUND;\r\n    if (l.move === 'hop') {\r\n      const steps = l.steps ?? 3;\r\n      const k = p * steps;\r\n      const frac = p >= 1 ? 0 : k - Math.floor(k);\r\n      const hopLen = dist / steps;\r\n      y = GROUND - Math.min(70, 8 + hopLen * 0.45) * Math.sin(Math.PI * frac);\r\n    } else if (l.move === 'fly') {\r\n      y = GROUND - (40 + 8 * Math.sin(p * Math.PI * 6)) * Math.sin(p * Math.PI);\r\n    }\r\n    const padColor = l.pad === 'blue' ? '#38bdf8' : '#22c55e';\r\n    return (\r\n      <g>\r\n        <ellipse cx={x0 + dist} cy={GROUND + 4} rx=\"34\" ry=\"9\" fill={padColor} opacity=\"0.75\" />\r\n        <g transform={'translate(' + x + ',' + y + ') ' + mirror}>\r\n          <text x=\"0\" y=\"0\" textAnchor=\"middle\" fontSize={l.size ?? 38}>{l.who}</text>\r\n        </g>\r\n      </g>\r\n    );\r\n  };\r\n\r\n  const lane = (i) => (\r\n    <div key={i} style={{ display: 'flex', alignItems: 'stretch', gap: 10 }}>\r\n      {hourglass(i)}\r\n      <div\r\n        id={'lane-' + i}\r\n        ref={(el) => { zoneRefs.current['lane-' + i] = el; }}\r\n        style={{ position: 'relative', width: TRACK_W, height: LANE_H, borderRadius: 14, background: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.2)' }}\r\n      >\r\n        <svg width={TRACK_W} height={LANE_H} style={{ position: 'absolute', left: 0, top: 0 }}>\r\n          <line x1=\"12\" y1={GROUND + 8} x2={TRACK_W - 12} y2={GROUND + 8} stroke=\"#334155\" strokeWidth=\"2\" />\r\n          {actor(i)}\r\n        </svg>\r\n        <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)' }}>{flagHere('lane-' + i)}</div>\r\n      </div>\r\n    </div>\r\n  );\r\n\r\n  const keyStyle = (d) => ({ width: 56, height: 52, borderRadius: 12, border: '2px solid ' + (chosen === d ? '#fbbf24' : '#475569'), background: chosen === d ? 'rgba(251,191,36,0.15)' : '#1e293b', color: '#f1f5f9', fontSize: 24, fontWeight: 800, cursor: 'pointer' });\r\n\r\n  return (\r\n    <Panel title=\"Sand Timer Race\" caption={refill ? 'Tap a sand timer to flip it. When the sand runs out, you can flip it again.' : 'Tap a sand timer to flip it. The sand falls while the animal goes. When the animal is done, its timer stops.'}>\r\n      <div ref={worldRef} id=\"world\" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>\r\n        {lanes.map((_, i) => lane(i))}\r\n        {answer === 'count' ? (\r\n          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 60, opacity: allDone ? 1 : 0.3, pointerEvents: allDone ? 'auto' : 'none' }}>\r\n            <span style={{ color: '#cbd5e1', fontSize: 17, marginRight: 6 }}>Sand timers:</span>\r\n            {[1, 2, 3, 4, 5].map((d) => (\r\n              <button key={d} id={'num-' + d} type=\"button\" style={keyStyle(d)} onClick={() => setChosen(d)}>{d}</button>\r\n            ))}\r\n          </div>\r\n        ) : (\r\n          <div style={{ minHeight: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', borderRadius: 14, border: flagVisible && zone == null ? '2px dashed #475569' : '2px solid transparent' }}>\r\n            {flagVisible && zone == null ? flag(false) : null}\r\n          </div>\r\n        )}\r\n        {drag ? (\r\n          <div style={{ position: 'absolute', left: drag.x - 60, top: drag.y - 22, pointerEvents: 'none', zIndex: 5 }}>{flag(true)}</div>\r\n        ) : null}\r\n      </div>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "lanes": [
+     {
+      "name": "frog",
+      "who": "🐸",
+      "move": "hop",
+      "steps": 3,
+      "ms": 4200,
+      "reach": 1,
+      "pad": "green"
+     }
+    ],
+    "timerMs": 3000,
+    "answer": "first",
+    "flagWord": "Done first"
+   },
+   "ask": "Does the frog get to its lily pad before the sand runs out? Put the flag on the one that was done first.",
+   "goal": "The frog's three slow hops take longer than one sand timer, so the sand runs out first: the flag goes on the sand timer.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 2000,
+     "shot": "running"
+    },
+    {
+     "do": "wait",
+     "ms": 2600
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#timer-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 4600
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-0"
+    }
+   ],
+   "scene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "frog",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     }
+    ],
+    "flagWord": "Done first",
+    "flagIsOn": null
+   },
+   "proofScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, top empty",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Done first",
+    "flagIsOn": "the sand timer"
+   },
+   "missScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, top empty",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Done first",
+    "flagIsOn": "frog"
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "name": "big frog",
+      "who": "🐸",
+      "move": "hop",
+      "steps": 3,
+      "ms": 1500,
+      "reach": 1,
+      "pad": "green"
+     },
+     {
+      "name": "little frog",
+      "who": "🐸",
+      "move": "hop",
+      "steps": 6,
+      "ms": 3300,
+      "reach": 0.45,
+      "pad": "green",
+      "size": 28
+     }
+    ],
+    "timerMs": 4000,
+    "answer": "longer",
+    "flagWord": "Took longer"
+   },
+   "ask": "Each frog has its own sand timer. Which frog took longer to reach its lily pad?",
+   "goal": "The big frog goes further in three quick hops; the little frog's six small hops take longer, and its timer has less sand left. The ribbon goes on the little frog.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 3800,
+     "shot": "both-done"
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 3800
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-0"
+    }
+   ],
+   "scene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "big frog",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     },
+     {
+      "who": "little frog",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": null
+   },
+   "proofScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "big frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "little frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": "little frog"
+   },
+   "missScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "big frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "little frog",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": "big frog"
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "name": "tower",
+      "who": "🧒",
+      "move": "stack",
+      "steps": 10,
+      "ms": 2000
+     },
+     {
+      "name": "snail",
+      "who": "🐌",
+      "move": "crawl",
+      "ms": 3800,
+      "reach": 0.35,
+      "pad": "green",
+      "mirror": true
+     }
+    ],
+    "timerMs": 4000,
+    "answer": "longer",
+    "predict": true,
+    "flagWord": "Takes longer"
+   },
+   "ask": "Building a tall tower, or the snail crawling to the leaf: which will take longer? Put the ribbon on your guess, then time them both.",
+   "goal": "Ten blocks go up fast; the snail's short crawl is slow. The ribbon ends on the snail, placed before timing and kept after.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-1",
+     "shot": "guess"
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 4200
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-0"
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 4200
+    }
+   ],
+   "scene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "tower",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     },
+     {
+      "who": "snail",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     }
+    ],
+    "flagWord": "Takes longer",
+    "flagIsOn": null,
+    "flagPlacedBeforeTiming": null
+   },
+   "proofScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "tower",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "snail",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Takes longer",
+    "flagIsOn": "snail",
+    "flagPlacedBeforeTiming": "snail"
+   },
+   "missScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "tower",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "snail",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Takes longer",
+    "flagIsOn": "tower",
+    "flagPlacedBeforeTiming": "tower"
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "name": "bunny",
+      "who": "🐇",
+      "move": "hop",
+      "steps": 5,
+      "ms": 2800,
+      "reach": 1,
+      "pad": "green",
+      "mirror": true
+     },
+     {
+      "name": "bird",
+      "who": "🐦",
+      "move": "fly",
+      "ms": 1400,
+      "reach": 1,
+      "pad": "green",
+      "mirror": true
+     }
+    ],
+    "timerMs": 4000,
+    "answer": "longer",
+    "inTurn": true,
+    "flagWord": "Took longer"
+   },
+   "ask": "The bunny goes first, then the bird has a turn. Which one took longer?",
+   "goal": "The bird starts second and finishes last, but its own timer shows it took less time: more sand is left. The ribbon goes on the bunny.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3000,
+     "shot": "bunny-done"
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 1700,
+     "shot": "both-done"
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3000
+    },
+    {
+     "do": "click",
+     "target": "#timer-1"
+    },
+    {
+     "do": "wait",
+     "ms": 1700
+    },
+    {
+     "do": "drag",
+     "target": "#flag",
+     "to": "#lane-1"
+    }
+   ],
+   "scene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "bunny",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     },
+     {
+      "who": "bird",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": null,
+    "order": "the bunny goes first, the others wait their turn"
+   },
+   "proofScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "bunny",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "bird",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": "bunny",
+    "order": "the bunny goes first, the others wait their turn"
+   },
+   "missScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "bunny",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a little sand left on top",
+      "timersFlipped": 1
+     },
+     {
+      "who": "bird",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, about half the sand left on top",
+      "timersFlipped": 1
+     }
+    ],
+    "flagWord": "Took longer",
+    "flagIsOn": "bird",
+    "order": "the bunny goes first, the others wait their turn"
+   }
+  },
+  {
+   "params": {
+    "lanes": [
+     {
+      "name": "turtle",
+      "who": "🐢",
+      "move": "crawl",
+      "ms": 7800,
+      "reach": 1,
+      "pad": "blue",
+      "mirror": true
+     }
+    ],
+    "timerMs": 3000,
+    "answer": "count",
+    "refill": true
+   },
+   "ask": "How many sand timers does the turtle's walk to the pond take?",
+   "goal": "The walk lasts longer than two timers: flip it, flip it again when it runs out, and again, so three timers are used and 3 is tapped.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3300,
+     "shot": "first-ran-out"
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3300
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 1600,
+     "shot": "turtle-home"
+    },
+    {
+     "do": "click",
+     "target": "#num-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3300
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 3300
+    },
+    {
+     "do": "click",
+     "target": "#timer-0"
+    },
+    {
+     "do": "wait",
+     "ms": 1600
+    },
+    {
+     "do": "click",
+     "target": "#num-2"
+    }
+   ],
+   "scene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "turtle",
+      "started": false,
+      "finished": false,
+      "timer": "not flipped yet",
+      "timersFlipped": 0
+     }
+    ],
+    "flagWord": null,
+    "flagIsOn": null,
+    "numberTapped": null
+   },
+   "proofScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "turtle",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a lot of sand left on top",
+      "timersFlipped": 3
+     }
+    ],
+    "flagWord": null,
+    "flagIsOn": null,
+    "numberTapped": 3
+   },
+   "missScene": {
+    "oneSandTimer": "each sand timer is the same size",
+    "activities": [
+     {
+      "who": "turtle",
+      "started": true,
+      "finished": true,
+      "timer": "stopped, a lot of sand left on top",
+      "timersFlipped": 3
+     }
+    ],
+    "flagWord": null,
+    "flagIsOn": null,
+    "numberTapped": 2
+   }
+  }
+ ]
+}

@@ -66,6 +66,7 @@ import { generateDigitalSkillsSim } from '../../core/gemini-digital-skills-sim';
 import { generateDeepDiveEntry } from '../../core/deep-dive-agent/generate-deep-dive';
 import { generateWonderWalk } from '../../core/wonder-walk/agent-wonder-walk';
 import { generatePracticeStudio } from '../../core/practice-studio/agent-practice-studio';
+import { generateAgentCanvas } from '../../core/agent-canvas/agent-canvas';
 import { generatePassageStudio } from '../../core/gemini-passage-studio';
 
 
@@ -441,6 +442,14 @@ registerContextGenerator('deep-dive', async (ctx) => ({
 }));
 
 // WonderWalk (agent-authored Kindergarten picture walk)
+// Agent Canvas - a program the author agent writes, plays in a browser and ships when its own playthrough passes
+// (service/agent-kit/canvas/canvasAuthor.ts).
+registerContextGenerator('agent-canvas', async (ctx) => ({
+  type: 'agent-canvas',
+  instanceId: ctx.instanceId,
+  data: await generateAgentCanvas(ctx),
+}));
+
 // Practice Studio - the general agent primitive: an author assembles each item from the kit's surfaces and displays,
 // looks at it as the child would, and revises it (service/agent-kit/itemLoop.ts).
 registerContextGenerator('practice-studio', async (ctx) => ({
