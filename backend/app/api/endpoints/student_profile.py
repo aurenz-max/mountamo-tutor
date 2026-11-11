@@ -39,6 +39,7 @@ from ...dependencies import (
 from ...services.calibration_engine import CalibrationEngine, p_correct
 from ...config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
 from ...core.generation_auth import require_generation_server, sign_learning_observations
+from ...services.component_mastery import packet_components
 from ...services.learning_observations import (
     LearningObservationIn, ObservationPhaseIn, ResponseObservationIn, delivery_packet, hypothesis_key,
     is_server_delivered, project_misconception_observation, project_response_observation, resolve_scope)
@@ -535,6 +536,14 @@ async def get_generation_context(
                     "skill_id": mapping.skill_id, "subskill_id": mapping.subskill_id})
                 scopes.append({"subskillId": mapping.subskill_id, "skillId": mapping.skill_id, "published": published})
             packet = await delivery_packet(firestore, active_misconceptions, scopes, request.student_id)
+            # Component tallies (app/services/component_mastery.py) ride the same signed packet: a generator may
+            # draw items toward a weak component inside a lesson already chosen. A read failure only drops them.
+            try:
+                components = packet_components(await firestore.list_component_mastery(request.student_id))
+                if components:
+                    packet["components"] = components
+            except Exception as e:
+                logger.warning(f"[GENERATION_CONTEXT] Component tallies unavailable: {e}")
             payload = json.dumps(packet, separators=(",", ":"), ensure_ascii=False)
             signature = sign_learning_observations(payload)
             if signature:

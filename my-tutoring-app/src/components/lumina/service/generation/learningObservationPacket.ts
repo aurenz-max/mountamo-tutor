@@ -41,7 +41,10 @@ export interface PacketHypothesis {
 export interface LearningObservationPacket {
   v: typeof PACKET_VERSION; studentId: string; issuedAt: string; expiresAt: string;
   scopes: PacketScope[]; hypotheses: PacketHypothesis[];
+  /** The learner's component tallies (`service/componentMastery`), {kind: {id: [attempts, correct]}}. Optional. */
+  components?: PacketComponents;
 }
+export type PacketComponents = Record<string, Record<string, [number, number]>>;
 /** What a generator receives in `ctx.learningObservations`. */
 export interface DeliveredObservation { id: string; summary: string; evidence?: string }
 /** The task's objective scope as the manifest flatten stamps it on config. */
@@ -76,10 +79,27 @@ export function openLearningObservations(signed: unknown, key: string | undefine
   if (!Number.isFinite(expires) || expires <= now) return null;
   return {
     ...packet,
+    ...(packet.components !== undefined ? { components: cleanComponents(packet.components) } : {}),
     scopes: packet.scopes.filter(s => s && isText(s.subskillId) && (s.published === null || isPublishedScope(s.published))),
     hypotheses: packet.hypotheses.filter(h => h && isText(h.hypothesisId) && isText(h.primitiveType) && isText(h.summary)
       && isText(h.skillId) && isPublishedScope(h.scope)),
   };
+}
+
+const isCount = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
+/** Only well-formed tally rows survive: [attempts, correct] with 1 <= attempts and correct <= attempts. */
+function cleanComponents(raw: unknown): PacketComponents {
+  const out: PacketComponents = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [kind, ids] of Object.entries(raw as Record<string, unknown>)) {
+    if (!/^[a-z][a-z0-9_]{0,31}$/.test(kind) || !ids || typeof ids !== 'object' || Array.isArray(ids)) continue;
+    const rows: Record<string, [number, number]> = {};
+    for (const [id, v] of Object.entries(ids as Record<string, unknown>)) {
+      if (Array.isArray(v) && v.length === 2 && isCount(v[0]) && isCount(v[1]) && v[0] >= 1 && v[1] <= v[0]) rows[id] = [v[0], v[1]];
+    }
+    if (Object.keys(rows).length) out[kind] = rows;
+  }
+  return out;
 }
 
 /** The canonical published scope of the task's objective, or null when the lesson did not resolve it. */

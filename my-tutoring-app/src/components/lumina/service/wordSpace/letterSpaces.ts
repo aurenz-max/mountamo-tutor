@@ -66,7 +66,7 @@ export function letterSpace(
   for (const t of letters.filter(targetable)) {
     if (mode === 'see-hear') {
       const { beta, structure } = letterItemBeta(mode, t, null);
-      items.push({ beta, structure, key: structure, words: [t], payload: { targetLetter: t, distractor: null } });
+      items.push({ beta, structure, key: structure, words: [t], reads: [`letter:${t}`], payload: { targetLetter: t, distractor: null } });
       continue;
     }
     for (const w of letters.filter((l) => l !== t && wrongable(l) && !sameSound(t, l))) {

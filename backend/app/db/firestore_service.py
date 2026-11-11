@@ -598,6 +598,14 @@ class FirestoreService:
             "updated_at": data.get("updated_at"),
         }
 
+    async def list_component_mastery(self, student_id: int) -> List[Dict[str, Any]]:
+        """Every kind's tallies for one student: [{kind, components: {id: {attempts, correct, last_at}}}]."""
+        out = []
+        for doc in self._component_mastery_subcollection(student_id).stream():
+            data = doc.to_dict() or {}
+            out.append({"kind": data.get("kind") or doc.id, "components": data.get("components") or {}})
+        return out
+
     async def get_daily_rollups(
         self,
         student_id: int,

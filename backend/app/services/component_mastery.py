@@ -66,3 +66,34 @@ def tally_by_kind(rows: List[Dict[str, Any]]) -> Dict[str, Dict[str, Dict[str, i
         entry["attempts"] += row["attempts"]
         entry["correct"] += row["correct"]
     return out
+
+
+MAX_PACKET_COMPONENTS = 400
+
+
+def packet_components(docs: List[Dict[str, Any]]) -> Dict[str, Dict[str, List[int]]]:
+    """Stored tallies as the launch packet carries them: {kind: {id: [attempts, correct]}}.
+
+    Every kind is passed through; which kinds a generator reads, and how, is the
+    frontend's. A malformed entry is dropped. Each kind keeps its
+    MAX_PACKET_COMPONENTS most-read ids.
+    """
+    out: Dict[str, Dict[str, List[int]]] = {}
+    for doc in docs:
+        kind, comps = doc.get("kind"), doc.get("components")
+        if not isinstance(kind, str) or not KIND_PATTERN.match(kind) or not isinstance(comps, dict):
+            continue
+        rows = []
+        for cid, entry in comps.items():
+            if not isinstance(cid, str) or not cid or len(cid) > MAX_ID_LENGTH or not isinstance(entry, dict):
+                continue
+            attempts, correct = entry.get("attempts"), entry.get("correct")
+            if isinstance(attempts, bool) or isinstance(correct, bool):
+                continue
+            if not isinstance(attempts, int) or not isinstance(correct, int) or not (0 <= correct <= attempts) or attempts < 1:
+                continue
+            rows.append((cid, attempts, correct))
+        rows.sort(key=lambda r: -r[1])
+        if rows:
+            out[kind] = {cid: [a, c] for cid, a, c in rows[:MAX_PACKET_COMPONENTS]}
+    return out

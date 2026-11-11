@@ -72,6 +72,7 @@ export function cvcReadingSpace(grade: string, parsed: LetterScope | null): read
         structure: `${it.structure}${reversible ? ':rev' : ''}`,
         key: it.key,
         words: [w],
+        reads: [w],
         payload: { word: w, wordType: 'cvc', graphemes: w.split(''), ...(it.payload.emoji ? { emoji: it.payload.emoji } : {}),
           asrAliases: [w, ...homophones(x)] },
       });
@@ -162,6 +163,7 @@ export function sightWordSpace(grade: string): readonly WordSpaceItem<WordReadin
         structure: `${level}:${near ? 'near' : 'far'}`,
         key: w.slice(0, 2),
         words: [w],
+        reads: [w],
         payload: { word: w, wordType: 'sight', asrAliases: [w, ...(x ? homophones(x) : [])] },
       });
     }

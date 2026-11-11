@@ -9,6 +9,7 @@
  * shape cannot fill the session, and no target or answer word appears in two picks.
  */
 import type { SupportTier } from '../generation/generationContext';
+import { weakLetterSoundScorer } from '../componentMastery/bias';
 
 export interface WordSpaceItem<P> {
   beta: number;
@@ -22,6 +23,9 @@ export interface WordSpaceItem<P> {
   produces?: string;
   /** What one session should not repeat within this mode (the asked sound, the vowel). */
   key?: string;
+  /** What the child reads aloud from print, as letter-sound units (a word, or `letter:<letters>`). Set only where
+   *  the task is print to sound; the picker then draws items with the learner's weak pairs first. */
+  reads?: string[];
   payload: P;
 }
 
@@ -63,6 +67,11 @@ export function tierPick<P>(
   // space, the easiest, the middle and the hardest, overlapping when the space holds fewer than 3n items.
   // Fewer than n + 2 items leaves no difference between tiers.
   if (fresh.length < n + 2) return [];
+  // Items that read one of this learner's weak letter-sound pairs come first among equals: across a tier boundary
+  // (an equal-beta swap into the band) and inside each structure. Tier, structure spread and session rules are unchanged
+  // (componentMastery/bias.ts). Without tallies the order is the shuffle's.
+  const weakOf = items.some((it) => it.reads?.length) ? weakLetterSoundScorer() : null;
+  const weak = (it: WordSpaceItem<P>) => (weakOf && it.reads ? weakOf(it.reads) : 0);
   // Ties in beta are broken at random, so equal items cross a tier boundary differently each session.
   const sorted = shuffleInPlace([...fresh], rand).sort((a, b) => a.beta - b.beta);
   const size = Math.max(n, Math.floor(sorted.length / 3));
@@ -70,22 +79,39 @@ export function tierPick<P>(
   const band = sorted.length >= 3 * n
     ? (t === 0 ? sorted.slice(0, size) : t === 1 ? sorted.slice(size, 2 * size) : sorted.slice(2 * size))
     : (t === 0 ? sorted.slice(0, size) : t === 1 ? sorted.slice(Math.floor((sorted.length - size) / 2)).slice(0, size) : sorted.slice(-size));
+  // A weak item just outside the band at the same beta as a band item takes that item's place.
+  if (weakOf) {
+    for (const out of sorted.filter((it) => !band.includes(it) && weak(it) > 0).sort((a, b) => weak(b) - weak(a))) {
+      const at = band.reduce((best, it, i) => (it.beta === out.beta && weak(it) < weak(out)
+        && (best < 0 || weak(it) < weak(band[best])) ? i : best), -1);
+      if (at >= 0) band[at] = out;
+    }
+  }
 
   const byStructure = new Map<string, WordSpaceItem<P>[]>();
   for (const it of band) byStructure.set(it.structure, [...(byStructure.get(it.structure) ?? []), it]);
   byStructure.forEach((list) => shuffleInPlace(list, rand));
+  if (weakOf) byStructure.forEach((list) => list.sort((a, b) => weak(b) - weak(a)));
   const structures = shuffleInPlace(Array.from(byStructure.keys()), rand);
   const usedStructures = new Map<string, number>();
   const usedKeys = new Set<string>();
   const picks: WordSpaceItem<P>[] = [];
+  // At most half the session is drawn for a weak pair; the rest stays review, so a weak pair cannot fill a lesson.
+  const weakCap = Math.ceil(n / 2);
+  let weakPicked = 0;
   while (picks.length < n) {
-    structures.sort((a, b) => (usedStructures.get(a) ?? 0) - (usedStructures.get(b) ?? 0));
+    const leaning = !!weakOf && weakPicked < weakCap;
+    const next = (s: string) => { const it = byStructure.get(s)!.find((x) => ok(x)); return it ? weak(it) : 0; };
+    structures.sort((a, b) => (usedStructures.get(a) ?? 0) - (usedStructures.get(b) ?? 0) || (leaning ? next(b) - next(a) : 0));
     let picked = false;
     for (const s of structures) {
       const list = byStructure.get(s)!;
-      const at = list.findIndex((it) => ok(it) && !(it.key && usedKeys.has(it.key)));
+      const fits = (it: WordSpaceItem<P>) => ok(it) && !(it.key && usedKeys.has(it.key));
+      let at = weakOf && !leaning ? list.findIndex((it) => fits(it) && weak(it) === 0) : -1;
+      if (at < 0) at = list.findIndex(fits);
       if (at < 0) continue;
       const [it] = list.splice(at, 1);
+      if (weak(it) > 0) weakPicked++;
       picks.push(it);
       if (it.key) usedKeys.add(it.key);
       it.words.forEach((w) => used.add(w));

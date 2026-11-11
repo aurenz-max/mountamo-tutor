@@ -132,6 +132,7 @@ function wordChains(grade: string, vowels: readonly string[]): WordSpaceItem<Wor
         structure: positions.map((p) => ['first', 'vowel', 'last'][p]).join('-'),
         key: start,
         words: chain,
+        reads: chain,
         payload: { mode: 'word-chains', chain, changedPositions: positions },
       });
     }
@@ -166,6 +167,7 @@ function tableItems(mode: 'inflected-word' | 'compound-word' | 'context-discrimi
         beta: +(KIND_BETA[e.kind] + extra + Math.max(...e.scopeVowels.map((v) => VOWEL_BETA[v] ?? 0))).toFixed(2),
         structure: e.kind,
         words: [e.word],
+        reads: [e.word],
         payload: { mode, targetWord: e.word },
       };
     });

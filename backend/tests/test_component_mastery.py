@@ -59,3 +59,18 @@ def test_replay_rebuilds_the_tallies_in_time_order():
     ])
     assert docs == {"letter_sound": {"kind": "letter_sound", "updated_at": "2026-11-10T02:00:00",
                                      "components": {"a/AE": {"attempts": 3, "correct": 2, "last_at": "2026-11-10T02:00:00"}}}}
+
+
+def test_packet_components_keeps_every_kind_and_drops_bad_rows():
+    from app.services.component_mastery import packet_components
+    docs = [
+        {"kind": "letter_sound", "components": {
+            "s/S": {"attempts": 4, "correct": 3, "last_at": "x"},
+            "a/AE": {"attempts": 1, "correct": 2},
+            "t/T": {"attempts": True, "correct": 0},
+            "": {"attempts": 1, "correct": 1}}},
+        {"kind": "some_future_kind", "components": {"7x8": {"attempts": 2, "correct": 1}}},
+        {"kind": "Bad Kind", "components": {"x": {"attempts": 1, "correct": 1}}},
+        {"kind": "empty", "components": {}},
+    ]
+    assert packet_components(docs) == {"letter_sound": {"s/S": [4, 3]}, "some_future_kind": {"7x8": [2, 1]}}

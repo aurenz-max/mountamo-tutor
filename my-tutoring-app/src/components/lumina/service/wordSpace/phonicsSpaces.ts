@@ -191,6 +191,7 @@ function itemFor(pattern: BlendPattern, x: LexWord): WordSpaceItem<BlendWordPayl
     structure,
     key,
     words: [x.w],
+    reads: [x.w],
     payload: { targetWord: x.w, phonemes: blendTiles(x), ...(x.emoji ? { emoji: x.emoji } : {}), imageDescription: x.w },
   };
 }
