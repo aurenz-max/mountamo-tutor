@@ -18,7 +18,7 @@ import { normalizeSupportTier, resolveSupportStructure, storyRibbonPromptFor, tu
 export interface StoryRibbonItem {
   id: string;
   mode: StoryRibbonChallengeType;
-  responseClass: 'connected_account' | 'tense_controlled_account' | 'story_experience_connection';
+  responseClass: 'connected_account' | 'tense_controlled_account' | 'story_experience_connection' | 'heard_retell' | 'own_story';
   challenge: StoryRibbonChallenge;
   modelAccount: string;
   modelResponse: string;
@@ -88,9 +88,27 @@ const lowerFirst = (value: string): string => {
   return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
 };
 
+/** The order words on each slot: First, Next, Last; four events add Then. */
+export const orderWordsFor = (count: number): string[] => (count === 4 ? ['First', 'Next', 'Then', 'Last'] : ['First', 'Next', 'Last']);
+
 export const modelAccountFor = (events: StoryRibbonEvent[]): string => {
-  if (events.length !== 3) return '';
-  return `First, ${lowerFirst(events[0].modelSentence)} Next, ${lowerFirst(events[1].modelSentence)} Last, ${lowerFirst(events[2].modelSentence)}`;
+  if (events.length !== 3 && events.length !== 4) return '';
+  const words = orderWordsFor(events.length);
+  return events.map((event, i) => `${words[i]}, ${lowerFirst(event.modelSentence)}`).join(' ');
+};
+
+const isCardWord = (value: string): boolean => /^[a-z]{2,12}$/.test(clean(value));
+
+/** tell_own: five or six distinct library cards, no events, a private example story. */
+const tellOwnItem = (challenge: StoryRibbonChallenge): StoryRibbonItem | null => {
+  const cards = challenge.cards ?? [];
+  if (!clean(challenge.title) || challenge.timeCue !== undefined || challenge.events?.length !== 0) return null;
+  if (cards.length < 5 || cards.length > 6) return null;
+  if (!cards.every((card) => card?.id && isCardWord(card.word) && clean(card.emoji).length > 0 && clean(card.emoji).length <= 16)) return null;
+  if (new Set(cards.map((card) => card.word)).size !== cards.length || new Set(cards.map((card) => card.id)).size !== cards.length) return null;
+  const story = clean(challenge.modelStory);
+  if (sentenceCount(story) < 3 || story.length > 260 || forbidden.test(story)) return null;
+  return { id: challenge.id, mode: 'tell_own', responseClass: 'own_story', challenge, modelAccount: story, modelResponse: story };
 };
 
 export const itemFromChallenge = (challenge: StoryRibbonChallenge): StoryRibbonItem | null => {
@@ -100,14 +118,19 @@ export const itemFromChallenge = (challenge: StoryRibbonChallenge): StoryRibbonI
     'tell_future_account',
     'tell_past_account',
     'story_to_experience',
+    'listen_retell',
+    'tell_own',
   ].includes(challenge.type)) return null;
+  if (challenge.type === 'tell_own') return tellOwnItem(challenge);
+  if (challenge.cards !== undefined || challenge.modelStory !== undefined) return null;
   if (!clean(challenge.title) || !clean(challenge.characterName) || !clean(challenge.characterEmoji) || !clean(challenge.setting)) return null;
   if (isTenseMode(challenge.type) && challenge.timeCue !== TENSE_CUES[challenge.type]) return null;
   if (!isTenseMode(challenge.type) && challenge.timeCue !== undefined) return null;
-  if (!Array.isArray(challenge.events) || challenge.events.length !== 3) return null;
+  const eventCount = challenge.type === 'listen_retell' && challenge.events?.length === 4 ? 4 : 3;
+  if (!Array.isArray(challenge.events) || challenge.events.length !== eventCount) return null;
   if (!challenge.events.every((event, index) => isValidEvent(event, index))) return null;
-  if (new Set(challenge.events.map((event) => event.id)).size !== 3) return null;
-  if (new Set(challenge.events.map((event) => event.pictureLabel.toLowerCase())).size !== 3) return null;
+  if (new Set(challenge.events.map((event) => event.id)).size !== eventCount) return null;
+  if (new Set(challenge.events.map((event) => event.pictureLabel.toLowerCase())).size !== eventCount) return null;
   const modelAccount = modelAccountFor(challenge.events);
   if (!modelAccount) return null;
   const modelResponse = isExperienceMode(challenge.type)
@@ -116,7 +139,9 @@ export const itemFromChallenge = (challenge: StoryRibbonChallenge): StoryRibbonI
   return {
     id: challenge.id,
     mode: challenge.type,
-    responseClass: isExperienceMode(challenge.type)
+    responseClass: challenge.type === 'listen_retell'
+      ? 'heard_retell'
+      : isExperienceMode(challenge.type)
       ? 'story_experience_connection'
       : isTenseMode(challenge.type)
         ? 'tense_controlled_account'
@@ -135,7 +160,18 @@ export const challengeAskable = (challenge: StoryRibbonChallenge): boolean => it
 const supportFor = (item: StoryRibbonItem) => item.challenge.support
   ?? resolveSupportStructure(item.mode, normalizeSupportTier(item.challenge.supportTier));
 
+/** listen_retell: the story the tutor reads, its event sentences in order. */
+export const heardStory = (item: StoryRibbonItem): string => item.challenge.events.map((e) => ensureStop(e.modelSentence)).join(' ');
+
 export const askFor = (item: StoryRibbonItem): string => {
+  if (item.mode === 'listen_retell') {
+    return `Listen to this story about ${item.challenge.characterName}. ${heardStory(item)} Now tell the story back in your own words, `
+      + 'in order. Use first, next and last. The picture cards are mixed up; you can move them if it helps.';
+  }
+  if (item.mode === 'tell_own') {
+    return 'Look at the picture cards. Tap two or three cards you like. Then tell your own story: something that happened '
+      + 'to you, or a make-believe story. Give it a beginning, something that happens, and an end. You never have to share anything private.';
+  }
   const supportTier = normalizeSupportTier(item.challenge.supportTier);
   // Untiered content keeps the shipped L0/L1 spoken contract byte-for-byte.
   if (supportTier === null) {
@@ -175,6 +211,29 @@ const eventsInOrder = (item: StoryRibbonItem) => {
  * words. The tense modes add the time; story to experience never judges whether a memory is true.
  */
 export function storyRibbonKey(item: StoryRibbonItem): SpokenKey {
+  if (item.mode === 'listen_retell') {
+    return {
+      answer: item.modelAccount, alsoAccept: [],
+      meaning: {
+        idea: `The story the learner heard, retold with its events covered in this order: ${eventsInOrder(item)} `
+          + 'with an order word (first, next, then, after that, last, finally) on at least two of the events.',
+        notIt: 'events told out of order, one event only, or the events listed with no order words',
+      },
+      acceptRule: "Accept the learner's own words, any tense and child grammar; an event told in other words counts.",
+    };
+  }
+  if (item.mode === 'tell_own') {
+    return {
+      answer: item.modelResponse, alsoAccept: [],
+      meaning: {
+        idea: "A short story of the learner's own, made up or something that happened to them, with a beginning, "
+          + 'something that happens, and an end, told as connected events. It may use the picked cards or not.',
+        notIt: 'a description of the picture cards (what they are or look like), or one event only',
+      },
+      acceptRule: 'Accept any story, real or make-believe, with or without order words, in child grammar. Never ask for '
+        + 'private detail and never judge whether it is true.',
+    };
+  }
   if (item.mode === 'story_to_experience') {
     return {
       answer: item.modelResponse, alsoAccept: [],
@@ -217,18 +276,38 @@ export function storyRibbonSpokenMisses(item: StoryRibbonItem): KnownMiss[] {
     event_only: () => ({ id: 'event_only', pattern: 'The learner tells a story moment and gives no other experience.',
       examples: [`${said[0]}.`] }),
     no_connection: () => ({ id: 'no_connection', pattern: 'The learner gives a story moment and another experience, but never says how the two are alike.' }),
+    one_event: () => ({ id: 'one_event', pattern: item.mode === 'tell_own'
+      ? 'The learner tells one thing that happens and stops: no beginning-to-end story.'
+      : 'The learner retells one event of the story and stops.',
+    examples: item.mode === 'tell_own' ? ['The dog ran.'] : [`${said[0]}.`] }),
+    no_order_words: () => ({ id: 'no_order_words', pattern: 'The learner tells the events, but as a list with no order words (first, next, then, last).',
+      // The whole list when it fits the observer's 200-character example cap; otherwise as many events as fit.
+      examples: [said.reduce((out, line) => (out.length + line.length + 2 <= 200 ? `${out}${out ? ' ' : ''}${line}.` : out), '')] }),
+    describes_cards: () => ({ id: 'describes_cards', pattern: 'The learner names or describes the picture cards but tells no story: nothing happens.',
+      examples: [`I see a ${item.challenge.cards?.[0]?.word ?? 'dog'} and a ${item.challenge.cards?.[1]?.word ?? 'ball'}.`] }),
   };
   return STORY_RIBBON_MISSES[item.mode].map(id => pattern[id]());
 }
 
-export function storyRibbonScene(item: StoryRibbonItem): WorkspaceScene {
+export function storyRibbonScene(item: StoryRibbonItem, picked: readonly string[] = []): WorkspaceScene {
   const tier = normalizeSupportTier(item.challenge.supportTier);
   const c = item.challenge;
+  if (item.mode === 'tell_own') {
+    const cards = c.cards ?? [];
+    const chosen = cards.filter((card) => picked.includes(card.id));
+    return { objects: [], facts: {
+      cards: cards.map((card) => `${card.word} ${card.emoji}`).join('; '),
+      picked: chosen.length ? chosen.map((card) => card.word).join(', ') : 'none yet',
+      revealPolicy: tutorRevealPolicy(item.mode, tier),
+      constraints: 'The learner taps two or three cards; any pick is fine and the pick is not graded. Only the spoken story is judged. Nothing is printed.',
+    } };
+  }
   return { objects: [], facts: {
     story: `${c.title}: ${c.characterName} ${c.characterEmoji}, ${c.setting}`,
     // Alphabetical, so the list never gives the story order.
     pictures: c.events.map(e => e.pictureLabel).sort((a, b) => a.localeCompare(b)).join('; '),
     ...(c.timeCue ? { timeCue: c.timeCue } : {}),
+    ...(item.mode === 'listen_retell' ? { heardStory: `The ask reads this story aloud: ${heardStory(item)}` } : {}),
     revealPolicy: tutorRevealPolicy(item.mode, tier),
     constraints: item.mode === 'story_to_experience'
       ? 'The learner taps one picture to choose a moment, then tells the connection out loud. The tap is not graded.'
@@ -237,11 +316,14 @@ export function storyRibbonScene(item: StoryRibbonItem): WorkspaceScene {
 }
 
 /** What "Hear the directions again" asks the tutor to say: the directions only, never an event. */
-export const hearDirectionsRequest = (item: StoryRibbonItem) =>
-  `The learner asked to hear the directions again. Say only this, once: "${askFor(item)}" Do not name or describe any event.`;
+export const hearDirectionsRequest = (item: StoryRibbonItem) => item.mode === 'listen_retell'
+  ? `The learner asked to hear it again. Say only this, once: "${askFor(item)}"`
+  : `The learner asked to hear the directions again. Say only this, once: "${askFor(item)}" Do not name or describe any event.`;
 
 /** The journey's answers: the model account, or one picture label said alone. */
 export const storyRibbonHarnessAnswers = (item: StoryRibbonItem): { correct: string; plainWrong: string } => ({
   correct: item.modelResponse,
-  plainWrong: item.challenge.events[0].pictureLabel,
+  plainWrong: item.mode === 'tell_own'
+    ? `I see a ${item.challenge.cards?.[0]?.word ?? 'dog'} and a ${item.challenge.cards?.[1]?.word ?? 'ball'}.`
+    : item.challenge.events[0].pictureLabel,
 });

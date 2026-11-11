@@ -27,7 +27,7 @@ export const spokenPracticeAskFor = (item: SpokenPracticeItem): string => item.a
 /** The key as the observer judges it: the answer, what else counts, and what does not. */
 export const spokenPracticeKey = (item: SpokenPracticeItem): SpokenKey => ({
   answer: item.expectedAnswer, alsoAccept: item.alternates, acceptRule: item.acceptRule, signatureError: item.signatureError,
-  ...(item.mode === 'compare_choice' && item.choices?.length ? { menu: item.choices } : {}),
+  ...((item.mode === 'compare_choice' || item.grammar) && item.choices?.length ? { menu: item.choices } : {}),
   ...(item.mode === 'explain_concept' ? { meaning: { idea: conceptAffirmForm(item.conceptStatement ?? ''),
     notIt: `"${item.stimulusText}" read back, a bare number, or just the name of what is shown` } } : {}),
 });
@@ -35,7 +35,7 @@ export const spokenPracticeKey = (item: SpokenPracticeItem): SpokenKey => ({
 /** What a wrong spoken answer shows on the two bounded modes (handoff 20 Part B). */
 export type SpokenPracticeMiss = OffByMiss | 'skipped_a_number' | 'other_menu_word' | 'said_same' | 'said_thing_name'
   | 'misread' | 'sounds_not_blended' | 'letter_names' | 'word_dropped' | 'signature_error' | 'said_stimulus'
-  | 'read_back' | 'named_only' | 'bare_number' | 'opposite_idea';
+  | 'read_back' | 'named_only' | 'bare_number' | 'opposite_idea' | 'other_form' | 'said_noun';
 
 const bare = (thing: string) => thing.replace(/^(a|an|the)\s+/i, '').trim();
 const SAME = /^(the )?same$|^equal$/i;
@@ -72,6 +72,15 @@ export function spokenPracticeSpokenMisses(item: SpokenPracticeItem): KnownMiss[
         ? [{ id: 'said_stimulus', pattern: `The answer is "${item.expectedAnswer}". The learner says the shown "${item.stimulusText}" back instead of answering.`, examples: [] }] : []),
     ];
   }
+  if (item.grammar) {
+    const g = item.grammar;
+    const fact = `The tutor said "${g.sentence}" and the word that fits the gap is "${item.expectedAnswer}".`;
+    return [
+      { id: 'other_form', pattern: `${fact} The learner ${g.miss}, or says another of ${quoted(g.wrong)}.`, examples: g.wrong.slice(0, 2) },
+      ...(g.noun ? [{ id: 'said_noun', pattern: `${fact} The learner says the person word "${g.noun}" instead of a pronoun.`,
+        examples: [g.noun, `the ${g.noun}`] }] : []),
+    ];
+  }
   if (item.mode === 'explain_concept') {
     const fact = `The idea is: "${item.conceptStatement ?? item.expectedAnswer}".`;
     return [
@@ -106,7 +115,10 @@ function drawn(item: SpokenPracticeItem): { label: string; constraints: string }
         : { label: `the printed "${item.stimulusText}"`,
           constraints: 'The answer is not printed.' };
     case 'emoji':
-      return { label: 'one unlabeled picture', constraints: 'The picture has no label.' };
+      return item.grammar
+        ? { label: `an unlabeled picture of ${item.stimulusText}`,
+          constraints: `The picture has no label and no words. The sentence is in the ask; the learner says the one word for the gap${item.choices?.length ? ` (${quoted(item.choices)})` : ''}.` }
+        : { label: 'one unlabeled picture', constraints: 'The picture has no label.' };
     case 'pair':
       return { label: `two unlabeled pictures side by side: ${item.stimulusText} and ${item.stimulusText2 ?? ''}`,
         constraints: `The learner says one word from ${quoted(item.choices ?? [])}. The pictures have no labels, `
@@ -137,6 +149,7 @@ export function diSpokenPracticeHarnessAnswers(item: SpokenPracticeItem): { corr
     const n = item.stimulusCount;
     return { correct: item.expectedAnswer, plainWrong: numberWordFor(n >= 2 ? n - 1 : n + 1) };
   }
+  if (item.grammar) return { correct: item.expectedAnswer, plainWrong: item.grammar.wrong[0] };
   if (item.mode === 'compare_choice') {
     const other = (item.choices ?? []).find(choice => choice.toLowerCase() !== item.expectedAnswer.toLowerCase());
     return { correct: item.expectedAnswer, plainWrong: other ?? 'bigger' };

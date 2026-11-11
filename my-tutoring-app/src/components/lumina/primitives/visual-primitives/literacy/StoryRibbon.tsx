@@ -39,7 +39,7 @@ import { useWorkspaceRunner, type TeachingEvaluationResult }
 import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import { hearDirectionsRequest, mixedEventIds, storyRibbonScene, type StoryRibbonItem } from './storyRibbonDomain';
+import { hearDirectionsRequest, mixedEventIds, orderWordsFor, storyRibbonScene, type StoryRibbonItem } from './storyRibbonDomain';
 import { STORY_RIBBON_LEVERS, supportOnScreen } from './storyRibbonLevers';
 import { storyRibbonBoss, storyRibbonItems } from './storyRibbon.boss';
 import {
@@ -56,7 +56,18 @@ export type StoryRibbonChallengeType =
   | 'tell_present_account'
   | 'tell_future_account'
   | 'tell_past_account'
-  | 'story_to_experience';
+  | 'story_to_experience'
+  /** Hear a 3-4 event story read by the tutor, then retell it in order with first, next, last (handoff H2). */
+  | 'listen_retell'
+  /** Pick two or three picture cards (any pick) and tell a story of one's own (handoff H2). Code-only content. */
+  | 'tell_own';
+
+/** A library picture card for tell_own. */
+export interface StoryRibbonCard {
+  id: string;
+  word: string;
+  emoji: string;
+}
 
 export type StoryRibbonTimeCue = 'Today' | 'Yesterday' | 'Tomorrow';
 export type StoryRibbonSessionType = StoryRibbonChallengeType | 'mixed';
@@ -82,8 +93,12 @@ export interface StoryRibbonChallenge {
   setting: string;
   /** Visible context cue for tense modes. It never supplies a conjugated verb. */
   timeCue?: StoryRibbonTimeCue;
-  /** Exactly three events in canonical first-next-last order. */
+  /** Three events in canonical first-next-last order; listen_retell has three or four; tell_own has none. */
   events: StoryRibbonEvent[];
+  /** tell_own only: five or six library picture cards the learner picks from. */
+  cards?: StoryRibbonCard[];
+  /** tell_own only: a private example story, shown after credit. */
+  modelStory?: string;
   /** Manifest difficulty after strict normalization. */
   supportTier?: SupportTier;
   /** Code-verified narrative structure for tiered content. */
@@ -123,12 +138,17 @@ const PHASE_CONFIG: Record<StoryRibbonChallengeType, PhaseConfig> = {
   tell_future_account: { label: 'Future-Time Story', icon: '🔭', accentColor: 'blue' },
   tell_past_account: { label: 'Past-Time Story', icon: '🕰️', accentColor: 'purple' },
   story_to_experience: { label: 'Story-to-World Connection', icon: '💭', accentColor: 'pink' },
+  listen_retell: { label: 'Listen and Retell', icon: '👂', accentColor: 'cyan' },
+  tell_own: { label: 'Your Own Story', icon: '🌟', accentColor: 'amber' },
 };
 
 const orderedIds = (item: StoryRibbonItem): string[] => item.challenge.events.map((event) => event.id);
 const isExperienceItem = (item: StoryRibbonItem): boolean => item.mode === 'story_to_experience';
+const isOwnItem = (item: StoryRibbonItem): boolean => item.mode === 'tell_own';
 const initialIdsFor = (item: StoryRibbonItem): string[] =>
-  isExperienceItem(item) ? orderedIds(item) : mixedEventIds(item);
+  isOwnItem(item) ? [] : isExperienceItem(item) ? orderedIds(item) : mixedEventIds(item);
+/** tell_own: the most cards a learner picks. */
+const MAX_PICKS = 3;
 
 function StoryRibbonSurface(props: StoryRibbonProps) {
   return (
@@ -154,6 +174,9 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
   const arrangementsRef = useRef<Record<string, string[][]>>({});
   /** The board when the account was credited: order (or the chosen moment) and whether it was in story order. */
   const arrangementAtTellRef = useRef<Record<string, { order: string[]; correct: boolean }>>({});
+  /** tell_own: the cards the learner picked, in pick order (any pick is allowed; never graded). */
+  const [picked, setPicked] = useState<string[]>([]);
+  const pickedRef = useRef<string[]>([]);
   // In-item levers (`storyRibbonLevers.ts`), keyed by the item they were pulled on.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
 
@@ -214,16 +237,20 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
       setSelectedEventId(null);
       selectedEventIdRef.current = null;
       arrangementsRef.current[item.id] = [mixed];
+      pickedRef.current = [];
+      setPicked([]);
     },
     // Try again keeps the learner's board: the order is their plan, and only the account is judged.
     onCorrectionRetry: () => {},
     onAffirmed: (item) => {
       const target = orderedIds(item);
       const selected = selectedEventIdRef.current;
-      arrangementAtTellRef.current[item.id] = {
-        order: isExperienceItem(item) && selected ? [selected] : [...eventOrderRef.current],
-        correct: isExperienceItem(item) ? Boolean(selected) : eventOrderRef.current.every((id, index) => id === target[index]),
-      };
+      arrangementAtTellRef.current[item.id] = isOwnItem(item)
+        ? { order: [...pickedRef.current], correct: pickedRef.current.length > 0 }
+        : {
+          order: isExperienceItem(item) && selected ? [selected] : [...eventOrderRef.current],
+          correct: isExperienceItem(item) ? Boolean(selected) : eventOrderRef.current.every((id, index) => id === target[index]),
+        };
       setAffirmedItem(item);
     },
     onFinished: finish,
@@ -240,7 +267,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
     if (!currentItem) return;
     const levers = STORY_RIBBON_LEVERS.declare(currentItem, undefined, pulledLevers);
     workspace.current = {
-      ...leverScene(storyRibbonScene(currentItem), {
+      ...leverScene(storyRibbonScene(currentItem, picked), {
         support: STORY_RIBBON_LEVERS.support(currentItem, undefined),
         onScreen: STORY_RIBBON_LEVERS.onScreen(currentItem, undefined, pulledLevers) }),
       levers,
@@ -273,6 +300,8 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
     setSelectedEventId(null);
     selectedEventIdRef.current = null;
     arrangementsRef.current[currentItem.id] = [mixed];
+    pickedRef.current = [];
+    setPicked([]);
   }, [currentItem]);
 
   const displayedEvents = useMemo(() => {
@@ -281,6 +310,17 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
       .map((id) => currentItem.challenge.events.find((event) => event.id === id))
       .filter((event): event is StoryRibbonEvent => Boolean(event));
   }, [currentItem, eventOrder]);
+
+  const handleCardPick = (cardId: string) => {
+    if (!currentItem || runner.currentSolved || !runner.canAttempt || showSummary) return;
+    const has = pickedRef.current.includes(cardId);
+    if (!has && pickedRef.current.length >= MAX_PICKS) { SoundManager.tap(); return; }
+    const next = has ? pickedRef.current.filter((id) => id !== cardId) : [...pickedRef.current, cardId];
+    if (has) SoundManager.tap(); else SoundManager.select();
+    pickedRef.current = next;
+    (arrangementsRef.current[currentItem.id] ??= []).push([...next]);
+    setPicked(next);
+  };
 
   const arrangementCorrect = Boolean(currentItem)
     && (isExperienceItem(currentItem)
@@ -338,10 +378,12 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
 
   const phase = PHASE_CONFIG[currentItem.mode];
   const experienceMode = isExperienceItem(currentItem);
+  const ownMode = isOwnItem(currentItem);
+  const slotWords = orderWordsFor(displayedEvents.length);
   const supportTier = normalizeSupportTier(currentItem.challenge.supportTier);
   // The tier's aids plus the pulled levers; the prompt keeps the tier's wording.
   const support = supportOnScreen(currentItem, pulledLevers);
-  const prompt = supportTier === null
+  const prompt = supportTier === null && !ownMode && currentItem.mode !== 'listen_retell'
     ? experienceMode
       ? 'Tap one story picture. Then tell what it reminds you of and how the two experiences connect.'
       : currentItem.challenge.timeCue
@@ -382,6 +424,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
             <PipDock />
 
             <LuminaPanel accent="emerald" className="overflow-hidden">
+              {!ownMode && (
               <div className="mb-4 flex items-center justify-center gap-3 text-center">
                 <span className="text-4xl" role="img" aria-label={currentItem.challenge.characterName}>
                   {currentItem.challenge.characterEmoji}
@@ -391,6 +434,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                   <p className="text-sm text-slate-400">{currentItem.challenge.characterName} · {currentItem.challenge.setting}</p>
                 </div>
               </div>
+              )}
 
               {currentItem.challenge.timeCue && (
                 <div className="mb-4 flex justify-center">
@@ -399,7 +443,50 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
               )}
 
               <PipWorkspace>
-              <div data-pip-object="ribbon" className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+              {ownMode ? (
+                <div data-pip-object="ribbon" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {(currentItem.challenge.cards ?? []).map((card) => {
+                      const order = picked.indexOf(card.id);
+                      return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          data-pip-object={`card-${card.id}`}
+                          onClick={() => handleCardPick(card.id)}
+                          aria-pressed={order >= 0}
+                          aria-label={`Picture card: ${card.word}. ${order >= 0 ? 'Picked. Tap to put it back.' : 'Tap to pick it.'}`}
+                          className={`relative min-h-28 rounded-2xl border-2 p-4 text-center transition-all ${
+                            order >= 0
+                              ? 'scale-[1.03] border-amber-300 bg-amber-400/15 shadow-lg shadow-amber-400/15'
+                              : 'border-white/10 bg-slate-900/35 hover:border-emerald-300/50 hover:bg-emerald-400/10 active:scale-95'
+                          }`}
+                        >
+                          {order >= 0 && (
+                            <span className="absolute left-2 top-2 rounded-full bg-amber-300/80 px-2 text-xs font-bold text-slate-900">{order + 1}</span>
+                          )}
+                          <span className="block text-5xl" role="img" aria-hidden>{card.emoji}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex min-h-16 items-center justify-center gap-3 rounded-2xl border border-dashed border-white/15 p-3" aria-label="Your story cards">
+                    {picked.length === 0
+                      ? <span className="text-2xl text-slate-500" aria-hidden>🌟</span>
+                      : picked.map((id, i) => {
+                        const card = currentItem.challenge.cards?.find((c) => c.id === id);
+                        return (
+                          <React.Fragment key={id}>
+                            {i > 0 && <span className="text-2xl text-emerald-300/70" aria-hidden>→</span>}
+                            <span className="text-4xl" role="img" aria-label={card?.word}>{card?.emoji}</span>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+                </div>
+              ) : (
+              <div data-pip-object="ribbon" className={`grid grid-cols-1 gap-3 sm:items-center ${displayedEvents.length === 4
+                ? 'sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr]' : 'sm:grid-cols-[1fr_auto_1fr_auto_1fr]'}`}>
                 {displayedEvents.map((event, index) => (
                   <React.Fragment key={event.id}>
                     <button
@@ -407,7 +494,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                       data-pip-object={`card-${event.id}`}
                       onClick={() => handleEventTap(event.id)}
                       aria-pressed={selectedEventId === event.id}
-                      aria-label={`${support.showSequenceLabels ? `${['First', 'Next', 'Last'][index]} picture` : 'Story picture'}: ${event.pictureLabel}. ${experienceMode ? 'Tap to choose this story moment.' : 'Tap to move it.'}`}
+                      aria-label={`${support.showSequenceLabels ? `${slotWords[index]} picture` : 'Story picture'}: ${event.pictureLabel}. ${experienceMode ? 'Tap to choose this story moment.' : 'Tap to move it.'}`}
                       className={`min-h-36 rounded-2xl border-2 p-4 text-center transition-all ${
                         selectedEventId === event.id
                           ? 'scale-[1.03] border-amber-300 bg-amber-400/15 shadow-lg shadow-amber-400/15'
@@ -416,21 +503,22 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
                     >
                       {support.showSequenceLabels && (
                         <span data-lever="sequence-label" className="block text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-200/80">
-                          {['First', 'Next', 'Last'][index]}
+                          {slotWords[index]}
                         </span>
                       )}
                       <span className="my-2 block text-5xl" role="img" aria-hidden>{event.emoji}</span>
                       <span className="block text-sm font-semibold text-slate-100">{event.pictureLabel}</span>
                     </button>
-                    {support.showFlowArrows && index < 2 && (
+                    {support.showFlowArrows && index < displayedEvents.length - 1 && (
                       <span data-lever="flow-arrow" className="hidden text-2xl text-emerald-300/70 sm:block" aria-hidden>→</span>
                     )}
                   </React.Fragment>
                 ))}
               </div>
+              )}
               </PipWorkspace>
 
-              {support.showSelfCheck && (
+              {support.showSelfCheck && !ownMode && (
                 <p className={`mt-4 text-center text-sm ${arrangementCorrect ? 'text-emerald-200' : 'text-slate-400'}`}>
                   {experienceMode
                     ? selectedEventId

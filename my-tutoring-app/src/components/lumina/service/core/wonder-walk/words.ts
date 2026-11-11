@@ -17,43 +17,47 @@
  * Standards it builds (K language arts, listening-first): RF.K.1d letters, RF.K.2a rhyme, RF.K.2b syllables,
  * RF.K.2b-d blending, RF.K.2d first, last and middle sounds, RF.K.2e change a sound, RF.K.3a-b letter sounds,
  * L.K.2c-d spell a CVC word, L.K.1b doing-words, L.K.1c one and many, L.K.1e in/on/under/next to, L.K.5a sort by kind,
- * RL.K.1-3 and SL.K.2 key details and story order. Not built here: opposites (L.K.5b), word meanings with more than
+ * RL.K.1-3 and SL.K.2 key details and story order, L.K.1f and L.K.2b sentences (build one from word cards, fill the
+ * word a sentence lacks, find who it is about and what they do; USER 2026-11-10). Not built here: opposites (L.K.5b), word meanings with more than
  * one sense (L.K.4a), sight words (RF.K.3c), print concepts beyond letters (RF.K.1a-c).
  */
 import type { WonderWalkStopType } from '../../../primitives/visual-primitives/core/wonder-walk/WonderWalk';
 import {
-  LETTER_SOUNDS, SAME_SHAPE, VOWELS, lookAlike, orderKey, rimeOf, ruleHolds, soundAt, sortKey, tapKey,
-  type Relation, type SoundAt, type StoryEvent, type StoryRole, type WordAnswer, type WordRule, type WordThing, type WordTrap, type WordWorld,
+  LETTER_SOUNDS, MARKS, SAME_SHAPE, SENTENCE_ROLES, VOWELS, isMark, lookAlike, orderKey, rimeOf, ruleHolds, sentenceText, soundAt, sortKey, tapKey, cardClass, tileClass,
+  type Relation, type SentenceRole, type SentenceToken, type SoundAt, type StoryEvent, type StoryRole, type WordAnswer, type WordRule, type WordThing, type WordTrap, type WordWorld,
 } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalkWords';
 import { lexWord, soundSaid, WORDS } from '../../wordSpace/lexicon';
+import { containsPhrase, tokenize } from '../../../components/live-activity/spokenKey';
 import { wordPictureOf } from './pictures';
 import { bandOf, type Difficulty, type SupportTier } from './world';
 
 // ── What the author writes ───────────────────────────────────────────
 
-export interface ThingDraft { id: string; word?: string; letter?: string; count?: number; rel?: Relation; landmark?: string }
+export interface ThingDraft { id: string; word?: string; letter?: string; count?: number; rel?: Relation; landmark?: string; tile?: string }
 export interface RuleDraft {
   type: string; at?: SoundAt; sound?: string; ref?: string; n?: number; word?: string; parts?: 'phonemes' | 'onset-rime';
-  to?: string; letter?: string; kind?: string; number?: 'one' | 'many'; rel?: Relation; event?: number; role?: StoryRole;
+  to?: string; letter?: string; kind?: string; number?: 'one' | 'many'; rel?: Relation; event?: number; role?: StoryRole | SentenceRole;
 }
 export interface WordDraft {
   refs: ThingDraft[];
   things: ThingDraft[];
   story?: StoryEvent[];
-  answer: { kind: 'tap' | 'sort' | 'order'; among?: string[]; rule?: RuleDraft; baskets?: Array<{ id: string; label: string; rule: RuleDraft }>; by?: 'story' | 'spelling'; of?: string };
+  /** A sentence in order: each word as said, its role, and the id of the card that is this word (when it is a card). */
+  sentence?: Array<{ say: string; role: string; card?: string }>;
+  answer: { kind: 'tap' | 'sort' | 'order'; among?: string[]; rule?: RuleDraft; baskets?: Array<{ id: string; label: string; rule: RuleDraft }>; by?: 'story' | 'spelling' | 'sentence'; of?: string };
 }
 
-export const RULE_TYPES = ['sound', 'same-sound', 'rhymes', 'syllables', 'blend', 'change', 'letter-sound', 'first-letter', 'letter-name', 'same-letter', 'kind', 'number', 'where', 'story'] as const;
+export const RULE_TYPES = ['sound', 'same-sound', 'rhymes', 'syllables', 'blend', 'change', 'letter-sound', 'first-letter', 'letter-name', 'same-letter', 'kind', 'number', 'where', 'story', 'fills', 'part'] as const;
 export const RELATIONS: Relation[] = ['in', 'on', 'under', 'next-to'];
 export const LANDMARKS = ['box', 'bed', 'chair', 'tree', 'basket', 'table', 'car', 'house', 'cup', 'bag'];
 
 export const WORD_MODES: WonderWalkStopType[] = ['rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'blend', 'change-sound',
-  'letter-name', 'letter-sound', 'spell-word', 'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order'];
+  'letter-name', 'letter-sound', 'spell-word', 'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order', 'sentence'];
 
 export const WORD_STANDARDS: Record<string, string> = {
   rhyme: 'RF.K.2a', 'first-sound': 'RF.K.2d', 'last-sound': 'RF.K.2d', 'middle-sound': 'RF.K.2d', syllables: 'RF.K.2b',
   blend: 'RF.K.2b-d', 'change-sound': 'RF.K.2e', 'letter-name': 'RF.K.1d', 'letter-sound': 'RF.K.3a-b', 'spell-word': 'L.K.2c-d, RF.K.3a',
-  'word-kinds': 'L.K.5a, L.K.1b', 'one-many': 'L.K.1c', 'where-is': 'L.K.1e', 'story-detail': 'RL.K.1, RL.K.3, SL.K.2', 'story-order': 'RL.K.2',
+  'word-kinds': 'L.K.5a, L.K.1b', 'one-many': 'L.K.1c', 'where-is': 'L.K.1e', 'story-detail': 'RL.K.1, RL.K.3, SL.K.2', 'story-order': 'RL.K.2', sentence: 'L.K.1b, L.K.1f, L.K.2b',
 };
 
 // ── Sounds the author names, sounds the tutor says ───────────────────
@@ -101,9 +105,33 @@ function lettersOf(word: string): string[] | undefined {
 
 const plural = (w: string) => (/[^aeiou]y$/.test(w) ? `${w.slice(0, -1)}ies` : /(s|x|ch|sh)$/.test(w) ? `${w}es` : w === 'fish' || w === 'sheep' ? w : `${w}s`);
 
+/** A tile's text as printed: one lowercase word (I stays a capital), or an end mark; empty when it is neither. */
+const tileText = (raw: string): string => {
+  const x = String(raw ?? '').trim();
+  if (isMark(x)) return x;
+  if (x === 'I') return x;
+  return /^[A-Za-z']{1,12}$/.test(x) ? x.toLowerCase() : '';
+};
+/** Words that start a question (the first word of a sentence that ends in a question mark). */
+const QUESTION_STARTS = new Set(['can', 'is', 'are', 'am', 'do', 'does', 'did', 'will', 'may', 'who', 'what', 'where', 'when', 'why', 'how', 'which']);
+const PART_ROLES: readonly SentenceRole[] = ['who', 'does', 'what', 'where', 'describes'];
+
 /** A drafted thing with the library's facts (or an error the author can act on). */
 export function resolveThing(t: ThingDraft): WordThing | { error: string } {
   if (!t.id) return { error: 'every thing and ref needs an id' };
+  if (t.tile !== undefined) {
+    const text = tileText(t.tile);
+    if (t.letter) return { error: `${t.id}: a tile or a letter, not both` };
+    if (!text) return { error: `${t.id}: a tile is one word in letters ("runs", "and", "big") or an end mark (. ? !)` };
+    const out: WordThing = { id: t.id, tile: text };
+    // The library's kind and picture, when it has them: a cache of reviewed facts, never a gate (a tile with no
+    // picture is a printed word the tutor reads).
+    const category = lexWord(text.toLowerCase())?.category ?? (t.word ? lexWord(t.word.toLowerCase())?.category : undefined);
+    if (category) out.category = category;
+    const pic = wordPictureOf(t.word ?? text) ?? (t.word ? wordPictureOf(text) : null);
+    if (pic) out.emoji = pic.emoji;
+    return out;
+  }
   if (!!t.word === !!t.letter) return { error: `${t.id}: give a word (a picture) or a letter, not both` };
   if (t.letter) {
     if (!/^[A-Za-z]$/.test(t.letter) || !LETTER_SOUNDS[t.letter.toLowerCase()]) return { error: `${t.id}: "${t.letter}" is not a K letter tile (a-z, not q or x)` };
@@ -149,6 +177,8 @@ export function resolveRule(r: RuleDraft | undefined): WordRule | { error: strin
     case 'number': { const p = wordPictureOf(r.word ?? ''); return p && (r.number === 'one' || r.number === 'many') ? { type: 'number', is: r.number, word: p.word } : { error: 'number needs number (one or many) and word' }; }
     case 'where': return r.rel && RELATIONS.includes(r.rel) ? { type: 'where', rel: r.rel } : { error: `where needs rel: ${RELATIONS.join(', ')}` };
     case 'story': return Number.isInteger(r.event) && (r.role === 'who' || r.role === 'what' || r.role === 'where') ? { type: 'story', event: r.event!, role: r.role } : { error: 'story needs event (0-based) and role (who, what, where)' };
+    case 'fills': return { type: 'fills' };
+    case 'part': return r.role && PART_ROLES.includes(r.role as SentenceRole) ? { type: 'part', role: r.role as SentenceRole } : { error: `part needs role: ${PART_ROLES.join(', ')}` };
     default: return { error: `unknown condition "${r.type}": ${RULE_TYPES.join(', ')}` };
   }
 }
@@ -165,20 +195,28 @@ export function readWords(d: WordDraft): { world: WordWorld; errors: string[] } 
     for (const [role, w] of [['who', e.who], ['what', e.what], ['where', e.where]] as const) if (w && !wordPictureOf(w)) errors.push(`story: no picture for ${role} "${w}"`);
     return { who: norm(e.who) ?? e.who, did: (e.did ?? '').trim(), ...(e.what ? { what: norm(e.what) ?? e.what } : {}), ...(e.where ? { where: norm(e.where) ?? e.where } : {}) };
   });
+  const sentence: SentenceToken[] = (d.sentence ?? []).map((k, i) => {
+    const say = tileText(k.say);
+    const role = k.role as SentenceRole;
+    if (!SENTENCE_ROLES.includes(role)) errors.push(`sentence word ${i}: role is ${SENTENCE_ROLES.join(', ')}`);
+    else if (!say) errors.push(`sentence word ${i}: say is one word in letters, or an end mark (. ? !)`);
+    else if ((role === 'end') !== isMark(say)) errors.push(`sentence word ${i}: an end mark (${MARKS.join(' ')}) has role end, and only an end mark does`);
+    return { say, role, ...(k.card ? { card: k.card } : {}) };
+  });
   const a = d.answer ?? ({} as WordDraft['answer']);
   let answer: WordAnswer;
   if (a.kind === 'sort') {
     const baskets = (a.baskets ?? []).map(b => { const r = resolveRule(b.rule); if ('error' in r) errors.push(`basket ${b.id}: ${r.error}`); return { id: b.id, label: b.label, rule: 'error' in r ? ({ type: 'kind', is: '?' } as WordRule) : r }; });
     answer = { kind: 'sort', baskets, things: things.map(t => t.id) };
   } else if (a.kind === 'order') {
-    answer = { kind: 'order', by: a.by === 'spelling' ? 'spelling' : 'story', ...(a.of ? { of: a.of } : {}), things: things.map(t => t.id) };
+    answer = { kind: 'order', by: a.by === 'spelling' ? 'spelling' : a.by === 'sentence' ? 'sentence' : 'story', ...(a.of ? { of: a.of } : {}), things: things.map(t => t.id) };
   } else {
     const r = resolveRule(a.rule);
     if ('error' in r) errors.push(r.error);
     if (a.kind !== 'tap') errors.push('answer.kind is tap, sort or order');
     answer = { kind: 'tap', among: a.among?.length ? a.among : things.map(t => t.id), rule: 'error' in r ? ({ type: 'kind', is: '?' } as WordRule) : r, traps: {} };
   }
-  return { world: { refs, things, ...(story.length ? { story } : {}), answer }, errors };
+  return { world: { refs, things, ...(story.length ? { story } : {}), ...(sentence.length ? { sentence } : {}), answer }, errors };
 }
 
 // ── Mode and standards, from the structure ───────────────────────────
@@ -187,10 +225,11 @@ const ruleOfWorld = (w: WordWorld): WordRule | undefined => (w.answer.kind === '
 
 /** The eval mode a word world is (fixed precedence: the most specific skill wins). */
 export function wordModeOf(w: WordWorld): WonderWalkStopType {
-  if (w.answer.kind === 'order') return w.answer.by === 'spelling' ? 'spell-word' : 'story-order';
+  if (w.answer.kind === 'order') return w.answer.by === 'spelling' ? 'spell-word' : w.answer.by === 'sentence' ? 'sentence' : 'story-order';
   const r = ruleOfWorld(w);
   switch (r?.type) {
     case 'story': return 'story-detail';
+    case 'fills': case 'part': return 'sentence';
     case 'change': return 'change-sound';
     case 'blend': return 'blend';
     case 'letter-sound': case 'first-letter': return 'letter-sound';
@@ -276,6 +315,8 @@ export function trapsOf(w: WordWorld, key: string | null): Record<string, WordTr
     const t = w.things.find(x => x.id === id);
     if (!t) continue;
     if (id === key) { out[id] = null; continue; }
+    if (r.type === 'fills') { out[id] = right && cardClass(w, t) === cardClass(w, right) ? (cardClass(w, t) === 'join' ? 'other_join' : 'meaning') : 'wrong_kind'; continue; }
+    if (r.type === 'part') { out[id] = w.sentence?.some(k => k.card === id) ? 'in_story' : 'not_heard'; continue; }
     const at: SoundAt = r.type === 'sound' || r.type === 'same-sound' ? r.at : 'first';
     const near = (x?: string, y?: string) => !!x && !!y && (NEAR[x] === y || NEAR[y] === x || (NEAR_V[x] ?? []).includes(y));
     const target = r.type === 'sound' ? r.is : r.type === 'letter-sound' ? r.is : right ? soundAt(right.phones, at) : undefined;
@@ -301,11 +342,12 @@ export function wordChecks(d: WordDraft, ctx: WordContext): { blocking: string[]
   if (w.things.length < 2 || w.things.length > 6) blocking.push(`2-6 things, not ${w.things.length}`);
   if ((w.story ?? []).length > 3) blocking.push('a story has at most 3 events: the child must hold it');
   const faces = new Map<string, string>();
-  for (const t of [...w.refs, ...w.things]) if (t.emoji) {
+  for (const t of [...w.refs, ...w.things]) if (t.emoji && !t.tile) {
     const other = faces.get(t.emoji);
     if (other && other !== t.word) blocking.push(`"${other}" and "${t.word}" share one picture (${t.emoji}); pick words that look different`);
     faces.set(t.emoji, t.word!);
   }
+  blocking.push(...sentenceShape(w));
   if (blocking.length) return { blocking, advisory };
 
   const a = w.answer;
@@ -421,6 +463,10 @@ export function wordChecks(d: WordDraft, ctx: WordContext): { blocking: string[]
     }
   }
 
+  const sent = sentenceHeard(w, key, { ...ctx, ask });
+  blocking.push(...sent.blocking);
+  advisory.push(...sent.advisory);
+
   // ── Leaks ──
   if (a.kind === 'tap' && typeof key === 'string') {
     const right = w.things.find(t => t.id === key)!;
@@ -479,6 +525,118 @@ export function wordChecks(d: WordDraft, ctx: WordContext): { blocking: string[]
   return { blocking, advisory, key, mode, world: w, ask };
 }
 
+// ── Sentences ────────────────────────────────────────────────────────
+
+const usesSentence = (w: WordWorld) => (w.answer.kind === 'order' && w.answer.by === 'sentence') || (w.answer.kind === 'tap' && (w.answer.rule.type === 'fills' || w.answer.rule.type === 'part'));
+const carded = (w: WordWorld) => (w.sentence ?? []).filter(k => k.card);
+
+/** A sentence world's structure: its words, which are cards, and what the answer needs of them. */
+function sentenceShape(w: WordWorld): string[] {
+  const out: string[] = [];
+  const toks = w.sentence ?? [];
+  const uses = usesSentence(w);
+  if (uses && !toks.length) return ['this answer needs a sentence: its words in order, each with a role'];
+  if (!uses) {
+    if (toks.length) out.push('a sentence is used by order by sentence, or a tap with rule fills or part');
+    if (w.things.some(t => t.tile)) out.push('word tiles are the cards of a sentence stop; use pictures or letters here');
+    return out;
+  }
+  const words = toks.filter(k => k.role !== 'end');
+  if (words.length < 2 || words.length > 7) out.push(`a sentence has 2-7 words, not ${words.length}`);
+  toks.forEach((k, i) => { if (k.role === 'end' && i !== toks.length - 1) out.push('an end mark comes last'); });
+  if (!words.some(k => k.role === 'who') || !words.some(k => k.role === 'does')) out.push('a sentence has a who and a does (who it is about, what they do)');
+  const end = toks[toks.length - 1];
+  if (end?.say === '?' && !QUESTION_STARTS.has(toks[0].say.toLowerCase())) out.push(`a sentence that ends in ? starts with a question word (can, is, do, will, who, what, where...), not "${toks[0].say}"`);
+  if (w.things.some(t => !t.tile)) out.push('the cards of a sentence stop are word tiles: {id, tile: the word as printed, word: its picture word when it has one}');
+  const used = new Set<string>();
+  for (const k of toks) {
+    if (!k.card) continue;
+    const t = w.things.find(x => x.id === k.card);
+    if (!t) { out.push(`sentence card "${k.card}" is not a thing`); continue; }
+    if (used.has(k.card)) out.push(`card ${k.card} is two words of the sentence; give each word its own card`);
+    used.add(k.card);
+    if (t.tile && t.tile.toLowerCase() !== k.say.toLowerCase()) out.push(`card ${k.card} says "${t.tile}" but its sentence word is "${k.say}"`);
+  }
+  const cards = carded(w);
+  const a = w.answer;
+  if (a.kind === 'order') {
+    if (cards.length < 2 || cards.length > 5) out.push(`a sentence to build has 2-5 of its words as cards, not ${cards.length}`);
+    if (w.things.length - cards.length > 1) out.push('at most one spare card that is not in the sentence');
+  } else if (a.kind === 'tap' && a.rule.type === 'fills') {
+    if (cards.length !== 1) out.push(`a fill leaves out ONE word of the sentence: exactly one sentence word has a card (the right one), not ${cards.length}; the other cards are words that are not in it`);
+  } else if (a.kind === 'tap' && a.rule.type === 'part') {
+    const role = a.rule.role;
+    if (cards.filter(k => k.role === role).length !== 1) out.push(`exactly one sentence word with role ${role} has a card`);
+    if (cards.length < 2) out.push('at least two words of the sentence are cards: the child tells its parts apart');
+  }
+  return out;
+}
+
+/** What a sentence stop says aloud and offers: nothing that lets a child copy the order or pick the fill without the idea. */
+function sentenceHeard(w: WordWorld, key: unknown, ctx: WordContext): { blocking: string[]; advisory: string[] } {
+  const blocking: string[] = [];
+  const advisory: string[] = [];
+  if (!usesSentence(w)) return { blocking, advisory };
+  const toks = (w.sentence ?? []).filter(k => k.role !== 'end');
+  // The library may know a word as another kind than its role says (drinks: a thing, or what the cat does). The
+  // author's role stands; the note is for the author to check.
+  for (const k of toks) {
+    const lib = tileClass({ tile: k.say, category: lexWord(k.say.toLowerCase())?.category });
+    if ((k.role === 'does' && (lib === 'thing' || lib === 'describing')) || ((k.role === 'who' || k.role === 'what') && lib === 'action'))
+      advisory.push(`"${k.say}" is a ${lib === 'action' ? 'doing-word' : lib === 'thing' ? 'naming word' : 'describing word'} in the word library but the ${k.role} here: check the role`);
+  }
+  const a = w.answer;
+  const heard = `${ctx.narration} ${ctx.ask}`;
+  const all = `${heard} ${ctx.why}`;
+  if (a.kind === 'order') {
+    for (let i = 0; i + 1 < toks.length; i++) {
+      if (!(toks[i].card || toks[i + 1].card)) continue;
+      const pair = `${toks[i].say} ${toks[i + 1].say}`;
+      if (containsPhrase(all, pair)) { blocking.push(`the narration, ask or why-card says "${pair}", two words of the sentence in order: the child can copy it; talk about what is happening in other words`); break; }
+    }
+    // The cards named one after another in their order ("first big, then cat, then sleeps") tell the order too.
+    const cardWords = toks.filter(k => k.card).map(k => k.say.toLowerCase());
+    for (const [field, text] of [['narration', ctx.narration], ['ask', ctx.ask], ['why-card', ctx.why]] as const) {
+      const said = tokenize(text);
+      const at = cardWords.map(x => said.indexOf(x));
+      const found = at.filter(i => i >= 0);
+      if (found.length >= Math.min(3, cardWords.length) && found.length >= 2 && found.every((i, k) => k === 0 || i > found[k - 1]))
+        blocking.push(`the ${field} names the cards in the order they go (${cardWords.filter((_, k) => at[k] >= 0).join(', ')}): say how to think about it (who first, then what they do), never the words in order`);
+    }
+    return { blocking, advisory };
+  }
+  if (a.kind !== 'tap' || typeof key !== 'string') return { blocking, advisory };
+  const right = w.things.find(t => t.id === key)!;
+  const wrongs = a.among.filter(id => id !== key).map(id => w.things.find(t => t.id === id)!);
+  const cls = cardClass(w, right);
+  const says = (text: string) => !isMark(right.tile) && containsPhrase(text, right.tile!);
+  if (a.rule.type === 'fills') {
+    if (cls === 'mark') {
+      if (!wrongs.every(t => isMark(t.tile))) blocking.push('when the missing word is the end mark, every card is an end mark');
+      const marks = new Set([right, ...wrongs].map(t => t.tile));
+      if (marks.has('.') && marks.has('!')) blocking.push('a period and an exclamation mark cannot both be cards: either can end a telling sentence; offer one of them with the question mark');
+    } else {
+      for (const t of wrongs) if (cardClass(w, t) === cls && cls !== 'join')
+        blocking.push(`"${t.tile}" could go in the gap too (it is the same kind of word as "${right.tile}"); make the wrong cards other kinds of word (a doing-word, a naming word, a joining word)`);
+      if (!wrongs.some(t => cardClass(w, t) !== cls && cardClass(w, t) !== 'mark')) blocking.push('no wrong card is another kind of word: add one, so the child must know what kind of word the sentence lacks');
+      if (cls === 'join' && wrongs.some(t => cardClass(w, t) === 'join')) advisory.push('and or but is a call on meaning: make the two halves clearly go together (and) or clearly differ (but)');
+    }
+    if (says(ctx.ask) || says(ctx.why)) blocking.push(`the ask or why-card says "${right.tile}", the missing word`);
+    if (cls !== 'join' && cls !== 'small' && says(ctx.narration)) blocking.push(`the narration says "${right.tile}", the missing word`);
+    const s = w.sentence ?? [];
+    const i = s.findIndex(k => k.card === key);
+    for (const pair of [s[i - 1] && `${s[i - 1].say} ${s[i].say}`, s[i + 1] && s[i + 1].role !== 'end' && `${s[i].say} ${s[i + 1].say}`].filter(Boolean) as string[])
+      if (!isMark(right.tile) && containsPhrase(all, pair)) blocking.push(`"${pair}" is said aloud: it gives the missing word its place; the tutor reads the sentence with a blank, so leave the sentence out of the narration`);
+  } else if (a.rule.type === 'part') {
+    const sentence = toks.map(k => k.say).join(' ');
+    if (!containsPhrase(ctx.narration, sentence)) blocking.push(`the narration must say the sentence as written ("${sentence}"): the child finds its parts by hearing it`);
+    if (says(ctx.ask) || says(ctx.why)) blocking.push(`the ask or why-card says "${right.tile}", the answer`);
+    if (!wrongs.some(t => (w.sentence ?? []).some(k => k.card === t.id))) blocking.push('no wrong card is another word of the sentence: the child can pick the only word they heard');
+    if ([right, ...wrongs].some(t => isMark(t.tile))) blocking.push('an end mark is not a part to find: the cards of a part stop are words');
+  }
+  return { blocking, advisory };
+}
+
 // ── Difficulty (agent-primitive I6) ───────────────────────────────────
 
 const STOPS = new Set(['B', 'D', 'G', 'K', 'P', 'T']);
@@ -499,6 +657,8 @@ export function wordDifficulty(d: WordDraft): Difficulty {
   if (Object.values(traps).includes('near_sound')) add(1, 'a wrong choice sounds close');
   if (Object.values(traps).includes('meaning')) add(0.5, 'a wrong choice goes with the word');
   if (Object.values(traps).includes('look_alike')) add(1, 'a letter that looks alike');
+  if (Object.values(traps).includes('other_join')) add(0.5, 'two joining words to choose between');
+  if (rule?.type === 'part' && Object.values(traps).includes('not_heard')) add(0.5, 'a card that was not in the sentence');
   switch (rule?.type) {
     case 'sound': case 'same-sound': {
       add(rule.at === 'last' ? 1 : rule.at === 'middle' ? 2 : 0, `the ${rule.at} sound`);
@@ -534,6 +694,20 @@ export function wordDifficulty(d: WordDraft): Difficulty {
       if (rule.role === 'where') add(0.5, 'where it happened');
       break;
     }
+    case 'fills': {
+      const right = w.things.find(t => t.id === key);
+      const cls = right ? cardClass(w, right) : 'other';
+      const n = (w.sentence ?? []).filter(k => k.role !== 'end').length;
+      add(cls === 'mark' ? 0.5 : cls === 'join' ? 1.5 : 1, cls === 'mark' ? 'choose the end mark' : cls === 'join' ? 'a joining word is missing' : cls === 'action' ? 'the doing-word is missing' : cls === 'thing' ? 'a naming word is missing' : cls === 'describing' ? 'a describing word is missing' : 'a small word is missing');
+      if (n >= 5) add(0.5, `a sentence of ${n} words`);
+      break;
+    }
+    case 'part': {
+      const n = (w.sentence ?? []).filter(k => k.role !== 'end').length;
+      add(rule.role === 'does' || rule.role === 'where' ? 1 : rule.role === 'who' ? 0 : 0.5, `find the ${rule.role}`);
+      if (n >= 5) add(0.5, `a sentence of ${n} words`);
+      break;
+    }
   }
   if (a.kind === 'sort') {
     const n = a.things.length;
@@ -545,7 +719,14 @@ export function wordDifficulty(d: WordDraft): Difficulty {
   if (a.kind === 'order') {
     const n = a.things.length;
     if (a.by === 'story') add(n >= 4 ? 2 : 1, `put ${n} story events in order`);
-    else {
+    else if (a.by === 'sentence') {
+      const cards = carded(w);
+      const c = cards.length;
+      add(c >= 5 ? 2.5 : c === 4 ? 2 : c === 3 ? 1 : 0.5, `build a sentence from ${c} cards`);
+      if (n > c) add(0.5, 'a spare card');
+      if (w.sentence?.[w.sentence.length - 1]?.say === '?') add(0.5, 'a question: the asking word comes first');
+      if (cards.some(k => k.role === 'describes' || k.role === 'joins')) add(0.5, 'a describing or joining word to place');
+    } else {
       const k = orderKey(w);
       const len = Array.isArray(k) ? k.length : n;
       add(len >= 4 ? 2.5 : 1.5, `spell ${len} sounds`);
@@ -560,9 +741,9 @@ export function wordDifficulty(d: WordDraft): Difficulty {
 export function wordWalkChecks(drafts: WordDraft[], opts: { tier?: SupportTier; openModes: WonderWalkStopType[] }): string[] {
   const blocking: string[] = [];
   const worlds = drafts.map(d => readWords(d).world);
-  const sig = worlds.map(w => { const r = ruleOfWorld(w); return JSON.stringify({ m: wordModeOf(w), r, t: w.things.map(t => t.word ?? t.letter).sort() }); });
+  const sig = worlds.map(w => { const r = ruleOfWorld(w); return JSON.stringify({ m: wordModeOf(w), r, t: w.things.map(t => t.word ?? t.letter ?? t.tile).sort() }); });
   sig.forEach((s, i) => { const j = sig.indexOf(s); if (j !== i) blocking.push(`language stops ${j} and ${i} are the same item`); });
-  const rights = worlds.map(w => { const k = tapKey(w); return k ? w.things.find(t => t.id === k)?.word ?? w.things.find(t => t.id === k)?.letter : undefined; }).filter(Boolean);
+  const rights = worlds.map(w => { const k = tapKey(w); const t = k ? w.things.find(x => x.id === k) : undefined; return t && !isMark(t.tile) ? t.word ?? t.letter ?? t.tile : undefined; }).filter(Boolean);
   const dup = rights.find((r, i) => rights.indexOf(r) !== i);
   if (dup) blocking.push(`"${dup}" is the answer at two stops; every stop needs its own`);
   if (worlds.length >= 3) {
@@ -573,6 +754,9 @@ export function wordWalkChecks(drafts: WordDraft[], opts: { tier?: SupportTier; 
     // One open mode: a mode that can sort mixes in a sort; a tap-only mode varies what it asks for instead.
     if (open.length < 2 && kinds.size < 2 && SORT_MODES.has(open[0])) blocking.push('every stop is a tap: make one a sort (baskets)');
   }
+  // Sentence stops are one mode; what the child does with the sentence must vary (build it, complete it, find a part).
+  const doing = worlds.filter(w => w.sentence).map(w => (w.answer.kind === 'order' ? 'build' : w.answer.kind === 'tap' && w.answer.rule.type === 'part' ? 'part' : 'fill'));
+  if (doing.length >= 3 && new Set(doing).size < 2) blocking.push(`every sentence stop is a ${doing[0]}; mix building a sentence (order by sentence), completing one (fills) and finding a part (part)`);
   // No two stops ask for the same thing (the same sound, letter, position word, kind or clap count).
   const asks = worlds.map(w => { const r = ruleOfWorld(w); if (!r) return undefined; const { type, ...rest } = r as Record<string, unknown> & { type: string };
     return `${type}:${JSON.stringify(Object.fromEntries(Object.entries(rest).filter(([k]) => !['as', 'with', 'from', 'of'].includes(k))))}`; });
@@ -621,7 +805,8 @@ export function buildWordWorld(d: WordDraft, ask: string, rand: () => number): W
     answer = { kind: 'tap', among, rule: remapRule(a.rule), traps: {} };
   } else if (a.kind === 'sort') answer = { kind: 'sort', baskets: a.baskets.map(b => ({ id: b.id, label: id(b.label), rule: remapRule(b.rule) })), things: things.map(t => t.id) };
   else answer = { kind: 'order', by: a.by, ...(a.of ? { of: id(a.of) } : {}), things: things.map(t => t.id) };
-  const built: WordWorld = { refs, things, ...(world.story ? { story: world.story } : {}), answer, ...(filled.say ? { say: filled.say } : {}) };
+  const sentence = world.sentence?.map(k => ({ ...k, ...(k.card ? { card: id(k.card) } : {}) }));
+  const built: WordWorld = { refs, things, ...(world.story ? { story: world.story } : {}), ...(sentence ? { sentence } : {}), answer, ...(filled.say ? { say: filled.say } : {}) };
   if (answer.kind === 'tap') answer.traps = trapsOf(built, tapKey(built));
   // A track never starts in its own order.
   if (answer.kind === 'order') {
@@ -652,4 +837,4 @@ export function sayAnyExamples(w: WordWorld, heard: string, limit = 8): string[]
   return out;
 }
 
-export const __words = { lettersOf, plural, KIND_WORDS, rimeOf };
+export const __words = { lettersOf, plural, KIND_WORDS, rimeOf, sentenceText };

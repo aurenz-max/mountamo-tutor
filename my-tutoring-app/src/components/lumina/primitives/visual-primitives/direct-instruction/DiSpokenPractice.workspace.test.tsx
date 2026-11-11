@@ -44,8 +44,17 @@ const explain: SpokenPracticeItem = { ...base, id: 'dsp-explain', mode: 'explain
 const riddle: SpokenPracticeItem = { ...base, id: 'dsp-riddle', stimulusRole: undefined, stimulusKind: 'none',
   stimulusText: 'I have four legs and bark. What animal am I?', ask: 'I have four legs and bark. What animal am I?',
   expectedAnswer: 'dog', alternates: ['puppy'], signatureError: '' };
+const frame = (mode: SpokenPracticeMode, ask: string, answer: string, wrong: string, emoji: string, choices?: string[]): SpokenPracticeItem => ({
+  ...base, id: `dsp-${mode}`, mode, action: mode, stimulusRole: undefined, stimulusKind: 'emoji', stimulusText: 'picture', stimulusEmoji: emoji,
+  ask, expectedAnswer: answer, alternates: [], signatureError: `The learner says ${wrong}.`, ...(choices ? { choices } : {}),
+  grammar: { frame: 'f', sentence: ask, wrong: [wrong], menu: [answer, wrong], miss: `says ${wrong}`, models: [] } });
 const BY_MODE: Record<SpokenPracticeMode, SpokenPracticeItem> = {
-  say_answer: base, count_and_say: count, compare_choice: pair, read_aloud: read, explain_concept: explain };
+  say_answer: base, count_and_say: count, compare_choice: pair, read_aloud: read, explain_concept: explain,
+  article_choice: frame('article_choice', 'Look at this picture and listen. It is ... egg. What word fits?', 'an', 'a', '🥚'),
+  pronoun_choice: frame('pronoun_choice', 'Look at this picture and listen. ... can swim. What word fits?', 'she', 'he', '👧'),
+  verb_form: frame('verb_form', 'Look at this picture and listen. The dogs ... fast. What word fits: run or runs?', 'run', 'runs', '🐶🐶', ['run', 'runs']),
+  verb_tense: frame('verb_tense', 'Look at this picture and listen. Yesterday I ... home. What word fits: walk or walked?', 'walked', 'walk', '🚶', ['walk', 'walked']),
+};
 
 const pack = (items: SpokenPracticeItem[], challengeType: SpokenPracticeMode = items[0].mode) => ({
   title: 'Say It Out Loud', description: 'Look, then answer out loud!', items, challengeType, gradeLevel: 'Grade 1' });

@@ -6,6 +6,8 @@
  * choices a mode's stops can make. A mode whose answer can be a word, a letter or a number is SAY_OR_SHOW: its `say`
  * and `say-any` stops carry a spoken key, and its shown stops (a sort, a move) carry none and are checked on screen.
  * A mode whose answer is always shown (a move, a place, a track, a card told apart by where it sits) is TAP_ONE.
+ * `sentence` is one mode for every sentence stop (a capability, not a task): a missing word or a part is said or
+ * tapped; a built sentence and an end mark carry no key and are shown.
  */
 import type { WonderWalkMiss } from './wonderWalkWorkspace';
 import { defineCard, SAY_OR_SHOW, SPOKEN_AUDIO, TAP_ONE } from '../../../../components/live-activity/boss';
@@ -19,7 +21,7 @@ export const MOVE_MISSES: readonly WonderWalkMiss[] = ['off_by_one', 'miscount',
 export const MATH_MISSES: readonly WonderWalkMiss[] = Array.from(new Set([...TAP_MISSES, ...NUMBER_MISSES, ...MOVE_MISSES]));
 
 /** Language stops: a tap names its trap; a sort or a track is wrong as a whole. */
-export const WORD_MISSES: readonly WonderWalkMiss[] = ['repeated_pick', 'near_sound', 'meaning', 'look_alike', 'mixed_story', 'not_heard', 'off_idea', 'wrong_sort', 'wrong_order'];
+export const WORD_MISSES: readonly WonderWalkMiss[] = ['repeated_pick', 'near_sound', 'meaning', 'look_alike', 'mixed_story', 'not_heard', 'off_idea', 'wrong_sort', 'wrong_order', 'wrong_kind', 'other_join'];
 const WORD_MOVES = 'taps a card, a card and then its basket, or cards in order onto the track, then Done';
 const MOVES = 'taps a place or a number, or a thing and then where it goes, then Done';
 
@@ -50,15 +52,16 @@ export const wonderWalkCard = defineCard<WonderWalkMiss>({
     'count-on': math,
     rhyme: words, 'first-sound': words, 'last-sound': words, 'middle-sound': words, syllables: words, blend: words,
     'change-sound': words, 'letter-name': words, 'letter-sound': words, 'spell-word': wordsShown, 'word-kinds': words,
-    'one-many': wordsShown, 'where-is': wordsShown, 'story-detail': words, 'story-order': wordsShown,
+    'one-many': wordsShown, 'where-is': wordsShown, 'story-detail': words, 'story-order': wordsShown, sentence: words,
   },
   words: {
     job: 'look and listen, then say, tap or move the answer',
     answer: 'the picture, number, letter, word, group, sort or order',
     question: 'the narration, the idea, the ask and what each place holds',
+    // At the guidance cap (OFFER_GUIDANCE_MAX): a new mode's name costs characters here, so the wording is kept tight.
     special: 'Say the narration, then the ask; after a miss, return to the idea. Math: tell the story with its parts, not the total; '
-      + 'never say or count the answer; as the child moves things, have them count aloud; never say when to stop. '
-      + 'Language: name each card plainly; say sounds as saySounds writes them; never name a letter card to find or stress one card’s sound. '
-      + 'If any fitting word counts, invite the child’s own word first.',
+      + 'never say or count the answer; have the child count aloud while moving; never say when to stop. '
+      + 'Language: name each card; say sounds as saySounds writes; never name a letter card to find or stress one card’s sound. '
+      + 'If any fitting word counts, invite the child’s own word.',
   },
 });

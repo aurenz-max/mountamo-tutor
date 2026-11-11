@@ -171,7 +171,28 @@ export const resolveObjectiveLetterGroup = (
   const fromText = letterGroupFromText(texts.filter(Boolean).join('\n'));
   if (fromText && (!explicit || fromText > explicit)) return { group: fromText, source: 'objective' };
   if (explicit) return { group: explicit, source: 'config' };
-  return { group: 1, source: 'default' };
+  // No group named: the whole alphabet. "Match uppercase and lowercase letters" and "one-to-one letter-sound
+  // correspondences" (K 46, 47) name no group, and group 1's six letters were a cap below that intent (H3 #5).
+  return { group: 4, source: 'default' };
+};
+
+/**
+ * The smallest group that spells every example word an objective lists ("Examples: cat, map, van",
+ * "(e.g., sit, pig)"), or null when it lists none. A group below this would refuse the curriculum's own words.
+ */
+export const letterGroupForExamples = (texts: ReadonlyArray<string | undefined | null>): LetterGroup | null => {
+  let group: LetterGroup | null = null;
+  for (const text of texts) {
+    for (const m of Array.from((text ?? '').toLowerCase().matchAll(/(?:examples?:|e\.g\.,?)\s*([^\n.)]*)/g))) {
+      for (const word of m[1].split(/[^a-z]+/).filter((w) => isCvcSpelling(w))) {
+        for (const letter of word) {
+          const needed = smallestGroupContaining(letter);
+          if (needed && (!group || needed > group)) group = needed;
+        }
+      }
+    }
+  }
+  return group;
 };
 
 /**

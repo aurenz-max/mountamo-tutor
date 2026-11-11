@@ -35,21 +35,47 @@ import { leverScene } from '../../../components/live-activity/bossLevers';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
-import { oralSentenceScene, type OralSentenceStudioItem } from './oralSentenceStudioDomain';
+import { isOpenItem, oralSentenceScene, type OralSentenceStudioItem } from './oralSentenceStudioDomain';
+import { nameOf, type OralOpenItem } from './oralSentenceStudioOpen';
 import { ORAL_SENTENCE_LEVERS, PICTURES_LEVER, STRIP_LEVER } from './oralSentenceStudioLevers';
 import { oralSentenceItems, oralSentenceStudioBoss } from './oralSentenceStudio.boss';
 
-/** Task identities (eval modes): describe a picture, rehearse the sentence
- * for the next step of a class writing piece, or reuse two story words in a
- * new sentence of one's own. */
-export type OralSentenceStudioChallengeType =
+/** Task identities (eval modes) that use two printed words: describe a picture, rehearse the sentence for the next
+ * step of a class writing piece, or reuse two story words in a new sentence of one's own. */
+export type OralWordsType =
   | 'describe_scene'
   | 'guided_writing_rehearsal'
   | 'use_story_words';
 
+/** Open-speech task identities (handoff H2): nothing is printed and there is no code key; the tutor judges. Ask a
+ * question about something hidden, say whether you agree with a claim and why, or say a line for each of two characters. */
+export type OralOpenType = 'ask_question' | 'say_why' | 'two_voices';
+
+export type OralSentenceStudioChallengeType = OralWordsType | OralOpenType;
+
+/** A library picture (the word library's noun and its emoji, picked by code). */
+export interface OralPicture { word: string; emoji: string }
+
+export interface OralOpenChallenge {
+  id: string;
+  type: OralOpenType;
+  sceneTitle: string;
+  setting: OralPicture;
+  /** ask_question and say_why: one character; two_voices: two. */
+  characters: OralPicture[];
+  /** ask_question: the hidden thing (a box, a door); say_why: one or two things the claim is about; two_voices: none or one. */
+  things: OralPicture[];
+  /** What the tutor says to set up the scene, 1-2 sentences. Said, never printed. */
+  situation: string;
+  /** say_why only: the claim the character makes, an opinion with no right answer. Said, never printed. */
+  claim?: string;
+  /** Three private examples of a credited answer; one is shown after credit. */
+  examples: [string, string, string];
+}
+
 export interface OralSentenceStudioChallenge {
   id: string;
-  type: OralSentenceStudioChallengeType;
+  type: OralWordsType;
   sceneTitle: string;
   settingEmoji: string;
   settingLabel: string;
@@ -82,7 +108,7 @@ export interface OralSentenceStudioData {
   /** Representative only; each challenge renders from its own `type`. */
   challengeType: OralSentenceStudioChallengeType | 'mixed';
   /** Three long-form spoken challenges, built by the Fork B orchestrator. */
-  challenges: OralSentenceStudioChallenge[];
+  challenges: Array<OralSentenceStudioChallenge | OralOpenChallenge>;
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -103,12 +129,52 @@ const PHASE_CONFIG: Record<OralSentenceStudioChallengeType, PhaseConfig> = {
   describe_scene: { label: 'Picture Sentences', icon: '💬', accentColor: 'cyan' },
   guided_writing_rehearsal: { label: 'Say It Before We Write', icon: '📝', accentColor: 'purple' },
   use_story_words: { label: 'Story Words', icon: '📖', accentColor: 'amber' },
+  ask_question: { label: 'Ask a Question', icon: '❓', accentColor: 'blue' },
+  say_why: { label: 'Say Why', icon: '🤔', accentColor: 'emerald' },
+  two_voices: { label: 'Two Voices', icon: '🎭', accentColor: 'pink' },
 };
 
 const MODE_PROMPT: Record<OralSentenceStudioChallengeType, string> = {
   describe_scene: 'Look at the scene. Say one complete sentence that uses both new words.',
   guided_writing_rehearsal: 'Look at the next step. Say the sentence we will write for it, using both words.',
   use_story_words: 'Listen to the story. Then make a new sentence of your own with both story words.',
+  ask_question: 'Look at the picture. Ask a question about it.',
+  say_why: 'Listen. Do you agree? Say why.',
+  two_voices: 'Say one thing each friend says.',
+};
+
+/** The open-speech scene: library pictures only, nothing printed but the picture words. The situation and the
+ *  claim are said by the tutor. */
+const OpenStage: React.FC<{ item: OralOpenItem }> = ({ item }) => {
+  const c = item.challenge;
+  const figure = (word: string, emoji: string, extra?: React.ReactNode) => (
+    <div key={word} className="relative max-w-32 text-center">
+      <span className="block text-6xl" role="img" aria-label={word}>{emoji}</span>
+      {extra}
+    </div>
+  );
+  return (
+    <LuminaPanel data-pip-object="stimulus" accent="cyan" className="overflow-hidden">
+      <div className="relative min-h-56 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-sky-400/15 via-indigo-400/10 to-emerald-400/15 p-5">
+        <div className="absolute right-4 top-4 rounded-full bg-slate-950/45 px-3 py-1.5 text-xl" role="img" aria-label={c.setting.word}>
+          {c.setting.emoji}
+        </div>
+        <div className="flex min-h-44 items-end justify-center gap-6 pt-12 sm:gap-10">
+          {c.characters.map((p) => figure(p.word, p.emoji,
+            item.mode === 'two_voices' ? (
+              <span data-open="speech-bubble" aria-label={`${nameOf(p)} speech bubble`}
+                className="absolute -top-10 left-1/2 -translate-x-1/2 rounded-2xl border-2 border-dashed border-pink-300/50 px-4 py-2 text-lg text-pink-100">💬</span>
+            ) : item.mode === 'say_why' ? (
+              <span className="absolute -right-6 -top-6 text-3xl" aria-hidden>💬</span>
+            ) : null))}
+          {c.things.map((p) => figure(p.word, p.emoji,
+            item.mode === 'ask_question' ? (
+              <span data-open="hidden-mark" className="absolute -right-4 -top-4 rounded-full bg-blue-500/80 px-2 text-2xl font-bold text-white" aria-label="unknown">?</span>
+            ) : null))}
+        </div>
+      </div>
+    </LuminaPanel>
+  );
 };
 
 const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, className, runtimePlanItemId }) => {
@@ -210,8 +276,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
     );
   }
 
-  const challenge = currentItem.challenge;
-  const phase = PHASE_CONFIG[challenge.type];
+  const phase = PHASE_CONFIG[currentItem.mode];
   const feedbackVisible = creditedItem != null && creditedItem.id === currentItem.id && runner.revealHeld;
 
   return (
@@ -240,8 +305,17 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
               <LuminaReadAloudGlyph size={32} speaking={runner.tutorSpeaking} />
             </div>
 
-            <LuminaPrompt>{MODE_PROMPT[challenge.type]}</LuminaPrompt>
+            <LuminaPrompt>{MODE_PROMPT[currentItem.mode]}</LuminaPrompt>
 
+            {isOpenItem(currentItem) ? (
+              <>
+                {/* Pip outlines the picture as a whole: the answer is the child's own. */}
+                <PipDock />
+                <PipWorkspace>
+                  <OpenStage item={currentItem} />
+                </PipWorkspace>
+              </>
+            ) : (() => { const challenge = currentItem.challenge; return (<>
             {challenge.type === 'use_story_words' && challenge.storyText && (
               <LuminaPanel accent="amber">
                 <LuminaSectionLabel>The story</LuminaSectionLabel>
@@ -338,12 +412,14 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
                 </div>
               )}
             </LuminaPanel>
+            </>); })()}
 
             {feedbackVisible && creditedItem && (
               <LuminaFeedbackCard
                 status="correct"
-                label="Your sentence worked"
-                teachingNote="This is one possible sentence. Your own wording can be different."
+                label={isOpenItem(creditedItem) ? 'That worked' : 'Your sentence worked'}
+                teachingNote={isOpenItem(creditedItem) ? 'This is one possible answer. Your own words can be different.'
+                  : 'This is one possible sentence. Your own wording can be different.'}
               >
                 {creditedItem.modelResponse}
               </LuminaFeedbackCard>

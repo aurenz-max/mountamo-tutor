@@ -13,12 +13,18 @@ import type { KnownMiss } from '../../../components/live-activity/runtime/spoken
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type {
+  OralOpenChallenge,
   OralSentenceStudioChallenge,
-  OralSentenceStudioChallengeType,
+  OralWordsType,
 } from './OralSentenceStudio';
-import { ORAL_SENTENCE_MISSES, type SpokenOralSentenceMiss } from './oralSentenceStudio.card';
+import { ORAL_SENTENCE_MISSES } from './oralSentenceStudio.card';
+import {
+  isOralOpenType, openAskFor, openHarnessAnswers, openItemFromChallenge, openKey, openScene, openSpokenMisses,
+  openChallengeAskable, type OralOpenItem,
+} from './oralSentenceStudioOpen';
 
-export const ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES: readonly OralSentenceStudioChallengeType[] = [
+/** The two-word modes. The open-speech modes are `ORAL_OPEN_TYPES` (`oralSentenceStudioOpen.ts`). */
+export const ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES: readonly OralWordsType[] = [
   'describe_scene',
   'guided_writing_rehearsal',
   'use_story_words',
@@ -28,12 +34,19 @@ export const ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES: readonly OralSentenceStudioCh
  * the rehearsal step always follows a step the class already wrote. */
 export const REHEARSAL_ORDER_WORDS = ['next', 'then', 'last', 'finally'] as const;
 
-export interface OralSentenceStudioItem {
+export interface OralWordsItem {
   id: string;
-  mode: OralSentenceStudioChallengeType;
+  mode: OralWordsType;
   challenge: OralSentenceStudioChallenge;
   modelResponse: string;
 }
+export type OralSentenceStudioItem = OralWordsItem | OralOpenItem;
+export type { OralOpenItem };
+
+export const isOpenChallenge = (c: OralSentenceStudioChallenge | OralOpenChallenge): c is OralOpenChallenge =>
+  isOralOpenType(c?.type);
+export const isOpenItem = (item: OralSentenceStudioItem): item is OralOpenItem => isOralOpenType(item.mode);
+export const isWordItem = (item: OralSentenceStudioItem): item is OralWordsItem => !isOralOpenType(item.mode);
 
 const forbidden = /["\r\n_[\]{}]|\b(?:system|assistant|judge|verdict|correct|incorrect|prompt|placeholder|todo|null|undefined)\b/i;
 const clean = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
@@ -114,7 +127,8 @@ const isStoryText = (story: string, words: readonly string[]): boolean => {
     && words.every((word) => containsWord(story, word));
 };
 
-export const challengeAskable = (challenge: OralSentenceStudioChallenge): boolean => {
+export const challengeAskable = (challenge: OralSentenceStudioChallenge | OralOpenChallenge): boolean => {
+  if (challenge && isOpenChallenge(challenge)) return openChallengeAskable(challenge);
   if (!challenge?.id || !ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES.includes(challenge.type)) return false;
   if (!isStudioLabel(challenge.sceneTitle)
     || !isStudioLabel(challenge.actorLabel)
@@ -155,8 +169,9 @@ export const challengeAskable = (challenge: OralSentenceStudioChallenge): boolea
 };
 
 export const itemFromChallenge = (
-  challenge: OralSentenceStudioChallenge,
-): OralSentenceStudioItem | null => challengeAskable(challenge) ? {
+  challenge: OralSentenceStudioChallenge | OralOpenChallenge,
+): OralSentenceStudioItem | null => isOpenChallenge(challenge) ? openItemFromChallenge(challenge)
+  : challengeAskable(challenge) ? {
   id: challenge.id,
   mode: challenge.type,
   challenge,
@@ -164,12 +179,17 @@ export const itemFromChallenge = (
 } : null;
 
 export const itemsFromChallenges = (
-  challenges: OralSentenceStudioChallenge[],
+  challenges: Array<OralSentenceStudioChallenge | OralOpenChallenge>,
 ): OralSentenceStudioItem[] => challenges
   .map(itemFromChallenge)
   .filter((item): item is OralSentenceStudioItem => item !== null);
 
+/** The two-word items only (tests and tools that read target words). */
+export const wordItemsOf = (challenges: Array<OralSentenceStudioChallenge | OralOpenChallenge>): OralWordsItem[] =>
+  itemsFromChallenges(challenges).filter(isWordItem);
+
 export const askFor = (item: OralSentenceStudioItem): string => {
+  if (isOpenItem(item)) return openAskFor(item);
   const [first, second] = item.challenge.targetWords;
   const [firstMeaning, secondMeaning] = item.challenge.wordMeanings;
   const words = `${first}, meaning ${firstMeaning}, and ${second}, meaning ${secondMeaning}`;
@@ -197,6 +217,7 @@ const ACCEPT = 'Accept paraphrase, pronouns, changed word order, word forms such
  * says what the sentence must be about; every mode refuses a fragment, a word list and a misused word.
  */
 export function oralSentenceKey(item: OralSentenceStudioItem): SpokenKey {
+  if (isOpenItem(item)) return openKey(item);
   const c = item.challenge;
   const [answer, ...alsoAccept] = c.acceptedSentences;
   if (item.mode === 'use_story_words') {
@@ -228,12 +249,13 @@ export function oralSentenceKey(item: OralSentenceStudioItem): SpokenKey {
 
 /** An item's known wrong answers, in precedence order, for the `spoken_miss` observer. Concrete per item. */
 export function oralSentenceSpokenMisses(item: OralSentenceStudioItem): KnownMiss[] {
+  if (isOpenItem(item)) return openSpokenMisses(item);
   const c = item.challenge;
   const [first, second] = c.targetWords;
   const offTask = item.mode === 'use_story_words' ? 'a sentence from the story said back or nearly copied'
     : item.mode === 'guided_writing_rehearsal' ? `a sentence about the step already written ("${c.priorStepLabel}") or unrelated to this step`
       : 'a whole sentence that is not about this picture';
-  const pattern: Record<SpokenOralSentenceMiss, KnownMiss> = {
+  const pattern: Record<typeof ORAL_SENTENCE_MISSES[number], KnownMiss> = {
     words_listed: { id: 'words_listed', pattern: `The learner says only the two words, "${first}" and "${second}", as a list, with no sentence.`,
       examples: [`${first} ${second}`] },
     fragment: { id: 'fragment', pattern: `The learner names things from the picture (${c.actorLabel}, ${c.objectLabel}) but says no whole sentence: no one does anything.`,
@@ -248,6 +270,7 @@ export function oralSentenceSpokenMisses(item: OralSentenceStudioItem): KnownMis
 
 /** What is on screen for the tutor: the picture, the printed words, and the story or the step already written. */
 export function oralSentenceScene(item: OralSentenceStudioItem): SceneOf {
+  if (isOpenItem(item)) return openScene(item);
   const c = item.challenge;
   return { objects: [], facts: {
     shown: `A picture of "${c.sceneTitle}": ${c.actorLabel}, ${c.actionLabel}, ${c.objectLabel}, ${c.settingLabel}.`,
@@ -260,7 +283,8 @@ export function oralSentenceScene(item: OralSentenceStudioItem): SceneOf {
 
 /** The journey's answers: the first example sentence, or the signature wrong one (a story line said back on story
  *  words; elsewhere the two words and the object, with no verb). */
-export const oralSentenceHarnessAnswers = (item: OralSentenceStudioItem): { correct: string; plainWrong: string } => ({
+export const oralSentenceHarnessAnswers = (item: OralSentenceStudioItem): { correct: string; plainWrong: string } =>
+  isOpenItem(item) ? openHarnessAnswers(item) : ({
   correct: item.challenge.acceptedSentences[0],
   plainWrong: item.mode === 'use_story_words'
     ? storySentences(item.challenge.storyText ?? '')[0] ?? 'I remember this sentence from yesterday.'

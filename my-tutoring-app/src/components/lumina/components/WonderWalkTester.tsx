@@ -30,7 +30,7 @@ const TOPIC_PRESETS: Array<{ domain: string; topics: string[] }> = [
 /** Eval-mode pins: Auto lets the intent pick (the manifest's path); a pin skips the resolver. */
 const MODES = ['auto', 'which-one', 'how-many', 'more-fewer', 'count-out', 'add-take', 'parts', 'teens', 'sort-count', 'count-on',
   'rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'blend', 'change-sound', 'letter-name', 'letter-sound', 'spell-word',
-  'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order'] as const;
+  'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order', 'sentence'] as const;
 const TIERS = ['easy', 'medium', 'hard'] as const;
 
 interface AgentDebug {

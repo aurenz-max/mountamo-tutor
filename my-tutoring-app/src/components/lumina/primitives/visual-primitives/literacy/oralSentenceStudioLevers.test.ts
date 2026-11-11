@@ -9,13 +9,13 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { ORAL_SENTENCE_STUDIO_FALLBACKS } from '../../../service/literacy/gemini-oral-sentence-studio';
 import { ORAL_SENTENCE_MISSES, oralSentenceStudioCard } from './oralSentenceStudio.card';
-import { itemsFromChallenges, oralSentenceSpokenMisses, type OralSentenceStudioItem } from './oralSentenceStudioDomain';
+import { wordItemsOf, oralSentenceSpokenMisses, type OralWordsItem } from './oralSentenceStudioDomain';
 import { ORAL_SENTENCE_LEVERS, PICTURES_LEVER, STRIP_LEVER, wordPicturesLeak } from './oralSentenceStudioLevers';
 
-const load = (mode: string): OralSentenceStudioItem[] => itemsFromChallenges(JSON.parse(readFileSync(join(__dirname,
+const load = (mode: string): OralWordsItem[] => wordItemsOf(JSON.parse(readFileSync(join(__dirname,
   '../../../components/live-activity/runtime/testing/w1-payloads', `oral-sentence-studio.${mode}.levers.json`), 'utf8')).data.challenges);
 const generated = [...load('describe_scene'), ...load('use_story_words')];
-const declare = (item: OralSentenceStudioItem) => ORAL_SENTENCE_LEVERS.declare(item, undefined, []);
+const declare = (item: OralWordsItem) => ORAL_SENTENCE_LEVERS.declare(item, undefined, []);
 
 describe('oral-sentence-studio levers', () => {
   it('generated items get both levers; carriers both; no lever text holds an example or the scene meaning', () => {
@@ -35,7 +35,7 @@ describe('oral-sentence-studio levers', () => {
     const leaky = { ...item, challenge: { ...item.challenge, wordEmojis: [item.challenge.objectEmoji, '⭐'] as [string, string] } };
     expect(wordPicturesLeak(leaky)).toBe(true);
     expect(declare(leaky).map(l => l.id)).toEqual([STRIP_LEVER]);
-    const fallback = itemsFromChallenges(ORAL_SENTENCE_STUDIO_FALLBACKS.slice(0, 1))[0];
+    const fallback = wordItemsOf(ORAL_SENTENCE_STUDIO_FALLBACKS.slice(0, 1))[0];
     expect(declare(fallback).map(l => l.id)).toEqual([STRIP_LEVER]);
   });
 

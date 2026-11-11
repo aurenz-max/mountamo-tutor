@@ -19,7 +19,7 @@ import React, { useMemo, useState } from 'react';
 import type { DiSpokenPracticeMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
-import { FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SOUND_DOTS, TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE,
+import { FORM_MODEL, formModelFor, FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SOUND_DOTS, TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE,
   answerModelFor, countModelFor, readModelFor, SPOKEN_LEVERS, wordModelFor } from './diSpokenPracticeLevers';
 import type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
 import { spokenPracticeScene } from './diSpokenPracticeWorkspace';
@@ -85,6 +85,11 @@ function ModelCard({ item, items, spares, pulled }: { item: SpokenPracticeItem; 
     const pairs = wordModelFor(item, items);
     return pairs && frame(WORD_MODEL, pairs.map(p => <span key={p.word} data-model-pair={p.word} className="flex items-center gap-1 text-3xl">
       <span>{p.a[1]}</span><span className="text-sm text-purple-200">·</span><span>{p.b[1]}</span></span>));
+  }
+  if (pulled.includes(FORM_MODEL)) {
+    // Pictures only: the tutor says each solved sentence; a pre-reader is never asked to read the card.
+    const models = formModelFor(item, items);
+    return models && frame(FORM_MODEL, models.map(m => <span key={m.answer} data-model-form={m.answer} className="text-3xl">{m.emoji}</span>));
   }
   if (pulled.includes(MODEL_READ)) {
     const w = readModelFor(item, items);

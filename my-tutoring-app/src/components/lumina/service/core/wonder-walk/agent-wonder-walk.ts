@@ -30,7 +30,8 @@ import { buildStops, stopChecks, walkChecks, type MathScope, type StopDraft, typ
 import { LANDMARKS, RELATIONS, RULE_TYPES, SOUND_OF, WORD_MODES, WORD_STANDARDS, wordModeOf, readWords, type WordDraft } from './words';
 import { ARRANGEMENTS, ARRANGEMENT_MAX, COLORS, MATH_MODES, PLACE_KINDS, STANDARDS, TAP_RULES, countMax, modeOf, type WorldDraft } from './world';
 import { actionMenu, pictureMenu } from './pictures';
-import { reviewWalk, type StopVerdict } from './review';
+import { reviewSentences, reviewWalk, type StopVerdict } from './review';
+import { sentenceText } from '../../../primitives/visual-primitives/core/wonder-walk/wonderWalkWords';
 
 const MODEL = 'gemini-flash-latest';
 const SOFT_DEADLINE_MS = Number(process.env.LUMINA_WW_AGENT_SOFT_MS ?? 70_000);
@@ -94,6 +95,7 @@ const CHALLENGE_TYPE_DOCS: Record<WonderWalkStopType, ChallengeTypeDoc> = {
   'where-is': wordDoc('where-is', 'hear in, on, under or next to; tap the card that shows it', 'position words'),
   'story-detail': wordDoc('story-detail', 'the tutor tells a 2-3 event story; tap who, what or where', 'story details'),
   'story-order': wordDoc('story-order', "put the story's pictures on a track in the order they happened", 'story order'),
+  sentence: wordDoc('sentence', 'word cards and a sentence: put the cards in order to build it, tap or say the one word it lacks (a doing-word, a describing word, a joining word, the end mark), or tap or say who it is about or what they do', 'sentences'),
 };
 
 // ── Prompt and tools ─────────────────────────────────────────────────
@@ -118,12 +120,14 @@ function wordSection(m: WordScope): string {
 write_word_stop describes a world; code reads every picture's sounds, claps, kind and spelling from the word library, works out the answer, says the sounds for the tutor, and names which skill it is. Open skills in this walk: ${open}. A world whose structure is another skill is refused.
 - refs (0-3): what the scene shows and the tutor names: a word to rhyme with or compare sounds with, a basket's label, a big letter, a story's main character. {id, word} or {id, letter}.
 - things (2-6): the cards the child acts on: {id, word} (a picture), {id, letter} (a letter tile, a-z or A-Z), {id, word, count: 3} (drawn as many), {id, word, rel: ${RELATIONS.join('|')}, landmark: ${LANDMARKS.slice(0, 6).join('|')}} (drawn in a place).
+- A sentence stop's cards are word tiles: {id, tile: the word as printed ("runs", "and", "big"), word: the picture word to draw with it when the tile itself is not one ("run" for runs)}, or an end mark {id, tile: "?"}. The tutor reads every tile to the child.
+- sentence (sentence stops only): its words in order, each {say, role: who | does | what | where | describes | joins | small | end, card: the id of the tile that is this word}. small is for the, a, is, can and the like; end is the end mark. A word with no card is already in place on screen.
 - story (0-3 events): {who, did, what?, where?} with picture words; did is the verb as your ask says it ("eat", "go to"). The narration tells every event in order, naming its pictures.
 - answer, one of:
   - tap: among (default all things) and a condition (rule); exactly one card may meet it.
   - sort: 2-3 baskets {id, label: a ref id, rule}; each card goes in the basket whose rule it meets (at most one card fits none and stays out).
-  - order: by "story" (the cards in story order) or "spelling" with of: a ref whose picture word the letter tiles spell (plus at most one spare letter).
-- rule {type, ...}: sound {at first|last|middle, sound} · same-sound {at, ref} · rhymes {ref} · syllables {n} · blend {word, parts phonemes|onset-rime} · change {ref, at, to} · letter-sound {sound} · first-letter {ref} · letter-name {letter} · same-letter {ref} · kind {kind: animal, food, clothing, vehicle, toy, home, nature, body, action...} · number {number one|many, word} · where {rel} · story {event (0-based), role who|what|where}.
+  - order: by "story" (the cards in story order), "spelling" with of: a ref whose picture word the letter tiles spell (plus at most one spare letter), or "sentence" (the sentence's cards in its order; 2-5 of its words are cards, plus at most one spare tile).
+- rule {type, ...}: sound {at first|last|middle, sound} · same-sound {at, ref} · rhymes {ref} · syllables {n} · blend {word, parts phonemes|onset-rime} · change {ref, at, to} · letter-sound {sound} · first-letter {ref} · letter-name {letter} · same-letter {ref} · kind {kind: animal, food, clothing, vehicle, toy, home, nature, body, action...} · number {number one|many, word} · where {rel} · story {event (0-based), role who|what|where} · fills (the one sentence word that has a card is left out; the other tiles are not in the sentence) · part {role who|does|what|where|describes} (the card that is that part of a sentence the child heard).
 - Sounds are labels: ${Object.keys(SOUND_OF).join(' ')} (a e i o u = the short vowel). Never write a sound yourself in the ask: write [sound] (sound, letter-sound), [sounds] (blend: the word in parts) or [from] and [to] (change) where the tutor says it, and code puts in the exact sound ("sss", "kuh - aaa - tuh").
 Never say the answer: not the right picture's word in the ask, why-card or narration (a story's narration tells it; the ask then asks for it), not the blended or changed word.
 
@@ -143,12 +147,17 @@ What each skill looks like as a world:
 - where-is: cat under/in/on the box; where {under}; "Which picture shows the cat under the box?".
 - story-detail: story fox go to house, fox eat apple, fox sleep in bed; things apple, pear, bed; story {event 1, what}; "What did the fox eat?".
 - story-order: the same story; things house, apple, bed; order by story.
+- A sentence stop shows only its word cards: the narration never says to look at something happening on screen. Write real English: "can the frog jump ?", not "can frog jump ?".
+- sentence, build it: sentence the(small) dog(who, card a) runs(does, card b) .(end); things tile dog + word dog, tile runs + word run; order by sentence. Narration sets the scene in other words ("Look who is moving fast!"); never say two of the sentence's words in order. Longer: "the big cat drinks milk", a question "can I play ?" with the end mark as a card.
+- sentence, what it needs: sentence the(small) dog(who) runs(does, card a); things tile runs + word run, tile cat + word cat, tile and; tap fills; ask "Which word makes it a whole sentence?". The tutor reads "the dog blank" itself: leave the sentence out of your narration.
+- sentence, a describing word: "the big(describes, card) cat sleeps" with wrong tiles runs and dog. A joining word: "the cat runs and(joins, card) the dog sleeps" with tiles and, but, hat. The end mark: "can I play ?(end, card)" with tiles ? and . (never . and ! together).
+- sentence, its parts: sentence the dog(who, card a) chases(does, card b) the ball(what, card c); narration says the sentence as written; tap part {role does}; ask "What does the dog do?" (never the answer word).
 
-Code blocks a world a child can solve without the skill: the right picture the only one that goes with the heard word (the only animal like the cat), the only one of another kind (odd one out), a blend where only the right picture has the first sound, a story question whose answer is the only thing heard or the only food, one-and-many where only the right card has that picture, a sound sort where each basket is one kind of thing, two right answers, the answer said aloud.
+Code blocks a world a child can solve without the skill: the right picture the only one that goes with the heard word (the only animal like the cat), the only one of another kind (odd one out), a blend where only the right picture has the first sound, a story question whose answer is the only thing heard or the only food, a sentence to build that is said aloud in order, a missing word that is said aloud or that two cards could both be, a missing word with no wrong card of another kind, one-and-many where only the right card has that picture, a sound sort where each basket is one kind of thing, two right answers, the answer said aloud.
 
-Every write returns the skill, standards, difficulty (band and reasons) and the ask as the tutor will say it. Terms: three choices +0.5, four +1; a wrong card that sounds close (b for p, e for i) +1; a wrong card that goes with the heard word +0.5; a letter that looks alike (b d p) +1; last sound +1, middle +2; a quick sound (b d g k p t) +0.5; compare with a heard word +0.5; rhyme +0.5; claps 2 +0.5, 3+ +1; blend onset-rime +0.5, every sound +1.5, 4+ sounds +1; change a sound +2 (middle +1, last +0.5); small letter +0.5; match cases that look different +1 (same shape -0.5); letter for a sound +1, first letter of a picture +1.5; doing-words +0.5; -es plural +0.5, find the one +0.5; in and on side by side +0.5; a story of 2 events +0.5, 3 +1, not the last event +0.5, where +0.5; sorting 4 things +0.5, 5 +1, 6 +1.5, one fits no basket +1, three baskets +1; story order 3 +1, 4 +2; spelling 3 letters +1.5, 4 +2.5, a spare letter +0.5. Bands: easy under 1.5, medium under 3, hard 3+.
+Every write returns the skill, standards, difficulty (band and reasons) and the ask as the tutor will say it. Terms: three choices +0.5, four +1; a wrong card that sounds close (b for p, e for i) +1; a wrong card that goes with the heard word +0.5; a letter that looks alike (b d p) +1; last sound +1, middle +2; a quick sound (b d g k p t) +0.5; compare with a heard word +0.5; rhyme +0.5; claps 2 +0.5, 3+ +1; blend onset-rime +0.5, every sound +1.5, 4+ sounds +1; change a sound +2 (middle +1, last +0.5); small letter +0.5; match cases that look different +1 (same shape -0.5); letter for a sound +1, first letter of a picture +1.5; doing-words +0.5; -es plural +0.5, find the one +0.5; in and on side by side +0.5; a story of 2 events +0.5, 3 +1, not the last event +0.5, where +0.5; sorting 4 things +0.5, 5 +1, 6 +1.5, one fits no basket +1, three baskets +1; story order 3 +1, 4 +2; a sentence built from 2 cards +0.5, 3 +1, 4 +2, 5 +2.5, a spare card +0.5, a question +0.5, a describing or joining card +0.5; a missing word: end mark +0.5, a doing, naming, describing or small word +1, a joining word +1.5, and and but both offered +0.5, a sentence of 5+ words +0.5; a part of a sentence: who +0, what or describes +0.5, does or where +1, a card that was not in the sentence +0.5, 5+ words +0.5; spelling 3 letters +1.5, 4 +2.5, a spare letter +0.5. Bands: easy under 1.5, medium under 3, hard 3+.
 ${m.tier ? `This walk is ${m.tier.toUpperCase()}: every language stop must score ${m.tier} (the first may be one band easier). Reach it by the structure.` : 'No tier is set: start easier and build up across the walk.'}
-Across the walk: never the same answer twice, never the same sound, letter or position word asked twice${m.openModes.length > 1 ? ', at least two skills' : m.openModes.some(x => ['rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'word-kinds'].includes(x)) ? ', and one stop a sort' : ''}. Pictures suit the lesson (farm animals for a farm walk). Picture names the tutor says must be what the picture shows.
+Across the walk: never the same answer twice, never the same sound, letter or position word asked twice${m.openModes.length > 1 ? ', at least two skills' : m.openModes.some(x => ['rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'word-kinds'].includes(x)) ? ', and one stop a sort' : ''}${m.openModes.includes('sentence') ? '; three or more sentence stops mix building, completing and finding a part' : ''}. Pictures suit the lesson (farm animals for a farm walk). Picture names the tutor says must be what the picture shows.
 Doing-word pictures (kind action): ${actionMenu()}.`;
 }
 
@@ -197,7 +206,7 @@ The child can answer by voice or on screen, and you choose which fits the proble
 - say: the child says the one answer out loud (or taps it). A which-one stop is always say: its answer is a picture's name. Use it whenever the answer is something a child can say: a number, a picture's name, a letter. This is the default for those: a child who can say "seven" should not have to find the 7.${math ? `
 - Math: a number answer (how many now, how many in all, how many under the cup and out) is said: "seven", "ten and three". Comparing groups and making a group by moving things are shown.` : ''}${words ? `
 - say-any: the child says ANY word the rule holds for, a word they think of themselves (or taps the one card that fits). Rules: rhymes, sound or same-sound at first or last, kind. Producing a word is the stronger skill (RF.K.2a "produce rhymes", naming things that start with a sound), so use say-any when the idea is to make a word, not to pick one; write the ask as an invitation ("Can you think of a word that rhymes with cat?"). Code finds the library words that fit; a sound or rhyme with too few words is refused.
-- Language: a picture or letter answer is said (blend: say the word the sounds make; change-sound: say the new word; story-detail: say who or what). A sort, a track, one-or-many and where-is cards are shown.` : ''}
+- Language: a picture or letter answer is said (blend: say the word the sounds make; change-sound: say the new word; story-detail: say who or what; sentence: say the missing word or the part). A sort, a track, an end mark, one-or-many and where-is cards are shown.` : ''}
 A choice that does not fit is blocked with the reason (a move cannot be said; a number can).`;
 }
 
@@ -234,7 +243,9 @@ const LEVER_EXAMPLES = `Examples (write your own for each stop):
 - count-on (5 under a cup, 3 out): help change {places: the cup as a plate, so the 5 show}; simplify change {places: 3 under the cup, 2 out}.
 - rhyme tap among hat, dog, sun with ref cat: help change {refs: cat and bat} (a second word that rhymes, heard and shown); simplify change {things: hat, dog} (two cards).
 - first-sound sort with 5 cards: help change {refs: each basket label with a second example picture}; simplify change {things: 3 cards}.
-- story-order with 4 events: simplify change {story: 3 events, things: 3 cards}.`;
+- story-order with 4 events: simplify change {story: 3 events, things: 3 cards}.
+- sentence built from 4 cards: help change {sentence: the same words with the first card's word left with no card} (it is already on the track); simplify change {sentence and things: 3 cards}.
+- sentence with a missing word among 4 tiles: simplify change {things: the right tile and one wrong tile}.`;
 
 const TOOLS: FunctionDeclaration[] = [
   {
@@ -345,13 +356,13 @@ const MATH_TOOL: FunctionDeclaration = {
   },
 };
 
-const thingSchema = { type: 'object', properties: { id: str_, word: str_, letter: str_, count: int_, rel: { type: 'string', enum: RELATIONS }, landmark: str_ }, required: ['id'] } as const;
+const thingSchema = { type: 'object', properties: { id: str_, word: str_, letter: str_, count: int_, rel: { type: 'string', enum: RELATIONS }, landmark: str_, tile: str_ }, required: ['id'] } as const;
 const ruleSchema = {
   type: 'object',
   properties: {
     type: { type: 'string', enum: RULE_TYPES }, at: { type: 'string', enum: ['first', 'last', 'middle'] }, sound: str_, ref: str_, n: int_, word: str_,
     parts: { type: 'string', enum: ['phonemes', 'onset-rime'] }, to: str_, letter: str_, kind: str_, number: { type: 'string', enum: ['one', 'many'] },
-    rel: { type: 'string', enum: RELATIONS }, event: int_, role: { type: 'string', enum: ['who', 'what', 'where'] },
+    rel: { type: 'string', enum: RELATIONS }, event: int_, role: { type: 'string', enum: ['who', 'what', 'where', 'does', 'describes'] },
   },
   required: ['type'],
 } as const;
@@ -366,13 +377,15 @@ const WORD_TOOL: FunctionDeclaration = {
       ideaIndex: { type: 'integer', description: 'Which planned idea this stop teaches (0-based).' },
       refs: { type: 'array', description: '0-3 things the scene shows and the tutor names.', items: thingSchema },
       things: { type: 'array', description: '2-6 cards the child taps, sorts or orders.', items: thingSchema },
+      sentence: { type: 'array', description: 'Sentence stops only: the sentence word by word, in order.',
+        items: { type: 'object', properties: { say: str_, role: { type: 'string', enum: ['who', 'does', 'what', 'where', 'describes', 'joins', 'small', 'end'] }, card: str_ }, required: ['say', 'role'] } },
       story: { type: 'array', description: '0-3 story events, told in the narration in order.', items: { type: 'object', properties: { who: str_, did: str_, what: str_, where: str_ }, required: ['who', 'did'] } },
       answer: {
         type: 'object',
         properties: {
           kind: { type: 'string', enum: ['tap', 'sort', 'order'] }, among: { type: 'array', items: str_ }, rule: ruleSchema,
           baskets: { type: 'array', items: { type: 'object', properties: { id: str_, label: str_, rule: ruleSchema }, required: ['id', 'label', 'rule'] } },
-          by: { type: 'string', enum: ['story', 'spelling'] }, of: str_,
+          by: { type: 'string', enum: ['story', 'spelling', 'sentence'] }, of: str_,
         },
         required: ['kind'],
       },
@@ -430,7 +443,8 @@ const worldOf = (a: Args): WorldDraft => {
 /** The word world the author wrote, as code reads it. */
 const wordsOf = (a: Args): WordDraft => {
   const ans = (a.answer ?? {}) as Args;
-  const thing = (t: Args) => clean({ id: str(t.id), word: optStr(t.word), letter: optStr(t.letter), count: optInt(t.count), rel: optStr(t.rel), landmark: optStr(t.landmark) }) as WordDraft['things'][number];
+  const thing = (t: Args) => clean({ id: str(t.id), word: optStr(t.word), letter: optStr(t.letter), count: optInt(t.count), rel: optStr(t.rel), landmark: optStr(t.landmark), tile: optStr(t.tile) }) as WordDraft['things'][number];
+  const sentence = arr(a.sentence).map(k => clean({ say: str(k.say), role: str(k.role), card: optStr(k.card) }) as NonNullable<WordDraft['sentence']>[number]);
   const rule = (r: unknown) => { const x = (r ?? {}) as Args; return clean({ type: str(x.type), at: optStr(x.at), sound: optStr(x.sound), ref: optStr(x.ref), n: optInt(x.n), word: optStr(x.word), parts: optStr(x.parts),
     to: optStr(x.to), letter: optStr(x.letter), kind: optStr(x.kind), number: optStr(x.number), rel: optStr(x.rel), event: optInt(x.event), role: optStr(x.role) }) as NonNullable<WordDraft['answer']['rule']>; };
   const story = arr(a.story).map(e => clean({ who: str(e.who), did: str(e.did), what: optStr(e.what), where: optStr(e.where) }) as NonNullable<WordDraft['story']>[number]);
@@ -438,6 +452,7 @@ const wordsOf = (a: Args): WordDraft => {
     refs: arr(a.refs).map(thing),
     things: arr(a.things).map(thing),
     ...(story.length ? { story } : {}),
+    ...(sentence.length ? { sentence } : {}),
     answer: clean({ kind: str(ans.kind) as 'tap' | 'sort' | 'order', among: strs(ans.among).length ? strs(ans.among) : undefined,
       rule: ans.rule ? rule(ans.rule) : undefined,
       baskets: Array.isArray(ans.baskets) ? arr(ans.baskets).map(b => ({ id: str(b.id), label: str(b.label), rule: rule(b.rule) })) : undefined,
@@ -513,7 +528,7 @@ function writeStop(state: State, a: Args, kind: WonderWalkStopType = 'which-one'
 /** What code derived, in words, for the author (it never reaches the child or the tutor). */
 function wordKeyNote(d: WordDraft, key: unknown): string {
   const w = readWords(d).world;
-  const name = (id: string) => { const t = w.things.find(x => x.id === id); return t ? `${t.id} (${t.word ?? t.letter}${t.count ? ` x${t.count}` : ''}${t.rel ? ` ${t.rel} ${t.landmark?.word}` : ''})` : id; };
+  const name = (id: string) => { const t = w.things.find(x => x.id === id); return t ? `${t.id} (${t.word ?? t.letter ?? t.tile}${t.count ? ` x${t.count}` : ''}${t.rel ? ` ${t.rel} ${t.landmark?.word}` : ''})` : id; };
   if (typeof key === 'string') return `tap ${name(key)}`;
   if (Array.isArray(key)) return `track order ${key.map(name).join(', ')}`;
   return Object.entries(key as Record<string, string | null>).map(([id, b]) => `${name(id)} -> ${b ?? 'no basket'}`).join('; ');
@@ -546,7 +561,7 @@ function stopFacts(e: Entry, state: State) {
   const c = stopChecks(e.draft, state.plan?.ideas.length ?? 3, state.math, state.words);
   const which = (e.draft.kind ?? 'which-one') === 'which-one';
   // The answer by what it is, not by id: a help may list the same cards in another order with other ids.
-  const card = (id: string) => (e.draft.words ? readWords(e.draft.words).world.things.find(t => t.id === id)?.word : undefined) ?? id;
+  const card = (id: string) => (e.draft.words ? (t => t?.word ?? t?.tile)(readWords(e.draft.words).world.things.find(t => t.id === id)) : undefined) ?? id;
   const key = which ? e.draft.correctWord.toLowerCase() : typeof c.key === 'string' ? card(c.key)
     : Array.isArray(c.key) ? c.key.map(card) : c.key;
   return { mode: c.mode ?? e.draft.kind, key, score: c.difficulty?.score, band: c.difficulty?.band, blocking: c.blocking };
@@ -572,12 +587,13 @@ const WALK_LEVERS: LeverCapability<State, Entry> = {
 };
 
 const summarize = (e: Entry, i: number) => e.draft.words
-  ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" refs=${(e.draft.words.refs ?? []).map(t => t.word ?? t.letter).join('/') || 'none'} things=${e.draft.words.things.map(t => t.word ?? t.letter).join('/')} answer=${e.draft.words.answer.kind}`
+  ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" refs=${(e.draft.words.refs ?? []).map(t => t.word ?? t.letter).join('/') || 'none'} things=${e.draft.words.things.map(t => t.word ?? t.letter ?? t.tile).join('/')}${e.draft.words.sentence ? ` sentence="${e.draft.words.sentence.map(k => k.say).join(' ')}"` : ''} answer=${e.draft.words.answer.kind}`
   : e.draft.kind && e.draft.kind !== 'which-one'
   ? `${i}. idea ${e.draft.ideaIndex}: ${e.draft.kind} "${e.draft.ask}" places=${(e.draft.world?.places ?? []).map(p => `${p.id}:${p.kind}[${p.contents.map(c => `${c.count} ${c.color ?? ''}${c.word}`).join('+')}]`).join(' ')} events=${(e.draft.world?.events ?? []).map(ev => `${ev.kind} ${ev.count} ${ev.word}@${ev.place}`).join(',') || 'none'} answer=${e.draft.world?.answer.kind}`
   : `${i}. idea ${e.draft.ideaIndex}: "${e.draft.ask}" right=${e.draft.correctWord} wrong=${e.draft.wrongWords.map(w => w.word).join('/')}`;
 
-/** The independent reader: which-one and story-detail stops, heard as the child hears them. Issues send stops back once. */
+/** The independent reader: which-one and story-detail stops, heard as the child hears them, and every sentence read
+ *  for whether it is English. Issues send stops back once. */
 async function review(state: State, entries: Entry[], seed: number, debug: Record<string, unknown>): Promise<string[]> {
   const plan = state.plan!;
   // The stops in a fixed order (seeded) so the reviewer sees what the child sees.
@@ -587,10 +603,19 @@ async function review(state: State, entries: Entry[], seed: number, debug: Recor
     ? { ...s, options: s.words.things.map(t => ({ id: `thing-${t.id}`, word: t.word ?? t.letter ?? '', emoji: t.emoji ?? '', trap: null })) } : s));
   // A math or sound stop's answer is computed by code.
   const reviewable = draftStops.map((s, i) => ({ s, i })).filter(x => x.s.challengeType === 'which-one' || x.s.challengeType === 'story-detail');
-  if (!reviewable.length) return [];
-  const verdicts = (await reviewWalk(plan.bigIdea, reviewable.map(x => x.s))).map(v => ({ ...v, stop: reviewable[v.stop]?.i ?? v.stop }));
+  // A sentence's structure is checked by code; whether it is English is a reader's call.
+  const sentences = draftStops.map((s, i) => ({ stop: i, text: s.words?.sentence ? sentenceText(s.words) : '' })).filter(x => x.text);
+  if (!reviewable.length && !sentences.length) return [];
+  const [picked, read] = await Promise.all([
+    reviewable.length ? reviewWalk(plan.bigIdea, reviewable.map(x => x.s)) : Promise.resolve([] as StopVerdict[]),
+    sentences.length ? reviewSentences(sentences) : Promise.resolve([]),
+  ]);
+  const verdicts = picked.map(v => ({ ...v, stop: reviewable[v.stop]?.i ?? v.stop }));
   debug.review = verdicts;
-  return verdicts.flatMap(v => {
+  if (read.length) debug.sentenceReview = read;
+  const wrongSentences = read.filter(v => !v.ok).map(v => `stop ${v.stop}: "${sentences.find(s => s.stop === v.stop)?.text}" is not a correct sentence${v.better ? `; a reader would write "${v.better}"` : ''}. ${v.note} `
+    + 'Rewrite the sentence word by word (the, a and is are sentence words with role small, with or without a card).');
+  return [...wrongSentences, ...verdicts.flatMap(v => {
     const s = draftStops[v.stop];
     if (!s) return [];
     const right = s.options.find(o => o.id === s.correctOptionId)!.word;
@@ -598,7 +623,7 @@ async function review(state: State, entries: Entry[], seed: number, debug: Recor
     if (v.pick.toLowerCase() !== right) out.push(`stop ${v.stop}: a reader who heard only the narration and the ask picked "${v.pick}", not "${right}". ${v.note}`);
     if (v.alsoFits.length) out.push(`stop ${v.stop}: "${v.alsoFits.join('", "')}" also fits the ask; change the pictures so exactly one fits. ${v.note}`);
     return out;
-  });
+  })];
 }
 
 /**

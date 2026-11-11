@@ -14,13 +14,14 @@
  */
 import { leverSet } from '../../../components/live-activity/bossLevers';
 import { oralSentenceStudioCard } from './oralSentenceStudio.card';
-import type { OralSentenceStudioItem } from './oralSentenceStudioDomain';
+import { ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES, isOpenItem, type OralSentenceStudioItem } from './oralSentenceStudioDomain';
 
 export const STRIP_LEVER = 'sentence_strip';
 export const PICTURES_LEVER = 'word_pictures';
 
 /** Leak rule: true if a word picture is missing, doubled, or one of the scene's own pictures. */
 export function wordPicturesLeak(item: OralSentenceStudioItem): boolean {
+  if (isOpenItem(item)) return true;
   const c = item.challenge;
   const pics = c.wordEmojis;
   if (!pics || pics.length !== 2 || !pics[0] || !pics[1] || pics[0] === pics[1]) return true;
@@ -28,22 +29,25 @@ export function wordPicturesLeak(item: OralSentenceStudioItem): boolean {
   return pics.some(p => scene.includes(p));
 }
 
+/** Both levers work on the two printed words, so they live only in the word modes. */
+const WORD_MODES = [...ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES];
+
 export const ORAL_SENTENCE_LEVERS = leverSet<OralSentenceStudioItem, void>({
   modeOf: item => item.mode,
   missesOf: mode => oralSentenceStudioCard.modes[mode].misses,
   // The example sentences: no lever's words may say one.
-  answersOf: item => item.challenge.acceptedSentences,
+  answersOf: item => (isOpenItem(item) ? item.challenge.examples : item.challenge.acceptedSentences),
   specs: [
-    { id: STRIP_LEVER, type: 'custom', carrier: 'both', answers: ['fragment', 'words_listed'],
+    { id: STRIP_LEVER, type: 'custom', carrier: 'both', modes: WORD_MODES, answers: ['fragment', 'words_listed'],
       why: 'Adds an empty two-part sentence frame beside the word chips, which no stock type does.',
       when: 'The learner names things or lists the two words instead of saying a whole sentence.',
       does: 'Shows two empty boxes, Who? and What happens?, beside the word chips. Say what each box asks; never fill one in.',
       fact: 'two empty boxes, "Who?" and "What happens?", beside the two word chips; nothing is filled in' },
-    { id: PICTURES_LEVER, type: 'meaning', answers: ['word_missing', 'word_misused'],
+    { id: PICTURES_LEVER, type: 'meaning', modes: WORD_MODES, answers: ['word_missing', 'word_misused'],
       when: 'The learner leaves a word out or uses one with the wrong meaning.',
       does: 'Puts a meaning picture under each word. Say what each word means; never say a sentence with it.',
-      content: item => (wordPicturesLeak(item) ? null : item.challenge.wordEmojis!),
-      fact: (pics: [string, string], item) =>
-        `a picture under each word: ${item.challenge.targetWords[0]} ${pics[0]}, ${item.challenge.targetWords[1]} ${pics[1]}` },
+      content: item => (isOpenItem(item) || wordPicturesLeak(item) ? null : item.challenge.wordEmojis!),
+      fact: (pics: [string, string], item) => (isOpenItem(item) ? ''
+        : `a picture under each word: ${item.challenge.targetWords[0]} ${pics[0]}, ${item.challenge.targetWords[1]} ${pics[1]}`) },
   ],
 });

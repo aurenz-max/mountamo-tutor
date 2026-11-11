@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
-import { STORY_RIBBON_FALLBACKS } from '../../../service/literacy/gemini-story-ribbon';
+import { STORY_RIBBON_FALLBACKS, buildTellOwnChallenge } from '../../../service/literacy/gemini-story-ribbon';
 import type { StoryRibbonChallengeType } from './StoryRibbon';
 import { STORY_RIBBON_MISSES, storyRibbonCard } from './storyRibbon.card';
 import { storyRibbonBoss } from './storyRibbon.boss';
@@ -14,8 +14,11 @@ import { ARROWS_LEVER, FRAME_LEVER, LABELS_LEVER, STORY_RIBBON_LEVERS } from './
 const MODES = Object.keys(STORY_RIBBON_MISSES) as StoryRibbonChallengeType[];
 const CUE: Partial<Record<StoryRibbonChallengeType, 'Today' | 'Tomorrow' | 'Yesterday'>> =
   { tell_present_account: 'Today', tell_future_account: 'Tomorrow', tell_past_account: 'Yesterday' };
+// tell_own has no events to retype: its items are code-dealt card sets.
 const items = (type: StoryRibbonChallengeType, supportTier?: 'easy' | 'medium' | 'hard') => itemsFromChallenges(
-  STORY_RIBBON_FALLBACKS.map(c => ({ ...c, type, supportTier, support: undefined, timeCue: CUE[type] })));
+  type === 'tell_own'
+    ? [0, 1].map(i => ({ ...buildTellOwnChallenge(i, 'K', () => 0.3), supportTier }))
+    : STORY_RIBBON_FALLBACKS.map(c => ({ ...c, type, supportTier, support: undefined, timeCue: CUE[type] })));
 const declare = (item: ReturnType<typeof items>[number]) => STORY_RIBBON_LEVERS.declare(item, undefined, []);
 
 describe('story-ribbon levers', () => {

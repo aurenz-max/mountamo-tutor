@@ -739,6 +739,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         description: 'The tutor tells a 2-3 event story; tap who, what or where (RL.K.1, RL.K.3, SL.K.2).' },
       { evalMode: 'story-order', label: 'Story Order (language)', beta: 0.9, scaffoldingMode: 2, challengeTypes: ['story-order'],
         description: 'Put the story pictures on a track in the order they happened (RL.K.2).' },
+      { evalMode: 'sentence', label: 'Sentences (language)', beta: 0.8, scaffoldingMode: 2, challengeTypes: ['sentence'],
+        description: 'Word cards and a sentence: build it in order, tap or say the word or end mark it lacks, or find who it is about and what they do (L.K.1b, L.K.1f, L.K.2b).' },
     ],
     // The live wiring is wonderWalk.card.ts + wonderWalk.boss.ts.
     ...bossEntry(wonderWalkCard),

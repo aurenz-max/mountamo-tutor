@@ -14,13 +14,16 @@
  * read_aloud: `model_read` (a different word or numeral, read), `sound_dots`, `word_underline` (2+ words); simplify
  *   `short_word` (a shorter decodable word or a one-digit numeral).
  * say_answer: `model_answer` (a spare item, solved); simplify `easier_item` (the spare marked easier).
+ * article_choice, pronoun_choice, verb_form, verb_tense (code-built grammar frames): `form_model` (two solved sentences,
+ *   one per side of the contrast, with other words, so the card points at no answer);
+ *   simplify `two_choices` (a different, easier sentence of the same frame with the two choices said).
  * explain_concept: `model_explain` (a spare with a DIFFERENT concept); simplify `easier_item`. Neither when every spare
  *   has the item's concept (a named-concept session): the model's sentence would be the answer.
  */
 import { leverSet } from '../../../components/live-activity/bossLevers';
 import { diSpokenPracticeCard } from './diSpokenPractice.card';
 import { PRACTICE_WORDS } from '../literacy/cvcSpellerLevers';
-import { numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
+import { GRAMMAR_FRAME_MODES, numberWordFor, type GrammarModel, type SpokenPracticeItem } from './diSpokenPracticeScript';
 import { OFF_BY } from '../../../components/live-activity/boss';
 
 export const MODEL_COUNT = 'model_count';
@@ -36,6 +39,21 @@ export const SHORT_WORD = 'short_word';
 export const MODEL_ANSWER = 'model_answer';
 export const MODEL_EXPLAIN = 'model_explain';
 export const EASIER_ITEM = 'easier_item';
+export const FORM_MODEL = 'form_model';
+export const TWO_CHOICES = 'two_choices';
+
+// ── grammar frames: content built by the generator (spokenGrammarFrames.ts) ─
+
+/** One solved sentence for each side of the item's contrast (a and an; one dog and two dogs), with other words, so
+ *  the card shows the rule and points at no answer. Refused when a side is missing or a model shows a session picture. */
+export function formModelFor(item: SpokenPracticeItem, items: readonly SpokenPracticeItem[]): GrammarModel[] | null {
+  const models = item.grammar?.models ?? [];
+  if (models.length !== 2 || models[0].answer === models[1].answer) return null;
+  const pictures = new Set(items.map(i => i.stimulusEmoji));
+  return models.some(m => pictures.has(m.emoji)) ? null : models;
+}
+
+export const twoChoicesFor = (item: SpokenPracticeItem): SpokenPracticeItem | null => item.grammar?.easier ?? null;
 
 const low = (s: string) => s.trim().toLowerCase();
 const words = (s: string) => low(s).split(/[^a-z0-9']+/).filter(Boolean);
@@ -237,6 +255,11 @@ export const SPOKEN_LEVERS = leverSet<SpokenPracticeItem, SpokenLeverContext>({
       does: `Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). ${SAY}`,
       content: (item, { items, spares }) => answerModelFor(item, items, spares),
       fact: (spare: SpokenPracticeItem) => `Beside the example, a model card shows a different one, "${spare.stimulusText}", explained: "${spare.conceptStatement}". It is not this example.` },
+    { id: FORM_MODEL, type: 'model', modes: [...GRAMMAR_FRAME_MODES], answers: 'all',
+      when: 'The learner says the wrong form, a person word, or does not know how to start.',
+      does: 'Shows a card with two solved sentences, one for each side (onScreen gives them). Say every one as your turn, in order ("My turn: …"); never only one. Then say the learner\'s own sentence again and ask for the word.',
+      content: (item, { items }) => formModelFor(item, items),
+      fact: (models: GrammarModel[]) => `Beside the picture, a model card shows a solved sentence for each side: ${models.map(m => `"${m.sentence}"`).join('; ')}. None is this sentence.` },
     { id: TOUCH_MARKS, type: 'marks', modes: ['count_and_say'], answers: ['skipped_a_number', 'one_short', 'one_over'],
       when: 'The learner skips a picture or counts one twice.',
       does: 'Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers.',
@@ -259,6 +282,9 @@ export const SPOKEN_LEVERS = leverSet<SpokenPracticeItem, SpokenLeverContext>({
       when: 'This print is too long to read yet.',
       does: 'Opens a shorter word first; the learner reads it, you do not. It is not graded; the full print comes back after it.',
       content: (item, { items }) => shortWordFor(item, items) },
+    { id: TWO_CHOICES, type: 'easier', modes: [...GRAMMAR_FRAME_MODES], answers: 'all',
+      when: 'Finding the word with no choices said is too hard yet.', does: PRACTICE,
+      content: item => twoChoicesFor(item) },
     { id: EASIER_ITEM, type: 'easier', modes: ['say_answer', 'explain_concept'], answers: 'all',
       when: 'This question is too hard yet.', does: PRACTICE,
       content: (item, { items, spares }) => easierItemFor(item, items, spares) },

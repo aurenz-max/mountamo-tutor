@@ -39,7 +39,7 @@ import { useAuthoredLevers } from '../../../../service/agent-kit/useAuthoredLeve
 export type WonderWalkMathType = 'how-many' | 'more-fewer' | 'count-out' | 'add-take' | 'parts' | 'teens' | 'sort-count' | 'count-on';
 /** Language stops (word worlds, `wonderWalkWords.ts`). */
 export type WonderWalkWordType = 'rhyme' | 'first-sound' | 'last-sound' | 'middle-sound' | 'syllables' | 'blend' | 'change-sound'
-  | 'letter-name' | 'letter-sound' | 'spell-word' | 'word-kinds' | 'one-many' | 'where-is' | 'story-detail' | 'story-order';
+  | 'letter-name' | 'letter-sound' | 'spell-word' | 'word-kinds' | 'one-many' | 'where-is' | 'story-detail' | 'story-order' | 'sentence';
 export type WonderWalkStopType = 'which-one' | WonderWalkMathType | WonderWalkWordType;
 
 /**

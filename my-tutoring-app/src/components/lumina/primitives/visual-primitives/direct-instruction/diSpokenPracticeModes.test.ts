@@ -16,6 +16,10 @@ describe('DI Spoken Practice mode definitions', () => {
       ['read_aloud', 2.5],
       ['say_answer', 3.0],
       ['explain_concept', 4.0],
+      ['article_choice', 2.0],
+      ['pronoun_choice', 2.5],
+      ['verb_form', 2.5],
+      ['verb_tense', 3.0],
     ]);
     expect(Object.keys(DI_SPOKEN_PRACTICE_TYPE_DOCS)).toEqual(
       DI_SPOKEN_PRACTICE_CHALLENGE_TYPES,
@@ -32,6 +36,8 @@ describe('DI Spoken Practice mode definitions', () => {
     ['read_aloud', 'short_spoken_word'],
     ['say_answer', 'short_spoken_word'],
     ['explain_concept', 'concept_statement'],
+    ['article_choice', 'short_spoken_word'],
+    ['verb_tense', 'closed_set_choice'],
   ] as const)('builds the %s voice action from the generated ask', (mode, responseClass) => {
     const ask = `Ask for ${mode}.`;
     const plan = diSpokenPracticeModePlan({ id: `item-${mode}`, mode, ask, responseClass });

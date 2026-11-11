@@ -1,0 +1,106 @@
+{
+  "source": "/api/lumina/eval-test oral-sentence-studio two_voices 2026-11-10 (handoff H2)",
+  "primitiveId": "oral-sentence-studio",
+  "evalMode": "two_voices",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "two_voices",
+    "challenges": [
+      {
+        "id": "oral-sentence-studio-1",
+        "type": "two_voices",
+        "sceneTitle": "Playing With Blocks",
+        "setting": {
+          "word": "house",
+          "emoji": "🏠"
+        },
+        "characters": [
+          {
+            "word": "bunny",
+            "emoji": "🐰"
+          },
+          {
+            "word": "cat",
+            "emoji": "🐱"
+          }
+        ],
+        "things": [
+          {
+            "word": "ball",
+            "emoji": "⚽"
+          }
+        ],
+        "situation": "Bunny wants to share a fun ball game with Cat.",
+        "examples": [
+          "Bunny: Do you want to roll this ball with me? Cat: Yes, I love to catch it!",
+          "Bunny: Let us roll it fast. Cat: Here it comes back to you!",
+          "Bunny: That was a super fun game. Cat: Let us play it once more."
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-2",
+        "type": "two_voices",
+        "sceneTitle": "Looking At Flowers",
+        "setting": {
+          "word": "flower",
+          "emoji": "🌸"
+        },
+        "characters": [
+          {
+            "word": "panda",
+            "emoji": "🐼"
+          },
+          {
+            "word": "turtle",
+            "emoji": "🐢"
+          }
+        ],
+        "things": [
+          {
+            "word": "honey",
+            "emoji": "🍯"
+          }
+        ],
+        "situation": "Panda and Turtle are looking at a pretty garden together.",
+        "examples": [
+          "Panda: Look at the yellow petals. Turtle: They smell so sweet today.",
+          "Panda: Would you like some yummy honey? Turtle: Thank you, that sounds very nice.",
+          "Panda: We can rest here in the sun. Turtle: This is a happy place to sit."
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-3",
+        "type": "two_voices",
+        "sceneTitle": "Reading A Story",
+        "setting": {
+          "word": "tent",
+          "emoji": "⛺"
+        },
+        "characters": [
+          {
+            "word": "fox",
+            "emoji": "🦊"
+          },
+          {
+            "word": "badger",
+            "emoji": "🦡"
+          }
+        ],
+        "things": [
+          {
+            "word": "book",
+            "emoji": "📖"
+          }
+        ],
+        "situation": "Fox and Badger are sitting together to read a fun picture book.",
+        "examples": [
+          "Fox: Can we turn the page now? Badger: Yes, I want to see the dog.",
+          "Fox: Point to the big red truck. Badger: Here it is on this paper.",
+          "Fox: That was a great story. Badger: Let us read it all again."
+        ]
+      }
+    ]
+  }
+}

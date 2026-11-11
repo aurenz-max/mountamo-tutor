@@ -148,6 +148,10 @@ export const DI_TESTER_PRESENTATION: Record<DiPrimitiveId, PrimitivePresentation
       compare_choice: { objective: 'compare two pictured objects and say longer, shorter, or same', gradeLevel: 'Grade 1' },
       say_answer: { objective: 'name the color shown using red, blue, yellow, or green' },
       explain_concept: { objective: 'explain why both sides of a balanced equation are equal', gradeLevel: 'Grade 3' },
+      article_choice: { objective: 'Distinguish between "a" and "an" usage based on beginning sounds' },
+      pronoun_choice: { objective: 'Match singular pronouns (he, she) to corresponding pictures and people' },
+      verb_form: { objective: 'Apply basic subject-verb agreement in present tense (singular/plural subjects)' },
+      verb_tense: { objective: 'Differentiate between present and past tense using regular -ed endings' },
     },
   },
   'di-worked-procedure': {

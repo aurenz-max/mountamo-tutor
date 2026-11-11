@@ -15,6 +15,7 @@ import {
   cumulativeLetters,
   cvcUsableLetters,
   groupVowels,
+  letterGroupForExamples,
   normalizeLetterGroup,
   smallestGroupContaining,
   type LetterGroup,
@@ -475,17 +476,18 @@ export function resolveCvcVowelFocus(
 }
 
 /**
- * The letter group in effect. The manifest wins; otherwise the default covers
- * all five short vowels, because that is what the K curriculum's own
- * letter-sound objective names. A named vowel focus can only RAISE the group,
- * never lower it: an objective asking for "short o" against a group that has no
- * `o` is a cap below intent, so the group comes up to meet it.
+ * The letter group in effect. The manifest wins; otherwise the whole alphabet
+ * (the K encode objectives name no group, and their own examples van, wet, win,
+ * jet, fox need group 4; the old default 3 refused them, H3 #4). A named vowel
+ * focus or the objective's example words can only RAISE the group, never lower
+ * it: a group that cannot spell what the objective asks for is a cap below intent.
  */
-const DEFAULT_LETTER_GROUP: LetterGroup = 3;
+const DEFAULT_LETTER_GROUP: LetterGroup = 4;
 
 export function resolveCvcLetterGroup(
   configured: unknown,
   vowelFocus: string | null,
+  texts: ReadonlyArray<string | undefined | null> = [],
 ): LetterGroup {
   const explicit = normalizeLetterGroup(configured);
   let group = explicit ?? DEFAULT_LETTER_GROUP;
@@ -494,6 +496,8 @@ export function resolveCvcLetterGroup(
     const needed = smallestGroupContaining(vowel);
     if (needed && needed > group) group = needed;
   }
+  const examples = letterGroupForExamples(texts);
+  if (examples && examples > group) group = examples;
   return group;
 }
 
@@ -654,7 +658,7 @@ export const generateCvcSpeller = async (
   // Setup
   // -------------------------------------------------------------------------
   const vowelFocus = resolveCvcVowelFocus(topic, config?.vowelFocus, intent);
-  const letterGroup = resolveCvcLetterGroup(config?.letterGroup, vowelFocus);
+  const letterGroup = resolveCvcLetterGroup(config?.letterGroup, vowelFocus, [ctx.objective?.text, intent]);
   const groupLetters = cvcUsableLetters(letterGroup);
   const availableVowels = groupVowels(letterGroup);
   // With a focus the answer space is that one vowel (massed practice, and the

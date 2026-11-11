@@ -23,6 +23,8 @@ import { normalizeSupportTier, resolveSupportStructure, type StoryRibbonSupportO
 export const LABELS_LEVER = 'sequence_labels';
 export const ARROWS_LEVER = 'flow_arrows';
 export const FRAME_LEVER = 'connection_frame';
+/** listen_retell: First / Next / (Then) / Last on the slots, for a retell told as a list with no order words. */
+export const ORDER_LEVER = 'order_words';
 
 export const tierSupport = (item: StoryRibbonItem): StoryRibbonSupportOptions =>
   item.challenge.support ?? resolveSupportStructure(item.mode, normalizeSupportTier(item.challenge.supportTier));
@@ -31,7 +33,7 @@ export const tierSupport = (item: StoryRibbonItem): StoryRibbonSupportOptions =>
 export function supportOnScreen(item: StoryRibbonItem, pulled: readonly string[]): StoryRibbonSupportOptions {
   const tier = tierSupport(item);
   return { ...tier,
-    showSequenceLabels: tier.showSequenceLabels || pulled.includes(LABELS_LEVER),
+    showSequenceLabels: tier.showSequenceLabels || pulled.includes(LABELS_LEVER) || pulled.includes(ORDER_LEVER),
     showFlowArrows: tier.showFlowArrows || pulled.includes(ARROWS_LEVER),
     showConnectionFrame: tier.showConnectionFrame || pulled.includes(FRAME_LEVER) };
 }
@@ -58,5 +60,10 @@ export const STORY_RIBBON_LEVERS = leverSet<StoryRibbonItem, void>({
       does: 'Shows a three-step frame: story moment, another experience, what is alike. Names no experience.',
       offer: item => !tierSupport(item).showConnectionFrame,
       fact: 'a three-step frame: story moment, another experience, what is alike' },
+    { id: ORDER_LEVER, type: 'marks', modes: ['listen_retell'], answers: ['no_order_words'],
+      when: 'The learner tells the events as a list with no order words.',
+      does: 'Puts First, Next and Last under the places on the ribbon. The pictures do not move. Say the order words; never say an event.',
+      offer: item => !tierSupport(item).showSequenceLabels,
+      fact: 'First, Next and Last under the places on the ribbon (the places, not the pictures)' },
   ],
 });

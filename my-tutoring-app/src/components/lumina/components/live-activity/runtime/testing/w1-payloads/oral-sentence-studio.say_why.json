@@ -1,0 +1,97 @@
+{
+  "source": "/api/lumina/eval-test oral-sentence-studio say_why 2026-11-10 (handoff H2)",
+  "primitiveId": "oral-sentence-studio",
+  "evalMode": "say_why",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Look at the picture, listen, and say it in your own words.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "say_why",
+    "challenges": [
+      {
+        "id": "oral-sentence-studio-1",
+        "type": "say_why",
+        "sceneTitle": "Bunny shares a snack",
+        "setting": {
+          "word": "house",
+          "emoji": "🏠"
+        },
+        "characters": [
+          {
+            "word": "bunny",
+            "emoji": "🐰"
+          }
+        ],
+        "things": [
+          {
+            "word": "cookie",
+            "emoji": "🍪"
+          }
+        ],
+        "situation": "Bunny has a sweet cookie and thinks everyone loves them.",
+        "claim": "Bunny says cookies are the best treat in the whole world.",
+        "examples": [
+          "Yes, I agree because cookies taste very sweet.",
+          "No, I disagree because I like fruit more.",
+          "No, I disagree because cookies can be crumbly."
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-2",
+        "type": "say_why",
+        "sceneTitle": "Frog on a log",
+        "setting": {
+          "word": "log",
+          "emoji": "🪵"
+        },
+        "characters": [
+          {
+            "word": "frog",
+            "emoji": "🐸"
+          }
+        ],
+        "things": [
+          {
+            "word": "kite",
+            "emoji": "🪁"
+          }
+        ],
+        "situation": "Frog holds a bright kite on a windy afternoon.",
+        "claim": "Frog says flying kites is the most fun game to play.",
+        "examples": [
+          "Yes, I agree because kites fly high in the sky.",
+          "No, I disagree because playing tag is more fun.",
+          "Yes, I agree because the wind feels nice."
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-3",
+        "type": "say_why",
+        "sceneTitle": "Cat finds a shoe",
+        "setting": {
+          "word": "tent",
+          "emoji": "⛺"
+        },
+        "characters": [
+          {
+            "word": "cat",
+            "emoji": "🐱"
+          }
+        ],
+        "things": [
+          {
+            "word": "shoe",
+            "emoji": "👟"
+          }
+        ],
+        "situation": "Cat looks closely at a fuzzy blue shoe.",
+        "claim": "Cat says shoes are the best toys to chase around.",
+        "examples": [
+          "No, I disagree because shoes go on our feet.",
+          "Yes, I agree because they roll when you push them.",
+          "No, I disagree because balls are better toys."
+        ]
+      }
+    ]
+  }
+}

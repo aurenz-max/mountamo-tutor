@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   askFor,
   challengeAskable,
-  itemsFromChallenges,
+  wordItemsOf,
 } from '../../primitives/visual-primitives/literacy/oralSentenceStudioDomain';
 import {
   ORAL_SENTENCE_STUDIO_FALLBACKS,
@@ -128,7 +128,7 @@ describe('gemini oral-sentence-studio contract', () => {
   });
 
   it('every fallback builds an item whose ask never carries a model sentence', () => {
-    const items = itemsFromChallenges(ORAL_SENTENCE_STUDIO_FALLBACKS);
+    const items = wordItemsOf(ORAL_SENTENCE_STUDIO_FALLBACKS);
     expect(items).toHaveLength(ORAL_SENTENCE_STUDIO_FALLBACKS.length);
     for (const item of items) {
       const ask = askFor(item);

@@ -49,7 +49,7 @@ describe('letterGroupFromText / resolveObjectiveLetterGroup', () => {
     expect(resolveObjectiveLetterGroup(undefined, [GROUP_2])).toEqual({ group: 2, source: 'objective' });
     expect(resolveObjectiveLetterGroup(3, [GROUP_2])).toEqual({ group: 3, source: 'config' });
     expect(resolveObjectiveLetterGroup(1, [GROUP_2])).toEqual({ group: 2, source: 'objective' });
-    expect(resolveObjectiveLetterGroup(undefined, ['letter sounds', undefined])).toEqual({ group: 1, source: 'default' });
+    expect(resolveObjectiveLetterGroup(undefined, ['letter sounds', undefined])).toEqual({ group: 4, source: 'default' });
   });
 });
 

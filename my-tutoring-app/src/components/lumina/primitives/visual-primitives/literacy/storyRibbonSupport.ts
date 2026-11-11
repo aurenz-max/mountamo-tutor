@@ -6,7 +6,11 @@ export type StoryRibbonProblemShape =
   | 'routine_sequence'
   | 'problem_solution'
   | 'adapted_solution'
-  | 'connection_saturated';
+  | 'connection_saturated'
+  /** listen_retell: the arc is the heard story's; difficulty is the event count (three or four), set by the generator. */
+  | 'heard_story'
+  /** tell_own: the learner's own story; there is no source arc to make harder. */
+  | 'own_story';
 
 export interface StoryRibbonProblemShapeSpec {
   storyShape: StoryRibbonProblemShape;
@@ -46,11 +50,15 @@ export function resolveSupportStructure(
   tier: SupportTier | null,
 ): StoryRibbonSupportScaffold {
   const experience = mode === 'story_to_experience';
+  const own = mode === 'tell_own';
+  const heard = mode === 'listen_retell';
   const legacy = tier === null;
   const effectiveTier = tier ?? 'easy';
-  const showSequenceLabels = legacy || effectiveTier === 'easy' || (!experience && effectiveTier === 'medium');
-  const showFlowArrows = legacy || effectiveTier === 'easy';
-  const showSelfCheck = legacy || effectiveTier === 'easy';
+  // tell_own has no ribbon to mark. listen_retell never shows the live order check: it would light on the order the
+  // learner is asked to remember.
+  const showSequenceLabels = !own && (legacy || effectiveTier === 'easy' || (!experience && effectiveTier === 'medium'));
+  const showFlowArrows = !own && (legacy || effectiveTier === 'easy');
+  const showSelfCheck = !own && !heard && (legacy || effectiveTier === 'easy');
   const showConnectionFrame = experience && (legacy || effectiveTier === 'easy');
   const instructionLevel = legacy || effectiveTier === 'easy'
     ? 'guided'
@@ -66,7 +74,8 @@ export function resolveSupportStructure(
     instructionLevel,
     promptLines: [
       'The SUPPORT axis changes only visible planning and instructional help. It never changes the event count, canonical order, time condition, response contract, or task identity.',
-      experience
+      own ? `${effectiveTier} own-story support: picture cards to pick from; no ribbon marks.`
+      : experience
         ? `${effectiveTier} story-to-experience support: ${showConnectionFrame ? 'show the three-part connection frame' : 'withdraw the connection frame'}; privacy-safe alternatives remain visible at every tier.`
         : `${effectiveTier} retell support: sequence labels ${showSequenceLabels ? 'shown' : 'withdrawn'}, flow arrows ${showFlowArrows ? 'shown' : 'withdrawn'}, and live order self-check ${showSelfCheck ? 'shown' : 'withdrawn'}.`,
       `Instruction detail is ${instructionLevel}; keep the title and generated story neutral and never mention a support tier to the child.`,
@@ -85,6 +94,18 @@ export function resolveProblemShape(
   mode: StoryRibbonChallengeType,
   tier: SupportTier,
 ): StoryRibbonProblemShapeSpec {
+  if (mode === 'listen_retell' || mode === 'tell_own') {
+    return {
+      storyShape: mode === 'listen_retell' ? 'heard_story' : 'own_story',
+      problemTarget: 0,
+      setbackTarget: 0,
+      adaptationTarget: 0,
+      structurallySaturated: true,
+      promptLines: mode === 'listen_retell'
+        ? ['Listen-then-retell keeps a plain familiar sequence; its difficulty is the number of events (three or four), set by code.']
+        : [],
+    };
+  }
   if (mode === 'story_to_experience') {
     return {
       storyShape: 'connection_saturated',
@@ -143,6 +164,16 @@ export function storyRibbonPromptFor(
   timeCue: StoryRibbonTimeCue | undefined,
   support: StoryRibbonSupportOptions,
 ): string {
+  if (mode === 'listen_retell') {
+    return support.instructionLevel === 'minimal'
+      ? 'Listen, then tell the story back.'
+      : 'Listen to the story. Then tell it back in order with first, next and last.';
+  }
+  if (mode === 'tell_own') {
+    return support.instructionLevel === 'minimal'
+      ? 'Pick cards and tell your own story.'
+      : 'Tap two or three cards. Tell your own story with a beginning, a middle and an end.';
+  }
   if (mode === 'story_to_experience') {
     if (support.instructionLevel === 'guided') {
       return 'Choose one story moment. Tell what happened, share another experience, then explain what is alike.';

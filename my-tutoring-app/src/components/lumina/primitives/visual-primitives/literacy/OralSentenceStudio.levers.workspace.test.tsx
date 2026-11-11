@@ -14,7 +14,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
-import { itemsFromChallenges } from './oralSentenceStudioDomain';
+import { wordItemsOf } from './oralSentenceStudioDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -24,7 +24,7 @@ const data = JSON.parse(readFileSync(join(__dirname,
 const q = (h: WorkspaceHarness, sel: string) => Array.from(h.view.container.querySelectorAll(sel));
 
 it('strip and pictures change the screen in the commit; no example appears before credit; credit is assisted', () => {
-  const [item, next] = itemsFromChallenges(data.challenges);
+  const [item, next] = wordItemsOf(data.challenges);
   const h = mountWorkspace({ primitiveId: 'oral-sentence-studio', evalMode: 'describe_scene', data });
   expect(h.state().task!.workspace!.levers?.map(l => l.id)).toEqual(['sentence_strip', 'word_pictures']);
   h.say(item.challenge.targetWords.join(' ')); h.feedback('incorrect', 'retry');

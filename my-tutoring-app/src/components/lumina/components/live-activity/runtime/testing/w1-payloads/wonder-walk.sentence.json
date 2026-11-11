@@ -1,0 +1,1182 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-sentence-payload-2026-11-10.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "sentence",
+ "data": {
+  "title": "Making Sentences",
+  "bigIdea": "A sentence tells who it is about and what they do.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "sentence",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "A sentence has a who that tells who is in it.",
+    "narration": "The duck swims. Listen to the words.",
+    "ask": "Who is this sentence about?",
+    "why": "Think about who is doing something.",
+    "respond": "say",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "ball",
+       "category": "toy",
+       "emoji": "\u26bd"
+      },
+      {
+       "id": "t2",
+       "tile": "duck",
+       "category": "animal",
+       "emoji": "\ud83e\udd86"
+      },
+      {
+       "id": "t3",
+       "tile": "swims"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "the",
+       "role": "small"
+      },
+      {
+       "say": "duck",
+       "role": "who",
+       "card": "t2"
+      },
+      {
+       "say": "swims",
+       "role": "does",
+       "card": "t3"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "part",
+       "role": "who"
+      },
+      "traps": {
+       "t1": "not_heard",
+       "t2": null,
+       "t3": "in_story"
+      }
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "three choices (+0.5)",
+      "a card that was not in the sentence (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child taps the action word instead of who.",
+      "says": "Look at the picture to help you remember who.",
+      "item": {
+       "id": "stop-1-help_1",
+       "idea": "A sentence has a who that tells who is in it.",
+       "narration": "The duck swims. Listen to the words.",
+       "ask": "Who is this sentence about?",
+       "why": "Think about who is doing something.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "duck",
+          "emoji": "\ud83e\udd86",
+          "phones": [
+           "D",
+           "AH",
+           "K"
+          ],
+          "syllables": 1,
+          "category": "animal"
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "ball",
+          "category": "toy",
+          "emoji": "\u26bd"
+         },
+         {
+          "id": "t2",
+          "tile": "duck",
+          "category": "animal",
+          "emoji": "\ud83e\udd86"
+         },
+         {
+          "id": "t3",
+          "tile": "swims"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "duck",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "swims",
+          "role": "does",
+          "card": "t3"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "who"
+         },
+         "traps": {
+          "t1": "not_heard",
+          "t2": null,
+          "t3": "in_story"
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "three choices (+0.5)",
+         "a card that was not in the sentence (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "duck"
+       ],
+       "sceneEmoji": [
+        "\ud83e\udd86"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused by three cards.",
+      "says": "Let us choose between two cards.",
+      "item": {
+       "id": "stop-1-simpler_1",
+       "idea": "A sentence has a who that tells who is in it.",
+       "narration": "The duck swims. Listen to the words.",
+       "ask": "Who is this sentence about?",
+       "why": "Think about who is doing something.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "duck",
+          "category": "animal",
+          "emoji": "\ud83e\udd86"
+         },
+         {
+          "id": "t2",
+          "tile": "swims"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "duck",
+          "role": "who",
+          "card": "t1"
+         },
+         {
+          "say": "swims",
+          "role": "does",
+          "card": "t2"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "who"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "in_story"
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 0,
+        "reasons": [
+         "two choices, a first sound, recognise only"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-2",
+    "idea": "A sentence has a doing-word that tells what they do.",
+    "narration": "The frog hops. Listen to what happens.",
+    "ask": "What does the frog do?",
+    "why": "Listen for the word that tells what happens.",
+    "respond": "say",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "log",
+       "category": "nature",
+       "emoji": "\ud83e\udeb5"
+      },
+      {
+       "id": "t2",
+       "tile": "frog",
+       "category": "animal",
+       "emoji": "\ud83d\udc38"
+      },
+      {
+       "id": "t3",
+       "tile": "hops",
+       "category": "action",
+       "emoji": "\ud83d\udc30"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "the",
+       "role": "small"
+      },
+      {
+       "say": "frog",
+       "role": "who",
+       "card": "t2"
+      },
+      {
+       "say": "hops",
+       "role": "does",
+       "card": "t3"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "part",
+       "role": "does"
+      },
+      "traps": {
+       "t1": "not_heard",
+       "t2": "in_story",
+       "t3": null
+      }
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 2,
+     "reasons": [
+      "three choices (+0.5)",
+      "a card that was not in the sentence (+0.5)",
+      "find the does (+1)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child taps who instead of what they do.",
+      "says": "Look at the action picture to help.",
+      "item": {
+       "id": "stop-2-help_1",
+       "idea": "A sentence has a doing-word that tells what they do.",
+       "narration": "The frog hops. Listen to what happens.",
+       "ask": "What does the frog do?",
+       "why": "Listen for the word that tells what happens.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "hop",
+          "emoji": "\ud83d\udc30",
+          "phones": [
+           "HH",
+           "AA",
+           "P"
+          ],
+          "syllables": 1,
+          "category": "action",
+          "letters": [
+           "h",
+           "o",
+           "p"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "log",
+          "category": "nature",
+          "emoji": "\ud83e\udeb5"
+         },
+         {
+          "id": "t2",
+          "tile": "frog",
+          "category": "animal",
+          "emoji": "\ud83d\udc38"
+         },
+         {
+          "id": "t3",
+          "tile": "hops",
+          "category": "action",
+          "emoji": "\ud83d\udc30"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "frog",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "hops",
+          "role": "does",
+          "card": "t3"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "does"
+         },
+         "traps": {
+          "t1": "not_heard",
+          "t2": "in_story",
+          "t3": null
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 2,
+        "reasons": [
+         "three choices (+0.5)",
+         "a card that was not in the sentence (+0.5)",
+         "find the does (+1)"
+        ]
+       },
+       "sceneWords": [
+        "hop"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc30"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child struggles with three choices.",
+      "says": "Let us choose between two words.",
+      "item": {
+       "id": "stop-2-simpler_1",
+       "idea": "A sentence has a doing-word that tells what they do.",
+       "narration": "The frog hops. Listen to what happens.",
+       "ask": "What does the frog do?",
+       "why": "Listen for the word that tells what happens.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "frog",
+          "category": "animal",
+          "emoji": "\ud83d\udc38"
+         },
+         {
+          "id": "t2",
+          "tile": "hops",
+          "category": "action",
+          "emoji": "\ud83d\udc30"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "frog",
+          "role": "who",
+          "card": "t1"
+         },
+         {
+          "say": "hops",
+          "role": "does",
+          "card": "t2"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "does"
+         },
+         "traps": {
+          "t1": "in_story",
+          "t2": null
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "find the does (+1)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-3",
+    "idea": "A sentence has a doing-word that tells what they do.",
+    "narration": "The dog needs a word that tells what it does.",
+    "ask": "Which word makes it a whole sentence?",
+    "why": "A whole sentence needs a word that tells what happens.",
+    "respond": "say",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "hat",
+       "category": "clothing",
+       "emoji": "\ud83c\udfa9"
+      },
+      {
+       "id": "t2",
+       "tile": "milk",
+       "category": "drink",
+       "emoji": "\ud83e\udd5b"
+      },
+      {
+       "id": "t3",
+       "tile": "runs",
+       "category": "action",
+       "emoji": "\ud83c\udfc3"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "the",
+       "role": "small"
+      },
+      {
+       "say": "dog",
+       "role": "who"
+      },
+      {
+       "say": "runs",
+       "role": "does",
+       "card": "t3"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "fills"
+      },
+      "traps": {
+       "t1": "wrong_kind",
+       "t2": "wrong_kind",
+       "t3": null
+      }
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "the doing-word is missing (+1)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t3",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child chooses a naming word instead of an action.",
+      "says": "Here is an action to help you see what is missing.",
+      "item": {
+       "id": "stop-3-help_1",
+       "idea": "A sentence has a doing-word that tells what they do.",
+       "narration": "The dog needs a word that tells what it does.",
+       "ask": "Which word makes it a whole sentence?",
+       "why": "A whole sentence needs a word that tells what happens.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "run",
+          "emoji": "\ud83c\udfc3",
+          "phones": [
+           "R",
+           "AH",
+           "N"
+          ],
+          "syllables": 1,
+          "category": "action",
+          "letters": [
+           "r",
+           "u",
+           "n"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "milk",
+          "category": "drink",
+          "emoji": "\ud83e\udd5b"
+         },
+         {
+          "id": "t2",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t3",
+          "tile": "hat",
+          "category": "clothing",
+          "emoji": "\ud83c\udfa9"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "dog",
+          "role": "who"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t2"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "fills"
+         },
+         "traps": {
+          "t1": "wrong_kind",
+          "t2": null,
+          "t3": "wrong_kind"
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "three choices (+0.5)",
+         "the doing-word is missing (+1)"
+        ]
+       },
+       "sceneWords": [
+        "run"
+       ],
+       "sceneEmoji": [
+        "\ud83c\udfc3"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is unsure among three cards.",
+      "says": "Let us look at two choices.",
+      "item": {
+       "id": "stop-3-simpler_1",
+       "idea": "A sentence has a doing-word that tells what they do.",
+       "narration": "The dog needs a word that tells what it does.",
+       "ask": "Which word makes it a whole sentence?",
+       "why": "A whole sentence needs a word that tells what happens.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "hat",
+          "category": "clothing",
+          "emoji": "\ud83c\udfa9"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small"
+         },
+         {
+          "say": "dog",
+          "role": "who"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t1"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "fills"
+         },
+         "traps": {
+          "t1": null,
+          "t2": "wrong_kind"
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "the doing-word is missing (+1)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t1"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-4",
+    "idea": "Putting who and what they do together makes a whole sentence.",
+    "narration": "Here is a sleepy kitty resting by the fire.",
+    "ask": "Can you put the words in order to make the sentence?",
+    "why": "Start with who the sentence is about, then add what they do.",
+    "respond": "show",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "cup",
+       "category": "home",
+       "emoji": "\ud83e\udd64"
+      },
+      {
+       "id": "t2",
+       "tile": "cat",
+       "category": "animal",
+       "emoji": "\ud83d\udc31"
+      },
+      {
+       "id": "t3",
+       "tile": "sleeps",
+       "category": "action",
+       "emoji": "\ud83d\ude34"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "cat",
+       "role": "who",
+       "card": "t2"
+      },
+      {
+       "say": "sleeps",
+       "role": "does",
+       "card": "t3"
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "sentence",
+      "things": [
+       "t1",
+       "t2",
+       "t3"
+      ]
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "build a sentence from 2 cards (+0.5)",
+      "a spare card (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child mixes up who and does.",
+      "says": "Here is a picture of who the sentence is about!",
+      "item": {
+       "id": "stop-4-help_1",
+       "idea": "Putting who and what they do together makes a whole sentence.",
+       "narration": "Here is a sleepy kitty resting by the fire.",
+       "ask": "Can you put the words in order to make the sentence?",
+       "why": "Start with who the sentence is about, then add what they do.",
+       "respond": "show",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [
+         {
+          "id": "r1",
+          "word": "cat",
+          "emoji": "\ud83d\udc31",
+          "phones": [
+           "K",
+           "AE",
+           "T"
+          ],
+          "syllables": 1,
+          "category": "animal",
+          "letters": [
+           "c",
+           "a",
+           "t"
+          ]
+         }
+        ],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "cup",
+          "category": "home",
+          "emoji": "\ud83e\udd64"
+         },
+         {
+          "id": "t2",
+          "tile": "cat",
+          "category": "animal",
+          "emoji": "\ud83d\udc31"
+         },
+         {
+          "id": "t3",
+          "tile": "sleeps",
+          "category": "action",
+          "emoji": "\ud83d\ude34"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "cat",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "sleeps",
+          "role": "does",
+          "card": "t3"
+         }
+        ],
+        "answer": {
+         "kind": "order",
+         "by": "sentence",
+         "things": [
+          "t1",
+          "t2",
+          "t3"
+         ]
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "build a sentence from 2 cards (+0.5)",
+         "a spare card (+0.5)"
+        ]
+       },
+       "sceneWords": [
+        "cat"
+       ],
+       "sceneEmoji": [
+        "\ud83d\udc31"
+       ],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused by the extra card.",
+      "says": "Here are just the two words you need.",
+      "item": {
+       "id": "stop-4-simpler_1",
+       "idea": "Putting who and what they do together makes a whole sentence.",
+       "narration": "Here is a sleepy kitty resting by the fire.",
+       "ask": "Can you put the words in order to make the sentence?",
+       "why": "Start with who the sentence is about, then add what they do.",
+       "respond": "show",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t2",
+          "tile": "sleeps",
+          "category": "action",
+          "emoji": "\ud83d\ude34"
+         },
+         {
+          "id": "t1",
+          "tile": "cat",
+          "category": "animal",
+          "emoji": "\ud83d\udc31"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "cat",
+          "role": "who",
+          "card": "t1"
+         },
+         {
+          "say": "sleeps",
+          "role": "does",
+          "card": "t2"
+         }
+        ],
+        "answer": {
+         "kind": "order",
+         "by": "sentence",
+         "things": [
+          "t1",
+          "t2"
+         ]
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "build a sentence from 2 cards (+0.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 5,
+   "seconds": 29.4,
+   "modes": [
+    "sentence"
+   ],
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: sentence card \"c_the\" is not a thing"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: sentence card \"c_the2\" is not a thing"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "stop 0: check these words are known at K: sentence",
+    "stop 2: check these words are known at K: sentence",
+    "stop 3: check these words are known at K: sentence"
+   ],
+   "costUsd": 0.0298,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 2,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 0 stop(s) held, 4 blocking check(s). First: a walk has 3-5 stops; this one has 0",
+     "costUsd": 0.0071
+    },
+    {
+     "seconds": 2,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0071
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 4 stop(s) held, 8 blocking check(s). First: stop 0: sentence card \"c_the\" is not a thing",
+     "costUsd": 0.0146
+    },
+    {
+     "seconds": 14,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0146
+    },
+    {
+     "seconds": 24,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 4 stop(s) held, 1 blocking check(s). First: stop 3: lever 0 (help): its item is blocked: a sentence to build has 2-5 of its words as cards, not 1",
+     "costUsd": 0.0227
+    },
+    {
+     "seconds": 24,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0227
+    },
+    {
+     "seconds": 27,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: 4 stop(s) held, 0 blocking check(s)",
+     "costUsd": 0.0268
+    },
+    {
+     "seconds": 27,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0268
+    },
+    {
+     "seconds": 29,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 stop(s) in 29.4s over 5 turn(s), about $0.03",
+     "costUsd": 0.0298
+    }
+   ],
+   "look": [],
+   "run": {
+    "author": "WonderWalk",
+    "loop": "author",
+    "seconds": 29.4,
+    "costUsd": 0.0298,
+    "items": 4,
+    "rounds": 5,
+    "look": {
+     "ran": false,
+     "looked": 0,
+     "unread": 4,
+     "screenshots": 0,
+     "problems": 0
+    },
+    "displays": null
+   }
+  }
+ }
+}

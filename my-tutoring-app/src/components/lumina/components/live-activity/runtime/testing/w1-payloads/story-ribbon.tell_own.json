@@ -1,0 +1,139 @@
+{
+  "source": "/api/lumina/eval-test story-ribbon tell_own 2026-11-10 (handoff H2)",
+  "primitiveId": "story-ribbon",
+  "evalMode": "tell_own",
+  "data": {
+    "title": "Story Ribbon",
+    "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "tell_own",
+    "challenges": [
+      {
+        "id": "story-ribbon-1",
+        "type": "tell_own",
+        "title": "Your Own Story",
+        "characterName": "you",
+        "characterEmoji": "🧒",
+        "setting": "anywhere",
+        "events": [],
+        "cards": [
+          {
+            "id": "story-ribbon-1-card-1",
+            "word": "deer",
+            "emoji": "🦌"
+          },
+          {
+            "id": "story-ribbon-1-card-2",
+            "word": "beetle",
+            "emoji": "🪲"
+          },
+          {
+            "id": "story-ribbon-1-card-3",
+            "word": "spaghetti",
+            "emoji": "🍝"
+          },
+          {
+            "id": "story-ribbon-1-card-4",
+            "word": "thread",
+            "emoji": "🧵"
+          },
+          {
+            "id": "story-ribbon-1-card-5",
+            "word": "tent",
+            "emoji": "⛺"
+          },
+          {
+            "id": "story-ribbon-1-card-6",
+            "word": "taco",
+            "emoji": "🌮"
+          }
+        ],
+        "modelStory": "First, a little deer found a taco by the tent. Next, the deer showed the taco to a beetle, and they played with it together. Last, the beetle said thank you, and they went home happy."
+      },
+      {
+        "id": "story-ribbon-2",
+        "type": "tell_own",
+        "title": "Make a Story",
+        "characterName": "you",
+        "characterEmoji": "🧒",
+        "setting": "anywhere",
+        "events": [],
+        "cards": [
+          {
+            "id": "story-ribbon-2-card-1",
+            "word": "bug",
+            "emoji": "🐛"
+          },
+          {
+            "id": "story-ribbon-2-card-2",
+            "word": "fountain",
+            "emoji": "⛲"
+          },
+          {
+            "id": "story-ribbon-2-card-3",
+            "word": "volleyball",
+            "emoji": "🏐"
+          },
+          {
+            "id": "story-ribbon-2-card-4",
+            "word": "pear",
+            "emoji": "🍐"
+          },
+          {
+            "id": "story-ribbon-2-card-5",
+            "word": "coconut",
+            "emoji": "🥥"
+          },
+          {
+            "id": "story-ribbon-2-card-6",
+            "word": "wolf",
+            "emoji": "🐺"
+          }
+        ],
+        "modelStory": "First, a little wolf found a coconut by the fountain. Next, the wolf showed the coconut to a bug, and they played with it together. Last, the bug said thank you, and they went home happy."
+      },
+      {
+        "id": "story-ribbon-3",
+        "type": "tell_own",
+        "title": "Story Cards",
+        "characterName": "you",
+        "characterEmoji": "🧒",
+        "setting": "anywhere",
+        "events": [],
+        "cards": [
+          {
+            "id": "story-ribbon-3-card-1",
+            "word": "school",
+            "emoji": "🏫"
+          },
+          {
+            "id": "story-ribbon-3-card-2",
+            "word": "shoe",
+            "emoji": "👟"
+          },
+          {
+            "id": "story-ribbon-3-card-3",
+            "word": "bug",
+            "emoji": "🐛"
+          },
+          {
+            "id": "story-ribbon-3-card-4",
+            "word": "crown",
+            "emoji": "👑"
+          },
+          {
+            "id": "story-ribbon-3-card-5",
+            "word": "bag",
+            "emoji": "👜"
+          },
+          {
+            "id": "story-ribbon-3-card-6",
+            "word": "fly",
+            "emoji": "🪰"
+          }
+        ],
+        "modelStory": "First, a little fly found a bag by the school. Next, the fly showed the bag to a bug, and they played with it together. Last, the bug said thank you, and they went home happy."
+      }
+    ]
+  }
+}

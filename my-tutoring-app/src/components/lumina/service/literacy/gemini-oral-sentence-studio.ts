@@ -16,10 +16,15 @@
 
 import { Type, type Schema } from '@google/genai';
 import type {
+  OralOpenChallenge,
+  OralOpenType,
   OralSentenceStudioChallenge,
   OralSentenceStudioChallengeType,
   OralSentenceStudioData,
+  OralWordsType,
 } from '../../primitives/visual-primitives/literacy/OralSentenceStudio';
+import { isOralOpenType, ORAL_OPEN_TYPES } from '../../primitives/visual-primitives/literacy/oralSentenceStudioOpen';
+import { generateOpenPool } from './gemini-oral-open-speech';
 import {
   challengeAskable,
   ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES,
@@ -61,6 +66,22 @@ const CHALLENGE_TYPE_DOCS: Record<OralSentenceStudioChallengeType, ChallengeType
       + 'anything else. A story sentence said back does not count.',
     schemaDescription: "'use_story_words' (reuse two story words in a new sentence)",
   },
+  ask_question: {
+    promptDoc: '"ask_question": The child sees a picture with something closed or covered (a wrapped box, a closed door) and '
+      + 'asks a question about it. No printed words. Credit: it is a question and it is about the scene.',
+    schemaDescription: "'ask_question' (ask a question about something hidden)",
+  },
+  say_why: {
+    promptDoc: '"say_why": The child hears a character opinion ("Fox says cats are better than dogs") or a what-if and '
+      + 'says whether they agree and why. Covers agreeing or disagreeing with a reason, story preferences with "because", '
+      + 'and what-if talk. No printed words. Credit: a position and a reason that fits it.',
+    schemaDescription: "'say_why' (agree or disagree and say why)",
+  },
+  two_voices: {
+    promptDoc: '"two_voices": The child sees two characters in a scene and says one line for each, as simple dialogue in '
+      + 'dramatic play. No printed words. Credit: two lines that fit the scene, one per character.',
+    schemaDescription: "'two_voices' (say a line for each of two characters)",
+  },
 };
 
 const FLAT_FIELDS = [
@@ -87,13 +108,13 @@ const FLAT_FIELDS = [
 type FlatField = typeof FLAT_FIELDS[number] | 'storyText' | 'priorStepLabel';
 
 /** Extra flat fields a type carries beyond the shared scene/word/sentence set. */
-const EXTRA_FIELDS: Record<OralSentenceStudioChallengeType, FlatField[]> = {
+const EXTRA_FIELDS: Record<OralWordsType, FlatField[]> = {
   describe_scene: [],
   guided_writing_rehearsal: ['priorStepLabel'],
   use_story_words: ['storyText'],
 };
 
-const fieldsFor = (type: OralSentenceStudioChallengeType): FlatField[] =>
+const fieldsFor = (type: OralWordsType): FlatField[] =>
   [...FLAT_FIELDS, ...EXTRA_FIELDS[type]];
 
 /**
@@ -118,7 +139,7 @@ const fieldDescription = (field: FlatField): string => {
   return 'One distinct, complete child sentence about this exact scene that uses both target words exactly and meaningfully.';
 };
 
-const schemaFor = (type: OralSentenceStudioChallengeType): Schema => constrainChallengeTypeEnum(
+const schemaFor = (type: OralWordsType): Schema => constrainChallengeTypeEnum(
   {
     type: Type.OBJECT,
     properties: Object.fromEntries([
@@ -161,7 +182,7 @@ const sentencesGenuinelyDiffer = (sentences: readonly string[]): boolean => {
 export function validateOralSentenceStudioPayload(
   raw: unknown,
   index: number,
-  expectedType: OralSentenceStudioChallengeType = 'describe_scene',
+  expectedType: OralWordsType = 'describe_scene',
 ): OralSentenceStudioChallenge | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const record = raw as Record<string, unknown>;
@@ -483,17 +504,23 @@ export const ORAL_SENTENCE_STUDIO_FALLBACKS: OralSentenceStudioChallenge[] = [
   },
 ];
 
+const ALL_TYPES: readonly OralSentenceStudioChallengeType[] = [...ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES, ...ORAL_OPEN_TYPES];
+
 const scheduleTypes = (resolution: EvalModeResolution | null): OralSentenceStudioChallengeType[] => {
-  // Mixed (no resolution) covers every task identity once, easiest first.
+  // Mixed (no resolution) covers every two-word task identity once, easiest first, as it did before the open modes:
+  // an open mode is served only when the lesson resolves to it.
   const source = (resolution?.allowedTypes ?? ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES)
     .filter((type): type is OralSentenceStudioChallengeType =>
-      (ORAL_SENTENCE_STUDIO_CHALLENGE_TYPES as readonly string[]).includes(type));
+      (ALL_TYPES as readonly string[]).includes(type));
   const types = source.length ? source : ['describe_scene' as const];
   return Array.from({ length: CHALLENGE_COUNT }, (_, index) => types[index % types.length]);
 };
 
 const normalize = (value: string): string => wordTokens(value).join(' ');
-const sceneKey = (challenge: OralSentenceStudioChallenge): string => [
+type AnyChallenge = OralSentenceStudioChallenge | OralOpenChallenge;
+const sceneKey = (challenge: AnyChallenge): string => 'characters' in challenge
+  ? `open|${[challenge.setting, ...challenge.characters, ...challenge.things].map((p) => p.word).join('|')}`
+  : [
   challenge.settingLabel,
   challenge.actorLabel,
   challenge.actionLabel,
@@ -501,9 +528,11 @@ const sceneKey = (challenge: OralSentenceStudioChallenge): string => [
 ].map(normalize).join('|');
 
 const rekeyChallenge = (
-  challenge: OralSentenceStudioChallenge,
+  challenge: AnyChallenge,
   index: number,
-): OralSentenceStudioChallenge => ({
+): AnyChallenge => 'characters' in challenge
+  ? { ...challenge, id: `oral-sentence-studio-${index + 1}`, examples: [...challenge.examples] as [string, string, string] }
+  : ({
   ...challenge,
   id: `oral-sentence-studio-${index + 1}`,
   targetWords: [...challenge.targetWords] as [string, string],
@@ -511,7 +540,7 @@ const rekeyChallenge = (
   acceptedSentences: [...challenge.acceptedSentences] as [string, string, string],
 });
 
-const TYPE_RULES: Record<OralSentenceStudioChallengeType, string> = {
+const TYPE_RULES: Record<OralWordsType, string> = {
   describe_scene: `- The visible scene must show one actor, one action, one object, and one setting. Each emoji must literally match its label. Labels are short noun or action phrases, never sentences.
 - targetWord0 and targetWord1 are two DISTINCT lowercase single vocabulary words. Both must fit the topic and be naturally usable together to describe this exact scene. Do not choose proper names.
 - Every accepted sentence must explicitly name at least one word from the actor, action, or object label. Mentioning only the setting is not enough to describe the pictured event.`,
@@ -542,7 +571,7 @@ const orderWordFor = (index: number, attempt: number): string =>
 
 const promptFor = (
   ctx: GenerationContext,
-  type: OralSentenceStudioChallengeType,
+  type: OralWordsType,
   index: number,
   attempt: number,
   usedScenes: readonly string[],
@@ -595,6 +624,7 @@ export async function generateOralSentenceStudio(
     usedScenes: readonly string[],
   ): Promise<OralSentenceStudioChallenge | null> => {
     const type = slotTypes[index];
+    if (isOralOpenType(type)) return null;
     try {
       const response = await ai.models.generateContent({
         model: MODEL,
@@ -615,13 +645,29 @@ export async function generateOralSentenceStudio(
     }
   };
 
+  // Open modes draw from one pool per mode (ask 6, keep at most 5); their slots are filled before the word slots run.
+  const openTypes = Array.from(new Set(slotTypes.filter(isOralOpenType)));
+  const pools = new Map<OralOpenType, OralOpenChallenge[]>();
+  for (const [type, result] of await Promise.all(openTypes.map(async (type) => [type, await generateOpenPool(ctx, type)] as const))) {
+    pools.set(type, [...result.pool]);
+    rejectionCount += result.rejected;
+    if (result.fallbacks) console.warn(`[oral-sentence-studio] ${type}: ${result.fallbacks} fallback scene(s) topped up the pool of ${result.pool.length}.`);
+  }
+
+  const slots: Array<AnyChallenge | null> = Array(CHALLENGE_COUNT).fill(null);
+  const seen = new Set<string>();
+  slotTypes.forEach((type, index) => {
+    if (!isOralOpenType(type)) return;
+    const next = pools.get(type)?.shift();
+    if (!next) throw new Error(`[oral-sentence-studio] No ${type} scene remained for slot ${index + 1}.`);
+    seen.add(sceneKey(next));
+    slots[index] = next;
+  });
+
   const initial = await Promise.all(Array.from(
     { length: CHALLENGE_COUNT },
-    (_, index) => requestChallenge(index, 0, []),
+    (_, index) => (slots[index] ? Promise.resolve(null) : requestChallenge(index, 0, [])),
   ));
-
-  const slots: Array<OralSentenceStudioChallenge | null> = Array(CHALLENGE_COUNT).fill(null);
-  const seen = new Set<string>();
   for (let index = 0; index < initial.length; index++) {
     const challenge = initial[index];
     if (!challenge) continue;
@@ -689,7 +735,9 @@ export async function generateOralSentenceStudio(
 
   return {
     title: 'Oral Sentence Studio',
-    description: 'Use both new words in one complete sentence of your own.',
+    description: challenges.every((challenge) => isOralOpenType(challenge.type))
+      ? 'Look at the picture, listen, and say it in your own words.'
+      : 'Use both new words in one complete sentence of your own.',
     gradeLevel: ctx.gradeLevel,
     challengeType: sessionTypes.length === 1 ? sessionTypes[0] : 'mixed',
     challenges,

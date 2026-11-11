@@ -1,0 +1,94 @@
+{
+  "source": "/api/lumina/eval-test oral-sentence-studio ask_question 2026-11-10 (handoff H2)",
+  "primitiveId": "oral-sentence-studio",
+  "evalMode": "ask_question",
+  "data": {
+    "title": "Oral Sentence Studio",
+    "description": "Use both new words in one complete sentence of your own.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "ask_question",
+    "challenges": [
+      {
+        "id": "oral-sentence-studio-1",
+        "type": "ask_question",
+        "sceneTitle": "The Mystery Box",
+        "setting": {
+          "word": "house",
+          "emoji": "🏠"
+        },
+        "characters": [
+          {
+            "word": "cat",
+            "emoji": "🐱"
+          }
+        ],
+        "things": [
+          {
+            "word": "box",
+            "emoji": "📦"
+          }
+        ],
+        "situation": "The kitty finds a large wrapped present sitting right in the middle of the room.",
+        "examples": [
+          "What is inside the box?",
+          "Can I open it now?",
+          "Who brought this present?"
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-2",
+        "type": "ask_question",
+        "sceneTitle": "The Hidden Shell",
+        "setting": {
+          "word": "lake",
+          "emoji": "🏞️"
+        },
+        "characters": [
+          {
+            "word": "duck",
+            "emoji": "🦆"
+          }
+        ],
+        "things": [
+          {
+            "word": "shell",
+            "emoji": "🐚"
+          }
+        ],
+        "situation": "The duck sees a closed clam shell resting near the water edge.",
+        "examples": [
+          "Is something hiding inside?",
+          "Why is the shell closed?",
+          "Can we look inside together?"
+        ]
+      },
+      {
+        "id": "oral-sentence-studio-3",
+        "type": "ask_question",
+        "sceneTitle": "The Secret Bag",
+        "setting": {
+          "word": "tent",
+          "emoji": "⛺"
+        },
+        "characters": [
+          {
+            "word": "bunny",
+            "emoji": "🐰"
+          }
+        ],
+        "things": [
+          {
+            "word": "bag",
+            "emoji": "👜"
+          }
+        ],
+        "situation": "The bunny discovers a small canvas bag tied up with a bright string.",
+        "examples": [
+          "What is in the bag?",
+          "Can you help me untie it?",
+          "Is there a toy inside?"
+        ]
+      }
+    ]
+  }
+}

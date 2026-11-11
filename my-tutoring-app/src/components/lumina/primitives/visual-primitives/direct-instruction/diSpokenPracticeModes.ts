@@ -13,7 +13,17 @@ export type SpokenPracticeMode =
   | 'compare_choice'
   | 'read_aloud'
   | 'say_answer'
-  | 'explain_concept';
+  | 'explain_concept'
+  | 'article_choice'
+  | 'pronoun_choice'
+  | 'verb_form'
+  | 'verb_tense';
+
+/** The grammar-frame modes: code builds every item from the word library (`service/wordSpace/grammarSpaces.ts`). */
+export const GRAMMAR_FRAME_MODES = ['article_choice', 'pronoun_choice', 'verb_form', 'verb_tense'] as const;
+export type GrammarFrameMode = typeof GRAMMAR_FRAME_MODES[number];
+export const isGrammarFrameMode = (mode: string): mode is GrammarFrameMode =>
+  (GRAMMAR_FRAME_MODES as readonly string[]).includes(mode);
 
 export type StimulusKind = 'text' | 'emoji' | 'objects' | 'none' | 'pair';
 export type AnswerSource = 'recall' | 'decode';
@@ -212,6 +222,130 @@ export const DI_SPOKEN_PRACTICE_MODES = defineDiModes<
       answerKind: 'voice',
       instruction: (item) => item.ask,
       checkingInstruction: 'Listening to your explanation.',
+    }],
+  }),
+  mode({
+    evalMode: 'article_choice',
+    label: 'Which Article?',
+    beta: 2.0,
+    scaffoldingMode: 2,
+    challengeTypes: ['article_choice'],
+    description: 'A picture is shown and the tutor says a sentence with one word missing; the child says the article that fits: a or an (by the first SOUND of the next word), or a or the (a thing named for the first time, or one already named). Use for article objectives (a, an, the).',
+    challengeDocs: {
+      article_choice: {
+        promptDoc: '"article_choice": A picture is shown and the tutor says a sentence with one word missing; the child says the article that fits: a or an (by the first SOUND of the next word), or a or the (a thing named for the first time, or one already named). Use for article objectives (a, an, the). Code builds every item from the word library; the answer is never printed.',
+        schemaDescription: "'article_choice' (say a, an or the in a heard sentence)",
+      },
+    },
+    responseClass: (item) => item.responseClass,
+    answerStepId: 'answer',
+    groupingKey: (item) => item.challengeType,
+    metadata: {
+      stimulusKind: 'emoji',
+      answerSource: 'recall',
+      howToPlay: 'Look at this picture and listen. Then say one word that fits.',
+    },
+    steps: [{
+      id: 'answer',
+      actionId: (item) => item.challengeType,
+      label: 'Which Article?',
+      icon: 'a',
+      answerKind: 'voice',
+      instruction: (item) => item.ask,
+      checkingInstruction: 'Listening to your answer.',
+    }],
+  }),
+  mode({
+    evalMode: 'pronoun_choice',
+    label: 'Which Pronoun?',
+    beta: 2.5,
+    scaffoldingMode: 3,
+    challengeTypes: ['pronoun_choice'],
+    description: 'A picture of one clear person or group is shown and the tutor says a sentence with one word missing; the child says the pronoun that fits: he/she/they, his/her/their, or him/her/them in place of a person word. Use for pronoun objectives (subject, possessive, subject vs object, replacing a noun).',
+    challengeDocs: {
+      pronoun_choice: {
+        promptDoc: '"pronoun_choice": A picture of one clear person or group is shown and the tutor says a sentence with one word missing; the child says the pronoun that fits: he/she/they, his/her/their, or him/her/them in place of a person word. Use for pronoun objectives (subject, possessive, subject vs object, replacing a noun). Code builds every item from the word library; the answer is never printed.',
+        schemaDescription: "'pronoun_choice' (say the pronoun for a pictured person)",
+      },
+    },
+    responseClass: (item) => item.responseClass,
+    answerStepId: 'answer',
+    groupingKey: (item) => item.challengeType,
+    metadata: {
+      stimulusKind: 'emoji',
+      answerSource: 'recall',
+      howToPlay: 'Look at this picture and listen. Then say one word that fits.',
+    },
+    steps: [{
+      id: 'answer',
+      actionId: (item) => item.challengeType,
+      label: 'Which Pronoun?',
+      icon: 'he',
+      answerKind: 'voice',
+      instruction: (item) => item.ask,
+      checkingInstruction: 'Listening to your answer.',
+    }],
+  }),
+  mode({
+    evalMode: 'verb_form',
+    label: 'Which Verb Form?',
+    beta: 2.5,
+    scaffoldingMode: 3,
+    challengeTypes: ['verb_form'],
+    description: 'A picture is shown and the tutor says a present-tense sentence with the verb missing; the child says the form that agrees with the subject (runs/run for one or more, is/are/am before an -ing word). Use for present-tense verb and subject-verb agreement objectives, and helping verbs is/are/am.',
+    challengeDocs: {
+      verb_form: {
+        promptDoc: '"verb_form": A picture is shown and the tutor says a present-tense sentence with the verb missing; the child says the form that agrees with the subject (runs/run for one or more, is/are/am before an -ing word). Use for present-tense verb and subject-verb agreement objectives, and helping verbs is/are/am. Code builds every item from the word library; the answer is never printed.',
+        schemaDescription: "'verb_form' (say the verb form that agrees with the subject)",
+      },
+    },
+    responseClass: (item) => item.responseClass,
+    answerStepId: 'answer',
+    groupingKey: (item) => item.challengeType,
+    metadata: {
+      stimulusKind: 'emoji',
+      answerSource: 'recall',
+      howToPlay: 'Look at this picture and listen. Then say one word that fits.',
+    },
+    steps: [{
+      id: 'answer',
+      actionId: (item) => item.challengeType,
+      label: 'Which Verb Form?',
+      icon: 'is',
+      answerKind: 'voice',
+      instruction: (item) => item.ask,
+      checkingInstruction: 'Listening to your answer.',
+    }],
+  }),
+  mode({
+    evalMode: 'verb_tense',
+    label: 'Past, Now or Later?',
+    beta: 3.0,
+    scaffoldingMode: 3,
+    challengeTypes: ['verb_tense'],
+    description: 'A picture of an action is shown and the tutor says a sentence that starts with yesterday, every day or tomorrow, with the verb missing, and names the two forms; the child says the one that fits the time (walked/walk, ran/run, will walk). Use for past tense (-ed and irregular), present vs past, and future with will.',
+    challengeDocs: {
+      verb_tense: {
+        promptDoc: '"verb_tense": A picture of an action is shown and the tutor says a sentence that starts with yesterday, every day or tomorrow, with the verb missing, and names the two forms; the child says the one that fits the time (walked/walk, ran/run, will walk). Use for past tense (-ed and irregular), present vs past, and future with will. Code builds every item from the word library; the answer is never printed.',
+        schemaDescription: "'verb_tense' (say the verb form for yesterday, now or tomorrow)",
+      },
+    },
+    responseClass: (item) => item.responseClass,
+    answerStepId: 'answer',
+    groupingKey: (item) => item.challengeType,
+    metadata: {
+      stimulusKind: 'emoji',
+      answerSource: 'recall',
+      howToPlay: 'Look at this picture and listen. Then say one word that fits.',
+    },
+    steps: [{
+      id: 'answer',
+      actionId: (item) => item.challengeType,
+      label: 'Past, Now or Later?',
+      icon: 'ed',
+      answerKind: 'voice',
+      instruction: (item) => item.ask,
+      checkingInstruction: 'Listening to your answer.',
     }],
   }),
 );

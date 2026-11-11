@@ -169,7 +169,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'arc to a failed-attempt/adapted-solution arc; event count and time requirements stay fixed. '
       + 'Story-to-experience accepts personal, familiar, observed, heard-about, or imagined examples; never require private '
       + 'disclosure or grade the truth or emotional value of a memory. Its structural axis intentionally saturates because '
-      + 'the current response contract permits a connection to any one event.',
+      + 'the current response contract permits a connection to any one event. '
+      + 'LISTEN_RETELL: the tutor reads the story aloud (its event sentences are the stimulus, not hidden), the cards start '
+      + 'mixed, and the tutor credits the events covered in order with an order word on at least two; three events on '
+      + 'easy, four on medium and hard. TELL_OWN: code deals six library picture cards and the learner picks any two or '
+      + 'three; the tutor credits a connected story with a beginning, something that happens and an end, and refuses a '
+      + 'description of the cards or one event. Both are open spoken answers with NO code-checked key: do not use them '
+      + 'where a code-checked answer is needed.',
     ...bossEntry(storyRibbonCard),
     evalModes: [
       {
@@ -196,6 +202,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         evalMode: 'story_to_experience', label: 'Story-to-world connection', beta: 4.0, discrimination: 1.0,
         scaffoldingMode: 4, challengeTypes: ['story_to_experience'],
         description: 'Identify one story event and explain its connection to a personal, familiar, observed, heard-about, or imagined experience.',
+      },
+      {
+        evalMode: 'listen_retell', label: 'Listen and retell', beta: 3.0, discrimination: 1.0,
+        scaffoldingMode: 3, challengeTypes: ['listen_retell'],
+        description: 'Hear a three- or four-event story read by the tutor with its pictures, then retell it in order with first, next or last on at least two events. Open answer, tutor-judged.',
+      },
+      {
+        evalMode: 'tell_own', label: 'Tell your own story', beta: 4.5, discrimination: 1.0,
+        scaffoldingMode: 4, challengeTypes: ['tell_own'],
+        description: 'Pick two or three picture cards (any pick) and tell an original or personal story with a beginning, something that happens and an end, connected. Open answer, tutor-judged.',
       },
     ],
     supportsEvaluation: true,
@@ -1025,7 +1041,13 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'when the sentence remains complete and both concepts are clear. Reject fragments, word lists, irrelevant '
       + 'sentences, and unrelated memorized responses. After an attempt, acknowledge conveyed meaning first, then model '
       + 'or prompt revision only for the specific missing word, meaning, or sentence structure. The manifest must NOT '
-      + 'supply scenes, target words, or model sentences; the content-bearing generator builds all three challenges.',
+      + 'supply scenes, target words, or model sentences; the content-bearing generator builds all three challenges. '
+      + 'OPEN-SPEECH MODES (ask_question, say_why, two_voices) print no words and have NO code-checked answer: the scene is '
+      + 'library pictures, the tutor says the situation, and the tutor judges the spoken answer on meaning against the '
+      + 'credit rule of the mode (ask_question: a question about the scene, not a statement, another topic or one word; '
+      + 'say_why: a position plus a reason that fits it, never "because I do"; either position is right; two_voices: '
+      + 'two lines that fit the scene, one per character, not narration). Do not use these modes where a code-checked '
+      + 'answer key is needed.',
     evalModes: [
       {
         evalMode: 'describe_scene', label: 'Picture Sentences', beta: 3.5, discrimination: 1.6,
@@ -1041,6 +1063,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         evalMode: 'use_story_words', label: 'Story Words', beta: 5.0, discrimination: 1.0,
         scaffoldingMode: 4, challengeTypes: ['use_story_words'],
         description: 'Hear two new words in a short story, then use both in a new sentence of their own, about the story or anything else; a story line said back does not count.',
+      },      {
+        evalMode: 'ask_question', label: 'Ask a Question', beta: 3.0, discrimination: 1.0,
+        scaffoldingMode: 3, challengeTypes: ['ask_question'],
+        description: 'See a picture with something closed or covered and ask a question about it, to get help or more information. Open answer, tutor-judged.',
+      },
+      {
+        evalMode: 'say_why', label: 'Say Why', beta: 4.0, discrimination: 1.0,
+        scaffoldingMode: 4, challengeTypes: ['say_why'],
+        description: 'Hear a character opinion, preference or what-if and say whether you agree and why (agree/disagree with a reason; "I like" with "because"). Open answer, tutor-judged.',
+      },
+      {
+        evalMode: 'two_voices', label: 'Two Voices', beta: 4.5, discrimination: 1.0,
+        scaffoldingMode: 4, challengeTypes: ['two_voices'],
+        description: 'See two characters in a scene and say one line for each: simple dialogue in guided dramatic play. Open answer, tutor-judged.',
       },
     ],
     // The answer is one spoken sentence (the card's SPOKEN modes). Reader and minutes are not tagged: no reader-fit verdict yet.
@@ -1588,7 +1624,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'grades 1-2) the learner taps a base-word card and an ending card (s, es, ies, ed) to MAKE a word that means more '
       + 'than one or that tells it already happened, and many words can pass.',
     constraints:
-      'GRAMMAR objectives only (plural nouns or past-tense verbs). Do NOT route decoding/CVC/phonics/spelling objectives here — the pool is chosen for honest morphology, not decodability. Modes cover regular -s, regular -es, consonant-y → -ies, common irregular plurals, add-only -ed verbs, and code-owned irregular past forms. The -ies and past modes are Grade 1-2 extensions; keep K objectives on -s/-es and familiar irregular plurals. Every noun or action must be concrete and picturable. The manifest must NOT supply per-challenge words — the generator authors typed candidates and code validates and derives every answer deterministically. Spoken answers require the live tutor and a microphone.',
+      'GRAMMAR objectives only (plural nouns or past-tense verbs). Do NOT route decoding/CVC/phonics/spelling objectives here — the pool is chosen for honest morphology, not decodability. Modes cover regular -s, regular -es, consonant-y → -ies, common irregular plurals, add-only -ed verbs, and code-owned irregular past forms. -ies is a Grade 1-2 pattern. The two past modes serve Kindergarten too: K objectives ask for present vs past with -ed and for common irregular pasts (run/ran, go/went). Every noun or action must be concrete and picturable. The manifest must NOT supply per-challenge words — the generator authors typed candidates and code validates and derives every answer deterministically. Spoken answers require the live tutor and a microphone.',
     // reader: 'none' — READY @ PRE (word-flip is the reader-fit skill's own PRE
     // reference model for a voice-first counted-picture frame), tap chips since
     // removed entirely by the 2026-08-09 DI port

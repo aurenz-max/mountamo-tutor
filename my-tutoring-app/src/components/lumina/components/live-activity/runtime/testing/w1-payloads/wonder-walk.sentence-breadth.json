@@ -1,0 +1,1157 @@
+{
+ "source": "qa/tutor-reports/wonder-walk-runtime-sentence-breadth-payload-2026-11-10.json",
+ "primitiveId": "wonder-walk",
+ "evalMode": "sentence",
+ "data": {
+  "title": "Make Sentences Grow",
+  "bigIdea": "We can make sentences tell more by adding describing words, joining words, and end marks.",
+  "domain": "language",
+  "gradeBand": "K",
+  "challengeType": "sentence",
+  "challenges": [
+   {
+    "id": "stop-1",
+    "idea": "Describing words tell what kind or what color something is.",
+    "narration": "A red animal is very quick! The animal zooms on by.",
+    "ask": "Can you put the cards in line to tell the story?",
+    "why": "Say each word as you put them in line.",
+    "respond": "show",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "runs",
+       "category": "action",
+       "emoji": "\ud83c\udfc3"
+      },
+      {
+       "id": "t2",
+       "tile": "fox",
+       "category": "animal",
+       "emoji": "\ud83e\udd8a"
+      },
+      {
+       "id": "t3",
+       "tile": "big",
+       "category": "describing"
+      },
+      {
+       "id": "t4",
+       "tile": "the",
+       "category": "other"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "the",
+       "role": "small",
+       "card": "t4"
+      },
+      {
+       "say": "big",
+       "role": "describes",
+       "card": "t3"
+      },
+      {
+       "say": "fox",
+       "role": "who",
+       "card": "t2"
+      },
+      {
+       "say": "runs",
+       "role": "does",
+       "card": "t1"
+      }
+     ],
+     "answer": {
+      "kind": "order",
+      "by": "sentence",
+      "things": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ]
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "build a sentence from 4 cards (+2)",
+      "a describing or joining word to place (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "",
+    "levers": [
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "Four cards are too many.",
+      "says": "Let us put three cards in line.",
+      "item": {
+       "id": "stop-1-simpler_1",
+       "idea": "Describing words tell what kind or what color something is.",
+       "narration": "A red animal is very quick! The animal zooms on by.",
+       "ask": "Can you put the cards in line to tell the story?",
+       "why": "Say each word as you put them in line.",
+       "respond": "show",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "fox",
+          "category": "animal",
+          "emoji": "\ud83e\udd8a"
+         },
+         {
+          "id": "t3",
+          "tile": "big",
+          "category": "describing"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "big",
+          "role": "describes",
+          "card": "t3"
+         },
+         {
+          "say": "fox",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t1"
+         }
+        ],
+        "answer": {
+         "kind": "order",
+         "by": "sentence",
+         "things": [
+          "t1",
+          "t2",
+          "t3"
+         ]
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "build a sentence from 3 cards (+1)",
+         "a describing or joining word to place (+0.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     },
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child needs a second look.",
+      "says": "Look closely at each word card.",
+      "item": {
+       "id": "stop-1-help_1",
+       "idea": "Describing words tell what kind or what color something is.",
+       "narration": "A red animal is very quick! The animal zooms on by.",
+       "ask": "Can you put the cards in line to tell the story?",
+       "why": "Say each word as you put them in line.",
+       "respond": "show",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "fox",
+          "category": "animal",
+          "emoji": "\ud83e\udd8a"
+         },
+         {
+          "id": "t3",
+          "tile": "big",
+          "category": "describing"
+         },
+         {
+          "id": "t4",
+          "tile": "the",
+          "category": "other"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small",
+          "card": "t4"
+         },
+         {
+          "say": "big",
+          "role": "describes",
+          "card": "t3"
+         },
+         {
+          "say": "fox",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t1"
+         }
+        ],
+        "answer": {
+         "kind": "order",
+         "by": "sentence",
+         "things": [
+          "t1",
+          "t2",
+          "t3",
+          "t4"
+         ]
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "build a sentence from 4 cards (+2)",
+         "a describing or joining word to place (+0.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": ""
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-2",
+    "idea": "Joining words like and and but connect two ideas together.",
+    "narration": "We can join two words together! It makes one line of words.",
+    "ask": "Which word makes it complete?",
+    "why": "Find the word that joins them together.",
+    "respond": "say",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "runs",
+       "category": "action",
+       "emoji": "\ud83c\udfc3"
+      },
+      {
+       "id": "t2",
+       "tile": "and",
+       "category": "other"
+      },
+      {
+       "id": "t3",
+       "tile": "but",
+       "category": "other"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "cats",
+       "role": "who"
+      },
+      {
+       "say": "and",
+       "role": "joins",
+       "card": "t2"
+      },
+      {
+       "say": "dogs",
+       "role": "who"
+      },
+      {
+       "say": "play",
+       "role": "does"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3"
+      ],
+      "rule": {
+       "type": "fills"
+      },
+      "traps": {
+       "t1": "wrong_kind",
+       "t2": null,
+       "t3": "other_join"
+      }
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 2.5,
+     "reasons": [
+      "three choices (+0.5)",
+      "two joining words to choose between (+0.5)",
+      "a joining word is missing (+1.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t2",
+    "levers": [
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "Three cards are too many.",
+      "says": "Choose between these two cards.",
+      "item": {
+       "id": "stop-2-simpler_1",
+       "idea": "Joining words like and and but connect two ideas together.",
+       "narration": "We can join two words together! It makes one line of words.",
+       "ask": "Which word makes it complete?",
+       "why": "Find the word that joins them together.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "and",
+          "category": "other"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "cats",
+          "role": "who"
+         },
+         {
+          "say": "and",
+          "role": "joins",
+          "card": "t2"
+         },
+         {
+          "say": "dogs",
+          "role": "who"
+         },
+         {
+          "say": "play",
+          "role": "does"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2"
+         ],
+         "rule": {
+          "type": "fills"
+         },
+         "traps": {
+          "t1": "wrong_kind",
+          "t2": null
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "a joining word is missing (+1.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t2"
+      }
+     },
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child is stuck.",
+      "says": "Look closely at each card.",
+      "item": {
+       "id": "stop-2-help_1",
+       "idea": "Joining words like and and but connect two ideas together.",
+       "narration": "We can join two words together! It makes one line of words.",
+       "ask": "Which word makes it complete?",
+       "why": "Find the word that joins them together.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "but",
+          "category": "other"
+         },
+         {
+          "id": "t3",
+          "tile": "and",
+          "category": "other"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "cats",
+          "role": "who"
+         },
+         {
+          "say": "and",
+          "role": "joins",
+          "card": "t3"
+         },
+         {
+          "say": "dogs",
+          "role": "who"
+         },
+         {
+          "say": "play",
+          "role": "does"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "fills"
+         },
+         "traps": {
+          "t1": "wrong_kind",
+          "t2": "other_join",
+          "t3": null
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 2.5,
+        "reasons": [
+         "three choices (+0.5)",
+         "two joining words to choose between (+0.5)",
+         "a joining word is missing (+1.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3"
+      }
+     }
+    ]
+   },
+   {
+    "id": "stop-3",
+    "idea": "An end mark shows where a sentence stops or asks.",
+    "narration": "The big dog runs fast. A word can tell how something looks!",
+    "ask": "Which word tells what the dog looks like?",
+    "why": "Think of the word that tells about size.",
+    "respond": "say",
+    "challengeType": "sentence",
+    "words": {
+     "refs": [],
+     "things": [
+      {
+       "id": "t1",
+       "tile": "big",
+       "category": "describing"
+      },
+      {
+       "id": "t2",
+       "tile": "runs",
+       "category": "action",
+       "emoji": "\ud83c\udfc3"
+      },
+      {
+       "id": "t3",
+       "tile": "dog",
+       "category": "animal",
+       "emoji": "\ud83d\udc36"
+      },
+      {
+       "id": "t4",
+       "tile": "the",
+       "category": "other"
+      }
+     ],
+     "sentence": [
+      {
+       "say": "the",
+       "role": "small",
+       "card": "t4"
+      },
+      {
+       "say": "big",
+       "role": "describes",
+       "card": "t1"
+      },
+      {
+       "say": "dog",
+       "role": "who",
+       "card": "t3"
+      },
+      {
+       "say": "runs",
+       "role": "does",
+       "card": "t2"
+      }
+     ],
+     "answer": {
+      "kind": "tap",
+      "among": [
+       "t1",
+       "t2",
+       "t3",
+       "t4"
+      ],
+      "rule": {
+       "type": "part",
+       "role": "describes"
+      },
+      "traps": {
+       "t1": null,
+       "t2": "in_story",
+       "t3": "in_story",
+       "t4": "in_story"
+      }
+     }
+    },
+    "standards": "L.K.1b, L.K.1f, L.K.2b",
+    "difficulty": {
+     "band": "medium",
+     "score": 1.5,
+     "reasons": [
+      "four choices (+1)",
+      "find the describes (+0.5)"
+     ]
+    },
+    "sceneWords": [],
+    "sceneEmoji": [],
+    "sceneImage": null,
+    "options": [],
+    "correctOptionId": "thing-t1",
+    "levers": [
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "Four choices are too many.",
+      "says": "Look at three cards.",
+      "item": {
+       "id": "stop-3-simpler_1",
+       "idea": "An end mark shows where a sentence stops or asks.",
+       "narration": "The big dog runs fast. A word can tell how something looks!",
+       "ask": "Which word tells what the dog looks like?",
+       "why": "Think of the word that tells about size.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "dog",
+          "category": "animal",
+          "emoji": "\ud83d\udc36"
+         },
+         {
+          "id": "t3",
+          "tile": "big",
+          "category": "describing"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "big",
+          "role": "describes",
+          "card": "t3"
+         },
+         {
+          "say": "dog",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t1"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "describes"
+         },
+         "traps": {
+          "t1": "in_story",
+          "t2": "in_story",
+          "t3": null
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "easy",
+        "score": 1,
+        "reasons": [
+         "three choices (+0.5)",
+         "find the describes (+0.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3"
+      }
+     },
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child is stuck.",
+      "says": "Look at each card closely.",
+      "item": {
+       "id": "stop-3-help_1",
+       "idea": "An end mark shows where a sentence stops or asks.",
+       "narration": "The big dog runs fast. A word can tell how something looks!",
+       "ask": "Which word tells what the dog looks like?",
+       "why": "Think of the word that tells about size.",
+       "respond": "say",
+       "challengeType": "sentence",
+       "words": {
+        "refs": [],
+        "things": [
+         {
+          "id": "t1",
+          "tile": "runs",
+          "category": "action",
+          "emoji": "\ud83c\udfc3"
+         },
+         {
+          "id": "t2",
+          "tile": "dog",
+          "category": "animal",
+          "emoji": "\ud83d\udc36"
+         },
+         {
+          "id": "t3",
+          "tile": "big",
+          "category": "describing"
+         },
+         {
+          "id": "t4",
+          "tile": "the",
+          "category": "other"
+         }
+        ],
+        "sentence": [
+         {
+          "say": "the",
+          "role": "small",
+          "card": "t4"
+         },
+         {
+          "say": "big",
+          "role": "describes",
+          "card": "t3"
+         },
+         {
+          "say": "dog",
+          "role": "who",
+          "card": "t2"
+         },
+         {
+          "say": "runs",
+          "role": "does",
+          "card": "t1"
+         }
+        ],
+        "answer": {
+         "kind": "tap",
+         "among": [
+          "t1",
+          "t2",
+          "t3",
+          "t4"
+         ],
+         "rule": {
+          "type": "part",
+          "role": "describes"
+         },
+         "traps": {
+          "t1": "in_story",
+          "t2": "in_story",
+          "t3": null,
+          "t4": "in_story"
+         }
+        }
+       },
+       "standards": "L.K.1b, L.K.1f, L.K.2b",
+       "difficulty": {
+        "band": "medium",
+        "score": 1.5,
+        "reasons": [
+         "four choices (+1)",
+         "find the describes (+0.5)"
+        ]
+       },
+       "sceneWords": [],
+       "sceneEmoji": [],
+       "sceneImage": null,
+       "options": [],
+       "correctOptionId": "thing-t3"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 11,
+   "seconds": 94.9,
+   "modes": [
+    "sentence"
+   ],
+   "tier": "medium",
+   "review": [],
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_walk",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the narration says \"big\", the missing word"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: into, sentence, little, linking; use everyday words"
+    },
+    {
+     "turn": 1,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: words a Kindergartner may not know: voice, question, mark, belongs, sentence; use everyday words"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: a sentence is used by order by sentence, or a tap with rule fills or part"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: part needs role: who, does, what, where, describes"
+    },
+    {
+     "turn": 2,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true,
+     "note": "blocked: the narration says to look at the cat, which the screen does not show: show it as a ref or talk about what is there"
+    },
+    {
+     "turn": 4,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 9,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 10,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 11,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 11,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 11,
+     "name": "write_word_stop",
+     "ok": true
+    },
+    {
+     "turn": 11,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [
+    "stop 1: and or but is a call on meaning: make the two halves clearly go together (and) or clearly differ (but)"
+   ],
+   "sentenceReview": [
+    {
+     "stop": 0,
+     "ok": true,
+     "better": "",
+     "note": ""
+    },
+    {
+     "stop": 1,
+     "ok": true,
+     "better": "",
+     "note": ""
+    },
+    {
+     "stop": 2,
+     "ok": true,
+     "better": "",
+     "note": ""
+    }
+   ],
+   "costUsd": 0.083,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 10,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 3 stop(s) held, 12 blocking check(s). First: every sentence stop is a fill; mix building a sentence (order by sentence), completing one (fills) and finding a part (part)",
+     "costUsd": 0.011
+    },
+    {
+     "seconds": 10,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.011
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 3 stop(s) held, 13 blocking check(s). First: language stop 1 is easy (score 1: four choices (+1)); this walk is medium: make it harder",
+     "costUsd": 0.0185
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0185
+    },
+    {
+     "seconds": 31,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 3 stop(s) held, 4 blocking check(s). First: language stop 1 is hard (score 3: three choices (+0.5), two joining words to choose between (+0.5), a joining word is missing (+1.5), a sentence of 7 words (+0.5)); this walk is medium: ma\u2026",
+     "costUsd": 0.0262
+    },
+    {
+     "seconds": 31,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0262
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 4: 3 stop(s) held, 5 blocking check(s). First: stop 1: the narration says to look at the cat, which the screen does not show: show it as a ref or talk about what is there",
+     "costUsd": 0.0338
+    },
+    {
+     "seconds": 40,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.0338
+    },
+    {
+     "seconds": 47,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 5: 3 stop(s) held, 3 blocking check(s). First: stop 0: no help lever: add one (see \"Levers\")",
+     "costUsd": 0.0405
+    },
+    {
+     "seconds": 47,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.0405
+    },
+    {
+     "seconds": 57,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 6: 3 stop(s) held, 3 blocking check(s). First: stop 0: lever 1 (help): it changes the answer",
+     "costUsd": 0.049
+    },
+    {
+     "seconds": 57,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.049
+    },
+    {
+     "seconds": 66,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 7: 3 stop(s) held, 5 blocking check(s). First: language stop 2 is easy (score 1: three choices (+0.5), find the describes (+0.5)); this walk is medium: make it harder",
+     "costUsd": 0.0569
+    },
+    {
+     "seconds": 66,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.0569
+    },
+    {
+     "seconds": 68,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 8: 3 stop(s) held, 5 blocking check(s). First: language stop 2 is easy (score 1: three choices (+0.5), find the describes (+0.5)); this walk is medium: make it harder",
+     "costUsd": 0.0604
+    },
+    {
+     "seconds": 68,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 9: the author is working",
+     "costUsd": 0.0604
+    },
+    {
+     "seconds": 72,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 9: 3 stop(s) held, 4 blocking check(s). First: stop 0: lever 1 (help): it changes only words (a label or a name); a help changes what is drawn",
+     "costUsd": 0.0656
+    },
+    {
+     "seconds": 72,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 10: the author is working",
+     "costUsd": 0.0656
+    },
+    {
+     "seconds": 84,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 10: 3 stop(s) held, 3 blocking check(s). First: stop 0: no help lever: add one (see \"Levers\")",
+     "costUsd": 0.0738
+    },
+    {
+     "seconds": 84,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 11: the author is working",
+     "costUsd": 0.0738
+    },
+    {
+     "seconds": 95,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 3 stop(s) in 94.9s over 11 turn(s), about $0.08",
+     "costUsd": 0.083
+    }
+   ],
+   "look": [],
+   "run": {
+    "author": "WonderWalk",
+    "loop": "author",
+    "seconds": 94.9,
+    "costUsd": 0.083,
+    "items": 3,
+    "rounds": 11,
+    "look": {
+     "ran": false,
+     "looked": 0,
+     "unread": 3,
+     "screenshots": 0,
+     "problems": 0
+    },
+    "displays": null
+   }
+  }
+ }
+}

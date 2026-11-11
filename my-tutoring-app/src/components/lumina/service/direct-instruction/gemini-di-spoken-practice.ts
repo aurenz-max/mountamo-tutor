@@ -47,6 +47,8 @@ import {
   buildSubjectVerbAgreementItems, hasSubjectVerbAgreementCoverage,
   spokenChoiceMenu, hasChoiceCoverage, spokenConceptPlan, hasConceptCoverage,
 } from './spokenPracticePlan';
+import { buildGrammarFrameItems, hasGrammarCoverage, pickGrammarFrames } from './spokenGrammarFrames';
+import { isGrammarFrameMode } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeModes';
 import type { DiSpokenPracticeData } from '../../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import {
   buildSpokenItem,
@@ -525,6 +527,28 @@ const generateSessionContent = async (
     title: 'Say It Out Loud', description: 'No matching practice is available for this task.',
     challengeType: mode, gradeLevel, items: [],
   });
+  // Grammar frames (article, pronoun, verb form, tense) are code-built from the word library: no planner, no item
+  // model. The tier sets which items and whether the ask says the two choices.
+  if (isGrammarFrameMode(mode)) {
+    const frames = await pickGrammarFrames(mode, config?.objectiveText, intent);
+    const tier = normalizeSupportTier(config?.difficulty) ?? 'easy';
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const built = buildGrammarFrameItems(mode, frames, gradeLevel || 'K', tier, count, Math.floor(Math.random() * 2 ** 31));
+      if (!built) continue;
+      const result = gateSpokenItems(built);
+      if (!hasGrammarCoverage(result.kept, count)) {
+        console.warn('[DiSpokenPractice] grammar draw lost items at the gates:', result.reasons);
+        continue;
+      }
+      console.log('[DiSpokenPractice] grammar session:', { mode, frames, tier,
+        answers: result.kept.map(i => i.expectedAnswer), menus: result.kept.map(i => i.choices?.join('/') ?? '-') });
+      return { title: 'Finish the Sentence', description: 'Look, listen, and say the word that fits!',
+        challengeType: mode, gradeLevel, items: result.kept };
+    }
+    console.error(`[DiSpokenPractice] no grammar session for ${mode} (${frames.join(', ')}) at ${tier}`);
+    return empty();
+  }
+
   let plan;
   try {
     plan = await planSpokenPractice(topic, gradeLevel, intent, config?.objectiveText, resolution?.allowedTypes);

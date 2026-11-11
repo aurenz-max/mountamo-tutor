@@ -30,6 +30,13 @@ Static derivation for the oral-sentence-studio slice of handoff 22 L4.
 - **Demanded by:** handoff 22 L4.
 - **Probe:** `npm test -- oralSentenceStudioLevers OralSentenceStudio.levers`.
 
+### R5 — Open-speech modes print nothing and have no code key · OBSERVED (generation 11-10)
+- **Property:** ask_question, say_why and two_voices (`oralSentenceStudioOpen.ts`) show library pictures only (`gemini-oral-open-speech.ts` picks words through schema enums and looks up the emoji) and print no words; the tutor says the situation and the claim. The key is a meaning key with the mode's credit rule; the three examples are judge anchors, shown only after credit. A say_why claim must carry an opinion frame and no measurable or countable fact (`claimIsOpinion`), and the model's own right-answer flag must be "no". A situation or claim that names an animal not pictured is refused. The word levers (R4) are restricted to the three word modes; the open modes list every miss unanswered by decision. Mixed sessions still schedule only the word modes (R1-R4 payloads unchanged).
+- **Demanded by:** handoff H2 (K LA audit: SP2, SP4, SP8, CR3).
+- **Probe:** `npm test -- journeySweep -t oral-sentence` (w1 payloads `oral-sentence-studio.{ask_question,say_why,two_voices}.json`); `/eval-test oral-sentence-studio` per open mode.
+
 ## Changelog
+
+- 2026-11-10: three open-speech modes (R5), handoff H2. Eval-mode split: they carry no target words, so R1-R4 hold for the word modes only.
 
 - 2026-10-19: moved onto the boss framework (spokenBoss). The judging contract became a meaning `SpokenKey` per mode (the three sentences are examples, never required words); levers became one lever set. R1-R4 unchanged; probes renamed.

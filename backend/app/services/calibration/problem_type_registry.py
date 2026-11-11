@@ -52,6 +52,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "tell_future_account":    PriorConfig(3.5, "Spoken production: consistent future-time story"),
         "tell_past_account":      PriorConfig(3.5, "Spoken production: consistent past-time story"),
         "story_to_experience":    PriorConfig(4.0, "Cross-context: explain a story-to-world connection"),
+        "listen_retell":          PriorConfig(3.0, "Listening: retell a heard 3-4 event story in order with order words"),
+        "tell_own":               PriorConfig(4.5, "Open speech: tell an original or personal story, beginning to end"),
     },
     "you-and-me": {
         "describe_action": PriorConfig(2.5, "Spoken I/you from a named speaker's perspective"),
@@ -749,6 +751,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         # states an IDEA in any words and is judged on meaning — unaided
         # production of a proposition, the hardest act in the pack.
         "explain_concept": PriorConfig(4.0, "Open proposition: state in own words what a shown instance means or the rule it follows"),
+        # 2026-11-10: K grammar frames (handoff H1). A picture + a heard sentence with one gap; code builds the key.
+        "article_choice": PriorConfig(2.0, "Grammar frame: say a, an or the for the gap in a heard sentence"),
+        "pronoun_choice": PriorConfig(2.5, "Grammar frame: say the pronoun for a pictured person or group"),
+        "verb_form":      PriorConfig(2.5, "Grammar frame: say the present verb form that agrees with the subject"),
+        "verb_tense":     PriorConfig(3.0, "Grammar frame: say the verb form for yesterday, every day or tomorrow"),
     },
     # The first "DI for Older Learners" pack (design brief 2026-09-07): a
     # multi-digit subtraction said one column at a time, each STEP judged where
@@ -859,6 +866,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "describe_scene":           PriorConfig(3.5, "Spoken production: describe a visible scene in one sentence using two shown words"),
         "guided_writing_rehearsal": PriorConfig(4.0, "Spoken production: rehearse the sentence for the next step of a class writing piece"),
         "use_story_words":          PriorConfig(5.0, "Transfer: reuse two words heard in a story in a new sentence, no copying"),
+        "ask_question":             PriorConfig(3.0, "Open speech: ask a question about something hidden in a picture (tutor-judged, no code key)"),
+        "say_why":                  PriorConfig(4.0, "Open speech: take a position on an opinion and give a fitting reason"),
+        "two_voices":               PriorConfig(4.5, "Open speech: one line of dialogue for each of two pictured characters"),
     },
     "story-talk": {
         "who_what_where": PriorConfig(2.0, "Literal recall — answer who/what/where from a read-aloud story"),
@@ -1023,6 +1033,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "where-is": PriorConfig(-0.4, "Hear in, on, under or next to; tap the card that shows it (L.K.1e)."),
         "story-detail": PriorConfig(0.2, "The tutor tells a 2-3 event story; tap who, what or where (RL.K.1, RL.K.3, SL.K.2)."),
         "story-order": PriorConfig(0.9, "Put the story pictures on a track in the order they happened (RL.K.2)."),
+        "sentence": PriorConfig(0.8, "Word cards and a sentence: build it, complete it, or find who it is about and what they do (L.K.1b, L.K.1f, L.K.2b)."),
         "default":   PriorConfig(-1.5, "Kindergarten picture walk"),
     },
     "classification-sorter": {

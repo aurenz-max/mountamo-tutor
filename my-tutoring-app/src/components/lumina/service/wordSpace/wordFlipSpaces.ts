@@ -32,8 +32,8 @@ const finalCluster = (x: LexWord | undefined): boolean =>
 
 /** Vowel-change irregulars (learned first) vs other forms. */
 const VOWEL_CHANGE_PLURAL = new Set(['man', 'woman', 'foot', 'tooth', 'goose']);
-const VOWEL_CHANGE_PAST = new Set(['run', 'sit', 'get', 'come', 'eat', 'give']);
-const SUPPLETIVE_PAST = new Set(['go', 'do', 'have', 'say']);
+export const VOWEL_CHANGE_PAST = new Set(['run', 'sit', 'get', 'come', 'eat', 'give']);
+export const SUPPLETIVE_PAST = new Set(['go', 'do', 'have', 'say']);
 
 export function flipSpace(
   type: FlipType,

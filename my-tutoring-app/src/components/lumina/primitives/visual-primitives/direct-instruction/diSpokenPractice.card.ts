@@ -18,6 +18,10 @@ export const diSpokenPracticeCard = defineCard<SpokenPracticeMiss>({
     read_aloud: { ...SPOKEN, misses: ['misread', 'sounds_not_blended', 'letter_names', 'word_dropped'] },
     say_answer: { ...SPOKEN, misses: ['signature_error', 'said_stimulus'] },
     explain_concept: { ...SPOKEN, misses: ['read_back', 'named_only', 'bare_number', 'opposite_idea'] },
+    article_choice: { ...SPOKEN, misses: ['other_form'] },
+    pronoun_choice: { ...SPOKEN, misses: ['other_form', 'said_noun'] },
+    verb_form: { ...SPOKEN, misses: ['other_form'] },
+    verb_tense: { ...SPOKEN, misses: ['other_form'] },
   },
   words: {
     job: 'answer each ask with a short word or phrase, or on explain items one idea in their own words',

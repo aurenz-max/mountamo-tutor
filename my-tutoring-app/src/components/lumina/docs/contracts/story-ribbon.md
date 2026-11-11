@@ -34,6 +34,13 @@ Static derivation for the story-ribbon slice of handoff 22 L4.
 ### R5 — The live order self-check is not a lever · OPEN FINDING
 - **Property:** the easy tier's self-check turns green on the story order, so a learner can swap until it lights and read the order off it. It is kept as the easy tier's starting position (unchanged here) and is never offered as a lever. Whether easy should keep it is queued (`levers-literacy-L4-2026-09-28.md`).
 
+### R6 — listen_retell and tell_own · OBSERVED (generation 11-10)
+- **Property:** listen_retell reads its event sentences aloud in the ask (an eval-mode split from R2: here the story is the stimulus) and starts the cards mixed; three events on easy, four on medium and hard, alternating when untiered; the live order self-check never shows (it would light on the remembered order). Credit: events in order with an order word on two; misses out_of_order, one_event, no_order_words (the `order_words` lever answers the last). tell_own is code-only: six library cards (two animals, three carryable things, one place), any pick of up to three, never graded; credit: a connected story with a beginning, something that happens and an end; misses describes_cards, one_event, both unanswered by decision. Mixed sessions still schedule only the five original modes.
+- **Demanded by:** handoff H2 (K LA audit SP6: #61, #186, #187, #189).
+- **Probe:** `npm test -- storyRibbonLevers gemini-story-ribbon.shape journeySweep -t story-ribbon` (w1 payloads `story-ribbon.{listen_retell,tell_own}.json`).
+
 ## History
+
+- 2026-11-10: listen_retell and tell_own (R6), handoff H2.
 
 - 2026-10-19: moved onto a boss (spoken preset, boss migration wave 1). The key is a `SpokenKey` judged on meaning (the three events in order, the tense modes' time; story to experience: an event, another experience, the connection, never judging a memory). R1-R5 unchanged. The script module became `storyRibbonDomain.ts`; its cue builders and pack went with the scripted runner.

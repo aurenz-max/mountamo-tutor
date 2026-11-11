@@ -22,13 +22,39 @@ import {
   HOW_TO_PLAY,
   MODE_SHAPE,
   diSpokenPracticeModePlan,
+  isGrammarFrameMode,
   type AnswerSource,
   type SpokenPracticeMode,
   type StimulusKind,
 } from './diSpokenPracticeModes';
 import { containsPhrase, spokenKeyLeaks, tokenize } from '../../../components/live-activity/spokenKey';
 
-export type { AnswerSource, SpokenPracticeMode, StimulusKind } from './diSpokenPracticeModes';
+export type { AnswerSource, SpokenPracticeMode, StimulusKind, GrammarFrameMode } from './diSpokenPracticeModes';
+export { isGrammarFrameMode, GRAMMAR_FRAME_MODES } from './diSpokenPracticeModes';
+
+/** A solved sentence of the same frame, for the model card: one per menu word, never a session word. */
+export interface GrammarModel { sentence: string; answer: string; emoji: string }
+
+/**
+ * What a grammar-frame item carries beyond the shared fields (`service/wordSpace/grammarSpaces.ts` builds it).
+ * `choices` on the item is the menu ONLY when the ask says it; `menu` here is the two-word menu either way.
+ */
+export interface GrammarFrameFacts {
+  frame: string;
+  /** The heard sentence with "..." for the gap. */
+  sentence: string;
+  /** Every wrong form, the most likely first. */
+  wrong: string[];
+  /** [answer, wrong[0]] in the order the ask says it. */
+  menu: string[];
+  /** The named miss, in words. */
+  miss: string;
+  /** A person word the child might say back instead of a pronoun. */
+  noun?: string;
+  models: GrammarModel[];
+  /** A different item of the same frame with the two choices said: the simplify lever's practice item. */
+  easier?: SpokenPracticeItem;
+}
 
 // ── Modes ────────────────────────────────────────────────────────────────────
 
@@ -131,6 +157,8 @@ export interface SpokenPracticeItem extends JudgedScriptItem {
    *  code owns both, so a generated line cannot break sentinel discipline
    *  or end a correction on the answer. Generated. */
   correctionBody: string;
+  /** Grammar-frame modes only: the code-built frame (see `GrammarFrameFacts`). */
+  grammar?: GrammarFrameFacts;
   /** Where the levers start (`/add-support-tiers`). Absent = easy. */
   supportTier?: 'easy' | 'medium' | 'hard';
   /** A spare the generator marked as a noticeably easier question of the same skill: the `easier_item` practice case
@@ -269,6 +297,11 @@ export const deriveResponseClass = (
     // proposition the family has had (qa/di item 36).
     return wordCount(answer) <= CONCEPT_ANCHOR_MAX_WORDS ? 'concept_statement' : null;
   }
+  if (isGrammarFrameMode(mode)) {
+    // One word (or "will walk") from a heard sentence. The builder raises it to closed_set_choice when the ask
+    // says the menu.
+    return wordCount(answer) <= 2 ? 'short_spoken_word' : null;
+  }
   // say_answer
   if (isNumberWord(answer)) return 'number_word_to_20';
   return wordCount(answer) <= 3 ? 'short_spoken_word' : null;
@@ -304,7 +337,11 @@ export function findAnswerLeaks(items: readonly SpokenPracticeItem[]): AnswerLea
     // EVERY choice in every ask — a menu that is always complete tells the child
     // nothing, while a menu narrowed to two of four words is a leak that gate
     // catches. Exempting the ask here without that gate would be laundering.
-    if (item.mode !== 'compare_choice') surfaces.push({ field: 'ask', text: item.ask });
+    // A grammar frame whose ask says its whole menu is the same case, held by `findFrameMenuDefects`.
+    const frameMenu = isGrammarFrameMode(item.mode) && !!item.choices?.length;
+    if (item.mode !== 'compare_choice' && !frameMenu) surfaces.push({ field: 'ask', text: item.ask });
+    // A frame's picture label is never shown, but the tutor reads it: it must not name the answer either.
+    if (isGrammarFrameMode(item.mode)) surfaces.push({ field: 'stimulusText', text: item.stimulusText });
     surfaces.push({ field: 'howToPlay', text: item.howToPlay });
     if (item.answerSource === 'recall' && item.stimulusKind === 'text') {
       surfaces.push({ field: 'stimulusText', text: item.stimulusText });
@@ -431,6 +468,27 @@ export function findChoiceMenuDefects(items: readonly SpokenPracticeItem[]): Cho
     const unspoken = choices.filter((c) => !containsPhrase(item.ask, c));
     if (unspoken.length) {
       defects.push({ itemId: item.id, reason: 'menu_not_spoken', detail: unspoken });
+    }
+  }
+  return defects;
+}
+
+/**
+ * A grammar frame's spoken menu: two or more words, the answer among them, every one said in the ask. The ear rule
+ * of `findChoiceMenuDefects` does not apply: "walk" and "walked" differ by the ending, which is the skill.
+ */
+export function findFrameMenuDefects(items: readonly SpokenPracticeItem[]): ChoiceMenuDefect[] {
+  const defects: ChoiceMenuDefect[] = [];
+  for (const item of items) {
+    if (!isGrammarFrameMode(item.mode) || !item.choices?.length) continue;
+    const choices = item.choices.map((c) => c.trim()).filter(Boolean);
+    if (choices.length < 2 || new Set(choices.map((c) => c.toLowerCase())).size !== choices.length) {
+      defects.push({ itemId: item.id, reason: 'too_few_choices', detail: choices });
+    } else if (!choices.some((c) => c.toLowerCase() === item.expectedAnswer.trim().toLowerCase())) {
+      defects.push({ itemId: item.id, reason: 'answer_not_in_menu', detail: choices });
+    } else {
+      const unspoken = choices.filter((c) => !containsPhrase(item.ask, c));
+      if (unspoken.length) defects.push({ itemId: item.id, reason: 'menu_not_spoken', detail: unspoken });
     }
   }
   return defects;
@@ -904,6 +962,7 @@ export const gateSpokenItems = (items: SpokenPracticeItem[]): {
   for (const u of findUnspokenStimulus(items)) flag(u.itemId, `ask never says: ${u.missing.join(', ')}`);
   for (const m of findArithmeticMismatches(items)) flag(m.itemId, `fact says ${m.computed}, item says ${m.claimed}`);
   for (const d of findChoiceMenuDefects(items)) flag(d.itemId, `menu ${d.reason}: ${d.detail.join(', ')}`);
+  for (const d of findFrameMenuDefects(items)) flag(d.itemId, `menu ${d.reason}: ${d.detail.join(', ')}`);
   for (const d of findConceptDefects(items)) flag(d.itemId, `concept ${d.reason}: ${d.detail.join(', ')}`);
   const bad = new Set(Object.keys(reasons));
   return {

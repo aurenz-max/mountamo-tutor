@@ -64,8 +64,9 @@ describe('gemini-story-ribbon output gates', () => {
     expect(validateStoryRibbonPayload(future, 0, 'tell_past_account')).toBeNull();
   });
 
-  it('schedules every task identity in a five-challenge mixed session', () => {
-    expect(scheduleStoryRibbonTypes(null, 5)).toEqual(STORY_RIBBON_CHALLENGE_TYPES);
+  it('schedules the five original task identities in a five-challenge mixed session (H2 modes only when resolved)', () => {
+    expect(scheduleStoryRibbonTypes(null, 5)).toEqual(STORY_RIBBON_CHALLENGE_TYPES.slice(0, 5));
+    expect(STORY_RIBBON_CHALLENGE_TYPES.slice(5)).toEqual(['listen_retell', 'tell_own']);
   });
 
   it('rejects a visible cue whose anchor is absent from the hidden judged meaning', () => {

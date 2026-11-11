@@ -25,7 +25,7 @@ export const saysNumber = (sentence: string, n: number) =>
 
 const STOP_TYPES = new Set(['which-one', 'how-many', 'more-fewer', 'count-out', 'add-take', 'parts', 'teens', 'sort-count', 'count-on',
   'rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'blend', 'change-sound', 'letter-name', 'letter-sound', 'spell-word',
-  'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order']);
+  'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order', 'sentence']);
 
 /** A language stop is playable, its key is what its facts say, and the ask and why-card never say the answer picture. */
 function wordsError(s: WonderWalkStop): string | null {

@@ -131,7 +131,7 @@ it('a mount with no tutor renders the shared "needs the tutor" card, never a dri
 
 const MATH = ['how-many', 'more-fewer', 'count-out', 'add-take', 'parts', 'teens', 'sort-count', 'count-on'] as const;
 const WORDS = ['rhyme', 'first-sound', 'last-sound', 'middle-sound', 'syllables', 'blend', 'change-sound', 'letter-name', 'letter-sound',
-  'spell-word', 'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order'] as const;
+  'spell-word', 'word-kinds', 'one-many', 'where-is', 'story-detail', 'story-order', 'sentence'] as const;
 
 /** A stop that can be said is a spoken item with its key and the tap beside it; a shown stop is a gesture with no key. */
 function assertChannel(s: WonderWalkStop) {
@@ -154,9 +154,15 @@ it.each(WORDS)('%s: every stop of the saved walk is solved by the journey taps; 
     expect(demand().kind).toBe(s.challengeType);
     expect(JSON.stringify(demand())).not.toMatch(/"(answer|traps|correctOptionId|phones)"/);
     if (s.correctOptionId) expect(JSON.stringify(demand())).not.toContain(s.correctOptionId);
-    // No printed word anywhere a child looks: cards are pictures or single letters.
-    expect(h.view.container.querySelector('[data-pip-object="scene"]')!.textContent).not.toMatch(/[a-z]{2,}/i);
-    for (const el of Array.from(h.view.container.querySelectorAll('[data-pip-object^="thing-"]'))) expect(el.textContent).not.toMatch(/[a-z]{2,}/i);
+    if (s.words?.sentence) {
+      // A sentence stop's cards are word tiles, printed by design. A child who cannot read them hears every one named.
+      const said = wonderWalkBoss.assignment(s).task;
+      for (const t of s.words.things) if (t.tile && /[a-z]/i.test(t.tile)) expect(said.toLowerCase().split(/[^a-z']+/)).toContain(t.tile.toLowerCase());
+    } else {
+      // No printed word anywhere a child looks: cards are pictures or single letters.
+      expect(h.view.container.querySelector('[data-pip-object="scene"]')!.textContent).not.toMatch(/[a-z]{2,}/i);
+      for (const el of Array.from(h.view.container.querySelectorAll('[data-pip-object^="thing-"]'))) expect(el.textContent).not.toMatch(/[a-z]{2,}/i);
+    }
     // The tap path on every stop (a said stop takes the tap too); the spoken path is the journey's (`drive.play`).
     const play = (right: boolean) => { const t = stopHarnessTaps(s); (right ? t.correct : t.wrong!).forEach(x => h.touch(x)); };
     assertChannel(s);

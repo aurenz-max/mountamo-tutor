@@ -48,6 +48,32 @@ describe('letter scope', () => {
     for (const w of ['pig', 'sit', 'fin', 'big']) expect(words(shortI, 'K')).toContain(w);
     for (const w of ['dog', 'hot', 'mop', 'log']) expect(words(shortO, 'K')).toContain(w);
   });
+  it('a CVC objective that mixes in earlier vowels scopes to the stated vowel plus those (published K 30, 31, 32)', () => {
+    const k30 = 'Decode CVC words with Short \'i\' (e.g., pig, sit, fin) Constraints: Progress to activities that mix short \'i\' words '
+      + 'with previously learned short \'a\' and \'e\' words to test for discrimination (e.g., "pat", "pet", "pit").';
+    const k31 = 'Decode CVC words with Short \'o\' Constraints: Generate activities that mix short \'o\' words with previously '
+      + 'learned short \'a\', \'e\', and \'i\' words to ensure discrimination.';
+    const k32 = 'Decode CVC words with Short \'u\' Constraints: Generate activities that mix short \'u\' words with all four other '
+      + 'short vowels to challenge the student\'s mastery of vowel sounds.';
+    for (const [text, vowels, stated] of [[k30, 'aei', 'i'], [k31, 'aeio', 'o'], [k32, 'aeiou', 'u']] as const) {
+      const scope = scopeFromObjective([text])!;
+      expect([...scope.vowels!].sort().join('')).toBe(vowels);
+      const list = decodableWords(scope, { grade: 'K' });
+      expect(new Set(list.map((x) => x.w[1])), text.slice(0, 40)).toEqual(new Set(vowels.split('')));
+      // The stated vowel is the focus; the earlier vowels are review, not the lesson.
+      expect(scope.focusRule).toBe('most');
+      expect(list.filter((x) => hitsFocus(scope, x)).every((x) => x.w[1] === stated)).toBe(true);
+    }
+  });
+  it('named blends are honored outside "initial blends", beside the digraphs (published K 51)', () => {
+    const scope = scopeFromObjective(['Identify and read common consonant digraphs (sh, ch, th, wh) and blends (st, pl, br)'])!;
+    expect(scope.onsetClusters).toEqual(['st', 'pl', 'br']);
+    for (const d of ['sh/SH', 'ch/CH', 'th/TH', 'wh/W']) expect(scope.focus!.has(d)).toBe(true);
+    const w = decodableWords(scope, { grade: '1' }).map((x) => x.w);
+    expect(w).toContain('ship');
+    expect(w.some((x) => x.startsWith('st') || x.startsWith('pl') || x.startsWith('br'))).toBe(true);
+    expect(w.every((x) => /sh|ch|th|wh/.test(x) || ['st', 'pl', 'br'].includes(x.slice(0, 2)))).toBe(true);
+  });
   it('a single named vowel is the focus of every word', () => {
     const scope = scopeFromObjective(['Encode CVC words with Short \'i\''])!;
     expect(decodableWords(scope, { grade: 'K' }).every((x) => x.phones.includes('IH'))).toBe(true);

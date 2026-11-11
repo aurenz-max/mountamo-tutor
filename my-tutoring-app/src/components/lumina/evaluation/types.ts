@@ -2519,7 +2519,7 @@ export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
 
 export interface OralSentenceStudioMetrics extends BasePrimitiveMetrics {
   type: 'oral-sentence-studio';
-  challengeType: 'describe_scene' | 'guided_writing_rehearsal' | 'use_story_words' | 'mixed';
+  challengeType: 'describe_scene' | 'guided_writing_rehearsal' | 'use_story_words' | 'ask_question' | 'say_why' | 'two_voices' | 'mixed';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;
@@ -2629,6 +2629,8 @@ export interface StoryRibbonMetrics extends BasePrimitiveMetrics {
     | 'tell_future_account'
     | 'tell_past_account'
     | 'story_to_experience'
+    | 'listen_retell'
+    | 'tell_own'
     | 'mixed';
   totalChallenges: number;
   correctCount: number;
@@ -3738,7 +3740,7 @@ export interface WonderWalkMetrics extends BasePrimitiveMetrics {
   type: 'wonder-walk';
   challengeType: 'which-one' | 'how-many' | 'more-fewer' | 'count-out' | 'add-take' | 'parts' | 'teens' | 'sort-count' | 'count-on'
     | 'rhyme' | 'first-sound' | 'last-sound' | 'middle-sound' | 'syllables' | 'blend' | 'change-sound'
-    | 'letter-name' | 'letter-sound' | 'spell-word' | 'word-kinds' | 'one-many' | 'where-is' | 'story-detail' | 'story-order';
+    | 'letter-name' | 'letter-sound' | 'spell-word' | 'word-kinds' | 'one-many' | 'where-is' | 'story-detail' | 'story-order' | 'sentence';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;
@@ -3904,6 +3906,8 @@ export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
    *  to penalise slowness — but hesitation-to-start is real reading signal a
    *  later pace/fluency mode would need. */
   meanResponseMs: number | null;
+  /** Which printed words were misread, and word accuracy over first reads. */
+  reading?: ReadingRecord;
   /** Mean sentence length actually read (3-8). Sentence length is this pack's
    *  structural-difficulty axis — the thing /add-structural-difficulty will
    *  modulate — so without it the metrics cannot tell a 4-word set from an
@@ -3917,12 +3921,11 @@ export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
  * one instance of this primitive can serve any skill whose answer is a short
  * spoken word. IRT evidence therefore lands on the objective's own skill, and
  * the eval mode only says which of the four acts produced it.
-  /** Which printed words were misread, and word accuracy over first reads. */
-  reading?: ReadingRecord;
  */
 export interface DiSpokenPracticeMetrics extends BasePrimitiveMetrics {
   type: 'di-spoken-practice';
-  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice' | 'explain_concept';
+  challengeType: 'say_answer' | 'read_aloud' | 'count_and_say' | 'compare_choice' | 'explain_concept'
+    | 'article_choice' | 'pronoun_choice' | 'verb_form' | 'verb_tense';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts (corrections + 1 each)

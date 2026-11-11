@@ -14,6 +14,8 @@ import type { WonderWalkStop } from '../../../primitives/visual-primitives/core/
 const ALL: WordScope = { openModes: WORD_MODES };
 const p = (id: string, word: string, extra: Partial<ThingDraft> = {}): ThingDraft => ({ id, word, ...extra });
 const L = (id: string, letter: string): ThingDraft => ({ id, letter });
+const T = (id: string, tile: string, word?: string): ThingDraft => ({ id, tile, ...(word ? { word } : {}) });
+const S = (say: string, role: string, card?: string) => ({ say, role, ...(card ? { card } : {}) });
 const tap = (refs: ThingDraft[], things: ThingDraft[], rule: RuleDraft, story?: WordDraft['story']): WordDraft => ({ refs, things, ...(story ? { story } : {}), answer: { kind: 'tap', rule } });
 const stop = (words: WordDraft, ask: string, narration = 'Listen carefully with me.', why = 'Say each word slowly and listen.'): StopDraft =>
   ({ kind: wordModeOf(readWords(words).world), ideaIndex: 0, sceneWords: [], imagePrompt: '', correctWord: '', wrongWords: [], narration, ask, why, words });
@@ -75,6 +77,18 @@ const COVERAGE: Array<{ standard: string; mode: string; draft: StopDraft }> = [
   { standard: 'RL.K.2 story order', mode: 'story-order',
     draft: stop({ refs: [p('r', 'fox')], things: [p('a', 'house'), p('b', 'apple'), p('c', 'bed')], story: STORY, answer: { kind: 'order', by: 'story' } },
       'Can you put the pictures in story order?', TOLD, 'Tell the story again. What came first?') },
+  { standard: 'L.K.1f build a sentence from word cards', mode: 'sentence',
+    draft: stop({ refs: [], things: [T('a', 'dog', 'dog'), T('b', 'runs', 'run')], sentence: [S('the', 'small'), S('dog', 'who', 'a'), S('runs', 'does', 'b'), S('.', 'end')], answer: { kind: 'order', by: 'sentence' } },
+      'Can you put the cards in order to make a sentence?', 'Look who is moving fast!', 'First say who it is about. Then say what they do.') },
+  { standard: 'L.K.1f a sentence needs a doing-word', mode: 'sentence',
+    draft: stop({ refs: [], things: [T('a', 'runs', 'run'), T('b', 'cat', 'cat'), T('c', 'and')], sentence: [S('the', 'small'), S('dog', 'who'), S('runs', 'does', 'a')], answer: { kind: 'tap', rule: { type: 'fills' } } },
+      'Which word makes it a whole sentence?', 'A sentence tells who and what they do.', 'Ask yourself what is missing: who, or what they do?') },
+  { standard: 'L.K.2b choose the end mark', mode: 'sentence',
+    draft: stop({ refs: [], things: [T('a', '?'), T('b', '.')], sentence: [S('can', 'small'), S('I', 'who'), S('play', 'does'), S('?', 'end', 'a')], answer: { kind: 'tap', rule: { type: 'fills' } } },
+      'Which mark goes at the end?', 'Listen to my voice as I read it.', 'Does it ask or does it tell? Each one has its own mark.') },
+  { standard: 'L.K.1b who and what they do', mode: 'sentence',
+    draft: stop({ refs: [], things: [T('a', 'dog', 'dog'), T('b', 'chases'), T('c', 'ball', 'ball')], sentence: [S('the', 'small'), S('dog', 'who', 'a'), S('chases', 'does', 'b'), S('the', 'small'), S('ball', 'what', 'c')], answer: { kind: 'tap', rule: { type: 'part', role: 'does' } } },
+      'What does the dog do?', 'The dog chases the ball.', 'Think about who it is about. Then think about the doing part.') },
 ];
 
 /** Play a stop with its harness taps through the activity's own grading. */

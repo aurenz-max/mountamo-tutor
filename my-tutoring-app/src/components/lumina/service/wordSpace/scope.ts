@@ -46,6 +46,8 @@ export interface LetterScope {
   vowels: readonly string[] | null;
   onsetClusters: readonly string[] | null;
   codaClusters: readonly string[] | null;
+  /** A word passes on a named onset cluster OR a focus pair: digraphs and blends named together admit ship and stop. */
+  onsetOrFocus?: boolean;
   /** A word family's rime spelling ("at" for "-at: cat, hat"). */
   family: string | null;
   group: LetterGroup | null;
@@ -97,6 +99,21 @@ function readLetters(text: string): { known: string[]; focus: string[]; group: L
   return named.length >= 3 ? { known: named, focus: named, group: null } : null;
 }
 
+/**
+ * The short vowels a text names, in order: "short 'o'" and any list that follows ("short 'a', 'e', and 'i'",
+ * "short a and e"). Reading only the vowel right after "short" lost every vowel after the first (K 30, 31).
+ */
+const Q = `['‘’"]?`;
+const VOWEL_AFTER_SHORT = new RegExp(`short\\s*${Q}([aeiou])${Q}(?![a-z])((?:\\s*,\\s*(?:and\\s+)?${Q}[aeiou]${Q}(?![a-z])|\\s+and\\s+${Q}[aeiou]${Q}(?![a-z]))*)`, 'g');
+export const shortVowelsNamed = (text: string): string[] => {
+  const out: string[] = [];
+  for (const m of Array.from(text.toLowerCase().matchAll(VOWEL_AFTER_SHORT))) {
+    const rest = Array.from((m[2] ?? '').matchAll(/([aeiou])['‘’"]?(?![a-z])/g)).map((x) => x[1]);
+    for (const l of [m[1], ...rest]) if (!out.includes(l)) out.push(l);
+  }
+  return out;
+};
+
 /** "-at: cat, hat" / "the -ig family": a word family's rime spelling. */
 const familyIn = (t: string): string | null =>
   /\bfamil(?:y|ies)\b/.test(t) || /-[aeiou][a-z]{1,2}\s*:/.test(t)
@@ -111,8 +128,8 @@ export function scopeFromObjective(texts: ReadonlyArray<string | null | undefine
   const text = texts.filter(Boolean).join('\n');
   const t = text.toLowerCase();
   const letters = readLetters(text);
-  const vowelsNamed = Array.from(new Set(Array.from(t.matchAll(/short\s*['‘’"]?([aeiou])\b/g)).map((m) => m[1])));
-  const mixed = /mixed short vowels|all (?:five|5) short vowels|any of the five short vowel/.test(t);
+  const vowelsNamed = shortVowelsNamed(t);
+  const mixed = /mixed short vowels|all (?:five|5) short vowels|any of the five short vowel|all (?:four|4|the) other short vowels/.test(t);
   const scope: LetterScope = {
     known: ALL_BASIC, focus: null, focusRule: null, shapes: null, singleLetters: false, vowels: null,
     onsetClusters: null, codaClusters: null, family: familyIn(t), group: letters?.group ?? null,
@@ -140,7 +157,9 @@ export function scopeFromObjective(texts: ReadonlyArray<string | null | undefine
     scope.shapes = cvc ? ['CVC', 'CVCe'] : ['CVCe'];
     parts.push(cvc ? 'CVC + silent e' : 'silent e');
   }
-  if (/initial (?:consonant )?blends|beginning blends/.test(t)) {
+  // "blends (st, pl, br)" names onset clusters too, not only after "initial/beginning blends" (K 51).
+  const namedBlends = /\bblends\s*\(/.test(t) && !/final (?:consonant )?blends|ending blends/.test(t);
+  if (/initial (?:consonant )?blends|beginning blends/.test(t) || namedBlends) {
     const named = Array.from((/blends\s*\(([^)]*)\)/.exec(t)?.[1] ?? '').matchAll(/\b([a-z]{2})\b/g)).map((m) => m[1]);
     scope.onsetClusters = named.length ? named : INITIAL_BLENDS;
     scope.shapes = ['CCVC', 'CCVCC'];
@@ -154,10 +173,12 @@ export function scopeFromObjective(texts: ReadonlyArray<string | null | undefine
     parts.push(`final blends ${scope.codaClusters.join(',')}`);
   }
   if (/digraph/.test(t)) {
+    const withBlends = !!scope.onsetClusters;
     scope.known = new Set([...Array.from(scope.known), ...DIGRAPHS]);
     scope.focus = new Set(DIGRAPHS);
     scope.focusRule = 'every';
-    scope.shapes = scope.shapes ?? ['VC', 'CVC', 'CVCC', 'CCVC'];
+    scope.shapes = withBlends ? ['VC', 'CVC', 'CVCC', 'CCVC', 'CCVCC'] : scope.shapes ?? ['VC', 'CVC', 'CVCC', 'CCVC'];
+    if (withBlends) scope.onsetOrFocus = true;
     parts.push('digraphs');
   }
   if (/r-controlled|bossy r|vowel teams?|long vowel teams|diphthong/.test(t)) {
@@ -179,11 +200,19 @@ export function scopeFromObjective(texts: ReadonlyArray<string | null | undefine
   if (vowelsNamed.length || mixed) {
     const vowels = mixed || !vowelsNamed.length ? ['a', 'e', 'i', 'o', 'u'] : vowelsNamed;
     scope.vowels = vowels;
+    // "Short 'o' ... mix with previously learned short 'a', 'e', and 'i'": the first vowel named is the lesson's,
+    // the rest are review. Only the named vowels are known on a CVC lesson (no u word on a short-o lesson), and
+    // most words use the lesson's vowel. One vowel named alone is still the focus of every word.
+    const review = vowelsNamed.length >= 1 && vowels.length > 1;
     if (!silentE && !scope.focus) {
-      scope.focus = new Set(vowels.flatMap((v) => SHORT_GPC[v]));
-      scope.focusRule = vowels.length === 1 ? 'every' : null;
+      scope.focus = new Set((review ? [vowelsNamed[0]] : vowels).flatMap((v) => SHORT_GPC[v]));
+      scope.focusRule = review ? 'most' : vowels.length === 1 ? 'every' : null;
     }
-    parts.push(`short ${vowels.join('')}`);
+    if (review && cvc && !letters) {
+      const out = new Set(['a', 'e', 'i', 'o', 'u'].filter((v) => !vowels.includes(v)).flatMap((v) => SHORT_GPC[v]));
+      scope.known = new Set(Array.from(scope.known).filter((g) => !out.has(g)));
+    }
+    parts.push(review ? `short ${vowelsNamed[0]} + review ${vowels.filter((v) => v !== vowelsNamed[0]).join('')}` : `short ${vowels.join('')}`);
   }
   if (scope.family) parts.push(`family -${scope.family}`);
   if (!parts.length) return null;
@@ -222,8 +251,9 @@ export function isDecodable(scope: LetterScope, x: LexWord): boolean {
   const shape = shapeOf(x);
   if (scope.shapes && (!shape || !scope.shapes.includes(shape))) return false;
   if (scope.singleLetters && !x.gpcs.every((g) => g.split('/')[0].length === 1)) return false;
-  if (scope.focusRule === 'every' && !hitsFocus(scope, x)) return false;
-  if (scope.onsetClusters && !scope.onsetClusters.includes(x.w.slice(0, 2))) return false;
+  const onsetOk = !scope.onsetClusters || scope.onsetClusters.includes(x.w.slice(0, 2));
+  const focusOk = scope.focusRule !== 'every' || hitsFocus(scope, x);
+  if (scope.onsetOrFocus ? !(onsetOk || focusOk) : !(onsetOk && focusOk)) return false;
   if (scope.codaClusters && !scope.codaClusters.includes(x.w.slice(-2))) return false;
   if (scope.family && !(x.w.endsWith(scope.family) && x.w.length === scope.family.length + 1)) return false;
   return true;

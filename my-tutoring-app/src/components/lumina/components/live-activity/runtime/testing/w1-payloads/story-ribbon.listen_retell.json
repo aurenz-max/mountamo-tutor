@@ -1,0 +1,113 @@
+{
+  "source": "/api/lumina/eval-test story-ribbon listen_retell 2026-11-10 (handoff H2)",
+  "primitiveId": "story-ribbon",
+  "evalMode": "listen_retell",
+  "data": {
+    "title": "Story Ribbon",
+    "description": "Use picture moments to tell connected stories, control story time, or explain a connection.",
+    "gradeLevel": "kindergarten",
+    "challengeType": "listen_retell",
+    "challenges": [
+      {
+        "id": "story-ribbon-1",
+        "type": "listen_retell",
+        "title": "Finding the Lost Puppy",
+        "characterName": "Leo",
+        "characterEmoji": "👦",
+        "setting": "the green park",
+        "events": [
+          {
+            "id": "story-ribbon-1-event-1",
+            "order": 0,
+            "emoji": "🐶",
+            "pictureLabel": "lost puppy",
+            "modelSentence": "Leo found a lost puppy hiding behind a big bush."
+          },
+          {
+            "id": "story-ribbon-1-event-2",
+            "order": 1,
+            "emoji": "🧺",
+            "pictureLabel": "warm basket",
+            "modelSentence": "Leo gently placed the puppy inside his soft basket."
+          },
+          {
+            "id": "story-ribbon-1-event-3",
+            "order": 2,
+            "emoji": "🎁",
+            "pictureLabel": "happy gift",
+            "modelSentence": "The grateful owner gave Leo a nice thank you gift."
+          }
+        ]
+      },
+      {
+        "id": "story-ribbon-2",
+        "type": "listen_retell",
+        "title": "Making a Special Gift",
+        "characterName": "Maya",
+        "characterEmoji": "👧",
+        "setting": "at the craft table",
+        "events": [
+          {
+            "id": "story-ribbon-2-event-1",
+            "order": 0,
+            "emoji": "📄",
+            "pictureLabel": "colorful paper",
+            "modelSentence": "Maya folded a sheet of colorful paper in half."
+          },
+          {
+            "id": "story-ribbon-2-event-2",
+            "order": 1,
+            "emoji": "✂️",
+            "pictureLabel": "sharp scissors",
+            "modelSentence": "Maya used safe scissors to cut out a pretty heart shape."
+          },
+          {
+            "id": "story-ribbon-2-event-3",
+            "order": 2,
+            "emoji": "🎀",
+            "pictureLabel": "bright ribbon",
+            "modelSentence": "Maya tied a bright ribbon around the paper heart."
+          },
+          {
+            "id": "story-ribbon-2-event-4",
+            "order": 3,
+            "emoji": "🎁",
+            "pictureLabel": "wrapped gift",
+            "modelSentence": "Maya gave the finished gift to her happy friend."
+          }
+        ]
+      },
+      {
+        "id": "story-ribbon-3",
+        "type": "listen_retell",
+        "title": "Sam Plants Seeds",
+        "characterName": "Sam",
+        "characterEmoji": "👦",
+        "setting": "sunny garden",
+        "events": [
+          {
+            "id": "story-ribbon-3-event-1",
+            "order": 0,
+            "emoji": "🌰",
+            "pictureLabel": "tiny seeds in dirt",
+            "modelSentence": "Sam planted tiny seeds in the dirt."
+          },
+          {
+            "id": "story-ribbon-3-event-2",
+            "order": 1,
+            "emoji": "💧",
+            "pictureLabel": "watering can",
+            "modelSentence": "Sam used a watering can on the soil."
+          },
+          {
+            "id": "story-ribbon-3-event-3",
+            "order": 2,
+            "emoji": "🌻",
+            "pictureLabel": "bright flower",
+            "modelSentence": "A bright flower grew up from the ground."
+          }
+        ]
+      }
+    ]
+  }
+}

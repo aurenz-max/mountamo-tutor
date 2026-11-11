@@ -23,7 +23,7 @@ import type { SpokenKey } from '../../../../components/live-activity/spokenKey';
 import type { WonderWalkStop } from './WonderWalk';
 import { countIn } from './wonderWalkWorld';
 import { stopCardsLine } from './wonderWalkWorkspace';
-import { tapKey, thingOf, type WordRule, type WordThing } from './wonderWalkWords';
+import { isMark, markName, tapKey, thingOf, type WordRule, type WordThing } from './wonderWalkWords';
 
 export type Respond = 'show' | 'say' | 'say-any';
 export const RESPONDS: readonly Respond[] = ['show', 'say', 'say-any'];
@@ -46,6 +46,8 @@ export function sayableOf(stop: WonderWalkStop): Sayable | null {
     const t = k ? thingOf(ww, k) : undefined;
     if (!t) return null;
     if (t.letter) return { letter: t.letter };
+    // A word tile is said as its word; an end mark is shown.
+    if (t.tile) return isMark(t.tile) ? null : { word: t.tile, thing: t };
     // Cards that all show one picture are told apart by something else (one or many, where it sits): no word names it.
     if (ww.answer.among.some(id => id !== k && thingOf(ww, id)?.word === t.word)) return null;
     return t.word ? { word: t.word, thing: t } : null;
@@ -64,7 +66,7 @@ export function respondError(stop: WonderWalkStop): string | null {
   const respond = respondOf(stop);
   const sayable = sayableOf(stop);
   const what = stop.world ? (stop.world.answer.kind === 'move' ? 'moves' : 'a place to tap')
-    : stop.words ? (stop.words.answer.kind === 'sort' ? 'a sort' : stop.words.answer.kind === 'order' ? 'an order on a track' : 'a card the cards share by picture') : 'a picture';
+    : stop.words ? (stop.words.answer.kind === 'sort' ? 'a sort' : stop.words.answer.kind === 'order' ? 'an order on a track' : stop.words.things.some(t => isMark(t.tile)) ? 'an end mark' : 'a card the cards share by picture') : 'a picture';
   if (respond === 'show' && sayable) {
     const it = 'number' in sayable ? `the number ${sayable.number}` : 'letter' in sayable ? 'a letter' : 'a word';
     return `the answer is ${it}, which a child can say: respond say${ruleOf(stop) && SAY_ANY_RULES.has(ruleOf(stop)!.type) ? ' or say-any' : ''} (the tap still counts)`;
@@ -123,7 +125,7 @@ export function stopSpokenKey(stop: WonderWalkStop): SpokenKey | null {
     return { answer: sayable.word, alsoAccept: examples.slice(0, 8), ...(rule ?? {}) };
   }
   // A picture's name, and its plural (a child says "frogs" for a frog card).
-  return { answer: sayable.word, alsoAccept: [plural(sayable.word)].filter(x => x !== sayable.word) };
+  return { answer: sayable.word, alsoAccept: sayable.thing?.tile ? [] : [plural(sayable.word)].filter(x => x !== sayable.word) };
 }
 
 /** What the ask says by design: a letter-name ask names the letter it asks for ("Which one is the letter M?"). */
@@ -136,11 +138,12 @@ export function stopGiven(stop: WonderWalkStop): string[] {
 
 const MISS_OF_TRAP: Record<string, string> = {
   near_sound: 'near_sound', meaning: 'meaning', look_alike: 'look_alike', in_story: 'mixed_story', not_heard: 'not_heard',
-  looks_like: 'looks_like', goes_with: 'goes_with',
+  looks_like: 'looks_like', goes_with: 'goes_with', wrong_kind: 'wrong_kind', other_join: 'other_join',
 };
 const WHY: Record<string, string> = {
   near_sound: 'a card whose sound is close to the right one', meaning: 'a card that goes with the heard word by meaning, not by sound',
   look_alike: 'a letter that looks like the right one', mixed_story: 'another part of the story', not_heard: 'a thing the story never had',
+  wrong_kind: 'a word of a kind that cannot go in that place in the sentence', other_join: 'the other joining word',
   looks_like: 'a picture that looks like a right answer', goes_with: 'a picture that goes with the scene but is not the idea', off_idea: 'a picture that does not fit the idea',
 };
 
@@ -164,7 +167,7 @@ export function stopSpokenMisses(stop: WonderWalkStop): KnownMiss[] {
   const wrongs: Array<{ word: string; trap: string }> = ww?.answer.kind === 'tap'
     ? ww.answer.among.filter(id => `thing-${id}` !== stop.correctOptionId).map(id => {
       const t = thingOf(ww, id)!;
-      return { word: t.letter ? `the letter ${t.letter}` : t.word ?? '', trap: (ww.answer.kind === 'tap' && ww.answer.traps[id]) || 'off_idea' };
+      return { word: t.tile ? (isMark(t.tile) ? markName(t.tile) : t.tile) : t.letter ? `the letter ${t.letter}` : t.word ?? '', trap: (ww.answer.kind === 'tap' && ww.answer.traps[id]) || 'off_idea' };
     })
     : stop.options.filter(o => o.id !== stop.correctOptionId).map(o => ({ word: o.word, trap: o.trap ?? 'off_idea' }));
   const seen = new Set<string>();
@@ -190,6 +193,6 @@ export function stopSay(stop: WonderWalkStop): { correct: string; plainWrong: st
   const wrongWord = ww?.answer.kind === 'tap'
     ? ww.answer.among.map(id => thingOf(ww, id)).find(t => t && `thing-${t.id}` !== stop.correctOptionId)
     : undefined;
-  const wrongText = wrongWord ? (wrongWord.letter ? `the letter ${wrongWord.letter}` : wrongWord.word!) : stop.options.find(o => o.id !== stop.correctOptionId)?.word ?? 'banana';
+  const wrongText = wrongWord ? (wrongWord.tile ?? (wrongWord.letter ? `the letter ${wrongWord.letter}` : wrongWord.word!)) : stop.options.find(o => o.id !== stop.correctOptionId)?.word ?? 'banana';
   return { correct: 'letter' in sayable ? `the letter ${sayable.letter}` : sayable.word, plainWrong: wrongText };
 }

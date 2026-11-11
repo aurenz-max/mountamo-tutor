@@ -12,6 +12,7 @@ import { Type, type Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from '../generation/generationContext';
 import { buildScopePromptSection } from '../scopeContext';
+import { nounPool } from '../wordSpace/categorySpaces';
 import {
   buildModeConstraintSection,
   constrainChallengeTypeEnum,
@@ -53,6 +54,8 @@ export const STORY_RIBBON_CHALLENGE_TYPES: StoryRibbonChallengeType[] = [
   'tell_future_account',
   'tell_past_account',
   'story_to_experience',
+  'listen_retell',
+  'tell_own',
 ];
 
 export const STORY_RIBBON_TYPE_DOCS: Record<StoryRibbonChallengeType, ChallengeTypeDoc> = {
@@ -75,6 +78,14 @@ export const STORY_RIBBON_TYPE_DOCS: Record<StoryRibbonChallengeType, ChallengeT
   story_to_experience: {
     promptDoc: '"story_to_experience": Choose one pictured story event, name a personal, familiar, observed, heard-about, or imagined experience, and explain the connection. Never require private disclosure or judge truth/emotion.',
     schemaDescription: "'story_to_experience' (explain story-to-world connection)",
+  },
+  listen_retell: {
+    promptDoc: '"listen_retell": The tutor reads a three- or four-event story aloud with its pictures; the child retells it in their own words, events in order, with first, next or last on at least two events.',
+    schemaDescription: "'listen_retell' (hear a story, retell it in order with order words)",
+  },
+  tell_own: {
+    promptDoc: '"tell_own": The child picks two or three picture cards (any pick) and tells a story of their own or something that happened to them, with a beginning, something that happens and an end. Covers story starters, personal stories and original stories.',
+    schemaDescription: "'tell_own' (tell an original or personal story from picked cards)",
   },
 };
 
@@ -118,16 +129,15 @@ const PICTURE_CUES = {
 type PictureCueKey = keyof typeof PICTURE_CUES;
 const pictureCueKeys = Object.keys(PICTURE_CUES) as PictureCueKey[];
 
-const FIELDS = [
-  'challengeType', 'timeCue', 'storyTitle', 'characterName', 'characterEmoji', 'setting',
-  'event0PictureKey', 'event0PictureLabel', 'event0ModelSentence',
-  'event1PictureKey', 'event1PictureLabel', 'event1ModelSentence',
-  'event2PictureKey', 'event2PictureLabel', 'event2ModelSentence',
-] as const;
+const HEAD_FIELDS = ['challengeType', 'timeCue', 'storyTitle', 'characterName', 'characterEmoji', 'setting'] as const;
+const eventFields = (count: number): string[] => Array.from({ length: count }, (_, i) =>
+  [`event${i}PictureKey`, `event${i}PictureLabel`, `event${i}ModelSentence`]).flat();
+/** The flat fields for a story of `count` events (three; listen_retell may have four). */
+const fieldsFor = (count: number): string[] => [...HEAD_FIELDS, ...eventFields(count)];
 
-const schema: Schema = {
+const schemaFor = (count: number): Schema => ({
   type: Type.OBJECT,
-  properties: Object.fromEntries(FIELDS.map((field) => {
+  properties: Object.fromEntries(fieldsFor(count).map((field) => {
     if (field === 'challengeType') return [field, { type: Type.STRING, enum: STORY_RIBBON_CHALLENGE_TYPES, description: 'The task identity for this challenge.' }];
     if (field === 'timeCue') return [field, { type: Type.STRING, enum: ['none', 'Today', 'Yesterday', 'Tomorrow'], description: 'Must match challengeType: present=Today, future=Tomorrow, past=Yesterday, otherwise none.' }];
     if (field.endsWith('PictureKey')) return [field, { type: Type.STRING, enum: pictureCueKeys, description: 'Choose the controlled picture that literally appears in both the label and hidden event sentence.' }];
@@ -139,8 +149,9 @@ const schema: Schema = {
     if (field === 'setting') return [field, { type: Type.STRING, description: 'Short familiar place phrase, 1-5 words.' }];
     return [field, { type: Type.STRING }];
   })),
-  required: [...FIELDS],
-};
+  required: fieldsFor(count),
+});
+const schema: Schema = schemaFor(3);
 
 const forbidden = /[_\[\]{}]|\b(?:system|assistant|judge|verdict|correct|incorrect|prompt|placeholder|todo|null|undefined)\b/i;
 const emojiPattern = new RegExp(
@@ -164,6 +175,8 @@ const TIME_CUE_BY_TYPE: Record<StoryRibbonChallengeType, StoryRibbonTimeCue | 'n
   tell_future_account: 'Tomorrow',
   tell_past_account: 'Yesterday',
   story_to_experience: 'none',
+  listen_retell: 'none',
+  tell_own: 'none',
 };
 
 const modelTenseMatches = (type: StoryRibbonChallengeType, sentences: string[]): boolean => {
@@ -178,11 +191,12 @@ export function validateStoryRibbonPayload(
   raw: unknown,
   index: number,
   expectedType?: StoryRibbonChallengeType,
+  eventCount = 3,
 ): StoryRibbonChallenge | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const record = raw as Record<string, unknown>;
   const values: Record<string, string> = {};
-  for (const field of FIELDS) {
+  for (const field of fieldsFor(eventCount)) {
     const value = text(record[field]);
     const machineField = field === 'challengeType' || field === 'timeCue' || field.endsWith('PictureKey');
     if (!value || (!machineField && forbidden.test(value))) return null;
@@ -200,7 +214,7 @@ export function validateStoryRibbonPayload(
 
   const events: StoryRibbonEvent[] = [];
   const usedPictureKeys = new Set<PictureCueKey>();
-  for (let order = 0; order < 3; order++) {
+  for (let order = 0; order < eventCount; order++) {
     const pictureKey = values[`event${order}PictureKey`] as PictureCueKey;
     const pictureLabel = values[`event${order}PictureLabel`];
     const modelSentence = values[`event${order}ModelSentence`];
@@ -217,8 +231,8 @@ export function validateStoryRibbonPayload(
       modelSentence,
     });
   }
-  if (new Set(events.map((event) => event.pictureLabel.toLowerCase())).size !== 3) return null;
-  if (new Set(events.map((event) => event.modelSentence.toLowerCase())).size !== 3) return null;
+  if (new Set(events.map((event) => event.pictureLabel.toLowerCase())).size !== eventCount) return null;
+  if (new Set(events.map((event) => event.modelSentence.toLowerCase())).size !== eventCount) return null;
   if (!modelTenseMatches(challengeType, events.map((event) => event.modelSentence))) return null;
 
   const challenge: StoryRibbonChallenge = {
@@ -564,7 +578,7 @@ export const buildStoryRibbonShapeValidationReminder = (
   mode: StoryRibbonChallengeType,
   tier: SupportTier | null,
 ): string => {
-  if (!tier || mode === 'story_to_experience') return '';
+  if (!tier || mode === 'story_to_experience' || mode === 'listen_retell' || mode === 'tell_own') return '';
   if (tier === 'easy') {
     return 'LOCAL SHAPE CHECK: Write a routine. Do not use problem/need, "but ... did not/could not", setback, instead, again, different, or safer language.';
   }
@@ -613,6 +627,50 @@ export const fillWithStoryRibbonFallbacks = (
   return { challenges, fallbackCount };
 };
 
+const OWN_TITLES = ['Your Own Story', 'Make a Story', 'Story Cards', 'Tell Me a Story', 'Picture Story Time'];
+/** Things a little animal can find and carry: one singular noun each ("a sunglasses" and "found a house" read wrong). */
+const OWN_THING_CATS = new Set(['toy', 'food', 'clothing', 'music', 'sport']);
+/** Places a story can happen by. */
+const OWN_PLACES = new Set(['tree', 'lake', 'mountain', 'rock', 'log', 'nest', 'castle', 'fountain', 'house', 'school', 'tent']);
+
+const pickFrom = <T>(list: readonly T[], n: number, rand: () => number): T[] => {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out.slice(0, n);
+};
+
+/**
+ * tell_own is code-only: six library picture cards (two animals, three things, one place or weather) dealt from the
+ * words the grade knows, and a private example story code writes from them. Any pick is allowed and never graded.
+ */
+export function buildTellOwnChallenge(index: number, grade: string, rand: () => number = Math.random): StoryRibbonChallenge {
+  const pool = nounPool(grade);
+  const animals = pickFrom(pool.filter((x) => x.category === 'animal'), 2, rand);
+  const things = pickFrom(pool.filter((x) => OWN_THING_CATS.has(x.category) && !x.w.endsWith('s')), 3, rand);
+  const [place] = pickFrom(pool.filter((x) => OWN_PLACES.has(x.w)), 1, rand);
+  const deal = pickFrom([...animals, ...things, place].filter(Boolean), 6, rand);
+  const [a, b] = animals.map((x) => x.w);
+  const thing = things[0]?.w ?? 'ball';
+  const article = /^[aeiou]/.test(thing) ? 'an' : 'a';
+  const id = `story-ribbon-${index + 1}`;
+  return {
+    id,
+    type: 'tell_own',
+    title: OWN_TITLES[index % OWN_TITLES.length],
+    characterName: 'you',
+    characterEmoji: '🧒',
+    setting: 'anywhere',
+    events: [],
+    cards: deal.map((x, i) => ({ id: `${id}-card-${i + 1}`, word: x.w, emoji: x.emoji! })),
+    modelStory: `First, a little ${a} found ${article} ${thing}${place ? ` by the ${place.w}` : ''}. Next, the ${a} showed the ${thing} `
+      + `to a ${b}, and they played with it together. Last, the ${b} said thank you, and they went home happy.`,
+  };
+}
+
+/** listen_retell: three events on an easy tier, four on medium and hard; untiered content alternates from three. */
+const listenEventCount = (tier: SupportTier | null, index: number): 3 | 4 =>
+  tier === 'easy' ? 3 : tier ? 4 : index % 2 === 0 ? 3 : 4;
+
 export async function generateStoryRibbon(ctx: GenerationContext): Promise<StoryRibbonData> {
   const resolution = await resolveEvalModes(
     'story-ribbon',
@@ -649,18 +707,21 @@ export async function generateStoryRibbon(ctx: GenerationContext): Promise<Story
     usedTitles: string[],
     scheduledType: StoryRibbonChallengeType,
   ): Promise<StoryRibbonChallenge | null> => {
+    if (scheduledType === 'tell_own') return buildTellOwnChallenge(index, ctx.gradeContext);
+    const eventCount = scheduledType === 'listen_retell' ? listenEventCount(supportTier, index) : 3;
+    const countWord = eventCount === 4 ? 'FOUR' : 'THREE';
     try {
       // Fork B generates one story per call. Narrowing each slot to its scheduled
       // type makes curated blends and the five-type mixed path genuinely diverse.
       const slotSchema = constrainChallengeTypeEnum(
-        activeSchema,
+        eventCount === 3 ? activeSchema : schemaFor(eventCount),
         [scheduledType],
         STORY_RIBBON_TYPE_DOCS,
         { fieldName: 'challengeType', rootLevel: true },
       );
       const response = await ai.models.generateContent({
         model: MODEL,
-        contents: `Create ONE three-picture oral story for Story Ribbon, a Kindergarten Language Arts activity.
+        contents: `Create ONE ${eventCount === 4 ? 'four' : 'three'}-picture oral story for Story Ribbon, a Kindergarten Language Arts activity.
 Topic: ${ctx.topic}
 Grade ceiling: ${ctx.gradeContext} (${ctx.grade ?? ctx.gradeLevel})
 Specific intent: ${ctx.intent ?? ctx.title ?? 'Tell a connected account of three pictured events.'}
@@ -673,7 +734,7 @@ ${challengeTypeSection}
 ${buildStoryRibbonTierPromptSection(scheduledType, supportTier)}
 This Fork B session assigns this story slot to exactly: ${scheduledType}.
 
-Write a concrete, coherent mini-story with exactly THREE events. The events must have one unambiguous chronological order and form a cause-to-action-to-result arc a five-year-old can retell from pictures. Use one recurring main character and one familiar setting.
+Write a concrete, coherent mini-story with exactly ${countWord} events. The events must have one unambiguous chronological order and form a cause-to-action-to-result arc a five-year-old can retell from pictures. Use one recurring main character and one familiar setting.
 
 TIME CONTRACT:
 - tell_connected_account: timeCue = none; hidden model sentences may use natural past tense, but the child's tense is not graded.
@@ -681,9 +742,10 @@ TIME CONTRACT:
 - tell_future_account: timeCue = Tomorrow; every hidden model sentence includes "will" plus a base verb.
 - tell_past_account: timeCue = Yesterday; every hidden model sentence uses natural past tense.
 - story_to_experience: timeCue = none; hidden model sentences describe the story events only. Never generate a personal memory for the child.
+- listen_retell: timeCue = none; the tutor reads the model sentences aloud as the story, in order, so they use natural past tense and read smoothly one after another.
 
 For each event:
-- PictureKey: choose one value from the allowed controlled picture list. Use three different keys.
+- PictureKey: choose one value from the allowed controlled picture list. Use ${eventCount} different keys.
 - PictureLabel: 1-5 words, a TIME-NEUTRAL NOUN PHRASE visible to the child ("Seeds and soil", "Watering can", "Green sprout"). Do not use a full sentence, a time word, or a conjugated story script.
 - ModelSentence: one simple sentence, 3-16 words, in the tense required by the assigned challenge type and expressing the event meaning. The first sentence names the character. Later sentences may use the name or a clear pronoun. These sentences are hidden answer material.
 - CUE ALIGNMENT IS REQUIRED: repeat at least one literal anchor word from the chosen PictureKey in BOTH PictureLabel and ModelSentence (for example, the bird key requires "bird" in both). The picture, label, and sentence must describe the same object and event.
@@ -698,7 +760,7 @@ The child may tell the story in different words, so make each event meaning conc
         },
       });
       const decoded = JSON.parse(response.text ?? 'null');
-      const challenge = validateStoryRibbonPayload(decoded, index, scheduledType);
+      const challenge = validateStoryRibbonPayload(decoded, index, scheduledType, eventCount);
       if (!challenge) {
         rejectionCount++;
         return null;

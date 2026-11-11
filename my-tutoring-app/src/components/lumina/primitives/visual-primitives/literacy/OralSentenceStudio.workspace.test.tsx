@@ -17,7 +17,7 @@ import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContrac
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { ORAL_SENTENCE_STUDIO_FALLBACKS } from '../../../service/literacy/gemini-oral-sentence-studio';
 import { spokenKeyText } from '../../../components/live-activity/spokenKey';
-import { itemsFromChallenges, oralSentenceKey } from './oralSentenceStudioDomain';
+import { wordItemsOf, oralSentenceKey } from './oralSentenceStudioDomain';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -29,7 +29,7 @@ const mount = (mode: string) =>
   mountWorkspace({ primitiveId: 'oral-sentence-studio', evalMode: mode, data: payload(mode), instanceId: 'oral' });
 
 it.each(MODES)('%s binds: the key is judged on meaning, with the anchors as examples', mode => {
-  const items = itemsFromChallenges(challengesOf(mode));
+  const items = wordItemsOf(challengesOf(mode));
   expect(items.length).toBe(2);
   expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'oral-sentence-studio', pin: mode, objectiveIds: ['o'], data: payload(mode) })).not.toBeNull();
   const task = mount(mode).state().task!;
@@ -58,7 +58,7 @@ it('rehearsal names the step already written and refuses it', () => {
 
 it('the example sentence appears only after credit, never on a retry', () => {
   const h = mount('describe_scene');
-  const model = itemsFromChallenges(challengesOf('describe_scene'))[0].modelResponse;
+  const model = wordItemsOf(challengesOf('describe_scene'))[0].modelResponse;
   expect(screen.queryByText(model)).toBeNull();
   expect(screen.queryByRole('button', { name: /hear the words|start/i })).toBeNull();
   h.say('curious tiny'); h.feedback('incorrect', 'retry'); h.confirmVisible();

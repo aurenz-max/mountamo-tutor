@@ -14,6 +14,8 @@ export const STORY_RIBBON_MISSES = {
   tell_future_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
   tell_past_account: ['labels_listed', 'events_missing', 'out_of_order', 'tense_drift'],
   story_to_experience: ['event_only', 'no_connection'],
+  listen_retell: ['out_of_order', 'one_event', 'no_order_words'],
+  tell_own: ['describes_cards', 'one_event'],
 } as const;
 export type SpokenStoryRibbonMiss = typeof STORY_RIBBON_MISSES[keyof typeof STORY_RIBBON_MISSES][number];
 
@@ -30,12 +32,19 @@ export const storyRibbonCard = defineCard<SpokenStoryRibbonMiss>({
     tell_future_account: TENSE,
     tell_past_account: TENSE,
     story_to_experience: { ...SPOKEN, misses: STORY_RIBBON_MISSES.story_to_experience },
+    // The order-words lever answers a list with no order words; the order itself and one event have no lever by
+    // decision (any order cue is the answer; one event is the task itself, asked again).
+    listen_retell: { ...SPOKEN, misses: STORY_RIBBON_MISSES.listen_retell, unanswered: ['out_of_order', 'one_event'] },
+    // An open story has no lever yet, by decision: its levers are an /add-support-tiers rung of their own.
+    tell_own: { ...SPOKEN, misses: STORY_RIBBON_MISSES.tell_own, unanswered: STORY_RIBBON_MISSES.tell_own },
   },
   words: {
     job: 'tell a short picture story out loud: all three pictured events in order in their own words (the tense modes '
-      + 'in that time), or one story moment and how it connects to something they did, saw, heard about or imagined',
+      + 'in that time), or one story moment and how it connects to something they did, saw, heard about or imagined; '
+      + 'or retell a story the tutor read, in order with first, next and last; or pick two or three picture cards and '
+      + 'tell a story of their own with a beginning, a middle and an end',
     answer: 'the spoken story',
-    question: 'the directions',
+    question: 'the directions, and the story to retell',
   },
   audio: SPOKEN_AUDIO,
   levers: true,

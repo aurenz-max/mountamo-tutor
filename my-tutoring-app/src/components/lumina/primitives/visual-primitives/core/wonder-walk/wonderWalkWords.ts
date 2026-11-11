@@ -15,11 +15,47 @@
  * ref, rhymes with a ref, a number of syllables, is the word the tutor says in parts, is a ref's word with one sound
  * changed, a letter for a sound, a ref's first letter, a letter's name, the same letter in the other case, a kind of
  * thing, one or many, where it is, or a part of the story. There is no task list: a task is a composition.
+ *
+ * A sentence (USER 2026-11-10, K grammar) is a list of tokens, each with a role (who, does, what, where, describes,
+ * joins, a small word, an end mark). A token may be a card: a word tile the child acts on. Three conditions compose
+ * over it: order the cards to make the sentence (tokens with no card are already on the track), tap the card that
+ * fills the one token left out, or tap the card that is a named part of a sentence the child heard.
  */
 
 export type SoundAt = 'first' | 'last' | 'middle';
 export type Relation = 'in' | 'on' | 'under' | 'next-to';
 export type StoryRole = 'who' | 'what' | 'where';
+export type SentenceRole = 'who' | 'does' | 'what' | 'where' | 'describes' | 'joins' | 'small' | 'end';
+export const SENTENCE_ROLES: readonly SentenceRole[] = ['who', 'does', 'what', 'where', 'describes', 'joins', 'small', 'end'];
+/** One word of a sentence as it is said and printed, its role, and the card that is this word (when it is a card). */
+export interface SentenceToken { say: string; role: SentenceRole; card?: string }
+export const MARKS: readonly string[] = ['.', '?', '!'];
+const MARK_NAME: Record<string, string> = { '.': 'a period', '?': 'a question mark', '!': 'an exclamation mark' };
+export const isMark = (tile?: string) => !!tile && MARKS.includes(tile);
+export const markName = (tile: string) => MARK_NAME[tile] ?? tile;
+/** The grammar class of a word tile, from closed classes code knows and the library's kind for a pictured word. */
+export type TileClass = 'mark' | 'join' | 'small' | 'action' | 'describing' | 'thing' | 'other';
+const JOINS = new Set(['and', 'but', 'or', 'so', 'because']);
+const SMALL = new Set(['the', 'a', 'an', 'is', 'are', 'am', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your', 'his', 'her', 'can', 'will', 'do', 'does', 'did', 'to', 'in', 'on', 'at']);
+export function tileClass(t: Pick<WordThing, 'tile' | 'category'>): TileClass {
+  const x = (t.tile ?? '').toLowerCase();
+  if (isMark(x)) return 'mark';
+  if (JOINS.has(x)) return 'join';
+  if (SMALL.has(x)) return 'small';
+  if (!t.category || t.category === 'other') return 'other';
+  if (t.category === 'action') return 'action';
+  return DESCRIBING.has(t.category) ? 'describing' : 'thing';
+}
+const DESCRIBING = new Set(['describing', 'color', 'feeling', 'shape', 'number']);
+/** The class a sentence word has by its role. The author's role decides for a word of the sentence (run can be a
+ *  doing-word or a thing); the library's kind only classes the cards that are not in it. */
+export const roleClass = (role: SentenceRole): TileClass =>
+  (role === 'does' ? 'action' : role === 'describes' ? 'describing' : role === 'joins' ? 'join' : role === 'small' ? 'small' : role === 'end' ? 'mark' : 'thing');
+/** A card's class: its role when it is a word of the sentence, else what the library says of its word. */
+export function cardClass(w: WordWorld, t: WordThing): TileClass {
+  const k = w.sentence?.find(x => x.card === t.id);
+  return k ? roleClass(k.role) : tileClass(t);
+}
 
 export interface WordThing {
   id: string;
@@ -41,6 +77,9 @@ export interface WordThing {
   /** Where the picture sits, relative to a landmark drawn with it. */
   rel?: Relation;
   landmark?: { word: string; emoji: string };
+  /** A word tile: the word as printed and said ("runs", "and"), or an end mark (. ? !). A tile whose word has a library
+   *  picture carries its emoji and kind too. */
+  tile?: string;
 }
 
 export type WordRule =
@@ -57,7 +96,11 @@ export type WordRule =
   | { type: 'kind'; is: string }
   | { type: 'number'; is: 'one' | 'many'; word: string }
   | { type: 'where'; rel: Relation }
-  | { type: 'story'; event: number; role: StoryRole };
+  | { type: 'story'; event: number; role: StoryRole }
+  /** The card that is the one token the sentence leaves out. */
+  | { type: 'fills' }
+  /** The card that is the sentence's token with this role (who it is about, what they do). */
+  | { type: 'part'; role: SentenceRole };
 
 export interface StoryEvent { who: string; did: string; what?: string; where?: string }
 
@@ -66,15 +109,19 @@ export interface WordBasket { id: string; label: string; rule: WordRule }
 export type WordAnswer =
   | { kind: 'tap'; among: string[]; rule: WordRule; traps: Record<string, WordTrap | null> }
   | { kind: 'sort'; baskets: WordBasket[]; things: string[] }
-  | { kind: 'order'; by: 'story' | 'spelling'; of?: string; things: string[] };
+  | { kind: 'order'; by: 'story' | 'spelling' | 'sentence'; of?: string; things: string[] };
 
 /** How a wrong thing can draw a child in (computed by code). */
-export type WordTrap = 'near_sound' | 'meaning' | 'look_alike' | 'in_story' | 'not_heard' | 'other';
+export type WordTrap = 'near_sound' | 'meaning' | 'look_alike' | 'in_story' | 'not_heard' | 'other'
+  /** Sentences: a word of a kind that cannot go in that place; the other joining word. */
+  | 'wrong_kind' | 'other_join';
 
 export interface WordWorld {
   refs: WordThing[];
   things: WordThing[];
   story?: StoryEvent[];
+  /** The sentence the stop is about, in order. */
+  sentence?: SentenceToken[];
   answer: WordAnswer;
   /** The sounds the tutor says, made by code from the rule ("kuh... aaa... tuh"); never the answer word. */
   say?: string;
@@ -150,6 +197,8 @@ export function ruleHolds(w: WordWorld, t: WordThing, rule: WordRule): boolean {
     case 'number': return pic && t.word === rule.word && (rule.is === 'many' ? (t.count ?? 1) > 1 : (t.count ?? 1) === 1);
     case 'where': return pic && t.rel === rule.rel;
     case 'story': { const e = w.story?.[rule.event]; return pic && !!e && e[rule.role] === t.word; }
+    case 'fills': return !!t.tile && !!w.sentence?.some(k => k.card === t.id);
+    case 'part': return !!t.tile && !!w.sentence?.some(k => k.card === t.id && k.role === rule.role);
   }
 }
 
@@ -191,6 +240,10 @@ export function orderKey(w: WordWorld): string[] | { error: string } {
     if (new Set(at).size !== at.length) return { error: 'two things on the track come from one story event' };
     return ts.map((t, i) => ({ t, i: at[i] })).sort((x, y) => x.i - y.i).map(x => x.t.id);
   }
+  if (a.by === 'sentence') {
+    const seq = (w.sentence ?? []).map(k => k.card).filter((id): id is string => !!id && a.things.includes(id));
+    return seq.length >= 2 ? seq : { error: 'a sentence order needs a sentence with 2 or more of its words as cards' };
+  }
   const r = a.of ? ref(w, a.of) : undefined;
   if (!r?.letters?.length) return { error: 'spelling order needs `of`: a ref whose word is spelled one letter per sound' };
   const pool = a.things.map(id => thingOf(w, id)!).filter(t => t?.letter);
@@ -222,7 +275,7 @@ export function sortHolds(w: WordWorld, at: Record<string, string | null>): bool
 export function orderHolds(w: WordWorld, track: string[]): boolean {
   const key = orderKey(w);
   if (!Array.isArray(key) || track.length !== key.length) return false;
-  const face = (id: string) => { const t = thingOf(w, id); return t?.letter?.toLowerCase() ?? t?.word ?? id; };
+  const face = (id: string) => { const t = thingOf(w, id); return t?.letter?.toLowerCase() ?? t?.tile ?? t?.word ?? id; };
   return key.every((id, i) => face(id) === face(track[i]));
 }
 
@@ -247,7 +300,8 @@ export function wordHarnessTaps(w: WordWorld, correctId: string): { correct: str
 /** Is a world playable and is its key what its facts say? (the boss re-derives it; it never trusts a stored key). */
 export function wordWorldError(w: WordWorld, correctOptionId: string): string | null {
   if (!Array.isArray(w.things) || !w.things.length || !Array.isArray(w.refs)) return 'its word world is not drawn';
-  if (w.things.some(t => !(t.emoji || t.letter))) return 'a thing has no picture or letter';
+  if (w.things.some(t => !(t.emoji || t.letter || t.tile))) return 'a thing has no picture, letter or word';
+  if (w.sentence?.some(k => k.card && !w.things.some(t => t.id === k.card))) return 'a sentence card is not a thing';
   const a = w.answer;
   if (a.kind === 'tap') {
     if (a.among.length < 2 || a.among.length > 4) return 'a tap needs 2-4 things to choose from';
@@ -265,3 +319,14 @@ export function wordWorldError(w: WordWorld, correctOptionId: string): string | 
   const k = orderKey(w);
   return Array.isArray(k) ? (k.length >= 2 ? null : 'a track needs 2 or more things') : k.error;
 }
+
+// ── Sentences ────────────────────────────────────────────────────────
+
+/** The sentence in words. `hide` leaves out the cards (a fill says "blank" there; an order says nothing of them). */
+export function sentenceText(w: WordWorld, hide: 'none' | 'blank' = 'none'): string {
+  const toks = w.sentence ?? [];
+  const words = toks.filter(k => k.role !== 'end').map(k => (hide === 'blank' && k.card ? 'blank' : k.say));
+  const end = toks.find(k => k.role === 'end');
+  return `${words.join(' ')}${end && !(hide === 'blank' && end.card) ? end.say : ''}`.trim();
+}
+

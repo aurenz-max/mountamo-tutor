@@ -106,11 +106,17 @@ describe('resolveCvcVowelFocus · a focus ONLY when something names one', () => 
 });
 
 describe('resolveCvcLetterGroup · the group is a ceiling that intent can RAISE', () => {
-  it('defaults to the group carrying all five short vowels', () => {
-    // LA001-03-B names all five outright ("Match short vowel sounds (a, e, i,
-    // o, u)…"), so a cap below that is a cap below stated intent.
-    expect(resolveCvcLetterGroup(undefined, null)).toBe(3);
+  it('defaults to the full alphabet when nothing names a group', () => {
+    // The K encode objectives name no group, and their own examples (van, wet,
+    // win, jet, fox) use group-4 letters: a default below that drops them (H3 #4).
+    expect(resolveCvcLetterGroup(undefined, null)).toBe(4);
     expect(groupVowels(resolveCvcLetterGroup(undefined, null))).toHaveLength(5);
+  });
+
+  it('an objective that lists example words admits them, raising a pinned group', () => {
+    const k34 = "Encode CVC words with Short 'a'\nTask: The system should present an audio prompt of a word (e.g., \"cat\")\nExamples: cat, map, van, sad, tap, bag.";
+    expect(resolveCvcLetterGroup(2, 'short-a', [k34])).toBe(4);
+    expect(resolveCvcLetterGroup(1, null, ['Spell CVC words. Examples: sat, pin, tap.'])).toBe(1);
   });
 
   it('lets the manifest pin a narrower group', () => {

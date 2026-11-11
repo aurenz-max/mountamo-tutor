@@ -11,7 +11,7 @@
 import type { WorkspaceScene } from '../../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { WonderWalkData, WonderWalkStop } from './WonderWalk';
 import { countIn, goalFailure, moveTaps, solveMove, type WorldObject } from './wonderWalkWorld';
-import { orderHolds, sortHolds, wordHarnessTaps, type WordThing, type WordWorld } from './wonderWalkWords';
+import { isMark, markName, orderHolds, sentenceText, sortHolds, wordHarnessTaps, type WordThing, type WordWorld } from './wonderWalkWords';
 
 type Placed = Array<Pick<WorldObject, 'place' | 'event' | 'word' | 'color'>>;
 
@@ -22,7 +22,13 @@ type Placed = Array<Pick<WorldObject, 'place' | 'event' | 'word' | 'color'>>;
  * The author's ask and narration are checked by code never to say the answer; the cards line is derived here.
  */
 export const stopAsk = (stop: WonderWalkStop) =>
-  [stop.narration, stop.ask, stopCardsLine(stop)].map(s => s?.trim()).filter(Boolean).join(' ');
+  [stop.narration, stopSentenceLine(stop), stop.ask, stopCardsLine(stop)].map(s => s?.trim()).filter(Boolean).join(' ');
+
+/** A sentence with one word left out, as the tutor reads it: the missing word is "blank", never said. */
+export function stopSentenceLine(stop: WonderWalkStop): string {
+  const w = stop.words;
+  return w?.sentence && w.answer.kind === 'tap' && w.answer.rule.type === 'fills' ? `The sentence is: ${sentenceText(w, 'blank')}` : '';
+}
 
 /**
  * The cards a pre-reader must hear named, in screen order, derived from the world. A child must know a picture is a
@@ -34,6 +40,8 @@ export function stopCardsLine(stop: WonderWalkStop): string {
   const w = stop.words;
   if (w) {
     if (w.things.some(t => t.letter)) return '';
+    // Word tiles are read out for a child who cannot read them, in screen order, the answer among them.
+    if (w.things.some(t => t.tile)) return `The cards say ${listOf(w.things.map(t => (isMark(t.tile) ? markName(t.tile!) : t.tile!)))}.`;
     const rule = w.answer.kind === 'tap' ? w.answer.rule.type : undefined;
     const cards = rule === 'where' || rule === 'number' ? `There are ${cardsFact(w)}.` : `The pictures are ${listOf(w.things.map(thingName))}.`;
     const baskets = w.answer.kind === 'sort'
@@ -85,7 +93,7 @@ export const wordMatches = (stop: WonderWalkStop, view: Pick<StopView, 'basketOf
 };
 
 /** A word world's thing in words: the picture's name (drawn once, as many, or by a landmark), or the letter. */
-export const thingName = (t: WordThing) => (t.letter ? `the letter ${t.letter}`
+export const thingName = (t: WordThing) => (t.tile ? (isMark(t.tile) ? markName(t.tile) : `the word "${t.tile}"`) : t.letter ? `the letter ${t.letter}`
   : `${(t.count ?? 1) > 1 ? `${t.count} ${t.word}s` : `the ${t.word}`}${t.rel ? ` ${t.rel.replace('-', ' ')} the ${t.landmark?.word}` : ''}`);
 /**
  * The cards in words. Pictures are named in screen order (a child must know a picture is a hat, not a cap, to hear its
@@ -98,6 +106,18 @@ function cardsFact(w: WordWorld): string {
   if (rule?.type === 'where') return `${w.things.length} cards, each showing the ${w.things[0].word} somewhere by the ${w.things[0].landmark?.word}`;
   if (rule?.type === 'number') return `${w.things.length} cards of ${Array.from(new Set(w.things.map(t => t.word))).join(' and ')}, some drawn once and some as many`;
   return w.things.map(thingName).join(', ');
+}
+/** What the tutor may know of a sentence stop: never the order of the cards, never the word left out. */
+function sentenceFact(w: WordWorld): string {
+  const a = w.answer;
+  const toks = (w.sentence ?? []).filter(k => k.role !== 'end');
+  if (a.kind === 'order') {
+    const fixed = toks.filter(k => !k.card).map(k => `"${k.say}"`);
+    return `a track for a sentence of ${toks.length} words; ${fixed.length ? `already on it: ${fixed.join(', ')}` : 'every word is a card'}. `
+      + 'The learner builds it; never say the sentence or which card comes first. When it is built, invite the learner to say it.';
+  }
+  if (a.kind === 'tap' && a.rule.type === 'fills') return `read it with a pause at the blank, never the missing word: ${sentenceText(w, 'blank')}`;
+  return `the sentence the learner heard: ${sentenceText(w)}`;
 }
 const thingById = (w: WordWorld, id: string) => w.things.find(t => t.id === id) ?? w.refs.find(t => t.id === id);
 
@@ -157,7 +177,10 @@ export function describeWork(stop: WonderWalkStop, view: Pick<StopView, 'pickedI
 export type WonderWalkMiss = 'repeated_pick' | 'looks_like' | 'goes_with' | 'off_idea' | 'off_by_one' | 'miscount' | 'reversed' | 'said_a_part' | 'wrong_sort' | 'not_full'
   // language, computed by code: a near sound (b for p), the meaning instead of the sound (dog for "rhymes with cat"), a
   // letter that looks alike (b for d), another part of the story, a thing the story never had, things out of order.
-  | 'near_sound' | 'meaning' | 'look_alike' | 'mixed_story' | 'not_heard' | 'wrong_order';
+  | 'near_sound' | 'meaning' | 'look_alike' | 'mixed_story' | 'not_heard' | 'wrong_order'
+  // sentences, computed by code: a word of a kind that cannot go there (a naming word where the doing-word is missing),
+  // the other joining word (and for but).
+  | 'wrong_kind' | 'other_join';
 
 export function pickMiss(stop: WonderWalkStop, id: string, lastWrong: string | null = null): WonderWalkMiss | undefined {
   if (stopMatches(stop, id)) return undefined;
@@ -165,7 +188,7 @@ export function pickMiss(stop: WonderWalkStop, id: string, lastWrong: string | n
   if (stop.words?.answer.kind === 'tap' && id.startsWith('thing-')) {
     const trap = stop.words.answer.traps[id.slice(6)];
     return trap === 'near_sound' ? 'near_sound' : trap === 'meaning' ? 'meaning' : trap === 'look_alike' ? 'look_alike'
-      : trap === 'in_story' ? 'mixed_story' : trap === 'not_heard' ? 'not_heard' : 'off_idea';
+      : trap === 'in_story' ? 'mixed_story' : trap === 'not_heard' ? 'not_heard' : trap === 'wrong_kind' ? 'wrong_kind' : trap === 'other_join' ? 'other_join' : 'off_idea';
   }
   const w = stop.world;
   if (w?.answer.kind === 'number' && id.startsWith('num-')) {
@@ -217,6 +240,7 @@ export function workspaceScene(data: Pick<WonderWalkData, 'bigIdea'>, stop: Wond
       ...(ww.refs.length ? { scenePicture: ww.refs.map(thingName).join(', ') } : {}),
       cards: cardsFact(ww),
       ...(ww.answer.kind === 'sort' ? { baskets: ww.answer.baskets.map(b => `a basket marked with ${thingName(thingById(ww, b.label)!)}`).join('; ') } : {}),
+      ...(ww.sentence ? { sentence: sentenceFact(ww) } : {}),
       ...(ww.say ? { saySounds: `say these sounds exactly as written: ${ww.say}` } : {}),
       ...(letters ? { letterCards: 'never name a letter card the child is to find' } : {}),
       todo, learnerWork: describeWork(stop, view) } };
