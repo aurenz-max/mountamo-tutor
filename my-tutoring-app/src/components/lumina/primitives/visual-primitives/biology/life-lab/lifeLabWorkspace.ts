@@ -7,6 +7,7 @@
 import type { SceneOf } from '../../../../components/live-activity/bossLevers';
 import { displayWords } from '../../../../service/agent-kit/displays';
 import { teachFrameWords, type TeachStep } from '../../../../service/agent-kit/teach';
+import { termWords, type Term } from '../../../../service/agent-kit/terms';
 import { CARRIER_SCENE, COND_KEYS, COND_WORDS, GROUND_SCENE, type Level } from './lifeLabAtlas';
 import { classify, describeWork, featureWords, itemsOf, nameOf, normalizeWorld, optionsOf, type LifeState, type LifeWorld } from './lifeLabWorld';
 import type { LifeLabChallenge } from './LifeLab';
@@ -70,8 +71,14 @@ function goalWords(world: LifeWorld): string {
 }
 
 /** The scene while a teach frame is up: the tutor says this frame; the task opens after the child taps through. */
-export function withTeaching(scene: SceneOf, frame: TeachStep, step: number, total: number, pictureLoaded = false): SceneOf {
-  const facts = { ...scene.facts, teaching: teachFrameWords(frame, { pictureLoaded }).slice(0, 500), step: `teaching first: frame ${step + 1} of ${total}. The task opens when the learner taps through.` };
+/** The Learn more words on this question, so the tutor can use them when the child is stuck on a word. */
+export function withTerms(scene: SceneOf, terms: readonly Term[] | undefined): SceneOf {
+  if (!terms?.length) return scene;
+  return { ...scene, facts: { ...scene.facts, learnMore: termWords(terms).slice(0, 500) } as unknown as SceneOf['facts'] };
+}
+
+export function withTeaching(scene: SceneOf, frame: TeachStep, step: number, total: number): SceneOf {
+  const facts = { ...scene.facts, teaching: teachFrameWords(frame).slice(0, 500), step: `teaching first: frame ${step + 1} of ${total}. The task opens when the learner taps through.` };
   return { ...scene, facts: facts as unknown as SceneOf['facts'] };
 }
 

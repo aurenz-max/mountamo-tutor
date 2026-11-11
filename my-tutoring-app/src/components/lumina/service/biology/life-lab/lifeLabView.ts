@@ -8,6 +8,7 @@
 import { DISPLAY_CSS, displayHtml, esc } from '../../agent-kit/displays';
 import { childPage, surfaceView, type LookView } from '../../agent-kit/look';
 import type { SurfaceItem } from '../../agent-kit/surfaces';
+import { TERMS_DESIGN, termWords, termsHtml, type Term } from '../../agent-kit/terms';
 import { TEACH_DESIGN, teachFrameWords, teachHtml, type TeachStep } from '../../agent-kit/teach';
 import { COND_KEYS, COND_WORDS, type Level } from '../../../primitives/visual-primitives/biology/life-lab/lifeLabAtlas';
 import { featureLine, lifeScene } from '../../../primitives/visual-primitives/biology/life-lab/lifeLabWorkspace';
@@ -24,16 +25,17 @@ const CSS = `${DISPLAY_CSS}
 const words = (s: unknown) => esc(String(s ?? '').replace(/_/g, ' '));
 
 /** The author drew something in these frames, so it is shown its own drawing. */
-const teachDrew = (teach?: readonly TeachStep[]) => (teach ?? []).some(s => [...s.show, ...(s.cards ?? []).flatMap(c => (c.display ? [c.display] : []))].some(d => d.kind === 'svg'));
+const teachDrew = (teach?: readonly TeachStep[]) => (teach ?? []).some(s => s.show.some(d => d.kind === 'svg'));
 
 /** A kit item with its teach frames: the kit's own view, plus the frames above the task. */
-export function lifeLabItemView(item: SurfaceItem, teach?: readonly TeachStep[]): LookView {
+export function lifeLabItemView(item: SurfaceItem, teach?: readonly TeachStep[], terms?: readonly Term[]): LookView {
   const drew = teachDrew(teach);
-  const view = surfaceView(item, { before: teachHtml(teach), ...(teach?.length ? { design: TEACH_DESIGN } : {}) });
-  return { ...view, drawn: view.drawn || drew, words: `${(teach ?? []).map(s => `Shown first: ${teachFrameWords(s)}`).join('\n')}\n${view.words}`.trim() };
+  const design = [teach?.length ? TEACH_DESIGN : '', terms?.length ? TERMS_DESIGN : ''].filter(Boolean).join(' ');
+  const view = surfaceView(item, { before: `${teachHtml(teach)}${termsHtml(terms)}`, ...(design ? { design } : {}) });
+  return { ...view, drawn: view.drawn || drew, words: `${(teach ?? []).map(s => `Shown first: ${teachFrameWords(s)}`).join('\n')}\n${view.words}${terms?.length ? `\nLearn more drawer: ${termWords(terms)}` : ''}`.trim() };
 }
 
-export function lifeLabView(world: LifeWorld, ask: string, teach?: readonly TeachStep[]): LookView {
+export function lifeLabView(world: LifeWorld, ask: string, teach?: readonly TeachStep[], terms?: readonly Term[]): LookView {
   const w = normalizeWorld(world);
   const state = initState(w);
   const rule = w.rules[0] as { kind: string; parents?: string[]; traits?: string[] };
@@ -68,7 +70,7 @@ export function lifeLabView(world: LifeWorld, ask: string, teach?: readonly Teac
     return '';
   };
 
-  const body = `${teachHtml(teach)}<p class="prompt">${esc(ask)}</p>
+  const body = `${teachHtml(teach)}${termsHtml(terms)}<p class="prompt">${esc(ask)}</p>
 ${w.show?.length ? `<div class="panel row">${w.show.map(d => `<div>${displayHtml(d)}</div>`).join('')}</div>` : ''}
 ${w.zones.length ? `<div class="zones">${w.zones.map(zone).join('')}</div>` : ''}
 ${w.controls.map(control).join('')}
@@ -79,8 +81,8 @@ ${w.controls.map(control).join('')}
   return {
     ask,
     html: childPage(body, CSS),
-    words: [...(teach ?? []).map(s => `Shown first: ${teachFrameWords(s)}`), `Places: ${facts.places}`, `The child can change: ${facts.canChange}`, ...(facts.shown ? [`Also shown: ${facts.shown}`] : [])].join('\n'),
-    design: `Where there is a "Try it" button the child can run the world and watch what happens as often as they like before pressing "I'm done!". Trying and watching is the activity, not a shortcut. Living things are shown here as emoji; the real screen draws some parts in more detail.${teach?.length ? ` ${TEACH_DESIGN}` : ''}`,
+    words: [...(teach ?? []).map(s => `Shown first: ${teachFrameWords(s)}`), `Places: ${facts.places}`, `The child can change: ${facts.canChange}`, ...(facts.shown ? [`Also shown: ${facts.shown}`] : []), ...(terms?.length ? [`Learn more drawer: ${termWords(terms)}`] : [])].join('\n'),
+    design: `Where there is a "Try it" button the child can run the world and watch what happens as often as they like before pressing "I'm done!". Trying and watching is the activity, not a shortcut. Living things are shown here as emoji; the real screen draws some parts in more detail.${teach?.length ? ` ${TEACH_DESIGN}` : ''}${terms?.length ? ` ${TERMS_DESIGN}` : ''}`,
     drawn: (w.show ?? []).some(d => d.kind === 'svg') || teachDrew(teach),
   };
 }

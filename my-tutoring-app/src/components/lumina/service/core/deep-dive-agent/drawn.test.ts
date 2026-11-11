@@ -13,7 +13,7 @@ const labels = [
   { text: 'sepal', description: 'Protects.', x: 200, y: 20 },
   { text: 'pistil', description: 'Holds the egg.', x: 200, y: 180 },
 ];
-const args = { ...common, svg, caption: 'A flower.', altText: 'A flower in parts.', learningObjective: 'Name the parts.', labels };
+const args = { ...common, svg, shows: 'Where each flower part sits.', caption: 'A flower.', altText: 'A flower in parts.', learningObjective: 'Name the parts.', labels };
 const built = <T extends DeepDiveBlock>(b: DeepDiveBlock | { error: string }) => {
   if ('error' in b) throw new Error(b.error);
   return b as T;
@@ -55,7 +55,7 @@ describe('drawn diagrams', () => {
 
   it('keeps the drawing out of what the student is counted as reading', () => {
     expect(visibleText(built(buildBlock('diagram', args, ctx)))).not.toMatch(/viewBox/);
-    expect(visibleText(built(buildBlock('figure', { ...common, svg, caption: 'A flower.', altText: 'A flower.' }, ctx)))).not.toMatch(/viewBox/);
+    expect(visibleText(built(buildBlock('figure', { ...common, svg, shows: 'The petals around the center.', caption: 'A flower.', altText: 'A flower.' }, ctx)))).not.toMatch(/viewBox/);
   });
 
   it('grades a label on its own part and fails one on another part or far from any', () => {
@@ -74,9 +74,9 @@ describe('drawn diagrams', () => {
 
 describe('figures', () => {
   it('builds from a drawing, refuses a broken one, and is ungraded', () => {
-    const f = built<FigureBlockData>(buildBlock('figure', { ...common, svg, caption: 'A flower.', altText: 'A flower.' }, ctx));
+    const f = built<FigureBlockData>(buildBlock('figure', { ...common, svg, shows: 'The petals around the center.', caption: 'A flower.', altText: 'A flower.' }, ctx));
     expect(f.display).toEqual({ kind: 'svg', svg });
-    expect(buildBlock('figure', { ...common, svg: 'no drawing', caption: 'c', altText: 'a' }, ctx)).toHaveProperty('error');
+    expect(buildBlock('figure', { ...common, svg: 'no drawing', shows: 'x', caption: 'c', altText: 'a' }, ctx)).toHaveProperty('error');
   });
 
   it('holds a code-drawn display the agent wrote as values', () => {
@@ -91,6 +91,15 @@ describe('figures', () => {
     expect(fig({ kind: 'bar_graph', labels: ['a', 'b'], values: [1, 2] })).toMatchObject({ error: expect.stringMatching(/not offered here/) });
     expect(fig({ kind: 'clock', hour: 40, minute: 0 })).toMatchObject({ error: expect.stringMatching(/hour is a whole number/) });
     expect(buildBlock('figure', { ...common, caption: 'c', altText: 'a' }, ctx)).toHaveProperty('error');
+  });
+
+  it('needs a drawing to say what it must show, keeps that out of what the student reads, and asks nothing of a code-drawn display', () => {
+    const { shows: _shows, ...noShows } = args;
+    expect(buildBlock('diagram', noShows, ctx)).toMatchObject({ error: expect.stringMatching(/shows/) });
+    expect(buildBlock('figure', { ...common, svg, caption: 'A flower.', altText: 'A flower.' }, ctx)).toMatchObject({ error: expect.stringMatching(/shows/) });
+    expect(visibleText(built(buildBlock('diagram', args, ctx)))).not.toContain('Where each flower part sits');
+    const clock = built<FigureBlockData>(buildBlock('figure', { ...common, display: JSON.stringify({ kind: 'clock', hour: 3, minute: 30 }), caption: 'Half past.', altText: 'A clock.' }, ctx));
+    expect(clock.shows).toBeUndefined();
   });
 
   it('offers the author a figure tool and a diagram tool that takes a drawing', () => {

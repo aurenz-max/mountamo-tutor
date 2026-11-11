@@ -1,0 +1,1393 @@
+{
+ "source": "qa/tutor-reports/life-lab-runtime-world-monarch-terms-payload-2026-11-08.json",
+ "primitiveId": "life-lab",
+ "evalMode": "world",
+ "data": {
+  "title": "Mouthparts: Caterpillar to Butterfly",
+  "description": "Monarch caterpillars chew solid milkweed leaves using sharp mandibles, whereas adult monarchs sip liquid nectar using a long curled proboscis.",
+  "gradeBand": "3-5",
+  "challengeType": "choose",
+  "challenges": [
+   {
+    "id": "life-1",
+    "type": "choose",
+    "item": {
+     "id": "life-1",
+     "surface": "choose",
+     "prompt": "Which stage has strong mandibles (jaws) to bite and chew milkweed leaves?",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><path d='M20 120 Q50 30 160 50 Q120 150 20 120 Z' fill='#4ade80' stroke='#15803d' stroke-width='3'/><path d='M90 70 Q110 90 90 110 Q70 90 90 70 Z' fill='#fff'/><circle cx='120' cy='120' r='45' fill='#fef08a' stroke='#000' stroke-width='3'/><path d='M100 140 L90 120 L95 110 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><path d='M115 150 L105 130 L112 120 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><circle cx='140' cy='110' r='5' fill='#000'/></svg>",
+       "name": "head chewing a leaf"
+      }
+     ],
+     "options": [
+      {
+       "id": "stage_c",
+       "label": "Stage C",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 50 C30 20 10 30 20 60 C30 75 45 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><path d='M50 50 C70 20 90 30 80 60 C70 75 55 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><ellipse cx='50' cy='50' rx='5' ry='22' fill='#000'/></svg>",
+        "name": "winged adult"
+       }
+      },
+      {
+       "id": "stage_a",
+       "label": "Stage A",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 20 C65 20 75 40 70 65 C65 85 55 95 50 95 C45 95 35 85 30 65 C25 40 35 20 50 20 Z' fill='#86efac' stroke='#000' stroke-width='3'/><circle cx='50' cy='32' r='3' fill='#eab308'/><circle cx='40' cy='33' r='3' fill='#eab308'/><circle cx='60' cy='33' r='3' fill='#eab308'/></svg>",
+        "name": "green hanging pupa"
+       }
+      },
+      {
+       "id": "stage_b",
+       "label": "Stage B",
+       "display": {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><ellipse cx='50' cy='50' rx='40' ry='16' fill='#fef08a' stroke='#000' stroke-width='3'/><line x1='25' y1='35' x2='25' y2='65' stroke='#000' stroke-width='4'/><line x1='40' y1='34' x2='40' y2='66' stroke='#000' stroke-width='4'/><line x1='55' y1='34' x2='55' y2='66' stroke='#000' stroke-width='4'/><line x1='70' y1='35' x2='70' y2='65' stroke='#000' stroke-width='4'/><circle cx='85' cy='50' r='10' fill='#000'/></svg>",
+        "name": "striped crawler"
+       }
+      }
+     ],
+     "key": "stage_b",
+     "misconceptions": {
+      "stage_a": "A chrysalis is resting and does not have jaws to bite leaves.",
+      "stage_c": "A winged adult has a straw-like tube to sip liquid nectar, not cutting jaws."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1.3,
+      "reasons": [
+       "3 options +0.8",
+       "2 wrong options from a named misconception +0.5"
+      ]
+     }
+    },
+    "ask": "Which stage has strong mandibles (jaws) to bite and chew milkweed leaves?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "teach": [
+     {
+      "says": "Monarch butterflies change completely as they grow up, and their food changes too.",
+      "show": [
+       {
+        "kind": "flow",
+        "title": "Monarch Life Cycle",
+        "steps": [
+         {
+          "label": "Egg",
+          "icon": "\ud83e\udd5a"
+         },
+         {
+          "label": "Larva",
+          "icon": "\ud83d\udc1b"
+         },
+         {
+          "label": "Pupa",
+          "icon": "\ud83c\udf3f"
+         },
+         {
+          "label": "Adult",
+          "icon": "\ud83e\udd8b"
+         }
+        ],
+        "loop": true
+       }
+      ]
+     },
+     {
+      "says": "A young larva eats solid leaves. It uses hard, toothed jaws called mandibles to bite and chew.",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><path d='M10 160 C40 80 120 60 190 70 C140 160 80 180 10 160 Z' fill='#86efac' stroke='#16a34a' stroke-width='3'/><ellipse cx='130' cy='130' rx='45' ry='35' fill='#fef08a' stroke='#000' stroke-width='3'/><path d='M100 140 Q110 150 115 160 Q105 155 95 150 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><path d='M95 125 Q108 135 110 145 Q100 140 90 132 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><text x='70' y='180' font-size='13' font-weight='bold' fill='#b91c1c'>Mandibles</text><line x1='80' y1='165' x2='100' y2='150' stroke='#b91c1c' stroke-width='2'/></svg>",
+        "name": "feeding with mandibles"
+       }
+      ]
+     },
+     {
+      "says": "An adult monarch cannot chew. It uncurls a long tube called a proboscis to sip sweet flower nectar like a straw!",
+      "show": [
+       {
+        "kind": "svg",
+        "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><circle cx='50' cy='150' r='25' fill='#f472b6'/><circle cx='50' cy='150' r='10' fill='#facc15'/><circle cx='130' cy='70' r='20' fill='#000'/><path d='M115 75 Q70 80 50 145' fill='none' stroke='#000' stroke-width='4'/><text x='110' y='120' font-size='13' font-weight='bold' fill='#000'>Proboscis</text><line x1='110' y1='110' x2='85' y2='100' stroke='#000' stroke-width='2'/></svg>",
+        "name": "drinking nectar with proboscis"
+       }
+      ]
+     }
+    ],
+    "terms": [
+     {
+      "term": "mandibles",
+      "means": "Hard, tooth-like jaws that open side to side."
+     }
+    ],
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child is unsure which stage has mandibles.",
+      "says": "Look at the circle showing the biting jaws.",
+      "item": {
+       "id": "life-1-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-help_1",
+        "surface": "choose",
+        "prompt": "Look at the chewing jaws circled in red. Which stage chews solid leaves?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><circle cx='100' cy='90' r='60' fill='#fef08a' stroke='#000' stroke-width='4'/><path d='M70 110 Q85 130 95 140 L90 120 Z' fill='#b91c1c' stroke='#000' stroke-width='3'/><path d='M130 110 Q115 130 105 140 L110 120 Z' fill='#b91c1c' stroke='#000' stroke-width='3'/><circle cx='80' cy='80' r='6' fill='#000'/><circle cx='120' cy='80' r='6' fill='#000'/><text x='100' y='170' font-size='14' text-anchor='middle' font-weight='bold' fill='#000'>Mandibles (jaws)</text><circle cx='100' cy='125' r='30' fill='none' stroke='#dc2626' stroke-width='3' stroke-dasharray='4,4'/></svg>",
+          "name": "head with chewing jaws highlighted"
+         }
+        ],
+        "options": [
+         {
+          "id": "stage_c",
+          "label": "Stage C",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 50 C30 20 10 30 20 60 C30 75 45 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><path d='M50 50 C70 20 90 30 80 60 C70 75 55 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><ellipse cx='50' cy='50' rx='5' ry='22' fill='#000'/></svg>",
+           "name": "winged adult"
+          }
+         },
+         {
+          "id": "stage_a",
+          "label": "Stage A",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 20 C65 20 75 40 70 65 C65 85 55 95 50 95 C45 95 35 85 30 65 C25 40 35 20 50 20 Z' fill='#86efac' stroke='#000' stroke-width='3'/><circle cx='50' cy='32' r='3' fill='#eab308'/><circle cx='40' cy='33' r='3' fill='#eab308'/><circle cx='60' cy='33' r='3' fill='#eab308'/></svg>",
+           "name": "green hanging pupa"
+          }
+         },
+         {
+          "id": "stage_b",
+          "label": "Stage B",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><ellipse cx='50' cy='50' rx='40' ry='16' fill='#fef08a' stroke='#000' stroke-width='3'/><line x1='25' y1='35' x2='25' y2='65' stroke='#000' stroke-width='4'/><line x1='40' y1='34' x2='40' y2='66' stroke='#000' stroke-width='4'/><line x1='55' y1='34' x2='55' y2='66' stroke='#000' stroke-width='4'/><line x1='70' y1='35' x2='70' y2='65' stroke='#000' stroke-width='4'/><circle cx='85' cy='50' r='10' fill='#000'/></svg>",
+           "name": "striped crawler"
+          }
+         }
+        ],
+        "key": "stage_b",
+        "misconceptions": {
+         "stage_a": "A chrysalis is resting and does not have jaws to bite leaves.",
+         "stage_c": "A winged adult has a straw-like tube to sip liquid nectar, not cutting jaws."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.3,
+         "reasons": [
+          "3 options +0.8",
+          "2 wrong options from a named misconception +0.5"
+         ]
+        }
+       },
+       "ask": "Look at the chewing jaws circled in red. Which stage chews solid leaves?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Monarch butterflies change completely as they grow up, and their food changes too.",
+         "show": [
+          {
+           "kind": "flow",
+           "title": "Monarch Life Cycle",
+           "steps": [
+            {
+             "label": "Egg",
+             "icon": "\ud83e\udd5a"
+            },
+            {
+             "label": "Larva",
+             "icon": "\ud83d\udc1b"
+            },
+            {
+             "label": "Pupa",
+             "icon": "\ud83c\udf3f"
+            },
+            {
+             "label": "Adult",
+             "icon": "\ud83e\udd8b"
+            }
+           ],
+           "loop": true
+          }
+         ]
+        },
+        {
+         "says": "A young larva eats solid leaves. It uses hard, toothed jaws called mandibles to bite and chew.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><path d='M10 160 C40 80 120 60 190 70 C140 160 80 180 10 160 Z' fill='#86efac' stroke='#16a34a' stroke-width='3'/><ellipse cx='130' cy='130' rx='45' ry='35' fill='#fef08a' stroke='#000' stroke-width='3'/><path d='M100 140 Q110 150 115 160 Q105 155 95 150 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><path d='M95 125 Q108 135 110 145 Q100 140 90 132 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><text x='70' y='180' font-size='13' font-weight='bold' fill='#b91c1c'>Mandibles</text><line x1='80' y1='165' x2='100' y2='150' stroke='#b91c1c' stroke-width='2'/></svg>",
+           "name": "feeding with mandibles"
+          }
+         ]
+        },
+        {
+         "says": "An adult monarch cannot chew. It uncurls a long tube called a proboscis to sip sweet flower nectar like a straw!",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><circle cx='50' cy='150' r='25' fill='#f472b6'/><circle cx='50' cy='150' r='10' fill='#facc15'/><circle cx='130' cy='70' r='20' fill='#000'/><path d='M115 75 Q70 80 50 145' fill='none' stroke='#000' stroke-width='4'/><text x='110' y='120' font-size='13' font-weight='bold' fill='#000'>Proboscis</text><line x1='110' y1='110' x2='85' y2='100' stroke='#000' stroke-width='2'/></svg>",
+           "name": "drinking nectar with proboscis"
+          }
+         ]
+        }
+       ],
+       "terms": [
+        {
+         "term": "mandibles",
+         "means": "Hard, tooth-like jaws that open side to side."
+        }
+       ],
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is confused by three options.",
+      "says": "Let us compare two stages.",
+      "item": {
+       "id": "life-1-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-1-simpler_1",
+        "surface": "choose",
+        "prompt": "Which stage feeds on milkweed leaves with hard cutting jaws?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><path d='M20 120 Q50 30 160 50 Q120 150 20 120 Z' fill='#4ade80' stroke='#15803d' stroke-width='3'/><path d='M90 70 Q110 90 90 110 Q70 90 90 70 Z' fill='#fff'/><circle cx='120' cy='120' r='45' fill='#fef08a' stroke='#000' stroke-width='3'/><path d='M100 140 L90 120 L95 110 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><path d='M115 150 L105 130 L112 120 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><circle cx='140' cy='110' r='5' fill='#000'/></svg>",
+          "name": "head chewing a leaf"
+         }
+        ],
+        "options": [
+         {
+          "id": "stage_b",
+          "label": "Stage B",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><ellipse cx='50' cy='50' rx='40' ry='16' fill='#fef08a' stroke='#000' stroke-width='3'/><line x1='30' y1='34' x2='30' y2='66' stroke='#000' stroke-width='4'/><line x1='45' y1='34' x2='45' y2='66' stroke='#000' stroke-width='4'/><line x1='60' y1='34' x2='60' y2='66' stroke='#000' stroke-width='4'/><circle cx='80' cy='50' r='12' fill='#000'/></svg>",
+           "name": "striped crawler"
+          }
+         },
+         {
+          "id": "stage_c",
+          "label": "Stage C",
+          "display": {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 100 100' width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 50 C30 20 10 30 20 60 C30 75 45 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><path d='M50 50 C70 20 90 30 80 60 C70 75 55 60 50 50 Z' fill='#fb923c' stroke='#000' stroke-width='3'/><ellipse cx='50' cy='50' rx='5' ry='22' fill='#000'/></svg>",
+           "name": "winged adult"
+          }
+         }
+        ],
+        "key": "stage_b",
+        "misconceptions": {
+         "stage_a": "A chrysalis is resting and does not have jaws to bite leaves.",
+         "stage_c": "A winged adult has a straw-like tube to sip liquid nectar, not cutting jaws."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.55,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25"
+         ]
+        }
+       },
+       "ask": "Which stage feeds on milkweed leaves with hard cutting jaws?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       },
+       "teach": [
+        {
+         "says": "Monarch butterflies change completely as they grow up, and their food changes too.",
+         "show": [
+          {
+           "kind": "flow",
+           "title": "Monarch Life Cycle",
+           "steps": [
+            {
+             "label": "Egg",
+             "icon": "\ud83e\udd5a"
+            },
+            {
+             "label": "Larva",
+             "icon": "\ud83d\udc1b"
+            },
+            {
+             "label": "Pupa",
+             "icon": "\ud83c\udf3f"
+            },
+            {
+             "label": "Adult",
+             "icon": "\ud83e\udd8b"
+            }
+           ],
+           "loop": true
+          }
+         ]
+        },
+        {
+         "says": "A young larva eats solid leaves. It uses hard, toothed jaws called mandibles to bite and chew.",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><path d='M10 160 C40 80 120 60 190 70 C140 160 80 180 10 160 Z' fill='#86efac' stroke='#16a34a' stroke-width='3'/><ellipse cx='130' cy='130' rx='45' ry='35' fill='#fef08a' stroke='#000' stroke-width='3'/><path d='M100 140 Q110 150 115 160 Q105 155 95 150 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><path d='M95 125 Q108 135 110 145 Q100 140 90 132 Z' fill='#b91c1c' stroke='#000' stroke-width='2'/><text x='70' y='180' font-size='13' font-weight='bold' fill='#b91c1c'>Mandibles</text><line x1='80' y1='165' x2='100' y2='150' stroke='#b91c1c' stroke-width='2'/></svg>",
+           "name": "feeding with mandibles"
+          }
+         ]
+        },
+        {
+         "says": "An adult monarch cannot chew. It uncurls a long tube called a proboscis to sip sweet flower nectar like a straw!",
+         "show": [
+          {
+           "kind": "svg",
+           "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='200' fill='#f8fafc'/><circle cx='50' cy='150' r='25' fill='#f472b6'/><circle cx='50' cy='150' r='10' fill='#facc15'/><circle cx='130' cy='70' r='20' fill='#000'/><path d='M115 75 Q70 80 50 145' fill='none' stroke='#000' stroke-width='4'/><text x='110' y='120' font-size='13' font-weight='bold' fill='#000'>Proboscis</text><line x1='110' y1='110' x2='85' y2='100' stroke='#000' stroke-width='2'/></svg>",
+           "name": "drinking nectar with proboscis"
+          }
+         ]
+        }
+       ],
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-2",
+    "type": "categorize",
+    "item": {
+     "id": "life-2",
+     "surface": "categorize",
+     "prompt": "Sort each mouthpart and food into the way it is eaten.",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 300 120' width='300' height='120' xmlns='http://www.w3.org/2000/svg'><rect width='300' height='120' fill='#f8fafc' rx='8'/><g transform='translate(20,10)'><rect width='120' height='100' fill='#dcfce7' rx='6'/><text x='60' y='25' font-size='13' font-weight='bold' text-anchor='middle' fill='#166534'>Chewing</text><path d='M30 65 Q60 35 90 35 Q90 85 30 85 Z' fill='#4ade80' stroke='#15803d' stroke-width='2'/><path d='M50 70 L60 85 L70 70 Z' fill='#b91c1c'/></g><g transform='translate(160,10)'><rect width='120' height='100' fill='#fce7f3' rx='6'/><text x='60' y='25' font-size='13' font-weight='bold' text-anchor='middle' fill='#9d174d'>Sipping</text><circle cx='60' cy='65' r='20' fill='#f472b6'/><path d='M50 45 Q70 45 60 75 Q50 90 40 85' fill='none' stroke='#000' stroke-width='3'/></g></svg>",
+       "name": "two ways of feeding diagram"
+      }
+     ],
+     "options": [
+      {
+       "id": "mandibles",
+       "label": "Mandibles"
+      },
+      {
+       "id": "nectar",
+       "label": "Flower nectar"
+      },
+      {
+       "id": "proboscis",
+       "label": "Proboscis"
+      },
+      {
+       "id": "leaf",
+       "label": "Milkweed leaves"
+      }
+     ],
+     "categories": [
+      "Solid food: chewing",
+      "Liquid food: sipping"
+     ],
+     "key": {
+      "mandibles": "Solid food: chewing",
+      "leaf": "Solid food: chewing",
+      "proboscis": "Liquid food: sipping",
+      "nectar": "Liquid food: sipping"
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1,
+      "reasons": [
+       "4 cards to sort +1"
+      ]
+     }
+    },
+    "ask": "Sort each mouthpart and food into the way it is eaten.",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1,
+     "reasons": [
+      "4 cards to sort +1"
+     ]
+    },
+    "respond": "show",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child mixes up which food goes into which box.",
+      "says": "Look at the table showing which action matches each food.",
+      "item": {
+       "id": "life-2-help_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-2-help_1",
+        "surface": "categorize",
+        "prompt": "Sort each mouthpart and food by how it is taken in. Look at the guide above.",
+        "stimulus": [
+         {
+          "kind": "table",
+          "headers": [
+           "Food type",
+           "Action"
+          ],
+          "rows": [
+           [
+            "Plant leaves",
+            "Chew with jaws"
+           ],
+           [
+            "Flower nectar",
+            "Sip through tube"
+           ]
+          ]
+         }
+        ],
+        "options": [
+         {
+          "id": "mandibles",
+          "label": "Mandibles"
+         },
+         {
+          "id": "nectar",
+          "label": "Flower nectar"
+         },
+         {
+          "id": "proboscis",
+          "label": "Proboscis"
+         },
+         {
+          "id": "leaf",
+          "label": "Milkweed leaves"
+         }
+        ],
+        "categories": [
+         "Solid food: chewing",
+         "Liquid food: sipping"
+        ],
+        "key": {
+         "mandibles": "Solid food: chewing",
+         "leaf": "Solid food: chewing",
+         "proboscis": "Liquid food: sipping",
+         "nectar": "Liquid food: sipping"
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.4,
+         "reasons": [
+          "4 cards to sort +1",
+          "reading a graph, number line or table +0.4"
+         ]
+        }
+       },
+       "ask": "Sort each mouthpart and food by how it is taken in. Look at the guide above.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.4,
+        "reasons": [
+         "4 cards to sort +1",
+         "reading a graph, number line or table +0.4"
+        ]
+       },
+       "respond": "show"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "Sorting four cards is too many.",
+      "says": "Let us sort just the two mouthparts first.",
+      "item": {
+       "id": "life-2-simpler_1",
+       "type": "categorize",
+       "item": {
+        "id": "life-2-simpler_1",
+        "surface": "categorize",
+        "prompt": "Sort the mouthparts into chewing or sipping.",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 80' width='200' height='80' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='80' fill='#f8fafc'/><text x='50' y='30' font-size='12' text-anchor='middle'>Jaws bite</text><circle cx='50' cy='55' r='15' fill='#fef08a' stroke='#000'/><text x='150' y='30' font-size='12' text-anchor='middle'>Tube sips</text><path d='M135 55 Q165 55 155 70' stroke='#000' stroke-width='3' fill='none'/></svg>",
+          "name": "mouthparts helper diagram"
+         }
+        ],
+        "options": [
+         {
+          "id": "mandibles",
+          "label": "Mandibles"
+         },
+         {
+          "id": "proboscis",
+          "label": "Proboscis"
+         }
+        ],
+        "categories": [
+         "Solid food: chewing",
+         "Liquid food: sipping"
+        ],
+        "key": {
+         "mandibles": "Solid food: chewing",
+         "proboscis": "Liquid food: sipping"
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.5,
+         "reasons": [
+          "2 cards to sort +0.5"
+         ]
+        }
+       },
+       "ask": "Sort the mouthparts into chewing or sipping.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.5,
+        "reasons": [
+         "2 cards to sort +0.5"
+        ]
+       },
+       "respond": "show"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-3",
+    "type": "part_for_the_job",
+    "world": {
+     "zones": [
+      {
+       "id": "meadow",
+       "label": "Flower meadow",
+       "kind": "meadow",
+       "emoji": "\ud83c\udf38",
+       "cond": {
+        "food": "flower nectar"
+       }
+      }
+     ],
+     "beings": [
+      {
+       "id": "monarch",
+       "zone": "meadow",
+       "name": "Monarch",
+       "emoji": "\ud83e\udd8b",
+       "kind": "animal",
+       "traits": {
+        "mouth": "short jaws"
+       }
+      }
+     ],
+     "rules": [
+      {
+       "kind": "part_enables",
+       "being": "monarch",
+       "part": "mouth",
+       "on": "food",
+       "job": "drink"
+      }
+     ],
+     "controls": [
+      {
+       "type": "trait",
+       "being": "monarch",
+       "part": "mouth",
+       "options": [
+        {
+         "value": "proboscis",
+         "label": "long coiled proboscis",
+         "emoji": "\u3030\ufe0f",
+         "works": [
+          "flower nectar"
+         ]
+        },
+        {
+         "value": "mandibles",
+         "label": "toothed mandibles",
+         "emoji": "\u2702\ufe0f",
+         "works": [
+          "milkweed leaf"
+         ]
+        },
+        {
+         "value": "beak",
+         "label": "short hooked beak",
+         "emoji": "\ud83e\ude9d",
+         "works": [
+          "hard seeds"
+         ]
+        }
+       ]
+      }
+     ],
+     "goal": {
+      "kind": "action"
+     }
+    },
+    "ask": "The butterfly wants to drink sweet nectar from deep inside this flower. Pick the mouthpart that can reach and sip the liquid.",
+    "why": "Flower nectar is deep liquid. Think about which mouthpart acts like a drinking straw.",
+    "standards": "1-LS1-1 \u00b7 4-LS1-1",
+    "difficulty": {
+     "band": "easy",
+     "score": 0.3,
+     "reasons": [
+      "+0.3 3 different things the child could try"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child picks mandibles or a beak.",
+      "says": "Look at the flower: the sweet nectar sits deep inside a narrow tube.",
+      "item": {
+       "id": "life-3-help_1",
+       "type": "part_for_the_job",
+       "world": {
+        "show": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 150' width='200' height='150' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='150' fill='#f8fafc'/><path d='M70 40 Q50 90 85 130 L115 130 Q150 90 130 40 Z' fill='#fbcfe8' stroke='#db2777' stroke-width='3'/><rect x='90' y='110' width='20' height='18' rx='4' fill='#facc15'/><text x='100' y='142' font-size='11' text-anchor='middle' fill='#b45309'>deep nectar</text></svg>",
+          "name": "flower cross-section showing deep nectar"
+         }
+        ],
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Flower meadow",
+          "kind": "meadow",
+          "emoji": "\ud83c\udf38",
+          "cond": {
+           "food": "flower nectar"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "monarch",
+          "zone": "meadow",
+          "name": "Monarch",
+          "emoji": "\ud83e\udd8b",
+          "kind": "animal",
+          "traits": {
+           "mouth": "short jaws"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "monarch",
+          "part": "mouth",
+          "on": "food",
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "monarch",
+          "part": "mouth",
+          "options": [
+           {
+            "value": "proboscis",
+            "label": "long coiled proboscis",
+            "emoji": "\u3030\ufe0f",
+            "works": [
+             "flower nectar"
+            ]
+           },
+           {
+            "value": "mandibles",
+            "label": "toothed mandibles",
+            "emoji": "\u2702\ufe0f",
+            "works": [
+             "milkweed leaf"
+            ]
+           },
+           {
+            "value": "beak",
+            "label": "short hooked beak",
+            "emoji": "\ud83e\ude9d",
+            "works": [
+             "hard seeds"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "The butterfly wants to drink sweet nectar from deep inside this flower. Pick the mouthpart that can reach and sip the liquid.",
+       "why": "Flower nectar is deep liquid. Think about which mouthpart acts like a drinking straw.",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.3,
+        "reasons": [
+         "+0.3 3 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "The child is distracted by the third option.",
+      "says": "Let us choose between just two insect mouthparts.",
+      "item": {
+       "id": "life-3-simpler_1",
+       "type": "part_for_the_job",
+       "world": {
+        "zones": [
+         {
+          "id": "meadow",
+          "label": "Flower meadow",
+          "kind": "meadow",
+          "emoji": "\ud83c\udf38",
+          "cond": {
+           "food": "flower nectar"
+          }
+         }
+        ],
+        "beings": [
+         {
+          "id": "monarch",
+          "zone": "meadow",
+          "name": "Monarch",
+          "emoji": "\ud83e\udd8b",
+          "kind": "animal",
+          "traits": {
+           "mouth": "short jaws"
+          }
+         }
+        ],
+        "rules": [
+         {
+          "kind": "part_enables",
+          "being": "monarch",
+          "part": "mouth",
+          "on": "food",
+          "job": "drink"
+         }
+        ],
+        "controls": [
+         {
+          "type": "trait",
+          "being": "monarch",
+          "part": "mouth",
+          "options": [
+           {
+            "value": "proboscis",
+            "label": "long coiled proboscis",
+            "emoji": "\u3030\ufe0f",
+            "works": [
+             "flower nectar"
+            ]
+           },
+           {
+            "value": "mandibles",
+            "label": "toothed mandibles",
+            "emoji": "\u2702\ufe0f",
+            "works": [
+             "milkweed leaf"
+            ]
+           }
+          ]
+         }
+        ],
+        "goal": {
+         "kind": "action"
+        }
+       },
+       "ask": "The butterfly wants to drink sweet nectar from deep inside this flower. Pick the mouthpart that can reach and sip the liquid.",
+       "why": "Flower nectar is deep liquid. Think about which mouthpart acts like a drinking straw.",
+       "standards": "1-LS1-1 \u00b7 4-LS1-1",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.2,
+        "reasons": [
+         "+0.2 2 different things the child could try"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   },
+   {
+    "id": "life-4",
+    "type": "choose",
+    "item": {
+     "id": "life-4",
+     "surface": "choose",
+     "prompt": "A scientist finds a monarch eating tough milkweed leaves. Which mouthpart must it be using?",
+     "stimulus": [
+      {
+       "kind": "svg",
+       "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><path d='M30 170 C40 50 150 40 170 50 C180 90 145 95 160 120 C140 125 150 150 120 155 C110 175 60 175 30 170 Z' fill='#86efac' stroke='#16a34a' stroke-width='3'/><path d='M30 170 Q100 100 170 50' stroke='#15803d' stroke-width='2' fill='none'/><text x='100' y='190' font-size='13' text-anchor='middle' fill='#166534'>Leaf with chewed bites</text></svg>",
+       "name": "leaf with chewed edges"
+      }
+     ],
+     "options": [
+      {
+       "id": "proboscis",
+       "label": "Proboscis"
+      },
+      {
+       "id": "mandibles",
+       "label": "Mandibles"
+      },
+      {
+       "id": "antennae",
+       "label": "Antennae"
+      }
+     ],
+     "key": "mandibles",
+     "misconceptions": {
+      "proboscis": "A proboscis is a hollow tube that sips liquid nectar, not a cutter for leaves.",
+      "antennae": "Antennae are sensors for smelling and touching, not mouthparts for eating."
+     },
+     "tier": "medium",
+     "difficulty": {
+      "band": "easy",
+      "score": 1.3,
+      "reasons": [
+       "3 options +0.8",
+       "2 wrong options from a named misconception +0.5"
+      ]
+     }
+    },
+    "ask": "A scientist finds a monarch eating tough milkweed leaves. Which mouthpart must it be using?",
+    "why": "",
+    "standards": "",
+    "difficulty": {
+     "band": "easy",
+     "score": 1.3,
+     "reasons": [
+      "3 options +0.8",
+      "2 wrong options from a named misconception +0.5"
+     ]
+    },
+    "respond": "say",
+    "levers": [
+     {
+      "id": "help_1",
+      "kind": "help",
+      "when": "The child confuses proboscis and mandibles for cutting leaves.",
+      "says": "Think about which tool can bite and cut through tough fibers.",
+      "item": {
+       "id": "life-4-help_1",
+       "type": "choose",
+       "item": {
+        "id": "life-4-help_1",
+        "surface": "choose",
+        "prompt": "Which mouthpart acts like scissors to snip tough plant leaves? Notice the scissor action shown.",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 100' width='200' height='100' xmlns='http://www.w3.org/2000/svg'><rect width='200' height='100' fill='#f8fafc'/><text x='50' y='25' font-size='12' text-anchor='middle'>Bites &amp; Cuts</text><path d='M35 40 L50 70 L65 40' stroke='#b91c1c' stroke-width='4' fill='none'/><text x='150' y='25' font-size='12' text-anchor='middle'>Sips Liquid</text><path d='M130 50 Q160 50 150 80' stroke='#0284c7' stroke-width='4' fill='none'/></svg>",
+          "name": "scissor action vs tube action"
+         }
+        ],
+        "options": [
+         {
+          "id": "proboscis",
+          "label": "Proboscis"
+         },
+         {
+          "id": "mandibles",
+          "label": "Mandibles"
+         },
+         {
+          "id": "antennae",
+          "label": "Antennae"
+         }
+        ],
+        "key": "mandibles",
+        "misconceptions": {
+         "proboscis": "A proboscis is a hollow tube that sips liquid nectar, not a cutter for leaves.",
+         "antennae": "Antennae are sensors for smelling and touching, not mouthparts for eating."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 1.3,
+         "reasons": [
+          "3 options +0.8",
+          "2 wrong options from a named misconception +0.5"
+         ]
+        }
+       },
+       "ask": "Which mouthpart acts like scissors to snip tough plant leaves? Notice the scissor action shown.",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 1.3,
+        "reasons": [
+         "3 options +0.8",
+         "2 wrong options from a named misconception +0.5"
+        ]
+       },
+       "respond": "say"
+      }
+     },
+     {
+      "id": "simpler_1",
+      "kind": "simplify",
+      "when": "Three options cause difficulty.",
+      "says": "Let us look at just the two main insect mouthparts.",
+      "item": {
+       "id": "life-4-simpler_1",
+       "type": "choose",
+       "item": {
+        "id": "life-4-simpler_1",
+        "surface": "choose",
+        "prompt": "Which mouthpart cuts and eats milkweed leaves?",
+        "stimulus": [
+         {
+          "kind": "svg",
+          "svg": "<svg viewBox='0 0 200 200' width='200' height='200' xmlns='http://www.w3.org/2000/svg'><path d='M30 170 C40 50 150 40 170 50 C180 90 145 95 160 120 C140 125 150 150 120 155 C110 175 60 175 30 170 Z' fill='#86efac' stroke='#16a34a' stroke-width='3'/><path d='M30 170 Q100 100 170 50' stroke='#15803d' stroke-width='2' fill='none'/><text x='100' y='190' font-size='13' text-anchor='middle' fill='#166534'>Leaf with chewed bites</text></svg>",
+          "name": "leaf with chewed edges"
+         }
+        ],
+        "options": [
+         {
+          "id": "mandibles",
+          "label": "Mandibles"
+         },
+         {
+          "id": "proboscis",
+          "label": "Proboscis"
+         }
+        ],
+        "key": "mandibles",
+        "misconceptions": {
+         "proboscis": "A proboscis is a hollow tube that sips liquid nectar, not a cutter for leaves.",
+         "antennae": "Antennae are sensors for smelling and touching, not mouthparts for eating."
+        },
+        "tier": "medium",
+        "difficulty": {
+         "band": "easy",
+         "score": 0.55,
+         "reasons": [
+          "2 options +0.3",
+          "1 wrong option from a named misconception +0.25"
+         ]
+        }
+       },
+       "ask": "Which mouthpart cuts and eats milkweed leaves?",
+       "why": "",
+       "standards": "",
+       "difficulty": {
+        "band": "easy",
+        "score": 0.55,
+        "reasons": [
+         "2 options +0.3",
+         "1 wrong option from a named misconception +0.25"
+        ]
+       },
+       "respond": "say"
+      }
+     }
+    ]
+   }
+  ],
+  "agentDebug": {
+   "turns": 8,
+   "seconds": 149.9,
+   "objective": {
+    "id": "obj1",
+    "text": "Compare how monarch caterpillars and adult monarch butterflies feed by identifying their specialized mouthparts (mandibles vs. proboscis) and matching each structure to its food source (leaves vs. nectar).",
+    "verb": "compare"
+   },
+   "toolCalls": [
+    {
+     "turn": 1,
+     "name": "plan_session",
+     "ok": true
+    },
+    {
+     "turn": 1,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: the prompt or a display names \"Caterpillar\", which is the answer"
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card mandibles's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn displa"
+    },
+    {
+     "turn": 2,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 2,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card mandibles's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn displa"
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true,
+     "note": "blocked: card leaf's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or"
+    },
+    {
+     "turn": 3,
+     "name": "write_world",
+     "ok": true
+    },
+    {
+     "turn": 3,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 4,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 5,
+     "name": "finish",
+     "ok": true
+    },
+    {
+     "turn": 6,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 7,
+     "name": "write_item",
+     "ok": true
+    },
+    {
+     "turn": 8,
+     "name": "finish",
+     "ok": true
+    }
+   ],
+   "advisories": [],
+   "costUsd": 0.1506,
+   "events": [
+    {
+     "seconds": 0,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 1: the author is working",
+     "costUsd": 0
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 1: 1 world(s) held, 6 blocking check(s). First: world 0: the prompt or a display names \"Caterpillar\", which is the answer",
+     "costUsd": 0.0219
+    },
+    {
+     "seconds": 20,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 2: the author is working",
+     "costUsd": 0.0219
+    },
+    {
+     "seconds": 57,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 2: 4 world(s) held, 9 blocking check(s). First: world 1: card mandibles's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or leave the card as wor\u2026",
+     "costUsd": 0.0511
+    },
+    {
+     "seconds": 57,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 3: the author is working",
+     "costUsd": 0.0511
+    },
+    {
+     "seconds": 87,
+     "stage": "write",
+     "level": "warn",
+     "text": "turn 3: 4 world(s) held, 4 blocking check(s). First: world 1: card leaf's drawing is only a shape or two (a colored circle or square shows the child nothing). Draw what the card means, use a code-drawn display, or leave the card as words.",
+     "costUsd": 0.0808
+    },
+    {
+     "seconds": 87,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: the author is working",
+     "costUsd": 0.0808
+    },
+    {
+     "seconds": 110,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 4: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1045
+    },
+    {
+     "seconds": 110,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: the author is working",
+     "costUsd": 0.1045
+    },
+    {
+     "seconds": 124,
+     "stage": "look",
+     "level": "info",
+     "text": "round 1: reading 4 world(s) as the child meets them",
+     "costUsd": 0.1105
+    },
+    {
+     "seconds": 134,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.1276,
+     "item": 1
+    },
+    {
+     "seconds": 134,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 1 problem(s). First: world 1: a reader who saw only the screen says a child could succeed without the idea: The parenthetical hints on Card 1 ('toothed jaws') and Card 3 ('straw tube') directly give away chewing and sipping\u2026",
+     "costUsd": 0.1276,
+     "item": 2
+    },
+    {
+     "seconds": 134,
+     "stage": "look",
+     "level": "info",
+     "text": "screenshot read: 0 problem(s)",
+     "costUsd": 0.1276,
+     "item": 3
+    },
+    {
+     "seconds": 134,
+     "stage": "look",
+     "level": "warn",
+     "text": "screenshot read: 2 problem(s). First: world 3: a reader who saw only the screen says a child could succeed without the idea: The Learn more drawer defines mandibles as 'hard biting plates' and proboscis as a 'coiled straw tube', giving away\u2026",
+     "costUsd": 0.1276,
+     "item": 4
+    },
+    {
+     "seconds": 134,
+     "stage": "revise",
+     "level": "warn",
+     "text": "sent back with 4 problem(s) from the look",
+     "costUsd": 0.1276
+    },
+    {
+     "seconds": 134,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 5: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1276
+    },
+    {
+     "seconds": 134,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: the author is working",
+     "costUsd": 0.1276
+    },
+    {
+     "seconds": 141,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 6: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1376
+    },
+    {
+     "seconds": 141,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: the author is working",
+     "costUsd": 0.1376
+    },
+    {
+     "seconds": 148,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 7: 4 world(s) held, 0 blocking check(s)",
+     "costUsd": 0.1456
+    },
+    {
+     "seconds": 148,
+     "stage": "write",
+     "level": "info",
+     "text": "turn 8: the author is working",
+     "costUsd": 0.1456
+    },
+    {
+     "seconds": 150,
+     "stage": "look",
+     "level": "warn",
+     "text": "no time left: 2 world(s) shipped unread",
+     "costUsd": 0.1506
+    },
+    {
+     "seconds": 150,
+     "stage": "run",
+     "level": "info",
+     "text": "shipped 4 world(s) in 149.9s over 8 turn(s), about $0.15",
+     "costUsd": 0.1506
+    }
+   ],
+   "look": [
+    {
+     "answer": "select Card 3, which depicts the caterpillar (larva) stage",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "untaught": null,
+     "costUsd": 0.00441225,
+     "item": 0,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Sort Card 1 and Card 4 into Solid food: chewing, and Card 2 and Card 3 into Liquid food: sipping.",
+     "difficulty": "easy",
+     "shortcut": "The parenthetical hints on Card 1 ('toothed jaws') and Card 3 ('straw tube') directly give away chewing and sipping without needing to recall the scientific concepts.",
+     "issues": null,
+     "offObjective": null,
+     "untaught": null,
+     "costUsd": 0.00460575,
+     "item": 1,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click 'long coiled proboscis', then click 'I'm done!'",
+     "difficulty": "easy",
+     "shortcut": null,
+     "issues": null,
+     "offObjective": null,
+     "untaught": null,
+     "costUsd": 0.00321675,
+     "item": 2,
+     "round": 1,
+     "screenshot": true
+    },
+    {
+     "answer": "Click Card 2 to choose Mandibles",
+     "difficulty": "easy",
+     "shortcut": "The Learn more drawer defines mandibles as 'hard biting plates' and proboscis as a 'coiled straw tube', giving away which mouthpart bites tough leaves.",
+     "issues": "The caption says 'Chewed leaf edges', but the illustration shows circular holes entirely inside the leaf rather than on the edges.",
+     "offObjective": null,
+     "untaught": null,
+     "costUsd": 0.00489375,
+     "item": 3,
+     "round": 1,
+     "screenshot": true
+    }
+   ],
+   "run": {
+    "author": "LifeLab",
+    "loop": "author",
+    "seconds": 149.9,
+    "costUsd": 0.1506,
+    "items": 4,
+    "rounds": 8,
+    "look": {
+     "ran": true,
+     "looked": 4,
+     "unread": 2,
+     "screenshots": 4,
+     "problems": 0,
+     "skipped": "no time left: 2 world(s) shipped unread"
+    },
+    "displays": {
+     "offered": [
+      "svg",
+      "bar_graph",
+      "table",
+      "pictograph",
+      "timeline",
+      "flow",
+      "cell",
+      "zoom",
+      "food_web"
+     ],
+     "used": {
+      "svg": 8,
+      "flow": 1
+     }
+    }
+   }
+  }
+ }
+}

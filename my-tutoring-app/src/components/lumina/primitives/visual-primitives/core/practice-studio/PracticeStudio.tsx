@@ -2,7 +2,7 @@
 
 /**
  * Practice Studio: a general agent primitive (USER 2026-11-08). An author agent assembles each item for the lesson from
- * the kit's answer surfaces (choose, categorize, order) and displays (its own SVG pictures, code-drawn bar graphs and
+ * the kit's answer surfaces (choose, categorize, order, make, set, point) and displays (its own SVG pictures, code-drawn bar graphs and
  * number lines, tables, short text), looks at each item the way a child sees it and revises it (`service/agent-kit/
  * itemLoop.ts`). This component draws whatever was assembled; the kit's pure modules own scoring and drawing.
  */
@@ -61,6 +61,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   choose: { label: 'Choose', icon: '👆', accentColor: 'cyan' },
   categorize: { label: 'Sort', icon: '🗂️', accentColor: 'cyan' },
   order: { label: 'Order', icon: '🔢', accentColor: 'cyan' },
+  make: { label: 'Make', icon: '🧺', accentColor: 'cyan' },
+  set: { label: 'Set', icon: '✂️', accentColor: 'cyan' },
+  point: { label: 'Find it', icon: '📍', accentColor: 'cyan' },
 };
 
 const useStudioProgress = useWorkspaceProgressFor('practice-studio');
@@ -112,7 +115,9 @@ const PracticeStudioSurface: React.FC<PracticeStudioProps> = ({ data, className,
     const g = gradeAnswer(current, answer);
     setVerdict(g.correct ? 'correct' : 'incorrect');
     const hint = g.correct ? undefined : missHint(current, answer);
-    setFeedback({ text: g.correct ? 'Yes, that works.' : `Not yet. ${hint ? `${hint} ` : ''}Look again.`, status: g.correct ? 'correct' : 'incorrect' });
+    // A model's results appear on the board at this point, so a miss is something the child can see happen.
+    const ran = current.surface === 'set' && current.board?.kind === 'system';
+    setFeedback({ text: g.correct ? 'Yes, that works.' : ran ? 'Not yet. Look at what happened, then change something and run it again.' : `Not yet. ${hint ? `${hint} ` : ''}Look again.`, status: g.correct ? 'correct' : 'incorrect' });
     const work = describeWork(current, answer);
     setTries(t => [...t, { work, correct: g.correct }]);
     progress.commitCheck(work, g.correct, g.miss);
@@ -172,10 +177,10 @@ const PracticeStudioSurface: React.FC<PracticeStudioProps> = ({ data, className,
         <PipWorkspace className="space-y-3">
           {current && !allChallengesComplete && (
             <>
-              <SurfaceBoard item={current} board={board} locked={locked} onChanged={() => setFeedback(null)} />
+              <SurfaceBoard item={current} board={board} locked={locked} checked={verdict !== null} onChanged={() => setFeedback(null)} />
 
               <div className="flex flex-wrap items-center gap-2">
-                {current.surface !== 'choose' && <LuminaButton tone="ghost" onClick={() => { if (!locked) { board.reset(); setFeedback(null); } }} disabled={locked}>Clear</LuminaButton>}
+                {current.surface !== 'choose' && current.surface !== 'point' && <LuminaButton tone="ghost" onClick={() => { if (!locked) { board.reset(); setFeedback(null); } }} disabled={locked}>Clear</LuminaButton>}
                 <LuminaActionButton action="check" onClick={check} disabled={locked || !ready}>Check</LuminaActionButton>
               </div>
             </>

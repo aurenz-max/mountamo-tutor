@@ -16,7 +16,9 @@
 import { existsSync } from 'node:fs';
 import { ai } from '../geminiClient';
 import { priceCall } from '../spend/spendMeter';
-import { DISPLAY_CSS, displayHtml, displayWords, esc } from './displays';
+import { DISPLAY_CSS, displayHtml, displayParts, displaySeen, displayWords, esc, readDisplay } from './displays';
+import { getAt, setAt, setControlSpecs, setHow } from './setting';
+import { evidenceAsk, surfaceGap, unsupportedAct, type EvidenceSpec } from './evidence';
 import { gradeAnswer, itemErrors, shortcutChecks, type SurfaceAnswer, type SurfaceItem, type Tier } from './surfaces';
 import { KIT_MODEL, type LookPlan } from './reviewVariants';
 
@@ -37,22 +39,26 @@ ${DISPLAY_CSS}`;
 export function itemHtml(item: SurfaceItem, before = ''): string {
   const body = `${before}<p class="prompt">${esc(item.prompt)}</p>
 <div class="stim">${(item.stimulus ?? []).map(d => `<div>${displayHtml(d)}</div>`).join('')}</div>
+${item.board ? `<div class="stim"><div>${displayHtml(item.board)}</div></div><p class="prompt" style="font-weight:400;font-size:14px">${item.surface === 'point' ? 'The child taps one part of the picture above.' : 'The child changes the picture above by tapping it.'}</p>` : ''}
 <div class="opts">${item.options.map((o, i) => `<div class="card"><div class="tag">Card ${i + 1}</div>${o.display ? displayHtml(o.display) : ''}${o.label ? `<div>${esc(o.label)}</div>` : ''}</div>`).join('')}</div>
 ${item.surface === 'categorize' ? `<div class="cats">${(item.categories ?? []).map(c => `<div class="cat">${esc(c)}</div>`).join('')}</div>` : ''}
+${item.surface === 'make' ? '<div class="cats"><div class="cat">Tray: tap a card to put it on</div></div>' : ''}
 ${item.surface === 'order' ? `<div class="slots">${item.options.map((_, i) => `<div class="slot">${i + 1}</div>`).join('')}</div>` : ''}`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${CHILD_CSS}</style></head><body>${body}</body></html>`;
 }
 
-/** The item in words (no key), for a host with no browser. */
-function itemWords(item: SurfaceItem): string {
+/** The item in words (no key), for a host with no browser and for a reader of a whole lesson. */
+export function itemWords(item: SurfaceItem): string {
   return [`Prompt: ${item.prompt}`, ...(item.stimulus ?? []).map(d => `Shown: ${displayWords(d)}`),
     ...item.options.map((o, i) => `Card ${i + 1}: ${[o.label, o.display ? displayWords(o.display) : ''].filter(Boolean).join(', ')}`),
-    ...(item.categories ? [`Categories: ${item.categories.join(', ')}`] : [])].join('\n');
+    ...(item.categories ? [`Categories: ${item.categories.join(', ')}`] : []),
+    ...(item.surface === 'make' ? ['The child taps cards to put them on a tray.'] : []),
+    ...(item.board ? [item.surface === 'point' ? `The picture the child taps one part of: ${displaySeen(item.board)}` : `The board the child changes: ${displayWords(item.board)}`] : [])].join('\n');
 }
 
 // ── The browser ─────────────────────────────────────────────────────────────
 
-interface Page { setContent(html: string): Promise<void>; screenshot(o: { fullPage: boolean }): Promise<Buffer>; close(): Promise<void> }
+interface Page { setContent(html: string): Promise<void>; waitForTimeout(ms: number): Promise<void>; screenshot(o: { fullPage: boolean }): Promise<Buffer>; close(): Promise<void> }
 interface Browser { newPage(o: { viewport: { width: number; height: number } }): Promise<Page>; close(): Promise<void> }
 
 /** One headless browser per authoring run. `png` returns null when no browser is available. */
@@ -80,6 +86,8 @@ export class Looker {
     const page = await b.newPage({ viewport: { width: 800, height: 600 } });
     try {
       await page.setContent(html);
+      // A page that draws itself with a script (a canvas) has not painted when the load event fires.
+      if (/<script/i.test(html)) await page.waitForTimeout(300);
       return await page.screenshot({ fullPage: true });
     } finally { await page.close(); }
   }
@@ -89,7 +97,7 @@ export class Looker {
 
 // ── The blind solve ─────────────────────────────────────────────────────────
 
-export interface Solved { answer?: unknown; difficulty?: Tier; shortcut: string | null; issues: string | null; error?: string; skipped?: boolean }
+export interface Solved { answer?: unknown; difficulty?: Tier; shortcut: string | null; issues: string | null; evidenceGap?: string | null; error?: string; skipped?: boolean }
 export interface Look {
   /** The screenshot the author is shown; null on a host with no browser. */
   png: Buffer | null;
@@ -99,6 +107,8 @@ export interface Look {
   blocking: string[];
   /** Problems the author should fix if it can: the solver's shortcut and issue notes, a tier the solver reads differently. */
   advisory: string[];
+  /** How a right answer here would miss the lesson's evidence, when the look was given a spec; null when it earns credit. */
+  evidenceGap?: string | null;
   /** How long each half took, in seconds, and what the solve cost (estimated USD). */
   shotSeconds: number;
   solveSeconds: number;
@@ -107,22 +117,37 @@ export interface Look {
 
 const nil = (v: unknown) => (v == null || /^(null|none|n\/a)?$/i.test(String(v).trim()) ? null : String(v));
 
-function solverPrompt(item: SurfaceItem, grade: string, seen: boolean): string {
+export function solverPrompt(item: SurfaceItem, grade: string, seen: boolean, evidence?: EvidenceSpec): string {
   const n = item.options.map((_, i) => String(i + 1));
-  const how = item.surface === 'choose' ? '"answer": one card number'
+  const ev = evidence ? evidenceAsk(evidence) : null;
+  const how = item.surface === 'point' ? `"answer": the name of the part you would tap, copied exactly from ${JSON.stringify(displayParts(item.board))}`
+    : item.surface === 'choose' ? '"answer": one card number'
+    : item.surface === 'set' ? '"answer": the board as you would leave it, as the same JSON object with your values'
+    : item.surface === 'make' ? '"answer": the card numbers you would put on the tray, as an array'
     : item.surface === 'order' ? '"answer": the card numbers in order, as an array'
     : `"answer": an object from each card number to one of ${JSON.stringify(item.categories)}`;
   return `You are checking a learning item for a ${grade} child. ${seen ? 'The image shows exactly what the child sees.' : 'The item is described below.'} The tutor says: "${item.prompt}"
-The option cards are Card ${n.join(', Card ')}.
-Solve it${seen ? ' from the image' : ''}. Then judge it.
-Return JSON: {${how}, "difficulty_for_grade": "easy"|"medium"|"hard", "shortcut": "how a child could get it right WITHOUT the skill (position, odd one out, one picture more detailed, the words give it away), or null", "issues": "anything wrong: false facts, ambiguous pictures, two right answers, an unreadable drawing, words that do not match the pictures, or null"}`;
+${item.surface === 'set' ? setAsk(item) : item.surface === 'point' ? 'There are no cards. The child taps one part of the picture.' : `The option cards are Card ${n.join(', Card ')}.`}
+${item.surface === 'make' ? 'The child taps cards to put them on the tray; more than one set of cards can be right.\n' : ''}${ev ? ev.context : ''}Solve it${seen ? ' from the image' : ''}. Then judge it.
+Return JSON: {${how}, "difficulty_for_grade": "easy"|"medium"|"hard", "shortcut": "how a child could get it right WITHOUT the skill (position, odd one out, one picture more detailed, the words give it away), or null", "issues": "anything wrong: false facts, ambiguous pictures, two right answers, an unreadable drawing, words that do not match the pictures, or null"${ev ? `, ${ev.field}` : ''}}`;
 }
+
+/** A set item for the reader: the board as data and what the child can change on it. It never says the goal. */
+const setAsk = (item: SurfaceItem) => `There are no cards. The child changes a picture, which starts as ${JSON.stringify(item.board, (k, v) => (k === 'scene' ? undefined : v))}. ${setHow(item)} More than one finished picture can be right.`;
 
 /** The solver's answer in option ids. */
 function toAnswer(item: SurfaceItem, raw: unknown): SurfaceAnswer {
   const idOf = (v: unknown) => item.options[Number(String(v).replace(/card/i, '').trim()) - 1]?.id;
+  if (item.surface === 'point') { const said = String(raw ?? '').trim().toLowerCase(); return { part: displayParts(item.board).find(p => p.trim().toLowerCase() === said) ?? null }; }
   if (item.surface === 'choose') return { choice: idOf(raw) ?? null };
   if (item.surface === 'order') return { order: Array.isArray(raw) ? raw.map(idOf).filter((x): x is string => !!x) : [] };
+  if (item.surface === 'set') {
+    // Only what the child can change is read from the reader's board; the rest stays the item's own (a model's rules, its drawing).
+    const left = readDisplay(raw), start = item.board;
+    if (!left || !start || left.kind !== start.kind) return {};
+    return { board: setControlSpecs(item).reduce((b, c) => { const v = getAt(left, c.field); return v === undefined ? b : setAt(b, c.field, v); }, start) };
+  }
+  if (item.surface === 'make') return { made: Array.from(new Set((Array.isArray(raw) ? raw : []).map(idOf).filter((x): x is string => !!x))) };
   const placed: Record<string, string> = {};
   if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) { const id = idOf(k); if (id) placed[id] = String(v); }
   return { placed };
@@ -147,14 +172,14 @@ export interface LookView {
 
 /** A surface item as a look view: its screen, its words and the blind solve against its key. */
 export function surfaceView(item: SurfaceItem, opts: { before?: string; design?: string } = {}): LookView {
-  const shown = [...(item.stimulus ?? []), ...item.options.map(o => o.display)];
+  const shown = [...(item.stimulus ?? []), ...item.options.map(o => o.display), item.board];
   const n = item.options.length;
-  const how = item.surface === 'choose' ? `one card number (1-${n})` : item.surface === 'order' ? 'the card numbers in order, as an array'
+  const how = item.surface === 'point' ? `the name of the part you would tap, copied exactly from ${JSON.stringify(displayParts(item.board))}` : item.surface === 'choose' ? `one card number (1-${n})` : item.surface === 'set' ? 'the board as you would leave it, as the same JSON object with your values' : item.surface === 'make' ? 'the card numbers you would put on the tray, as an array' : item.surface === 'order' ? 'the card numbers in order, as an array'
     : `an object from each card number to one of ${JSON.stringify(item.categories)}`;
   return {
     ask: item.prompt, html: itemHtml(item, opts.before ?? ''), words: itemWords(item), ...(opts.design ? { design: opts.design } : {}),
     drawn: shown.some(d => d?.kind === 'svg'),
-    solve: { how, agrees: raw => gradeAnswer(item, toAnswer(item, raw)).correct, key: JSON.stringify(item.key) },
+    solve: { how, agrees: raw => gradeAnswer(item, toAnswer(item, raw)).correct, key: item.surface === 'set' ? `any board with ${JSON.stringify(item.setGoal)}` : item.surface === 'make' ? `any set that meets ${JSON.stringify(item.goal)}` : JSON.stringify(item.key) },
   };
 }
 
@@ -201,8 +226,69 @@ Return JSON: {"answer": "what you would do, in a few words", ${view.solve ? `"so
   }
 }
 
+// ── A drawing, against what its author says it shows ────────────────────────
+
+export interface DrawingToRead {
+  png: Buffer;
+  grade: string;
+  /** What the author says the drawing must make visible. */
+  shows: string;
+  /** The part each numbered pin marks, in pin order; none for a drawing with no pins. */
+  pins?: string[];
+}
+export interface DrawingReading { problems: string[]; seen: string | null; error?: string; costUsd: number }
+
+/** The reader gets the part names sorted, so their order says nothing about which pin is which. */
+export function drawingPrompt(d: Pick<DrawingToRead, 'grade' | 'shows' | 'pins'>): string {
+  const names = [...(d.pins ?? [])].sort((a, b) => a.localeCompare(b));
+  return `You are checking a drawing for a ${d.grade}. You see only the picture, with no caption. Numbered circles, if any, are pins on the parts.
+The drawing is meant to make this visible: "${d.shows}"
+Be strict. A generic shape that only a caption could identify does not show the thing it stands for.
+${names.length ? `The pins mark these parts, in no particular order: ${names.map(n => `"${n}"`).join(', ')}. For each pin, decide which part it marks from what is drawn under it. Set "drawn" to false when nothing under the pin looks like that part and you are guessing.\n` : ''}Return JSON: {"seen": "what is drawn, in one sentence, as a child would say it", "visible": true or false, whether a child looking at this picture could see what it is meant to make visible, "missing": "what would have to be drawn and is not, or null", ${names.length ? '"pins": [{"pin": 1, "part": "the part name, copied exactly", "drawn": true}], ' : ''}"issues": "anything false, cut off or overlapping, or null"}`;
+}
+
+const sameName = (a: unknown, b: string) => String(a ?? '').trim().toLowerCase() === b.trim().toLowerCase();
+
+/** The reader's answer as sentences the author can act on. Code compares each pin with the part it really marks. */
+export function drawingProblems(j: Record<string, unknown>, d: Pick<DrawingToRead, 'shows' | 'pins'>): string[] {
+  const problems: string[] = [];
+  if (j.visible === false || j.visible === 'false') {
+    const missing = nil(j.missing);
+    problems.push(`a reader who saw only the picture could not see what it is meant to show ("${d.shows}"). It saw: ${nil(j.seen) ?? 'nothing it could name'}.${missing ? ` Missing: ${missing}.` : ''}`);
+  }
+  const read = Array.isArray(j.pins) ? (j.pins as Array<Record<string, unknown>>) : [];
+  (d.pins ?? []).forEach((name, i) => {
+    const pin = read.find(p => Number(p?.pin) === i + 1);
+    if (!pin) return;
+    if (pin.drawn === false || pin.drawn === 'false') problems.push(`pin ${i + 1} marks "${name}", but the reader found nothing drawn there that looks like it.`);
+    else if (!sameName(pin.part, name)) problems.push(`pin ${i + 1} marks "${name}", but the reader took it for "${String(pin.part)}".`);
+  });
+  const issues = nil(j.issues);
+  if (issues) problems.push(`issue: ${issues}`);
+  return problems;
+}
+
+/** A separate reader checks a drawing the author has only judged itself. A failed read reports nothing and ships nothing new. */
+export async function lookAtDrawing(d: DrawingToRead, timeoutMs = 20_000): Promise<DrawingReading> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const call = ai.models.generateContent({
+      model: SOLVER_MODEL,
+      contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/png', data: d.png.toString('base64') } }, { text: drawingPrompt(d) }] }],
+      config: { responseMimeType: 'application/json' },
+    });
+    const res = await Promise.race([call, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('drawing look timed out')), timeoutMs); })]);
+    const j = JSON.parse(res.text ?? '{}') as Record<string, unknown>;
+    return { problems: drawingProblems(j, d), seen: nil(j.seen), costUsd: priceCall(SOLVER_MODEL, res.usageMetadata) };
+  } catch (e) {
+    return { problems: [], seen: null, error: (e as Error).message, costUsd: 0 };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Run one item the way a child meets it and return what the author must fix. */
-export async function lookAt(item: SurfaceItem, opts: { grade: string; looker: Looker; plan?: LookPlan }): Promise<Look> {
+export async function lookAt(item: SurfaceItem, opts: { grade: string; looker: Looker; plan?: LookPlan; evidence?: EvidenceSpec }): Promise<Look> {
   const plan = opts.plan ?? { shot: true, solver: true, tierNotes: true };
   const blocking = itemErrors(item);
   if (blocking.length) return { png: null, solved: { shortcut: null, issues: null }, agree: false, blocking, advisory: [], shotSeconds: 0, solveSeconds: 0, costUsd: 0 };
@@ -218,26 +304,35 @@ export async function lookAt(item: SurfaceItem, opts: { grade: string; looker: L
   let solved: Solved;
   try {
     const parts = png
-      ? [{ inlineData: { mimeType: 'image/png', data: png.toString('base64') } }, { text: solverPrompt(item, opts.grade, true) }]
-      : [{ text: `${solverPrompt(item, opts.grade, false)}\n\n${itemWords(item)}` }];
+      ? [{ inlineData: { mimeType: 'image/png', data: png.toString('base64') } }, { text: solverPrompt(item, opts.grade, true, opts.evidence) }]
+      : [{ text: `${solverPrompt(item, opts.grade, false, opts.evidence)}\n\n${itemWords(item)}` }];
     const res = await ai.models.generateContent({ model: SOLVER_MODEL, contents: [{ role: 'user', parts }], config: { responseMimeType: 'application/json' } });
     costUsd = priceCall(SOLVER_MODEL, res.usageMetadata);
     const j = JSON.parse(res.text ?? '{}') as Record<string, unknown>;
     const tier = String(j.difficulty_for_grade ?? '');
-    solved = { answer: j.answer, ...(['easy', 'medium', 'hard'].includes(tier) ? { difficulty: tier as Tier } : {}), shortcut: nil(j.shortcut), issues: nil(j.issues) };
+    solved = { answer: j.answer, ...(['easy', 'medium', 'hard'].includes(tier) ? { difficulty: tier as Tier } : {}), shortcut: nil(j.shortcut), issues: nil(j.issues), ...(opts.evidence ? { evidenceGap: nil(j.evidence_gap) } : {}) };
   } catch (e) {
     solved = { shortcut: null, issues: null, error: (e as Error).message };
   }
   const agree = !solved.error && gradeAnswer(item, toAnswer(item, solved.answer)).correct;
   if (!agree && !solved.error)
-    blocking.push(`a careful solver who saw only the screen answered ${JSON.stringify(toAnswer(item, solved.answer))}, but your key is ${JSON.stringify(item.key)}. The screen may not show the feature that decides it, or two answers fit.`);
+    blocking.push(item.surface === 'set'
+      ? `a careful solver who saw only the screen left the board as ${JSON.stringify(toAnswer(item, solved.answer).board ?? 'something it could not write')}, which does not have your goal's facts ${JSON.stringify(item.setGoal)}. The prompt may not say clearly what to make.`
+      : item.surface === 'make'
+      ? `a careful solver who saw only the screen put ${JSON.stringify(toAnswer(item, solved.answer).made)} on the tray, which does not meet your goal ${JSON.stringify(item.goal)}. The prompt may not say the goal clearly, or a piece's value cannot be read.`
+      : `a careful solver who saw only the screen answered ${JSON.stringify(toAnswer(item, solved.answer))}, but your key is ${JSON.stringify(item.key)}. The screen may not show the feature that decides it, or two answers fit.`);
+  // Code's reading of the gap comes first: a surface that cannot collect the act needs no model to say so.
+  const evidenceGap = opts.evidence ? surfaceGap(opts.evidence, item.surface) ?? solved.evidenceGap ?? null : undefined;
+  // A gap the kit cannot close (no surface for the act) is recorded and never sent back: a revise round cannot fix it.
+  const fixable = !!evidenceGap && !!opts.evidence && !unsupportedAct(opts.evidence);
   const advisory = [
+    ...(fixable ? [`evidence: ${evidenceGap}`] : []),
     ...(solved.shortcut ? [`shortcut: ${solved.shortcut}`] : []),
     ...(solved.issues ? [`issue: ${solved.issues}`] : []),
     ...(plan.tierNotes && solved.difficulty && solved.difficulty !== item.tier ? [`you aimed at ${item.tier}; a solver rated it ${solved.difficulty} for this grade. Reach ${item.tier} through structure (closer wrong options, a misconception trap, more steps), not more reading.`] : []),
   ];
   return {
-    png, solved, agree, blocking, advisory, costUsd,
+    png, solved, agree, blocking, advisory, costUsd, ...(evidenceGap !== undefined ? { evidenceGap } : {}),
     shotSeconds: Math.round((solveStarted - shotStarted) / 100) / 10,
     solveSeconds: Math.round((Date.now() - solveStarted) / 100) / 10,
   };

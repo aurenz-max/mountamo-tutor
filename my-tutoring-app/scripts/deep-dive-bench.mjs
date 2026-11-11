@@ -29,7 +29,12 @@ const CASES = {
   'g4-flower': { topic: 'The parts of a flower and what each part does', grade: '4', gradeContext: 'elementary', evalMode: 'apply' },
   'g5-seasons': { topic: 'Why Earth has seasons', grade: '5', gradeContext: 'elementary', evalMode: 'recall' },
   'g2-time': { topic: 'Telling time to the half hour on a clock', grade: '2', gradeContext: 'elementary', evalMode: undefined },
+  'g3-otters': { topic: 'Sea otters', grade: '3', gradeContext: 'elementary', evalMode: undefined },
   'g8-systems': { topic: 'Systems of linear equations', grade: '8', gradeContext: 'middle-school', evalMode: 'apply' },
+  // DD-20: lessons whose topic is read off a chart or a timeline, to see whether the author chooses a point check.
+  'g4-rainfall-graph': { topic: 'Reading a bar graph of monthly rainfall', grade: '4', gradeContext: 'elementary', evalMode: 'apply' },
+  'g5-town-line-graph': { topic: 'Reading a line graph of how a town grew over 100 years', grade: '5', gradeContext: 'elementary', evalMode: 'apply' },
+  'g5-revolution-timeline': { topic: 'Reading a timeline of the American Revolution', grade: '5', gradeContext: 'elementary', evalMode: 'recall' },
 };
 const selected = arg('cases', Object.keys(CASES).join(',')).split(',');
 

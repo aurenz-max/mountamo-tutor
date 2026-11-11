@@ -128,6 +128,9 @@ export function lessonChecks({ ctx, planned, blocks, requiredSequence, shape, of
   }
   const checks = blocks.filter(isEvaluableBlock).length;
   if (checks < bounds.checks) blocking.push(`${checks} evaluable block(s); this level needs at least ${bounds.checks}`);
+  // Agents pick recognition when it is allowed, so a lesson of several checks that are all pick-one is pointed out.
+  const pickOne = blocks.filter((b) => isEvaluableBlock(b) && ['multiple-choice', 'mini-sim', 'perspectives', 'data-table', 'chart', 'worked-example'].includes(b.blockType)).length;
+  if (checks >= 3 && pickOne === checks) advisory.push('every check is a pick-one question. Where an answer can be found on a display, sorted, ordered or built, make that check a write_check');
 
   blocks.forEach((b, i) => {
     const issues = blockIssues(b, ctx);
@@ -176,13 +179,16 @@ export function lessonChecks({ ctx, planned, blocks, requiredSequence, shape, of
     const chosen = offered?.find((s) => s.id === shape);
     if (shape && shape !== 'own' && offered && !chosen) blocking.push(`shape "${shape}" was not offered; choose one of ${offered.map((s) => s.id).join(', ')} or "own"`);
     const opens = chosen?.opens.filter((t) => !(ctx.preReader && PRE_READER_BLOCKED.has(t)) && (t !== 'drawer' || ctx.drawers));
-    if (opens?.length && blocks[0] && !opens.includes(blocks[0].blockType)) blocking.push(`the ${chosen!.id} shape opens with ${opens.join(' or ')}; the lesson opens with ${blocks[0].blockType}`);
-    if (STOCK_OPENING.every((t, i) => blocks[i]?.blockType === t)) advisory.push('the lesson opens hero-image → key-facts → prose, the stock opening; open the way the chosen shape says');
+    // A hero image is a picture above the lesson, so the shape's opening may come right after it.
+    const opener = blocks[0]?.blockType === 'hero-image' && blocks[1] && opens && !opens.includes('hero-image') ? blocks[1] : blocks[0];
+    if (opens?.length && opener && !opens.includes(opener.blockType)) blocking.push(`the ${chosen!.id} shape opens with ${opens.join(' or ')}; the lesson opens with ${opener.blockType}`);
+    if (STOCK_OPENING.every((t, i) => blocks[i]?.blockType === t)) advisory.push('the lesson opens hero-image → key-facts → prose, the stock opening; keep the hero image and follow it with the opening the chosen shape says');
     const counts = new Map<string, number>();
     // Each drawer is its own primitive, so it counts as its own type.
     blocks.forEach((b) => { const t = b.blockType === 'drawer' ? (b as DrawerBlockData).drawerId : b.blockType === 'display' ? (b as GenDisplayBlockData).displayId : b.blockType; counts.set(t, (counts.get(t) ?? 0) + 1); });
     const allowed = Math.max(2, Math.ceil(blocks.length / 5));
-    const repeated = Array.from(counts).find(([t, n]) => n > allowed && t !== 'multiple-choice');
+    // A kit check is a different task on each surface, so several of them are not a repeated type.
+    const repeated = Array.from(counts).find(([t, n]) => n > allowed && t !== 'multiple-choice' && t !== 'check');
     if (repeated) advisory.push(`${repeated[1]} ${repeated[0]} blocks; use another type for one of them`);
     const wanted = blocks.length >= 12 ? 6 : blocks.length >= 6 ? 4 : 0;
     if (counts.size < wanted) advisory.push(`only ${counts.size} block types in ${blocks.length} blocks`);

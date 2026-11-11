@@ -151,13 +151,15 @@ are held. "mitochondria" at K now ships ($0.055) but is weak: light, water and w
 9. `flows` caps slots at 4 while parts go to 6 and stage rows draw 6. Add tests for: no option works, no setting
    reaches the goal, prediction names only the answer. Rows at grade for 3-LS3-1 and 3-5-ETS1-3.
 
-## 11-08 teaching sections and an authored objective (USER: not just 4 problems; sections with pictures; a click-to-paint picture; an objective in the manifest's shape)
+## 11-08 Learn more drawer and an authored objective (USER: reading sections were slop; focus on pedagogy and eval modes)
 
-Kit: `write_section` (`teach.ts`) places sections anywhere in the lesson (`insertAt`), each frame a sentence plus `show`, `picture` (prompt only, painted on a click) or `cards`. A section ships as the `teach` of the next question, so the runtime and score count questions only. `planWithObjective` asks for `objectiveText` and `objectiveVerb` when the lesson has no objective. The look reader now reports what a question needs and was never taught, and re-reads a question when the section before it changes. "Look back at the lesson" reopens a section.
+Built and removed the same day: `write_section` with fact cards and click-to-paint pictures. Life-lab keeps the drawn teach frames.
 
-Run: monarch butterfly, elementary, $0.144, 132 s, 13 turns, 4 questions, 2 sections. The reader caught warning coloration as untaught and the agent added a section. Browser: `life-lab-sections-2026-11-08/`, section, picture (one image, about $0.05), cards, task and Look back all played. Gate 876 + 131, typecheck:lumina 0, tsc 770 (baseline).
+Kept or added: the plan tool writes `objectiveText` and `objectiveVerb` when the lesson has none (`planWithObjective`). The look reader reports what a question needs and was never taught. A question can carry `terms` for a Learn more drawer (`agent-kit/terms.ts`, `LearnMore.tsx`): the word must be on the screen, a definition cannot name a card or a box, and a word defined only on the right card is refused. Opening it counts in `hintsViewed`. Recall right after teaching is allowed (USER 11-08).
+
+Run: "Monarch butterfly body parts and how each stage feeds, including mandibles and the proboscis", grade 3, $0.15, 150 s, 8 turns, 4 questions. Browser: `life-lab-sections-2026-11-08/`. Gate 876 + 126, typecheck:lumina 0.
 
 Open (executor `/agent-primitive life-lab`):
-1. Teaching shows the answer: the first section draws the life cycle in order, then question 1 asks for that order, and Look back lets the child copy it. Question 4 repeats a section sentence that names its wrong cards. The reader did not flag either.
-2. The body-parts sort still has no section of its own; its labels describe the parts, so the reader passed it.
-3. Not wired or run: the tutor reopening a section as a lever, a Live sample on a section, other agent primitives adopting `write_section`.
+1. A teach-by-doing prototype (USER chose it 11-08).
+2. In the run the agent defined one word on question 1 and none on question 4 (proboscis, mandibles, antennae): the reader judged nothing there because time ran out, and 2 of 4 questions shipped unread at 150 s.
+3. Not run: a Live sample on a teach frame or on a tutor reading the Learn more words.

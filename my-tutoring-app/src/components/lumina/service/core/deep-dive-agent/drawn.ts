@@ -26,5 +26,14 @@ export function drawnSvg(b: DeepDiveBlock): string {
   return svg.replace(/<\/svg>\s*$/i, `${pins}</svg>`);
 }
 
+/** What the blind reader checks the drawing against: the author's sentence, or the caption on a block written before it. */
+export const drawnShows = (b: DeepDiveBlock) => {
+  const d = b as DiagramBlockData | FigureBlockData;
+  return d.shows || d.caption;
+};
+
+/** The part each pin marks, in pin order. */
+export const pinNames = (b: DeepDiveBlock) => (b.blockType === 'diagram' ? (b as DiagramBlockData).labels.map((l) => l.text) : undefined);
+
 /** What each pin in the screenshot names. */
 export const pinKey = (b: DeepDiveBlock) => (b.blockType === 'diagram' ? (b as DiagramBlockData).labels.map((l, i) => `${i + 1} = ${l.text}`).join(', ') : '');

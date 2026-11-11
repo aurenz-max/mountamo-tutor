@@ -1,0 +1,1723 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-after.json (five-coins/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Making Amounts with Coins",
+    "description": "Coins can be combined in different ways to make the same amount with a specific number of coins.",
+    "gradeBand": "grade 2",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "make",
+        "prompt": "Make 15¢ using exactly 2 coins.",
+        "stimulus": [],
+        "options": [
+          {
+            "id": "p1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "penny"
+              ]
+            },
+            "value": 1
+          },
+          {
+            "id": "n2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "d1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          }
+        ],
+        "goal": {
+          "total": 15,
+          "count": 2
+        },
+        "key": [
+          "d1",
+          "n1"
+        ],
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.45,
+          "reasons": [
+            "5 pieces to choose from +0.75",
+            "a total and a piece count to meet together +0.6",
+            "3 kinds of piece +0.4",
+            "only one set works +0.3",
+            "comparing representations +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "A dime is worth 10¢. What one coin can you add to 10¢ to make 15¢?",
+            "item": {
+              "id": "studio-1-help_1",
+              "surface": "make",
+              "prompt": "Make 15¢ using exactly 2 coins.",
+              "stimulus": [
+                {
+                  "kind": "coins",
+                  "coins": [
+                    "dime",
+                    "nickel",
+                    "penny"
+                  ],
+                  "highlight": "values"
+                }
+              ],
+              "options": [
+                {
+                  "id": "p1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "penny"
+                    ]
+                  },
+                  "value": 1
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 15,
+                "count": 2
+              },
+              "key": [
+                "d1",
+                "n1"
+              ],
+              "tier": "easy",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.05,
+                "reasons": [
+                  "5 pieces to choose from +0.75",
+                  "a total and a piece count to meet together +0.6",
+                  "3 kinds of piece +0.4",
+                  "only one set works +0.3",
+                  "counting money +0.6",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "We took away some coins you do not need.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "make",
+              "prompt": "Make 15¢ using exactly 2 coins.",
+              "stimulus": [],
+              "options": [
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                }
+              ],
+              "goal": {
+                "total": 15,
+                "count": 2
+              },
+              "key": [
+                "n2",
+                "d1"
+              ],
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.95,
+                "reasons": [
+                  "3 pieces to choose from +0.45",
+                  "a total and a piece count to meet together +0.6",
+                  "2 kinds of piece +0.2",
+                  "only one set works +0.3",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "make",
+        "prompt": "Make 30¢ using exactly 4 coins.",
+        "stimulus": [],
+        "options": [
+          {
+            "id": "d2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "d1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "d3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "n1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "q1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "quarter"
+              ]
+            },
+            "value": 25
+          },
+          {
+            "id": "n2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "p1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "penny"
+              ]
+            },
+            "value": 1
+          },
+          {
+            "id": "n3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          }
+        ],
+        "goal": {
+          "total": 30,
+          "count": 4
+        },
+        "key": [
+          "d1",
+          "d2",
+          "n1",
+          "n2"
+        ],
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.1,
+          "reasons": [
+            "8 pieces to choose from +1.2",
+            "a total and a piece count to meet together +0.6",
+            "4 kinds of piece +0.6",
+            "only one set works +0.3",
+            "comparing representations +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "3 dimes make 30¢, but that is only 3 coins. Trade 1 dime for 2 nickels to get 4 coins.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "make",
+              "prompt": "Make 30¢ using exactly 4 coins.",
+              "stimulus": [
+                {
+                  "kind": "coins",
+                  "coins": [
+                    "dime",
+                    "nickel"
+                  ],
+                  "highlight": "values"
+                }
+              ],
+              "options": [
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "q1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "quarter"
+                    ]
+                  },
+                  "value": 25
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "p1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "penny"
+                    ]
+                  },
+                  "value": 1
+                },
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                }
+              ],
+              "goal": {
+                "total": 30,
+                "count": 4
+              },
+              "key": [
+                "d1",
+                "d2",
+                "n1",
+                "n2"
+              ],
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.6,
+                "reasons": [
+                  "8 pieces to choose from +1.2",
+                  "a total and a piece count to meet together +0.6",
+                  "4 kinds of piece +0.6",
+                  "only one set works +0.3",
+                  "counting money +0.5",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "We took away the quarter and the penny.",
+            "item": {
+              "id": "studio-2-simpler_1",
+              "surface": "make",
+              "prompt": "Make 30¢ using exactly 4 coins.",
+              "stimulus": [],
+              "options": [
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 30,
+                "count": 4
+              },
+              "key": [
+                "d2",
+                "d1",
+                "n1",
+                "n2"
+              ],
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.4,
+                "reasons": [
+                  "6 pieces to choose from +0.9",
+                  "a total and a piece count to meet together +0.6",
+                  "2 kinds of piece +0.2",
+                  "only one set works +0.3",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "make",
+        "prompt": "Make 35¢ using exactly 5 coins.",
+        "stimulus": [],
+        "options": [
+          {
+            "id": "n3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n4",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "d3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "q1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "quarter"
+              ]
+            },
+            "value": 25
+          },
+          {
+            "id": "d1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "p1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "penny"
+              ]
+            },
+            "value": 1
+          },
+          {
+            "id": "d2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          }
+        ],
+        "goal": {
+          "total": 35,
+          "count": 5
+        },
+        "key": [
+          "d1",
+          "d2",
+          "n1",
+          "n2",
+          "n3"
+        ],
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.25,
+          "reasons": [
+            "9 pieces to choose from +1.35",
+            "a total and a piece count to meet together +0.6",
+            "4 kinds of piece +0.6",
+            "only one set works +0.3",
+            "comparing representations +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Start with 2 dimes to make 20¢. How many nickels of 5¢ each do you need to reach 35¢?",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "make",
+              "prompt": "Make 35¢ using exactly 5 coins.",
+              "stimulus": [
+                {
+                  "kind": "coins",
+                  "coins": [
+                    "quarter",
+                    "dime",
+                    "nickel"
+                  ],
+                  "highlight": "values"
+                }
+              ],
+              "options": [
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n4",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "q1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "quarter"
+                    ]
+                  },
+                  "value": 25
+                },
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "p1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "penny"
+                    ]
+                  },
+                  "value": 1
+                },
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 35,
+                "count": 5
+              },
+              "key": [
+                "d1",
+                "d2",
+                "n1",
+                "n2",
+                "n3"
+              ],
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.85,
+                "reasons": [
+                  "9 pieces to choose from +1.35",
+                  "a total and a piece count to meet together +0.6",
+                  "4 kinds of piece +0.6",
+                  "only one set works +0.3",
+                  "counting money +0.6",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "We removed the coins that do not help you reach 5 coins.",
+            "item": {
+              "id": "studio-3-simpler_1",
+              "surface": "make",
+              "prompt": "Make 35¢ using exactly 5 coins.",
+              "stimulus": [],
+              "options": [
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n4",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 35,
+                "count": 5
+              },
+              "key": [
+                "n3",
+                "n1",
+                "n2",
+                "d3",
+                "d1"
+              ],
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.55,
+                "reasons": [
+                  "7 pieces to choose from +1.05",
+                  "a total and a piece count to meet together +0.6",
+                  "2 kinds of piece +0.2",
+                  "only one set works +0.3",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "make",
+        "prompt": "Make 50¢ using exactly 6 coins.",
+        "stimulus": [],
+        "options": [
+          {
+            "id": "d1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "d5",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "p1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "penny"
+              ]
+            },
+            "value": 1
+          },
+          {
+            "id": "n2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "n3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "d3",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "n4",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "p2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "penny"
+              ]
+            },
+            "value": 1
+          },
+          {
+            "id": "d4",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          },
+          {
+            "id": "q1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "quarter"
+              ]
+            },
+            "value": 25
+          },
+          {
+            "id": "n1",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "nickel"
+              ]
+            },
+            "value": 5
+          },
+          {
+            "id": "d2",
+            "display": {
+              "kind": "coins",
+              "coins": [
+                "dime"
+              ]
+            },
+            "value": 10
+          }
+        ],
+        "goal": {
+          "total": 50,
+          "count": 6
+        },
+        "key": [
+          "d1",
+          "d2",
+          "d3",
+          "d4",
+          "n1",
+          "n2"
+        ],
+        "tier": "hard",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.7,
+          "reasons": [
+            "12 pieces to choose from +1.8",
+            "a total and a piece count to meet together +0.6",
+            "4 kinds of piece +0.6",
+            "only one set works +0.3",
+            "comparing representations +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "5 dimes make 50¢, but that is only 5 coins. Trade 1 dime for 2 nickels so you still have 50¢ with 6 coins.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "make",
+              "prompt": "Make 50¢ using exactly 6 coins.",
+              "stimulus": [
+                {
+                  "kind": "coins",
+                  "coins": [
+                    "dime",
+                    "nickel",
+                    "nickel"
+                  ],
+                  "highlight": "values"
+                }
+              ],
+              "options": [
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d5",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "p1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "penny"
+                    ]
+                  },
+                  "value": 1
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n4",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "p2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "penny"
+                    ]
+                  },
+                  "value": 1
+                },
+                {
+                  "id": "d4",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "q1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "quarter"
+                    ]
+                  },
+                  "value": 25
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 50,
+                "count": 6
+              },
+              "key": [
+                "d1",
+                "d2",
+                "d3",
+                "d4",
+                "n1",
+                "n2"
+              ],
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 4.2,
+                "reasons": [
+                  "12 pieces to choose from +1.8",
+                  "a total and a piece count to meet together +0.6",
+                  "4 kinds of piece +0.6",
+                  "only one set works +0.3",
+                  "counting money +0.5",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "We took away the coins that do not help you reach 6 coins.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "make",
+              "prompt": "Make 50¢ using exactly 6 coins.",
+              "stimulus": [],
+              "options": [
+                {
+                  "id": "d1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d3",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "d4",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                },
+                {
+                  "id": "n2",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "n1",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "nickel"
+                    ]
+                  },
+                  "value": 5
+                },
+                {
+                  "id": "d5",
+                  "display": {
+                    "kind": "coins",
+                    "coins": [
+                      "dime"
+                    ]
+                  },
+                  "value": 10
+                }
+              ],
+              "goal": {
+                "total": 50,
+                "count": 6
+              },
+              "key": [
+                "d1",
+                "d5",
+                "n2",
+                "d3",
+                "d4",
+                "n1"
+              ],
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.55,
+                "reasons": [
+                  "7 pieces to choose from +1.05",
+                  "a total and a piece count to meet together +0.6",
+                  "2 kinds of piece +0.2",
+                  "only one set works +0.3",
+                  "comparing representations +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 112,
+        "costUsd": 0.1065,
+        "items": 4,
+        "rounds": 2,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 1
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "coins": 34
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "build",
+          "on": "an empty tray and bins of pennies, nickels, dimes and quarters",
+          "credit": "the child's own set of coins totals the target amount and uses the stated number of coins",
+          "notCredit": "picking a ready-made set of coins; typing a total"
+        },
+        "items": 4,
+        "met": 4,
+        "gaps": [],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 112,
+      "costUsd": 0.1065,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "make",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 43,
+          "costUsd": 0.029
+        },
+        {
+          "id": "studio-2",
+          "surface": "make",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 8,
+          "costUsd": 0.0038
+        },
+        {
+          "id": "studio-3",
+          "surface": "make",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 10,
+          "costUsd": 0.0046
+        },
+        {
+          "id": "studio-4",
+          "surface": "make",
+          "tier": "hard",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 58,
+          "costUsd": 0.0372
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 54,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 54s (10988 tokens: 2479 output, 5425 thinking)",
+          "costUsd": 0.032
+        },
+        {
+          "seconds": 54,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (make, easy)",
+          "costUsd": 0.032,
+          "item": 1
+        },
+        {
+          "seconds": 54,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (make, medium)",
+          "costUsd": 0.032,
+          "item": 2
+        },
+        {
+          "seconds": 54,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (make, medium)",
+          "costUsd": 0.032,
+          "item": 3
+        },
+        {
+          "seconds": 54,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (make, hard)",
+          "costUsd": 0.032,
+          "item": 4
+        },
+        {
+          "seconds": 62,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.9s, solve 7.5s. solver agreed with the key. No problems.",
+          "costUsd": 0.0357,
+          "item": 2
+        },
+        {
+          "seconds": 62,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 8s",
+          "costUsd": 0.0357,
+          "item": 2
+        },
+        {
+          "seconds": 64,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.9s, solve 8.8s. solver agreed with the key. No problems.",
+          "costUsd": 0.0403,
+          "item": 3
+        },
+        {
+          "seconds": 64,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 10s",
+          "costUsd": 0.0403,
+          "item": 3
+        },
+        {
+          "seconds": 65,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.9s, solve 9.6s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.0451,
+          "item": 1
+        },
+        {
+          "seconds": 65,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0451,
+          "item": 1
+        },
+        {
+          "seconds": 68,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.9s, solve 13.4s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not …",
+          "costUsd": 0.052,
+          "item": 4
+        },
+        {
+          "seconds": 68,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.052,
+          "item": 4
+        },
+        {
+          "seconds": 82,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 17s",
+          "costUsd": 0.0691,
+          "item": 1
+        },
+        {
+          "seconds": 82,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (make, easy)",
+          "costUsd": 0.0691,
+          "item": 1
+        },
+        {
+          "seconds": 97,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.3s, solve 14.6s. solver agreed with the key. No problems.",
+          "costUsd": 0.0762,
+          "item": 1
+        },
+        {
+          "seconds": 97,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 0 advisory note(s) left, 43s",
+          "costUsd": 0.0762,
+          "item": 1
+        },
+        {
+          "seconds": 103,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 34s",
+          "costUsd": 0.1017,
+          "item": 4
+        },
+        {
+          "seconds": 103,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (make, hard)",
+          "costUsd": 0.1017,
+          "item": 4
+        },
+        {
+          "seconds": 112,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.3s, solve 9.1s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.1065,
+          "item": 4
+        },
+        {
+          "seconds": 112,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.1065,
+          "item": 4
+        },
+        {
+          "seconds": 112,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 1 advisory note(s) left, 58s",
+          "costUsd": 0.1065,
+          "item": 4
+        },
+        {
+          "seconds": 112,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 112s, about $0.11",
+          "costUsd": 0.1065
+        },
+        {
+          "seconds": 112,
+          "stage": "run",
+          "level": "info",
+          "text": "evidence: 4 of 4 items collect it",
+          "costUsd": 0.1065
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

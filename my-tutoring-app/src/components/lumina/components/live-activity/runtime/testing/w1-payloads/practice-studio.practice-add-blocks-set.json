@@ -1,0 +1,1130 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-engine.json (add-blocks/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Adding Tens and Ones with Blocks",
+    "description": "Add two-digit numbers by combining tens with tens and ones with ones using base ten blocks.",
+    "gradeBand": "grade 2",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "set",
+        "prompt": "Add 12 to the blocks to show 24 + 12.",
+        "stimulus": [
+          {
+            "kind": "text",
+            "text": "24 + 12"
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "base_ten",
+          "hundreds": 0,
+          "tens": 2,
+          "ones": 4
+        },
+        "controls": [
+          {
+            "field": "tens",
+            "label": "Tens",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          },
+          {
+            "field": "ones",
+            "label": "Ones",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "tens": 3,
+          "ones": 6
+        },
+        "key": "",
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.55,
+          "reasons": [
+            "3 changes to make +0.75",
+            "2 facts to meet at once +0.4",
+            "reading base ten blocks +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "12 has 1 ten and 2 ones. Add 1 ten to the tens and 2 ones to the ones.",
+            "item": {
+              "id": "studio-1-help_1",
+              "surface": "set",
+              "prompt": "Add 12 to the blocks to show 24 + 12.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "24 + 12"
+                },
+                {
+                  "kind": "base_ten",
+                  "hundreds": 0,
+                  "tens": 2,
+                  "ones": 4,
+                  "highlight": "tens"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 2,
+                "ones": 4
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 3,
+                "ones": 6
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.95,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks +0.4",
+                  "reading base ten blocks +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "1 ten is added. Now add 2 ones to make 36.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "set",
+              "prompt": "Add 12 to the blocks to show 24 + 12.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "24 + 12"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 3,
+                "ones": 4
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 3,
+                "ones": 6
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.3,
+                "reasons": [
+                  "2 changes to make +0.5",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "set",
+        "prompt": "Add 45 to the blocks to show 33 + 45.",
+        "stimulus": [
+          {
+            "kind": "text",
+            "text": "33 + 45"
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "base_ten",
+          "hundreds": 0,
+          "tens": 3,
+          "ones": 3,
+          "ones_first": true
+        },
+        "controls": [
+          {
+            "field": "tens",
+            "label": "Tens",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          },
+          {
+            "field": "ones",
+            "label": "Ones",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "tens": 7,
+          "ones": 8
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 2.6,
+          "reasons": [
+            "9 changes to make +1.5",
+            "2 facts to meet at once +0.4",
+            "reading base ten blocks with the ones drawn first +0.7"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Look closely at the blocks: the unit cubes are on the left and the ten rods are on the right. Add 4 tens to the rods and 5 ones to the cubes.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "set",
+              "prompt": "Add 45 to the blocks to show 33 + 45.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "33 + 45"
+                },
+                {
+                  "kind": "base_ten",
+                  "hundreds": 0,
+                  "tens": 3,
+                  "ones": 3,
+                  "ones_first": true,
+                  "highlight": "tens"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 3,
+                "ones": 3,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 8
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.3,
+                "reasons": [
+                  "9 changes to make +1.5",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7",
+                  "reading base ten blocks with the ones drawn first +0.7"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "4 tens are added to the rods. Now add 5 ones to the cubes to make 78.",
+            "item": {
+              "id": "studio-2-simpler_1",
+              "surface": "set",
+              "prompt": "Add 45 to the blocks to show 33 + 45.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "33 + 45"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 7,
+                "ones": 3,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 8
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.35,
+                "reasons": [
+                  "5 changes to make +1.25",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "set",
+        "prompt": "Add to the blocks to show 43 + 35.",
+        "stimulus": [
+          {
+            "kind": "text",
+            "text": "43 + 35"
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "base_ten",
+          "hundreds": 0,
+          "tens": 4,
+          "ones": 3,
+          "ones_first": true
+        },
+        "controls": [
+          {
+            "field": "tens",
+            "label": "Tens",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          },
+          {
+            "field": "ones",
+            "label": "Ones",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "tens": 7,
+          "ones": 8
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 2.6,
+          "reasons": [
+            "8 changes to make +1.5",
+            "2 facts to meet at once +0.4",
+            "reading base ten blocks with the ones drawn first +0.7"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "The blocks show 43 with 3 ones on the left and 4 tens on the right. Add 3 tens and 5 ones to show the sum.",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "set",
+              "prompt": "Add to the blocks to show 43 + 35.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "43 + 35"
+                },
+                {
+                  "kind": "base_ten",
+                  "hundreds": 0,
+                  "tens": 4,
+                  "ones": 3,
+                  "ones_first": true,
+                  "highlight": "tens"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 4,
+                "ones": 3,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 8
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.3,
+                "reasons": [
+                  "8 changes to make +1.5",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7",
+                  "reading base ten blocks with the ones drawn first +0.7"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "3 tens are added. Now add 5 ones to make 78.",
+            "item": {
+              "id": "studio-3-simpler_1",
+              "surface": "set",
+              "prompt": "Add to the blocks to show 43 + 35.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "43 + 35"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 7,
+                "ones": 3,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 8
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.35,
+                "reasons": [
+                  "5 changes to make +1.25",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "set",
+        "prompt": "Add the top blocks to the blocks below.",
+        "stimulus": [
+          {
+            "kind": "base_ten",
+            "hundreds": 0,
+            "tens": 3,
+            "ones": 4
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "base_ten",
+          "hundreds": 0,
+          "tens": 4,
+          "ones": 5,
+          "ones_first": true
+        },
+        "controls": [
+          {
+            "field": "tens",
+            "label": "Tens",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          },
+          {
+            "field": "ones",
+            "label": "Ones",
+            "min": 0,
+            "max": 9,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "tens": 7,
+          "ones": 9
+        },
+        "key": "",
+        "tier": "hard",
+        "difficulty": {
+          "band": "hard",
+          "score": 3,
+          "reasons": [
+            "7 changes to make +1.5",
+            "2 facts to meet at once +0.4",
+            "reading base ten blocks with the ones drawn first +0.7",
+            "reading base ten blocks +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Match each kind of block. Add the 3 ten rods to the tens, and the 4 unit cubes to the ones.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "set",
+              "prompt": "Add the top blocks to the blocks below.",
+              "stimulus": [
+                {
+                  "kind": "base_ten",
+                  "hundreds": 0,
+                  "tens": 3,
+                  "ones": 4,
+                  "highlight": "tens"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 4,
+                "ones": 5,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 9
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 3,
+                "reasons": [
+                  "7 changes to make +1.5",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7",
+                  "reading base ten blocks +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "3 tens are added. Now add the 4 ones.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "set",
+              "prompt": "Add the top blocks to the blocks below.",
+              "stimulus": [
+                {
+                  "kind": "base_ten",
+                  "hundreds": 0,
+                  "tens": 3,
+                  "ones": 4
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "base_ten",
+                "hundreds": 0,
+                "tens": 7,
+                "ones": 5,
+                "ones_first": true
+              },
+              "controls": [
+                {
+                  "field": "tens",
+                  "label": "Tens",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                },
+                {
+                  "field": "ones",
+                  "label": "Ones",
+                  "min": 0,
+                  "max": 9,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "tens": 7,
+                "ones": 9
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.5,
+                "reasons": [
+                  "4 changes to make +1",
+                  "2 facts to meet at once +0.4",
+                  "reading base ten blocks with the ones drawn first +0.7",
+                  "reading base ten blocks +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 132,
+        "costUsd": 0.1822,
+        "items": 4,
+        "rounds": 5,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 1
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "shares",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "text": 3,
+            "base_ten": 5
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "set",
+          "on": "place value blocks the child adds to",
+          "credit": "the child's tens and ones blocks show the sum",
+          "notCredit": "picking a ready-made set of blocks; typing the sum"
+        },
+        "items": 4,
+        "met": 4,
+        "gaps": [],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 132,
+      "costUsd": 0.1822,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "set",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 5,
+          "costUsd": 0.0025
+        },
+        {
+          "id": "studio-2",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 48,
+          "costUsd": 0.0316
+        },
+        {
+          "id": "studio-3",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 2,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 97,
+          "costUsd": 0.0619
+        },
+        {
+          "id": "studio-4",
+          "surface": "set",
+          "tier": "hard",
+          "computed": "hard",
+          "solver": "easy",
+          "rounds": 2,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at hard; a solver rated it easy for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 93,
+          "costUsd": 0.0643
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 35,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 35s (8966 tokens: 1894 output, 3193 thinking)",
+          "costUsd": 0.022
+        },
+        {
+          "seconds": 35,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, easy)",
+          "costUsd": 0.022,
+          "item": 1
+        },
+        {
+          "seconds": 35,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.022,
+          "item": 2
+        },
+        {
+          "seconds": 35,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.022,
+          "item": 3
+        },
+        {
+          "seconds": 35,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, hard)",
+          "costUsd": 0.022,
+          "item": 4
+        },
+        {
+          "seconds": 40,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 3.9s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0244,
+          "item": 3
+        },
+        {
+          "seconds": 40,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0244,
+          "item": 3
+        },
+        {
+          "seconds": 40,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.7s, solve 4.7s. solver agreed with the key. No problems.",
+          "costUsd": 0.0268,
+          "item": 1
+        },
+        {
+          "seconds": 40,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 5s",
+          "costUsd": 0.0268,
+          "item": 1
+        },
+        {
+          "seconds": 40,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.7s, solve 4.7s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0296,
+          "item": 2
+        },
+        {
+          "seconds": 40,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0296,
+          "item": 2
+        },
+        {
+          "seconds": 41,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 4.9s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it easy for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not mor…",
+          "costUsd": 0.0322,
+          "item": 4
+        },
+        {
+          "seconds": 41,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0322,
+          "item": 4
+        },
+        {
+          "seconds": 66,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 27s",
+          "costUsd": 0.0526,
+          "item": 3
+        },
+        {
+          "seconds": 66,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.0526,
+          "item": 3
+        },
+        {
+          "seconds": 71,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 4.1s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0551,
+          "item": 3
+        },
+        {
+          "seconds": 71,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 2 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0551,
+          "item": 3
+        },
+        {
+          "seconds": 71,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 30s",
+          "costUsd": 0.078,
+          "item": 4
+        },
+        {
+          "seconds": 71,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, hard)",
+          "costUsd": 0.078,
+          "item": 4
+        },
+        {
+          "seconds": 76,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 4.8s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.081,
+          "item": 4
+        },
+        {
+          "seconds": 76,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 2 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.081,
+          "item": 4
+        },
+        {
+          "seconds": 77,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 36s",
+          "costUsd": 0.1068,
+          "item": 2
+        },
+        {
+          "seconds": 77,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.1068,
+          "item": 2
+        },
+        {
+          "seconds": 83,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 5.5s. solver agreed with the key. No problems.",
+          "costUsd": 0.1099,
+          "item": 2
+        },
+        {
+          "seconds": 83,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 0 advisory note(s) left, 48s",
+          "costUsd": 0.1099,
+          "item": 2
+        },
+        {
+          "seconds": 121,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 2 written in 45s",
+          "costUsd": 0.1424,
+          "item": 4
+        },
+        {
+          "seconds": 121,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 2 (set, hard)",
+          "costUsd": 0.1424,
+          "item": 4
+        },
+        {
+          "seconds": 127,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 2 written in 56s",
+          "costUsd": 0.1764,
+          "item": 3
+        },
+        {
+          "seconds": 127,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 2 (set, medium)",
+          "costUsd": 0.1764,
+          "item": 3
+        },
+        {
+          "seconds": 128,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.3s, solve 6.7s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it easy for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not mor…",
+          "costUsd": 0.1797,
+          "item": 4
+        },
+        {
+          "seconds": 128,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 2 round(s), 2 lever(s), 1 advisory note(s) left, 93s",
+          "costUsd": 0.1797,
+          "item": 4
+        },
+        {
+          "seconds": 132,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.3s, solve 4.3s. solver agreed with the key. No problems.",
+          "costUsd": 0.1822,
+          "item": 3
+        },
+        {
+          "seconds": 132,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 2 round(s), 2 lever(s), 0 advisory note(s) left, 97s",
+          "costUsd": 0.1822,
+          "item": 3
+        },
+        {
+          "seconds": 132,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 132s, about $0.18",
+          "costUsd": 0.1822
+        },
+        {
+          "seconds": 132,
+          "stage": "run",
+          "level": "info",
+          "text": "evidence: 4 of 4 items collect it",
+          "costUsd": 0.1822
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

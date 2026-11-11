@@ -13,26 +13,34 @@
  * is a registry entry, so every primitive that takes the domain gains it.
  */
 
+import { chartAxis, chartDataError, chartView, chartWords } from '../insets/chartView';
+import { SYSTEM_PROMPT, SYSTEM_SET, readSystem, systemDrawn, systemErrors, systemWords, type SystemDisplay } from './system';
+
 export type Display =
   | { kind: 'svg'; svg: string; name?: string }
   | { kind: 'bar_graph'; title?: string; y_label?: string; labels: string[]; values: number[] }
-  | { kind: 'number_line'; min: number; max: number; step: number; marks?: Array<{ value: number; label: string }> }
-  | { kind: 'table'; headers: string[]; rows: string[][] }
+  | { kind: 'chart'; chart_type: 'bar' | 'line' | 'pie'; title?: string; x_label?: string; y_label?: string; points: ChartPoint[]; show_values?: boolean; highlight?: string }
+  | { kind: 'number_line'; min: number; max: number; step: number; marks?: Array<{ value: number; label: string }>; highlight?: string }
+  | { kind: 'table'; headers: string[]; rows: string[][]; highlight?: string }
   | { kind: 'text'; text: string }
+  | { kind: 'passage'; title?: string; sentences: string[]; attribution?: string; highlight?: string }
   | { kind: 'clock'; hour: number; minute: number; numerals?: boolean; highlight?: 'hour' | 'minute' }
   | { kind: 'base_ten'; hundreds: number; tens: number; ones: number; ones_first?: boolean; highlight?: 'hundreds' | 'tens' | 'ones' }
   | { kind: 'pattern_blocks'; target?: PatternTarget; pieces?: PatternPiece[]; tray?: PatternShape[]; highlight?: 'slots' }
   | { kind: 'ten_frame'; filled: number; frames?: number; second?: number; highlight?: 'empty' }
   | { kind: 'array'; rows: number; columns: number; grouping?: 'rows' | 'columns'; icon?: string; highlight?: 'row' | 'column' }
   | { kind: 'coins'; coins: CoinName[]; highlight?: 'values' }
+  | { kind: 'shares'; shape: 'circle' | 'rectangle'; cuts: number[]; across?: number[]; wide?: number; tall?: number; diagonal?: 'down' | 'up' | 'both'; shaded?: number; highlight?: 'cuts' }
   | { kind: 'pictograph'; title?: string; icon: string; key_value: number; labels: string[]; values: number[]; highlight?: string }
   | { kind: 'timeline'; title?: string; events: TimelineEvent[]; highlight?: string }
   | { kind: 'flow'; title?: string; steps: FlowStep[]; loop?: boolean; highlight?: string }
   | { kind: 'map'; title?: string; places: MapPlace[]; paths?: Array<[string, string]>; regions?: MapRegion[]; legend?: Array<{ icon: string; meaning: string }>; compass?: boolean; highlight?: string }
   | { kind: 'cell'; title?: string; cell?: CellKind; parts: CellPart[]; highlight?: string }
   | { kind: 'zoom'; title?: string; levels: ZoomLevel[]; highlight?: string }
-  | { kind: 'food_web'; title?: string; living: WebLiving[]; eats: Array<[string, string]>; highlight?: string };
+  | { kind: 'food_web'; title?: string; living: WebLiving[]; eats: Array<[string, string]>; highlight?: string }
+  | SystemDisplay;
 
+export interface ChartPoint { label: string; value: number; group?: string }
 export type CellKind = 'animal' | 'plant' | 'bacterium';
 /** How a part of a cell is drawn. The shape is drawing structure; what the part is called is the author's `label`. */
 export type CellShape = 'round' | 'bean' | 'oval' | 'sac' | 'dots' | 'folds';
@@ -49,7 +57,7 @@ export interface FlowStep { label: string; icon?: string }
 export interface MapPlace { name?: string; icon?: string; x: number; y: number }
 export interface MapRegion { type: 'water' | 'park'; x: number; y: number; w: number; h: number; name?: string }
 
-export const DISPLAY_KINDS = ['svg', 'bar_graph', 'number_line', 'table', 'text', 'clock', 'base_ten', 'pattern_blocks', 'ten_frame', 'array', 'coins', 'pictograph', 'timeline', 'flow', 'map', 'cell', 'zoom', 'food_web'] as const;
+export const DISPLAY_KINDS = ['svg', 'bar_graph', 'chart', 'number_line', 'table', 'text', 'passage', 'clock', 'base_ten', 'pattern_blocks', 'ten_frame', 'array', 'coins', 'shares', 'pictograph', 'timeline', 'flow', 'map', 'cell', 'zoom', 'food_web', 'system'] as const;
 export type DisplayKind = typeof DISPLAY_KINDS[number];
 
 /** The value a display shows, in a unit code can compare with a label or a prompt. */
@@ -60,7 +68,7 @@ export interface Reading { unit: ReadingUnit; value: number; /** Two displays wi
 export interface DisplayLoad { score: number; why: string }
 
 /** What a display is for. `general` displays go to every primitive; the rest go to a primitive that takes the domain. */
-export type DisplayDomain = 'general' | 'data' | 'math' | 'social' | 'science' | 'biology';
+export type DisplayDomain = 'general' | 'data' | 'math' | 'social' | 'science' | 'biology' | 'reading';
 
 /**
  * Which displays a primitive offers its author. `without` removes one the primitive cannot use: `svg` where the author
@@ -72,17 +80,43 @@ export const ALL_DISPLAYS: DisplayCapability = { domains: 'all' };
 type Args = Record<string, unknown>;
 type Of<K extends DisplayKind> = Extract<Display, { kind: K }>;
 
+/**
+ * What a display adds when it is the board of a `set` item (`setting.ts` holds the engine, which needs none of this).
+ * Every field is optional: a display with numbers in it is already a board.
+ */
+export interface SetMark { n: number; x: number; y: number; size: number }
+export interface DisplaySet<D extends Display = Display> {
+  /** Facts only code can work out from the drawing's structure (whether a shape's parts are one size). */
+  facts?(d: D): Record<string, number | boolean>;
+  /** The controls the display comes with, when the author declares none. */
+  controls?(d: D): Array<{ field: string; label?: string; min?: number; max?: number; step?: number; wrap?: boolean; toggle?: number[] }>;
+  /** Where the toggles of a list field sit on the drawing, in percent of its box. */
+  marks?(d: D, field: string): SetMark[];
+  /** What to look at again when one of its facts is off. Never a value. */
+  hints?: Record<string, string>;
+}
+
 interface DisplayDef<D extends Display> {
+  /** What this display adds as the board of a `set` item. Optional: see `DisplaySet`. */
+  set?: DisplaySet<D>;
   /** The line the author reads. */
   prompt: string;
   read(raw: Args): D;
   errors(d: D): string[];
   draw(d: D): string;
   words(d: D): string;
+  /** What a reader who can see the drawing knows that `words` holds back from the tutor (where a mark sits). */
+  seen?(d: D): string;
   reading?(d: D): Reading | null;
   load?(d: D): DisplayLoad | null;
   /** The `highlight` values this display can draw, so a help lever changes the screen. */
   highlights?: readonly string[];
+  /** The parts a child can tap on a `point` item, by the name drawn on each. The drawing carries a `data-part` shape per part, and `highlight` set to a part lights it. */
+  parts?(d: D): string[];
+  /** Why these parts cannot be told apart by a tap, when the drawing can place them too close. */
+  partsError?(d: D): string | undefined;
+  /** The display once the child's answer is checked, when it holds something back until then (a model's results). */
+  revealed?(d: D): D;
 }
 
 // ── Shared helpers ──────────────────────────────────────────────────────────
@@ -111,14 +145,25 @@ export function sanitizeSvg(svg: string): string {
     .replace(/url\(\s*['"]?\s*(?!#)[^)]*\)/gi, 'none');
 }
 
+/**
+ * A part of a drawing a child can tap on a `point` item (`surfaces.ts`): an unseen shape over the part that carries its
+ * name. It is drawn on every display that has parts, and only a point board listens for the tap.
+ */
+const hitRect = (part: string, x: number, y: number, w: number, h: number) =>
+  `<rect data-part="${esc(part)}" x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" fill="#000" fill-opacity="0"/>`;
+const hitCircle = (part: string, cx: number, cy: number, r: number) =>
+  `<circle data-part="${esc(part)}" cx="${r2(cx)}" cy="${r2(cy)}" r="${r}" fill="#000" fill-opacity="0"/>`;
+
 const svgOpen = (w: number, h: number, label: string, maxWidth = w) =>
   `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${maxWidth}px" role="img" aria-label="${esc(label)}">`;
 
 // ── The first displays ──────────────────────────────────────────────────────
 
+const barStep = (values: number[]) => { const max = Math.max(1, ...values); return max > 50 ? 10 : max > 10 ? 5 : 1; };
+
 function barGraph(d: Of<'bar_graph'>): string {
   const max = Math.max(1, ...d.values);
-  const step = max > 50 ? 10 : max > 10 ? 5 : 1, top = Math.ceil(max / step) * step;
+  const step = barStep(d.values), top = Math.ceil(max / step) * step;
   const W = 360, H = 220, L = 40, B = 40, T = 24;
   const bw = (W - L - 10) / d.labels.length;
   let g = svgOpen(W, H, d.title ?? 'bar graph');
@@ -135,15 +180,143 @@ function barGraph(d: Of<'bar_graph'>): string {
   return `${g}</svg>`;
 }
 
+// ── Chart (shares its data model and rules with deep-dive's chart block) ────
+
+const CHART_COLORS = [INK.cyan, INK.amber, '#c084fc', '#34d399', '#f87171', '#60a5fa'];
+/** Each line also has its own dash, so the lines can be told apart without color. */
+const CHART_DASHES = ['', '7 4', '2 4', '10 4 2 4'];
+const CHART_DIM = 0.28;
+const tickText = (v: number) => String(Number(v.toPrecision(10)));
+
+function axisChart(d: Of<'chart'>): string {
+  const view = chartView({ chartType: d.chart_type, yLabel: d.y_label, data: d.points });
+  const multi = view.series.length > 1, n = view.rows.length, W = 420, H0 = 170;
+  const axis = chartAxis(d.points.map(p => p.value));
+  const L = 14 + (d.y_label ? 14 : 0) + Math.max(...axis.ticks.map(t => tickText(t).length)) * 6, R = 14, plot = W - L - R;
+
+  // The legend wraps, so the plot starts below however many rows it takes.
+  const legend: Array<{ name: string; s: number; x: number; row: number }> = [];
+  let lx = L, row = 0;
+  if (multi) view.series.forEach((name, s) => {
+    const w = 34 + name.length * 6.4;
+    if (lx + w > W - R && lx > L) { lx = L; row += 1; }
+    legend.push({ name, s, x: lx, row });
+    lx += w;
+  });
+  const titleH = d.title ? 26 : 6, legendY = titleH + 8, T = titleH + (multi ? (row + 1) * 18 + 4 : 4);
+
+  const names = view.rows.map(r => String(r.name));
+  const rotate = !view.numericX && Math.max(...names.map(s => s.length)) * 6 > plot / n;
+  const B = (rotate ? 62 : 24) + (d.x_label ? 16 : 0), H = T + H0 + B, base = T + H0;
+  const y = (v: number) => r2(base - ((v - axis.bottom) / (axis.top - axis.bottom)) * H0);
+  const slot = plot / n;
+  const xs = view.rows.map((r, i) => {
+    if (!view.numericX) return L + slot * (i + 0.5);
+    const lo = view.rows[0].x as number, hi = view.rows[n - 1].x as number;
+    return L + 18 + (((r.x as number) - lo) / (hi - lo)) * (plot - 36);
+  });
+
+  const isRow = d.highlight !== undefined && names.includes(d.highlight);
+  const isGroup = d.highlight !== undefined && multi && view.series.includes(d.highlight);
+  const rowOn = (name: string) => !isRow || name === d.highlight;
+  const groupOn = (name: string) => !isGroup || name === d.highlight;
+
+  let g = svgOpen(W, H, `${d.chart_type} chart${d.title ? `: ${d.title}` : ''}`);
+  if (d.title) g += `<text x="${W / 2}" y="17" text-anchor="middle" font-size="13" font-weight="600" fill="${INK.text}">${esc(d.title)}</text>`;
+  for (const e of legend) {
+    const ly = legendY + e.row * 18, color = CHART_COLORS[e.s], on = groupOn(e.name) ? 1 : CHART_DIM;
+    g += d.chart_type === 'line'
+      ? `<line x1="${e.x}" x2="${e.x + 24}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="2.5" stroke-opacity="${on}" stroke-dasharray="${CHART_DASHES[e.s]}"/>`
+      : `<rect x="${e.x + 8}" y="${ly - 6}" width="12" height="12" rx="2" fill="${color}" fill-opacity="${on}"/>`;
+    g += `<text x="${e.x + 29}" y="${ly + 4}" font-size="11" fill="${INK.text}" fill-opacity="${on}">${esc(e.name)}</text>`;
+  }
+  for (const t of axis.ticks) {
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${t === 0 ? INK.strong : INK.line}"/><text x="${L - 6}" y="${y(t) + 4}" font-size="10" text-anchor="end" fill="${INK.muted}">${tickText(t)}</text>`;
+  }
+  if (isRow) names.forEach((name, i) => {
+    if (name === d.highlight) g += `<rect x="${r2(xs[i] - Math.min(slot, 34) / 2)}" y="${T}" width="${r2(Math.min(slot, 34))}" height="${H0}" rx="4" fill="${INK.amber}" fill-opacity="0.16"/>`;
+  });
+
+  const valueText = (x: number, v: number, on: number) => `<text x="${r2(x)}" y="${v < 0 ? y(v) + 13 : y(v) - 5}" font-size="10" text-anchor="middle" fill="${INK.text}" fill-opacity="${on}">${tickText(v)}</text>`;
+  if (d.chart_type === 'bar') {
+    const groupW = Math.min(slot * 0.72, 18 * view.series.length + 24), barW = groupW / view.series.length;
+    view.rows.forEach((r, i) => view.series.forEach((name, s) => {
+      const v = r[`s${s}`] as number, x = xs[i] - groupW / 2 + s * barW, on = rowOn(names[i]) && groupOn(name) ? 1 : CHART_DIM;
+      const top = Math.min(y(v), y(0)), h = Math.abs(y(v) - y(0));
+      g += `<rect x="${r2(x + 1)}" y="${top}" width="${r2(barW - 2)}" height="${r2(h)}" rx="2" fill="${CHART_COLORS[multi ? s : 0]}" fill-opacity="${on}"/>`;
+      if (d.show_values) g += valueText(x + barW / 2, v, on);
+    }));
+  } else {
+    view.series.forEach((name, s) => {
+      const color = CHART_COLORS[s], on = groupOn(name) ? 1 : CHART_DIM;
+      const pts = view.rows.flatMap((r, i) => (typeof r[`s${s}`] === 'number' ? [{ x: xs[i], v: r[`s${s}`] as number, name: names[i] }] : []));
+      g += `<polyline fill="none" stroke="${color}" stroke-width="2.5" stroke-opacity="${on}" stroke-dasharray="${multi ? CHART_DASHES[s] : ''}" points="${pts.map(p => `${r2(p.x)},${y(p.v)}`).join(' ')}"/>`;
+      for (const p of pts) {
+        const lit = isRow && p.name === d.highlight;
+        g += `<circle cx="${r2(p.x)}" cy="${y(p.v)}" r="${lit ? 5.5 : 3.5}" fill="${lit ? INK.amber : color}" fill-opacity="${on}"/>`;
+        if (d.show_values) g += valueText(p.x, p.v, on);
+      }
+    });
+  }
+
+  // On a scaled axis two close years would print over each other: the point still shows, its label drops.
+  let lastX = -Infinity;
+  names.forEach((name, i) => {
+    if (view.numericX && xs[i] - lastX < name.length * 6 + 6) return;
+    lastX = xs[i];
+    const lit = isRow && name === d.highlight, ly = base + 14, x = r2(xs[i]);
+    g += `<text x="${x}" y="${ly}" font-size="10.5" text-anchor="${rotate ? 'end' : 'middle'}" fill="${lit ? INK.amber : INK.text}"${lit ? ' font-weight="700"' : ''}${rotate ? ` transform="rotate(-35 ${x} ${ly})"` : ''}>${esc(name)}</text>`;
+  });
+  if (d.x_label) g += `<text x="${r2(L + plot / 2)}" y="${H - 5}" font-size="10" text-anchor="middle" fill="${INK.muted}">${esc(d.x_label)}</text>`;
+  if (d.y_label) g += `<text x="11" y="${T + H0 / 2}" font-size="10" fill="${INK.muted}" transform="rotate(-90 11 ${T + H0 / 2})" text-anchor="middle">${esc(d.y_label)}</text>`;
+  // One column per label, as wide as the room to its nearest neighbour, from the top of the plot to under its label.
+  names.forEach((name, i) => {
+    const w = Math.min(i > 0 ? xs[i] - xs[i - 1] : Infinity, i < n - 1 ? xs[i + 1] - xs[i] : Infinity, 64);
+    g += hitRect(name, xs[i] - w / 2, T, w, H0 + 22);
+  });
+  return `${g}</svg>`;
+}
+
+function pieChart(d: Of<'chart'>): string {
+  const W = 420, top = d.title ? 28 : 8, r = 78, cx = W / 2, cy = top + r + 22, H = cy + r + 24;
+  const total = d.points.reduce((sum, p) => sum + p.value, 0);
+  const at = (a: number, radius: number) => ({ x: r2(cx + radius * Math.cos(a)), y: r2(cy + radius * Math.sin(a)) });
+  let g = svgOpen(W, H, `pie chart${d.title ? `: ${d.title}` : ''}`);
+  if (d.title) g += `<text x="${W / 2}" y="17" text-anchor="middle" font-size="13" font-weight="600" fill="${INK.text}">${esc(d.title)}</text>`;
+  let angle = -Math.PI / 2;
+  d.points.forEach((p, i) => {
+    if (p.value <= 0) return;
+    const share = p.value / total, end = angle + share * 2 * Math.PI, mid = (angle + end) / 2, on = d.highlight === undefined || d.highlight === p.label ? 1 : CHART_DIM;
+    const a = at(angle, r), b = at(end, r), color = CHART_COLORS[i % CHART_COLORS.length];
+    g += share > 0.9999
+      ? `<circle data-part="${esc(p.label)}" cx="${cx}" cy="${cy}" r="${r}" fill="${color}" fill-opacity="${on}"/>`
+      : `<path data-part="${esc(p.label)}" d="M${cx} ${cy}L${a.x} ${a.y}A${r} ${r} 0 ${share > 0.5 ? 1 : 0} 1 ${b.x} ${b.y}Z" fill="${color}" fill-opacity="${on}" stroke="rgba(15,23,42,0.9)" stroke-width="1.5"/>`;
+    const t = at(mid, r + 12);
+    g += `<text x="${t.x}" y="${t.y + 4}" font-size="11" text-anchor="${Math.cos(mid) > 0.15 ? 'start' : Math.cos(mid) < -0.15 ? 'end' : 'middle'}" fill="${INK.text}" fill-opacity="${on}">${esc(p.label)}${d.show_values ? ` ${tickText(p.value)}` : ''}</text>`;
+    angle = end;
+  });
+  return `${g}</svg>`;
+}
+
+const LINE_L = 20, LINE_SPAN = 340;
+/** A mark a child can tap: every labeled mark except the one asked about. */
+const lineParts = (d: Of<'number_line'>) => (d.marks ?? []).filter(m => m.label.trim() && m.label.trim() !== '?');
+const lineGap = (d: Of<'number_line'>, m: { value: number }, others: Array<{ value: number }>) =>
+  Math.min(...others.filter(o => o !== m).map(o => (Math.abs(o.value - m.value) / (d.max - d.min)) * LINE_SPAN));
+
 function numberLine(d: Of<'number_line'>): string {
-  const W = 380, L = 20, R = W - 20, y = 40, x = (v: number) => L + ((v - d.min) / (d.max - d.min)) * (R - L);
+  const W = 380, L = LINE_L, R = L + LINE_SPAN, y = 40, x = (v: number) => L + ((v - d.min) / (d.max - d.min)) * (R - L);
   let g = `${svgOpen(W, 80, 'number line')}<line x1="${L}" x2="${R}" y1="${y}" y2="${y}" stroke="${INK.text}" stroke-width="2"/>`;
   const ticks = Math.round((d.max - d.min) / d.step);
   for (let i = 0; i <= ticks; i++) { const v = d.min + i * d.step; g += `<line x1="${x(v)}" x2="${x(v)}" y1="${y - 7}" y2="${y + 7}" stroke="${INK.text}"/>`; }
   for (const m of d.marks ?? []) {
-    const q = String(m.label).trim() === '?';
-    g += `<circle cx="${x(m.value)}" cy="${y}" r="5" fill="${q ? INK.asked : INK.cyan}"/><text x="${x(m.value)}" y="${y + 26}" font-size="13" text-anchor="middle" fill="${INK.text}">${esc(m.label)}</text>`;
+    const q = String(m.label).trim() === '?', lit = !q && m.label === d.highlight;
+    if (lit) g += `<circle cx="${x(m.value)}" cy="${y}" r="11" fill="${INK.amber}" fill-opacity="0.3" stroke="${INK.amber}" stroke-width="2"/>`;
+    g += `<circle cx="${x(m.value)}" cy="${y}" r="5" fill="${q ? INK.asked : lit ? INK.amber : INK.cyan}"/><text x="${x(m.value)}" y="${y + 26}" font-size="13"${lit ? ' font-weight="700"' : ''} text-anchor="middle" fill="${lit ? INK.amber : INK.text}">${esc(m.label)}</text>`;
   }
+  // The tap circle covers the mark and its label, and stops halfway to the next mark.
+  const parts = lineParts(d);
+  for (const m of parts) g += hitCircle(m.label, x(m.value), y + 10, r2(Math.min(18, lineGap(d, m, parts) / 2)));
   return `${g}</svg>`;
 }
 
@@ -446,6 +619,7 @@ function pictograph(d: Of<'pictograph'>): string {
       const k = Math.floor(n), ix = left + k * size;
       g += `<svg x="${ix}" y="${y}" width="${size / 2}" height="${rowH}" viewBox="0 0 ${size / 2} ${rowH}"><text x="${size / 2}" y="${rowH / 2 + 7}" text-anchor="middle" font-size="20">${esc(d.icon)}</text></svg>`;
     }
+    g += hitRect(label, 2, y + 1, W - 4, rowH - 2);
   });
   g += `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" font-size="12" fill="${INK.muted}">Key: ${esc(d.icon)} = ${d.key_value}</text>`;
   return `${g}</svg>`;
@@ -471,6 +645,7 @@ function timeline(d: Of<'timeline'>): string {
     const textY = up ? tip - 8 : tip + 16;
     g += `<text x="${x}" y="${textY}" text-anchor="middle" font-size="12" font-weight="${asked || lit ? 700 : 500}" fill="${asked ? INK.asked : lit ? INK.amber : INK.text}">${esc(`${e.icon ? `${e.icon} ` : ''}${e.label}`)}</text>`;
     if (dated) g += `<text x="${x}" y="${up ? y + 18 : y - 10}" text-anchor="middle" font-size="11" fill="${INK.muted}">${esc(e.at)}</text>`;
+    if (!asked) g += hitRect(e.label, x - 30, Math.min(y, tip) - 24, 60, Math.abs(tip - y) + 48);
   });
   return `${g}</svg>`;
 }
@@ -496,12 +671,13 @@ function flowLines(label: string): string[] {
   return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
 }
 
-function flowNode(s: FlowStep, cx: number, cy: number, lit: boolean): string {
+function flowNode(s: FlowStep, cx: number, cy: number, lit: boolean, part = true): string {
   const asked = s.label.trim() === '?', stroke = asked ? INK.asked : lit ? INK.amber : INK.strong;
   const lines = flowLines(s.label), textTop = s.icon ? cy + 12 : cy + 5 - (lines.length - 1) * 7;
   let g = `<rect x="${r2(cx - FLOW_W / 2)}" y="${r2(cy - FLOW_H / 2)}" width="${FLOW_W}" height="${FLOW_H}" rx="10" fill="${INK.face}" stroke="${stroke}" stroke-width="${asked || lit ? 2.5 : 1.5}"/>`;
   if (s.icon) g += `<text x="${r2(cx)}" y="${r2(cy - 4)}" text-anchor="middle" font-size="20">${esc(s.icon)}</text>`;
   lines.forEach((l, i) => { g += `<text x="${r2(cx)}" y="${r2(textTop + i * (s.icon ? 11 : 14))}" text-anchor="middle" font-size="${s.icon && lines.length > 1 ? 10 : 12}" font-weight="${asked || lit ? 700 : 500}" fill="${asked ? INK.asked : lit ? INK.amber : INK.text}">${esc(l)}</text>`; });
+  if (part && !asked) g += hitRect(s.label, cx - FLOW_W / 2, cy - FLOW_H / 2, FLOW_W, FLOW_H);
   return g;
 }
 
@@ -559,7 +735,7 @@ function mapDrawn(d: Of<'map'>): string {
     const x = px(p.x), y = py(p.y), lit = d.highlight === p.name;
     if (lit) g += `<circle cx="${x}" cy="${y}" r="16" fill="${INK.amber}" fill-opacity="0.3" stroke="${INK.amber}" stroke-width="2"/>`;
     g += p.icon ? `<text x="${x}" y="${y + 7}" text-anchor="middle" font-size="20">${esc(p.icon)}</text>` : `<circle cx="${x}" cy="${y}" r="6" fill="${INK.cyan}"/>`;
-    if (p.name) g += `<text x="${x}" y="${y + 24}" text-anchor="middle" font-size="11" font-weight="600" fill="${lit ? INK.amber : INK.text}">${esc(p.name)}</text>`;
+    if (p.name) g += `<text x="${x}" y="${y + 24}" text-anchor="middle" font-size="11" font-weight="600" fill="${lit ? INK.amber : INK.text}">${esc(p.name)}</text>${hitCircle(p.name, x, y + 4, 18)}`;
   }
   if (d.compass !== false) {
     const cx = pad + grid - 26, cy = top + pad + 28;
@@ -619,6 +795,9 @@ function cellShape(shape: CellShape, x: number, y: number): string {
   }
 }
 
+/** What a part of a cell is called on a point item: its label, or its shape when the drawing leaves it unlabelled. */
+const cellPartName = (p: CellPart): string | null => (p.label === '?' ? null : p.label ?? p.shape);
+
 function cellDrawn(d: Of<'cell'>): string {
   // A "?" is drawn on the part itself, so a card with no other labels has no legend beside it.
   const named = d.parts.filter(p => p.label && p.label !== '?');
@@ -633,7 +812,7 @@ function cellDrawn(d: Of<'cell'>): string {
     : `<ellipse cx="130" cy="100" rx="124" ry="92" ${skin}/>`;
   for (const { part, x, y } of cellLayout(d) ?? []) {
     g += cellShape(part.shape, x, y);
-    if (d.highlight !== undefined && part.label === d.highlight) {
+    if (d.highlight !== undefined && cellPartName(part) === d.highlight) {
       const [rx, ry] = part.shape === 'round' ? [ROUND_AT.r + 5, ROUND_AT.r + 5] : part.shape === 'sac' ? [SAC_AT.rx + 5, SAC_AT.ry + 5] : [20, 14];
       g += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="none" stroke="${INK.amber}" stroke-width="2.5"/>`;
     }
@@ -647,6 +826,18 @@ function cellDrawn(d: Of<'cell'>): string {
     g += `<g transform="translate(290 ${y}) scale(0.62) translate(-290 ${-y})">${p.shape === 'round' ? `<circle cx="290" cy="${y}" r="12" fill="${CELL_FILL.round}"/>` : p.shape === 'sac' ? `<ellipse cx="290" cy="${y}" rx="12" ry="15" fill="${CELL_FILL.sac}" fill-opacity="0.6"/>` : cellShape(p.shape, 290, y)}</g>`;
     g += `<text x="306" y="${y + 4}" font-size="12.5" font-weight="${asked || lit ? 700 : 500}" fill="${asked ? INK.asked : lit ? INK.amber : INK.text}">${esc(p.label)}</text>`;
   });
+  // One tap shape per part, over every copy drawn. The big parts go first so a small part beside one stays on top.
+  const placed = cellLayout(d) ?? [];
+  const big = (p: CellPart) => p.shape === 'round' || p.shape === 'sac';
+  for (const part of [...d.parts].sort((a, b) => Number(big(b)) - Number(big(a)))) {
+    const name = cellPartName(part);
+    if (name === null) continue;
+    const spots = placed.filter(s => s.part === part).map(({ x, y }) => {
+      const [rx, ry] = part.shape === 'round' ? [ROUND_AT.r, ROUND_AT.r] : part.shape === 'sac' ? [SAC_AT.rx, SAC_AT.ry] : [20, 14];
+      return `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#000" fill-opacity="0"/>`;
+    }).join('');
+    g += `<g data-part="${esc(name)}">${spots}</g>`;
+  }
   return `${g}</g></svg>`;
 }
 
@@ -664,6 +855,7 @@ function zoomDrawn(d: Of<'zoom'>): string {
     g += `<rect x="${x}" y="${y}" width="${B}" height="${B}" rx="12" fill="${INK.face}" stroke="${stroke}" stroke-width="${asked || lit ? 2.5 : 1.5}"/>`;
     g += `<text x="${x + B / 2 - (i < n - 1 ? 10 : 0)}" y="${y + B / 2 + 13}" text-anchor="middle" font-size="36" fill="${asked ? INK.asked : INK.text}">${esc(asked ? '?' : l.icon ?? '')}</text>`;
     flowLines(l.label).forEach((t, j) => { g += `<text x="${x + B / 2}" y="${y + B + 16 + j * 13}" text-anchor="middle" font-size="12" font-weight="${asked || lit ? 700 : 500}" fill="${asked ? INK.asked : lit ? INK.amber : INK.text}">${esc(t)}</text>`; });
+    if (!asked) g += hitRect(l.label, x, y, B, B + 32);
   });
   return `${g}</svg>`;
 }
@@ -688,12 +880,148 @@ function foodWebDrawn(d: Of<'food_web'>): string {
   return `${g}</svg>`;
 }
 
+// ── Shares: a shape cut into parts (EV-2) ───────────────────────────────────
+
+type Shares = Of<'shares'>;
+const uniqSorted = (v: readonly number[] | undefined) => Array.from(new Set(v ?? [])).sort((a, b) => a - b);
+/** Cuts that split a span into parts of one size. */
+const evenly = (cuts: readonly number[], span: number) => { const at = [0, ...cuts, span]; return at.every((v, i) => i === 0 || v - at[i - 1] === at[1]); };
+const rectBox = (d: Shares) => { const wide = d.wide ?? 6, tall = d.tall ?? 4, u = Math.min(40, Math.floor(288 / wide)), pad = 22; return { wide, tall, u, pad, W: wide * u + pad * 2, H: tall * u + pad * 2 }; };
+
+function sharesFacts(d: Shares): Record<string, number | boolean> {
+  if (d.shape === 'circle') {
+    const c = uniqSorted(d.cuts), n = c.length;
+    if (n < 2) return { parts: 1, equal: false };
+    const gap = c[1] - c[0];
+    return { parts: n, equal: c.every((v, i) => (c[(i + 1) % n] - v + 12) % 12 === gap % 12) };
+  }
+  if (d.diagonal) return { parts: d.diagonal === 'both' ? 4 : 2, equal: true };
+  const { wide, tall } = rectBox(d), cuts = uniqSorted(d.cuts), across = uniqSorted(d.across);
+  const columns = cuts.length + 1, rows = across.length + 1;
+  return { parts: rows * columns, equal: rows * columns > 1 && evenly(cuts, wide) && evenly(across, tall), rows, columns };
+}
+
+function sharesErrors(d: Shares): string[] {
+  if (d.shape !== 'circle' && d.shape !== 'rectangle') return ['shares: shape is "circle" or "rectangle"'];
+  const distinct = (v: readonly number[]) => new Set(v).size === v.length;
+  if (d.shape === 'circle') {
+    if (!Array.isArray(d.cuts) || !d.cuts.every(c => whole(c, 0, 11)) || !distinct(d.cuts)) return ['shares: a circle\'s cuts are distinct whole numbers 0-11, the places of the hours on a clock (0 is straight up)'];
+    if (d.across?.length || d.diagonal) return ['shares: a circle has only cuts from its center'];
+  } else {
+    const { wide, tall } = rectBox(d), across = d.across ?? [];
+    if (!whole(wide, 2, 12) || !whole(tall, 2, 12)) return ['shares: a rectangle is 2-12 wide and 2-12 tall'];
+    if (!Array.isArray(d.cuts) || !d.cuts.every(c => whole(c, 1, wide - 1)) || !distinct(d.cuts)) return [`shares: cuts down are distinct whole numbers 1-${wide - 1} (steps from the left side)`];
+    if (!across.every(c => whole(c, 1, tall - 1)) || !distinct(across)) return [`shares: cuts across are distinct whole numbers 1-${tall - 1} (steps from the top)`];
+    if (d.diagonal && (d.cuts.length || across.length || d.shaded)) return ['shares: a corner-to-corner cut is drawn alone, with no other cuts and nothing shaded'];
+  }
+  const parts = sharesFacts(d).parts as number;
+  return d.shaded === undefined || whole(d.shaded, 0, parts) ? [] : [`shares: shaded is a whole number 0-${parts}, the parts this shape has`];
+}
+
+function sharesDrawn(d: Shares): string {
+  const ink = d.highlight === 'cuts' ? INK.amber : INK.text, shade = 'rgba(34,211,238,0.45)', shaded = d.shaded ?? 0;
+  if (d.shape === 'circle') {
+    const S = 200, C = 100, R = 88, c = uniqSorted(d.cuts);
+    const at = (p: number) => ({ x: r2(C + R * Math.sin((p * Math.PI) / 6)), y: r2(C - R * Math.cos((p * Math.PI) / 6)) });
+    let g = `${svgOpen(S, S, 'a circle', 240)}<circle cx="${C}" cy="${C}" r="${R}" fill="${INK.face}" stroke="${INK.strong}" stroke-width="2"/>`;
+    if (shaded && c.length < 2) g += `<circle cx="${C}" cy="${C}" r="${R}" fill="${shade}"/>`;
+    else for (let i = 0; i < Math.min(shaded, c.length); i++) {
+      const next = c[(i + 1) % c.length], a = at(c[i]), b = at(next), span = (next - c[i] + 12) % 12 || 12;
+      g += `<path d="M${C} ${C} L${a.x} ${a.y} A${R} ${R} 0 ${span > 6 ? 1 : 0} 1 ${b.x} ${b.y} Z" fill="${shade}"/>`;
+    }
+    for (const p of c) { const e = at(p); g += `<line x1="${C}" y1="${C}" x2="${e.x}" y2="${e.y}" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>`; }
+    return `${g}<circle cx="${C}" cy="${C}" r="4" fill="${INK.text}"/></svg>`;
+  }
+  const { wide, tall, u, pad, W, H } = rectBox(d), cuts = uniqSorted(d.cuts), across = uniqSorted(d.across);
+  let g = `${svgOpen(W, H, 'a rectangle', 340)}<rect x="${pad}" y="${pad}" width="${wide * u}" height="${tall * u}" fill="${INK.face}" stroke="${INK.strong}" stroke-width="2"/>`;
+  const xs = [0, ...cuts, wide], ys = [0, ...across, tall];
+  for (let k = 0; k < shaded; k++) {
+    const col = k % (xs.length - 1), row = Math.floor(k / (xs.length - 1));
+    g += `<rect x="${pad + xs[col] * u}" y="${pad + ys[row] * u}" width="${(xs[col + 1] - xs[col]) * u}" height="${(ys[row + 1] - ys[row]) * u}" fill="${shade}"/>`;
+  }
+  const line = (x1: number, y1: number, x2: number, y2: number) => `<line x1="${pad + x1 * u}" y1="${pad + y1 * u}" x2="${pad + x2 * u}" y2="${pad + y2 * u}" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>`;
+  for (const c of cuts) g += line(c, 0, c, tall);
+  for (const r of across) g += line(0, r, wide, r);
+  if (d.diagonal === 'down' || d.diagonal === 'both') g += line(0, 0, wide, tall);
+  if (d.diagonal === 'up' || d.diagonal === 'both') g += line(0, tall, wide, 0);
+  return `${g}</svg>`;
+}
+
+/** Where the cuts are, never how many parts they make or whether the parts match: the tutor coaches from it without the answer. */
+function sharesWords(d: Shares): string {
+  const shaded = d.shaded ? `, ${d.shaded} part${d.shaded === 1 ? '' : 's'} shaded` : '';
+  if (d.shape === 'circle') {
+    const c = uniqSorted(d.cuts);
+    return `a circle with ${c.length ? `cuts from its center toward ${c.map(p => p || 12).join(', ')} o'clock` : 'no cuts'}${shaded}`;
+  }
+  if (d.diagonal) return `a rectangle cut corner to corner${d.diagonal === 'both' ? ' both ways' : ''}`;
+  const { wide, tall } = rectBox(d), cuts = uniqSorted(d.cuts), across = uniqSorted(d.across);
+  const say = (v: number[], dir: string, from: string) => (v.length ? `${v.length} cut${v.length === 1 ? '' : 's'} ${dir} (${v.join(', ')} steps from the ${from})` : `no cuts ${dir}`);
+  return `a rectangle ${wide} steps wide and ${tall} tall with ${say(cuts, 'down', 'left')} and ${say(across, 'across', 'top')}${shaded}`;
+}
+
+/** A mark for every place a shape can be cut: on the circle like the hours, along the rectangle's top and left side. */
+function sharesMarks(d: Shares, field: string): SetMark[] {
+  if (d.shape === 'circle') return field === 'cuts' ? Array.from({ length: 12 }, (_, p) => ({ n: p, x: r2(50 + 36 * Math.sin((p * Math.PI) / 6)), y: r2(50 - 36 * Math.cos((p * Math.PI) / 6)), size: 14 })) : [];
+  const { wide, tall, u, pad, W, H } = rectBox(d), size = r2(Math.min(11, ((u - 3) / W) * 100));
+  if (field === 'cuts') return Array.from({ length: wide - 1 }, (_, i) => ({ n: i + 1, x: r2(((pad + (i + 1) * u) / W) * 100), y: r2((pad / 2 / H) * 100), size }));
+  if (field === 'across') return Array.from({ length: tall - 1 }, (_, i) => ({ n: i + 1, x: r2((pad / 2 / W) * 100), y: r2(((pad + (i + 1) * u) / H) * 100), size }));
+  return [];
+}
+
+const SHARES_SET: DisplaySet<Shares> = {
+  facts: sharesFacts,
+  controls: d => (d.shape === 'circle'
+    ? [{ field: 'cuts', label: 'cut toward', toggle: Array.from({ length: 12 }, (_, p) => p) }]
+    : [{ field: 'cuts', label: 'cut down at', toggle: Array.from({ length: rectBox(d).wide - 1 }, (_, i) => i + 1) }, { field: 'across', label: 'cut across at', toggle: Array.from({ length: rectBox(d).tall - 1 }, (_, i) => i + 1) }]),
+  marks: sharesMarks,
+  hints: { parts: 'Count the parts.', rows: 'Count the rows.', columns: 'Count the columns.', equal: 'Look at the parts. Are they all the same size?' },
+};
+
+const CLOCK_SET: DisplaySet<Of<'clock'>> = {
+  controls: () => [{ field: 'hour', label: 'short hand', min: 1, max: 12, wrap: true }, { field: 'minute', label: 'long hand', min: 0, max: 55, step: 5, wrap: true }],
+  hints: { hour: 'Look at the short hand.', minute: 'Look at the long hand.' },
+};
+
 const iconOk = (v: unknown) => typeof v === 'string' && v.trim().length > 0 && Array.from(v.trim()).length <= 4;
 const textOr = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
 
 // ── The registry ────────────────────────────────────────────────────────────
 
 const DATA_LOAD: DisplayLoad = { score: 0.4, why: 'reading a graph, number line or table' };
+
+/**
+ * How to draw for teaching (USER 2026-11-09). Craft the author reads, not a list it picks from: code never asks which
+ * kind a drawing is. The rules come from drawings that worked (`qa/agent-surfaces/DISPLAY_ROADMAP.md`, bridge trusses).
+ */
+export const DRAWING_GUIDE = `Before you draw, decide what the drawing must make visible and say it in one sentence. That sentence is "shows", and a reader who sees only the picture checks it. These kinds of teaching drawing are common. Use one, combine them, or do something else when the idea needs it.
+- Comparison, for telling cases apart: the same frame in every case, and only the thing being taught changes. Include a case that tests the rule, one that looks right at a glance and is not.
+- Schematic, for how parts connect (forces, circuits, a system): plain lines and a few shapes, no scenery. Draw only what the idea uses.
+- Cut-away, for what is inside: each inner part a separate shape, in its real place and about its real size compared with the others.
+- Process, for change over time or a cycle: the same objects in every stage, drawn the same way, with arrows for what changes.
+Draw whatever you can draw well. Flat shapes often make a weak likeness of a real animal or place, and where you have an image model it paints those better. The choice is yours, and the reader checks the result.`;
+
+const tablePart = (row: string[]): string | null => { const c = (row[0] ?? '').trim(); return c && c !== '?' ? c : null; };
+
+function tableDrawn(d: Of<'table'>): string {
+  const row = (r: string[]) => {
+    const name = tablePart(r);
+    return `<tr${name ? ` data-part="${esc(name)}"` : ''}${name && name === d.highlight ? ' class="ks-lit"' : ''}>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`;
+  };
+  return `<table class="ks-table" style="max-width:560px;margin:0 auto"><thead><tr>${d.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map(row).join('')}</tbody></table>`;
+}
+
+/** A sentence's name on a point item: the number printed beside it. The key is short and the child reads the sentence. */
+const sentenceName = (i: number) => `Sentence ${i + 1}`;
+const MAX_SENTENCE = 220, MAX_PASSAGE = 1400;
+
+function passageDrawn(d: Of<'passage'>): string {
+  const sentences = d.sentences.map((t, i) => {
+    const name = sentenceName(i);
+    return `<span data-part="${name}"${name === d.highlight ? ' class="ks-lit"' : ''}><sup class="ks-sn">${i + 1}</sup> ${esc(t)}</span>`;
+  }).join(' ');
+  return `<div class="ks-passage" style="max-width:560px">${d.title ? `<p class="ks-passage-title">${esc(d.title)}</p>` : ''}<p class="ks-text">${sentences}</p>${d.attribution ? `<p class="ks-passage-by">${esc(d.attribution)}</p>` : ''}</div>`;
+}
 
 const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
   svg: {
@@ -717,22 +1045,50 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
     words: d => `a bar graph${d.title ? ` "${d.title}"` : ''}: ${d.labels.map((l, i) => `${l} ${d.values[i]}`).join(', ')}`,
     load: () => DATA_LOAD,
   },
+  chart: {
+    prompt: `{kind:"chart", chart_type:"line"|"bar"|"pie", title, x_label, y_label, points:[{label, value, group}], show_values:true (optional), highlight:"a point's label or a group" (optional, for a help)}: code draws it to scale. Line for change over time, bar to compare amounts, pie for parts of a whole. group is optional: name it on every point to compare 2-4 sets of data on bar or line. Line labels that are plain numbers (1900, 1950, 1960) are spaced to scale. The numbers are not printed unless show_values is true, so leave it off when the child must read a value from the axis.`,
+    read: raw => ({
+      kind: 'chart', chart_type: str(raw.chart_type) as Of<'chart'>['chart_type'], title: textOr(raw.title), x_label: textOr(raw.x_label), y_label: textOr(raw.y_label),
+      points: list(raw.points).map(p => { const x = p as Args; return { label: str(String(x?.label ?? '')), value: num(x?.value), ...(textOr(x?.group) ? { group: textOr(x?.group) } : {}) }; }),
+      ...(raw.show_values === true ? { show_values: true } : {}), ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}),
+    }),
+    errors: d => {
+      if (!Array.isArray(d.points)) return ['chart: points is a list of {label, value}'];
+      const bad = chartDataError(d.chart_type, d.points);
+      if (bad) return [`chart: ${bad}`];
+      if (d.points.some(p => p.label.length > 20 || (p.group ?? '').length > 18)) return ['chart: a label is at most 20 characters and a group at most 18'];
+      return d.highlight !== undefined && !d.points.some(p => p.label === d.highlight || p.group === d.highlight) ? ["chart: highlight is one of the point labels or groups"] : [];
+    },
+    draw: d => (d.chart_type === 'pie' ? pieChart(d) : axisChart(d)),
+    // A bar, a point on a line (every group's at that label) or a slice, by its label.
+    parts: d => Array.from(new Set(d.points.filter(p => d.chart_type !== 'pie' || p.value > 0).map(p => p.label))),
+    words: d => chartWords({ chartType: d.chart_type, title: d.title, xLabel: d.x_label, yLabel: d.y_label, data: d.points }),
+    load: d => (d.points.some(p => p.group) ? { score: DATA_LOAD.score + 0.2, why: 'reading a chart that compares groups' } : DATA_LOAD),
+  },
   number_line: {
-    prompt: `{kind:"number_line", min, max, step, marks:[{value, label}]}: code draws it. A mark labeled "?" is the point asked about. Values may be decimals (0.75).`,
-    read: raw => ({ kind: 'number_line', min: num(raw.min), max: num(raw.max), step: num(raw.step), marks: list(raw.marks).map(m => ({ value: num((m as Args)?.value), label: String((m as Args)?.label ?? '') })) }),
+    prompt: `{kind:"number_line", min, max, step, marks:[{value, label}]}: code draws it. A mark labeled "?" is the point asked about. Values may be decimals (0.75). On a point item each labeled mark is a part, named by its label: label them A, B, C when the child must find where a value sits, and keep them apart. highlight:"a mark's label" (optional, for a help).`,
+    read: raw => ({ kind: 'number_line', min: num(raw.min), max: num(raw.max), step: num(raw.step), marks: list(raw.marks).map(m => ({ value: num((m as Args)?.value), label: String((m as Args)?.label ?? '') })), ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}) }),
     errors: d => {
       if (!finite(d.min) || !finite(d.max) || !finite(d.step) || d.max <= d.min || d.step <= 0 || (d.max - d.min) / d.step > 40) return ['number_line: min < max, step > 0, at most 40 ticks'];
-      return (d.marks ?? []).some(m => !finite(m.value) || m.value < d.min || m.value > d.max) ? ['number_line: every mark lies between min and max'] : [];
+      if ((d.marks ?? []).some(m => !finite(m.value) || m.value < d.min || m.value > d.max)) return ['number_line: every mark lies between min and max'];
+      return d.highlight !== undefined && !lineParts(d).some(m => m.label === d.highlight) ? ["number_line: highlight is one of the marks' labels"] : [];
     },
     draw: numberLine,
+    parts: d => lineParts(d).map(m => m.label),
+    seen: d => `Where the marks sit: ${(d.marks ?? []).map(m => `${m.label} at ${m.value}`).join(', ')}`,
+    partsError: d => (lineParts(d).some(m => lineGap(d, m, lineParts(d)) < 28) ? 'number_line: two marks sit too close to tap apart; move them apart or shorten the line' : undefined),
     words: d => `a number line from ${d.min} to ${d.max} in steps of ${d.step}${(d.marks ?? []).length ? `, marked ${(d.marks ?? []).map(m => m.label).join(', ')}` : ''}`,
     load: () => DATA_LOAD,
   },
   table: {
-    prompt: `{kind:"table", headers:[...], rows:[[...]]}`,
-    read: raw => ({ kind: 'table', headers: list(raw.headers).map(String), rows: list(raw.rows).map(r => (Array.isArray(r) ? r.map(String) : [])) }),
-    errors: d => (!Array.isArray(d.headers) || d.headers.length < 1 || !Array.isArray(d.rows) || !d.rows.length || d.rows.some(r => !Array.isArray(r) || r.length !== d.headers.length) ? ['table: headers and rows of the same length'] : []),
-    draw: d => `<table class="ks-table"><thead><tr>${d.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`,
+    prompt: `{kind:"table", headers:[...], rows:[[...]], highlight:"a row's first cell" (optional, for a help)}: code draws it. On a point item each row is a part, named by its first cell, so those cells must differ.`,
+    read: raw => ({ kind: 'table', headers: list(raw.headers).map(String), rows: list(raw.rows).map(r => (Array.isArray(r) ? r.map(String) : [])), ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}) }),
+    errors: d => {
+      if (!Array.isArray(d.headers) || d.headers.length < 1 || !Array.isArray(d.rows) || !d.rows.length || d.rows.some(r => !Array.isArray(r) || r.length !== d.headers.length)) return ['table: headers and rows of the same length'];
+      return d.highlight !== undefined && !d.rows.some(r => tablePart(r) === d.highlight) ? ['table: highlight is the first cell of one row'] : [];
+    },
+    draw: tableDrawn,
+    parts: d => d.rows.flatMap(r => { const name = tablePart(r); return name ? [name] : []; }),
     words: d => `a table (${d.headers.join(', ')}): ${d.rows.map(r => r.join(', ')).join('; ')}`,
     load: () => DATA_LOAD,
   },
@@ -742,6 +1098,20 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
     errors: d => (typeof d.text === 'string' && d.text.trim() ? [] : ['text: some text']),
     draw: d => `<p class="ks-text">${esc(d.text)}</p>`,
     words: d => `text: "${d.text}"`,
+  },
+  passage: {
+    prompt: `{kind:"passage", title (optional), sentences:["one sentence per entry", ...], attribution (optional), highlight:"Sentence 2" (optional, for a help)}: code prints 2-12 numbered sentences to read closely. On a point item the parts are "Sentence 1", "Sentence 2" and so on, and the key is one of those: use it to find the claim, the evidence for a claim, or the detail that answers a question.`,
+    read: raw => ({ kind: 'passage', title: textOr(raw.title), sentences: list(raw.sentences).map(x => str(String(x ?? ''))), ...(textOr(raw.attribution) ? { attribution: textOr(raw.attribution) } : {}), ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}) }),
+    errors: d => {
+      if (!Array.isArray(d.sentences) || d.sentences.length < 2 || d.sentences.length > 12) return ['passage: 2-12 sentences'];
+      if (d.sentences.some(t => !t || t.length > MAX_SENTENCE)) return [`passage: every sentence has text, at most ${MAX_SENTENCE} characters`];
+      if (d.sentences.join(' ').length > MAX_PASSAGE) return [`passage: at most ${MAX_PASSAGE} characters in all, so the tutor and the reader get all of it`];
+      return d.highlight !== undefined && !d.sentences.some((_, i) => sentenceName(i) === d.highlight) ? [`passage: highlight is one of Sentence 1 to Sentence ${d.sentences.length}`] : [];
+    },
+    draw: passageDrawn,
+    parts: d => d.sentences.map((_, i) => sentenceName(i)),
+    words: d => `a passage${d.title ? ` "${d.title}"` : ''}: ${d.sentences.map((t, i) => `(${i + 1}) ${t}`).join(' ')}${d.attribution ? ` (${d.attribution})` : ''}`,
+    load: d => ({ score: Math.min(1, 0.4 + 0.1 * Math.max(0, d.sentences.length - 3)), why: `reading ${d.sentences.length} sentences closely` }),
   },
   clock: {
     prompt: `{kind:"clock", hour:1-12, minute:0-59, numerals:false to hide the numbers (optional), highlight:"hour"|"minute" (optional, for a help)}: code draws an analog clock with the hands in the right place. Never put the time in a label on a clock card.`,
@@ -753,6 +1123,7 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
     reading: d => ({ unit: 'time', value: (d.hour % 12) * 60 + d.minute }),
     load: clockLoad,
     highlights: ['hour', 'minute'],
+    set: CLOCK_SET,
   },
   base_ten: {
     prompt: `{kind:"base_ten", hundreds, tens, ones, ones_first:true to draw the ones on the left (optional, a place-value trap), highlight:"hundreds"|"tens"|"ones" (optional, for a help: outlines one block and writes its value)}: code draws base ten blocks. Tens or ones above 9 are allowed for regrouping (2 tens and 14 ones).`,
@@ -839,6 +1210,19 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
     load: d => ({ score: 0.4 + (new Set(d.coins).size - 1) * 0.1, why: 'counting money' }),
     highlights: ['values'],
   },
+  shares: {
+    prompt: `{kind:"shares", shape:"circle"|"rectangle", cuts:[...], across:[...], wide, tall, diagonal, shaded, highlight:"cuts" (optional, for a help)}: code draws a shape cut into parts. A circle's cuts run from its center toward the hours on a clock, 0-11 with 0 straight up (thirds are [0,4,8]; [0,1,6] is three parts that are not equal). A rectangle is wide x tall steps (2-12 each, and 8 or fewer when the child cuts it, so the marks are big enough to tap); cuts are lines down at steps from the left, across are lines at steps from the top (a 6 x 4 rectangle with cuts [3] and across [2] is four equal parts). diagonal:"down"|"up"|"both" cuts a rectangle corner to corner instead. shaded: how many parts are filled in.`,
+    read: raw => ({ kind: 'shares', shape: (str(raw.shape) || 'circle') as Shares['shape'], cuts: list(raw.cuts).map(num),
+      ...(str(raw.shape) === 'rectangle' ? { across: list(raw.across).map(num), wide: raw.wide === undefined ? 6 : num(raw.wide), tall: raw.tall === undefined ? 4 : num(raw.tall) } : {}),
+      ...(raw.diagonal === 'down' || raw.diagonal === 'up' || raw.diagonal === 'both' ? { diagonal: raw.diagonal } : {}),
+      ...(raw.shaded !== undefined && raw.shaded !== null ? { shaded: num(raw.shaded) } : {}), ...(raw.highlight === 'cuts' ? { highlight: 'cuts' as const } : {}) }),
+    errors: sharesErrors,
+    draw: sharesDrawn,
+    words: sharesWords,
+    load: d => ({ score: 0.3 + (sharesFacts(d).parts as number > 4 ? 0.2 : 0), why: 'reading a shape cut into parts' }),
+    highlights: ['cuts'],
+    set: SHARES_SET,
+  },
   pictograph: {
     prompt: `{kind:"pictograph", title, icon:"one emoji", key_value:how much one picture stands for, labels:[...], values:[the true amounts], highlight:"a row's label" (optional, for a help)}: code draws a picture graph and its key. Each value is a multiple of key_value, or a half picture more when key_value is even.`,
     read: raw => ({ kind: 'pictograph', title: textOr(raw.title), icon: str(raw.icon), key_value: num(raw.key_value), labels: list(raw.labels).map(String), values: list(raw.values).map(num), ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}) }),
@@ -856,6 +1240,7 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !d.labels.includes(d.highlight) ? ['pictograph: highlight is one of the labels'] : [];
     },
     draw: pictograph,
+    parts: d => d.labels,
     words: d => `a picture graph${d.title ? ` "${d.title}"` : ''} where each ${d.icon} stands for ${d.key_value}: ${d.labels.map((l, i) => `${l} ${d.values[i] / d.key_value} pictures`).join(', ')}`,
     load: d => ({ score: 0.4 + (d.key_value > 1 ? 0.3 : 0) + (d.values.some(v => (v / d.key_value) % 1) ? 0.2 : 0), why: `reading a picture graph${d.key_value > 1 ? ' with a key above 1' : ''}` }),
   },
@@ -872,6 +1257,7 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !d.events.some(e => e.label === d.highlight) ? ['timeline: highlight is one of the event labels'] : [];
     },
     draw: timeline,
+    parts: d => d.events.map(e => e.label).filter(l => l.trim() !== '?'),
     words: d => `a timeline${d.title ? ` "${d.title}"` : ''}: ${d.events.map(e => `${e.at !== undefined ? `${e.at} ` : ''}${e.label}`).join(', ')}`,
     load: () => ({ score: 0.4, why: 'reading a timeline' }),
   },
@@ -887,6 +1273,7 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !d.steps.some(s => s.label === d.highlight) ? ['flow: highlight is one of the step labels'] : [];
     },
     draw: flowDrawn,
+    parts: d => d.steps.map(x => x.label).filter(l => l.trim() !== '?'),
     words: d => `${d.loop ? 'a cycle' : 'a flow'}${d.title ? ` "${d.title}"` : ''}: ${d.steps.map(s => s.label).join(', then ')}${d.loop ? ', then back to the start' : ''}`,
     load: () => ({ score: 0.3, why: 'following steps joined by arrows' }),
   },
@@ -912,11 +1299,12 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !names.includes(d.highlight) ? ['map: highlight is one of the place names'] : [];
     },
     draw: mapDrawn,
+    parts: d => d.places.flatMap(p => (p.name ? [p.name] : [])),
     words: d => `a map${d.title ? ` "${d.title}"` : ''}: ${d.places.map(p => `${p.name ?? p.icon} at ${p.x} east, ${p.y} north`).join('; ')}${(d.legend ?? []).length ? `. Key: ${d.legend!.map(l => `${l.icon} means ${l.meaning}`).join(', ')}` : ''}`,
     load: () => ({ score: 0.4, why: 'reading a map' }),
   },
   cell: {
-    prompt: `{kind:"cell", title (optional), cell:"animal"|"plant"|"bacterium", parts:[{shape:"round"|"bean"|"oval"|"sac"|"dots"|"folds", label (optional), count (optional, how many are drawn)}], highlight:"a part's label" (optional, for a help)}: code draws a cell with its parts in one fixed frame, so cards can differ only in what you change (how many of a part, which part is there). The shape is only how it looks: round = a big ball, bean = a bean with wavy folds, oval = a green disc with stripes, sac = a big water bag, dots = tiny specks, folds = stacked curves. Leave a label off, or write "?", when the child has to work out what the part is.`,
+    prompt: `{kind:"cell", title (optional), cell:"animal"|"plant"|"bacterium", parts:[{shape:"round"|"bean"|"oval"|"sac"|"dots"|"folds", label (optional), count (optional, how many are drawn)}], highlight:"a part's label" (optional, for a help)}: code draws a cell with its parts in one fixed frame, so cards can differ only in what you change (how many of a part, which part is there). The shape is only how it looks: round = a big ball, bean = a bean with wavy folds, oval = a green disc with stripes, sac = a big water bag, dots = tiny specks, folds = stacked curves. Leave a label off, or write "?", when the child has to work out what the part is. On a point item a part with a label is named by it, a part with no label by its shape (the key is "bean"), and a "?" part cannot be tapped: leave every label off to ask which part does a job on a cell with no names.`,
     read: raw => ({ kind: 'cell', title: textOr(raw.title), ...(raw.cell === 'plant' || raw.cell === 'bacterium' || raw.cell === 'animal' ? { cell: raw.cell } : {}),
       parts: list(raw.parts).map(p => { const x = p as Args; return { shape: str(x?.shape) as CellShape, ...(textOr(x?.label) ? { label: textOr(x?.label) } : {}), ...(x?.count !== undefined && x?.count !== null ? { count: num(x.count) } : {}) }; }),
       ...(textOr(raw.highlight) ? { highlight: textOr(raw.highlight) } : {}) }),
@@ -931,9 +1319,10 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       if (new Set(labels).size !== labels.length) return ['cell: two parts share a label'];
       if (d.parts.reduce((n, p) => n + (p.count ?? 1), 0) > MAX_CELL_INSTANCES) return [`cell: at most ${MAX_CELL_INSTANCES} parts drawn in all`];
       if (!cellLayout(d)) return ['cell: too many small parts fit around the big ones; draw fewer'];
-      return d.highlight !== undefined && !labels.includes(d.highlight) ? ['cell: highlight is one of the part labels'] : [];
+      return d.highlight !== undefined && !d.parts.some(p => cellPartName(p) === d.highlight) ? ['cell: highlight is one of the part labels, or the shape of a part with no label'] : [];
     },
     draw: cellDrawn,
+    parts: d => d.parts.flatMap(p => { const name = cellPartName(p); return name ? [name] : []; }),
     words: d => `${d.cell === 'plant' ? 'a plant cell' : d.cell === 'bacterium' ? 'a bacterium' : 'an animal cell'}${d.title ? ` "${d.title}"` : ''} with ${d.parts.map(p => `${p.count ?? 1} ${p.shape}-shaped part${(p.count ?? 1) > 1 ? 's' : ''}${p.label ? ` labeled ${p.label}` : ''}`).join(', ')}`,
     load: () => ({ score: 0.3, why: 'reading a drawing of a cell' }),
   },
@@ -948,6 +1337,7 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !d.levels.some(l => l.label === d.highlight) ? ['zoom: highlight is one of the level labels'] : [];
     },
     draw: zoomDrawn,
+    parts: d => d.levels.map(l => l.label).filter(l => l.trim() !== '?'),
     words: d => `zooming in${d.title ? ` "${d.title}"` : ''}: ${d.levels.map(l => l.label).join(', inside it ')}`,
     load: () => ({ score: 0.2, why: 'following a zoom through sizes' }),
   },
@@ -968,8 +1358,19 @@ const DEFS: { [K in DisplayKind]: DisplayDef<Of<K>> } = {
       return d.highlight !== undefined && !names.includes(d.highlight) ? ['food_web: highlight is one of the names'] : [];
     },
     draw: foodWebDrawn,
+    parts: d => d.living.map(l => l.name).filter(l => l.trim() !== '?'),
     words: d => `a food web${d.title ? ` "${d.title}"` : ''}: ${d.eats.map(([a, b]) => `${a} eats ${b}`).join('; ')}`,
     load: () => ({ score: 0.5, why: 'following arrows through a food web' }),
+  },
+  system: {
+    prompt: SYSTEM_PROMPT,
+    read: readSystem,
+    errors: systemErrors,
+    draw: d => systemDrawn(d, sanitizeSvg),
+    words: systemWords,
+    load: d => ({ score: 0.5 + 0.3 * (d.rules.length - 1), why: `working out ${d.rules.length} result${d.rules.length === 1 ? '' : 's'} of a model from its parts` }),
+    set: SYSTEM_SET,
+    revealed: d => ({ ...d, run: true }),
   },
 };
 
@@ -979,10 +1380,12 @@ const known = (kind: unknown): kind is DisplayKind => (DISPLAY_KINDS as readonly
 /** Which primitives a display fits. A new kind fails to compile until it is listed here. */
 const DOMAINS: { [K in DisplayKind]: readonly DisplayDomain[] } = {
   svg: ['general'], text: ['general'], table: ['general'],
-  bar_graph: ['data', 'math', 'science'], pictograph: ['data', 'math', 'science'],
-  number_line: ['math'], clock: ['math'], base_ten: ['math'], pattern_blocks: ['math'], ten_frame: ['math'], array: ['math'], coins: ['math'],
+  passage: ['reading'],
+  bar_graph: ['data', 'math', 'science'], pictograph: ['data', 'math', 'science'], chart: ['data', 'math', 'science', 'social'],
+  number_line: ['math'], clock: ['math'], base_ten: ['math'], pattern_blocks: ['math'], ten_frame: ['math'], array: ['math'], coins: ['math'], shares: ['math'],
   timeline: ['social', 'science'], map: ['social'], flow: ['science'],
   cell: ['biology'], zoom: ['biology'], food_web: ['biology'],
+  system: ['science', 'math', 'social'],
 };
 
 /** The displays a primitive offers its author, in registry order. */
@@ -1043,6 +1446,9 @@ export const displayHtml = (d: Display): string => (d && known(d.kind) ? defOf(d
 /** A display in words, for the tutor's scene and the solver fallback. Never draws or names a key. */
 export const displayWords = (d: Display): string => (d && known(d.kind) ? defOf(d.kind).words(d) : '');
 
+/** A display in words for a blind reader standing in for a child who can see it. Never for the tutor. */
+export const displaySeen = (d: Display): string => { const seen = d && known(d.kind) ? defOf(d.kind).seen?.(d) : undefined; return seen ? `${displayWords(d)}. ${seen}` : displayWords(d); };
+
 /** Every word a display puts on screen or tells the tutor, for a primitive's check that no display states the answer. */
 export function displayText(d: Display): string {
   const drawn = d?.kind === 'svg' ? Array.from(d.svg.matchAll(/<text[^>]*>([^<]*)</gi)).map(m => m[1]).join(' ') : '';
@@ -1055,8 +1461,35 @@ export const displayHighlights = (kind: DisplayKind): readonly string[] => defOf
 /** The value a display shows, when code can read one. */
 export const displayReading = (d: Display | undefined): Reading | null => (d && known(d.kind) ? defOf(d.kind).reading?.(d) ?? null : null);
 
+/** The values a graph plots and the spacing of its axis marks, when the child must read them off the axis. */
+export function displayAxis(d: Display | undefined): { values: number[]; step: number } | null {
+  if (d?.kind === 'bar_graph') return { values: d.values, step: barStep(d.values) };
+  if (d?.kind === 'chart' && d.chart_type !== 'pie' && !d.show_values) { const values = d.points.map(p => p.value); return { values, step: chartAxis(values).step }; }
+  return null;
+}
+
 /** The reading a display asks of a child, for the computed difficulty. */
 export const displayLoad = (d: Display | undefined): DisplayLoad | null => (d && known(d.kind) ? defOf(d.kind).load?.(d) ?? null : null);
+
+// ── Displays the child can change (the `set` surface) ───────────────────────
+
+/** What a display adds as a board. Empty for most: the engine in `setting.ts` needs nothing from a display. */
+export const displaySet = (d: Display): DisplaySet => (d && known(d.kind) ? (defOf(d.kind).set ?? {}) : {});
+/** A board once the child's answer is checked: a display that held something back (a model's results) now shows it. */
+export const displayRevealed = (d: Display): Display => (d && known(d.kind) ? defOf(d.kind).revealed?.(d) ?? d : d);
+/** The line the author reads about one display: the blind reader of a set item is given it too. */
+export const displayLine = (kind: DisplayKind): string => (known(kind) ? defOf(kind).prompt : '');
+/** The widest a display is drawn, in px: a board's marks are placed in percent of this box, so its host must not be wider. */
+export const displayMaxWidth = (d: Display): number => Number(/max-width:([0-9]+)px/.exec(displayHtml(d))?.[1] ?? 320);
+
+/** The parts of a display a child can tap, by name; empty for a display with none. */
+export const displayParts = (d: Display | undefined): string[] => (d && known(d.kind) ? defOf(d.kind).parts?.(d) ?? [] : []);
+/** Why a display's parts cannot be told apart by a tap, or undefined when they can. */
+export const displayPartsError = (d: Display | undefined): string | undefined => (d && known(d.kind) ? defOf(d.kind).partsError?.(d) : undefined);
+/** The displays that have parts to tap, so they can be the board of a `point` item. */
+export const POINT_KINDS: readonly DisplayKind[] = DISPLAY_KINDS.filter(kind => !!defOf(kind).parts);
+/** The same display with one of its parts lit: how a point board shows what the child tapped. */
+export const displayPointed = (d: Display, part: string): Display => (displayParts(d).includes(part) ? ({ ...d, highlight: part } as Display) : d);
 
 /** The same display with a highlight, when it can draw that one. */
 export function withHighlight(d: Display, value: string): Display | null {
@@ -1110,4 +1543,6 @@ export const sameValue = (a: number, b: number) => Math.abs(a - b) < 1e-6;
 /** The styles every display panel uses (component and screenshot alike). */
 export const DISPLAY_CSS = `.ks-svg{background:#fff;border-radius:10px;padding:4px}.ks-svg svg{width:100%;height:auto;max-height:220px;display:block}
 .ks-table{border-collapse:collapse;color:#e2e8f0;font-size:14px}.ks-table td,.ks-table th{border:1px solid rgba(255,255,255,.18);padding:4px 10px;text-align:left}
-.ks-table th{background:rgba(255,255,255,.06)}.ks-text{margin:0;color:#e2e8f0;font-size:15px;line-height:1.5}`;
+.ks-table th{background:rgba(255,255,255,.06)}.ks-text{margin:0;color:#e2e8f0;font-size:15px;line-height:1.5}
+.ks-passage-title{margin:0 0 6px;color:#e2e8f0;font-size:14px;font-weight:600}.ks-passage-by{margin:6px 0 0;color:#94a3b8;font-size:12px}.ks-passage .ks-text{line-height:2}.ks-passage [data-part]{border-radius:4px;padding:4px 2px}.ks-sn{color:#94a3b8;font-size:11px;font-weight:700}
+.ks-lit,.ks-table tr.ks-lit td{background:rgba(251,191,36,.25)}`;

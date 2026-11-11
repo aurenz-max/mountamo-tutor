@@ -1,0 +1,817 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-set.json (cut-circle/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Halves, Thirds, and Fourths of a Circle",
+    "description": "A circle can be partitioned from the center into 2, 3, or 4 equal shares called halves, thirds, or fourths.",
+    "gradeBand": "grade 2",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "set",
+        "prompt": "Cut the circle into 2 equal shares to make halves.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "circle",
+          "cuts": []
+        },
+        "setGoal": {
+          "parts": 2,
+          "equal": true
+        },
+        "key": "",
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.7,
+          "reasons": [
+            "2 changes to make +0.5",
+            "2 facts to meet at once +0.4",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.3"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "A cut straight through the center splits the circle into 2 equal halves. Start with a cut straight up.",
+            "item": {
+              "id": "studio-1-help_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 2 equal shares to make halves.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "circle",
+                  "cuts": [
+                    0
+                  ]
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": []
+              },
+              "setGoal": {
+                "parts": 2,
+                "equal": true
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 2,
+                "reasons": [
+                  "2 changes to make +0.5",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "One cut goes to the top mark. Tap the mark straight across at the bottom to make 2 equal shares.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 2 equal shares to make halves.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": [
+                  0
+                ]
+              },
+              "setGoal": {
+                "parts": 2,
+                "equal": true
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.45,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "set",
+        "prompt": "Cut the circle into 4 equal shares to make fourths.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "circle",
+          "cuts": []
+        },
+        "setGoal": {
+          "parts": 4,
+          "equal": true
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.2,
+          "reasons": [
+            "4 changes to make +1",
+            "2 facts to meet at once +0.4",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.3"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "To make fourths, first cut the circle in half. Then cut across the other way to make 4 equal shares.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 4 equal shares to make fourths.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "circle",
+                  "cuts": [
+                    0,
+                    6
+                  ]
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": []
+              },
+              "setGoal": {
+                "parts": 4,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.5,
+                "reasons": [
+                  "4 changes to make +1",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The circle is already cut in half. Add 2 more cuts across the middle to make 4 equal shares.",
+            "item": {
+              "id": "studio-2-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 4 equal shares to make fourths.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": [
+                  0,
+                  6
+                ]
+              },
+              "setGoal": {
+                "parts": 4,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.7,
+                "reasons": [
+                  "2 changes to make +0.5",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "choose",
+        "prompt": "The circle is cut into 3 equal shares, and 1 share is shaded. What is the shaded share called?",
+        "stimulus": [
+          {
+            "kind": "shares",
+            "shape": "circle",
+            "cuts": [
+              0,
+              4,
+              8
+            ],
+            "shaded": 1
+          }
+        ],
+        "options": [
+          {
+            "id": "fourth",
+            "label": "one fourth"
+          },
+          {
+            "id": "half",
+            "label": "one half"
+          },
+          {
+            "id": "third",
+            "label": "one third"
+          }
+        ],
+        "key": "third",
+        "misconceptions": {
+          "half": "Halves means 2 equal shares in the whole circle. Count all the shares here.",
+          "fourth": "Fourths means 4 equal shares in the whole circle. Count how many equal shares make this whole."
+        },
+        "tier": "medium",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.6,
+          "reasons": [
+            "3 options +0.8",
+            "2 wrong options from a named misconception +0.5",
+            "reading a shape cut into parts +0.3"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Count how many equal parts make up the whole circle.",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "choose",
+              "prompt": "The circle is cut into 3 equal shares, and 1 share is shaded. What is the shaded share called?",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "circle",
+                  "cuts": [
+                    0,
+                    4,
+                    8
+                  ],
+                  "shaded": 1,
+                  "highlight": "cuts"
+                }
+              ],
+              "options": [
+                {
+                  "id": "fourth",
+                  "label": "one fourth"
+                },
+                {
+                  "id": "half",
+                  "label": "one half"
+                },
+                {
+                  "id": "third",
+                  "label": "one third"
+                }
+              ],
+              "key": "third",
+              "misconceptions": {
+                "half": "Halves means 2 equal shares in the whole circle. Count all the shares here.",
+                "fourth": "Fourths means 4 equal shares in the whole circle. Count how many equal shares make this whole."
+              },
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.6,
+                "reasons": [
+                  "3 options +0.8",
+                  "2 wrong options from a named misconception +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "Count the equal shares in the circle. Is each part one third or one half?",
+            "item": {
+              "id": "studio-3-simpler_1",
+              "surface": "choose",
+              "prompt": "The circle is cut into 3 equal shares, and 1 share is shaded. What is the shaded share called?",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "circle",
+                  "cuts": [
+                    0,
+                    4,
+                    8
+                  ],
+                  "shaded": 1
+                }
+              ],
+              "options": [
+                {
+                  "id": "third",
+                  "label": "one third"
+                },
+                {
+                  "id": "half",
+                  "label": "one half"
+                }
+              ],
+              "key": "third",
+              "misconceptions": {
+                "half": "Halves means 2 equal shares in the whole circle. Count all the shares here."
+              },
+              "tier": "medium",
+              "difficulty": {
+                "band": "easy",
+                "score": 0.85,
+                "reasons": [
+                  "2 options +0.3",
+                  "1 wrong option from a named misconception +0.25",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "set",
+        "prompt": "Cut the circle into 3 equal shares to make thirds.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "circle",
+          "cuts": []
+        },
+        "setGoal": {
+          "parts": 3,
+          "equal": true
+        },
+        "key": "",
+        "tier": "hard",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.95,
+          "reasons": [
+            "3 changes to make +0.75",
+            "2 facts to meet at once +0.4",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.3"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Space 3 cuts evenly around the 12 marks. Count 4 marks between each cut.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 3 equal shares to make thirds.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "circle",
+                  "cuts": [
+                    0
+                  ]
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": []
+              },
+              "setGoal": {
+                "parts": 3,
+                "equal": true
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.25,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "Two cuts are made. Tap the mark that finishes cutting 3 equal shares.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the circle into 3 equal shares to make thirds.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "circle",
+                "cuts": [
+                  0,
+                  4
+                ]
+              },
+              "setGoal": {
+                "parts": 3,
+                "equal": true
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.45,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 132,
+        "costUsd": 0.0907,
+        "items": 4,
+        "rounds": 0,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 8
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "shares",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "shares": 4
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "set",
+          "on": "a whole, uncut circle",
+          "credit": "the child's cuts make 2, 3 or 4 equal shares, and the child names one share in words",
+          "notCredit": "picking a pre-cut circle; typing 1/4"
+        },
+        "items": 4,
+        "met": 0,
+        "gaps": [
+          {
+            "id": "studio-1",
+            "gap": "The child makes the equal shares but is never asked to name one share in words."
+          },
+          {
+            "id": "studio-2",
+            "gap": "The credit condition requires the child to name one share in words, but the screen only asks them to cut the circle and never asks them to name a share."
+          },
+          {
+            "id": "studio-3",
+            "gap": "the evidence asks that the child changes a given picture or model until it is right, and on a choose item the child does not. Use set"
+          },
+          {
+            "id": "studio-4",
+            "gap": "The child is never asked to name one share in words."
+          }
+        ],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 132,
+      "costUsd": 0.0907,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "set",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "evidence: The child makes the equal shares but is never asked to name one share in words."
+          ],
+          "evidenceGap": "The child makes the equal shares but is never asked to name one share in words.",
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 8,
+          "costUsd": 0.0042
+        },
+        {
+          "id": "studio-2",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "evidence: The credit condition requires the child to name one share in words, but the screen only asks them to cut the circle and never asks them to name a share.",
+            "you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": "The credit condition requires the child to name one share in words, but the screen only asks them to cut the circle and never asks them to name a share.",
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 8,
+          "costUsd": 0.004
+        },
+        {
+          "id": "studio-3",
+          "surface": "choose",
+          "tier": "medium",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "evidence: the evidence asks that the child changes a given picture or model until it is right, and on a choose item the child does not. Use set",
+            "shortcut: The prompt explicitly states 'cut into 3 equal shares', which directly hints at 'third' without needing to analyze the image.",
+            "you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": "the evidence asks that the child changes a given picture or model until it is right, and on a choose item the child does not. Use set",
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 5,
+          "costUsd": 0.0026
+        },
+        {
+          "id": "studio-4",
+          "surface": "set",
+          "tier": "hard",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "evidence: The child is never asked to name one share in words.",
+            "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": "The child is never asked to name one share in words.",
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 7,
+          "costUsd": 0.0038
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 124,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 124s (23221 tokens: 1346 output, 18195 thinking)",
+          "costUsd": 0.076
+        },
+        {
+          "seconds": 124,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, easy)",
+          "costUsd": 0.076,
+          "item": 1
+        },
+        {
+          "seconds": 124,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.076,
+          "item": 2
+        },
+        {
+          "seconds": 124,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (choose, medium)",
+          "costUsd": 0.076,
+          "item": 3
+        },
+        {
+          "seconds": 124,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, hard)",
+          "costUsd": 0.076,
+          "item": 4
+        },
+        {
+          "seconds": 129,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 4.4s. solver agreed with the key. 0 blocking, 3 advisory. First: evidence: the evidence asks that the child changes a given picture or model until it is right, and on a choose item the child does not. Use set",
+          "costUsd": 0.0786,
+          "item": 3
+        },
+        {
+          "seconds": 129,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 0 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0786,
+          "item": 3
+        },
+        {
+          "seconds": 129,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 3 advisory note(s) left, 5s",
+          "costUsd": 0.0786,
+          "item": 3
+        },
+        {
+          "seconds": 131,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 6.4s. solver agreed with the key. 0 blocking, 2 advisory. First: evidence: The child is never asked to name one share in words.",
+          "costUsd": 0.0825,
+          "item": 4
+        },
+        {
+          "seconds": 131,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 0 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0825,
+          "item": 4
+        },
+        {
+          "seconds": 131,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 2 advisory note(s) left, 7s",
+          "costUsd": 0.0825,
+          "item": 4
+        },
+        {
+          "seconds": 131,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 7s. solver agreed with the key. 0 blocking, 2 advisory. First: evidence: The credit condition requires the child to name one share in words, but the screen only asks them to cut the circle and never asks them to name …",
+          "costUsd": 0.0865,
+          "item": 2
+        },
+        {
+          "seconds": 131,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 0 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0865,
+          "item": 2
+        },
+        {
+          "seconds": 131,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 2 advisory note(s) left, 8s",
+          "costUsd": 0.0865,
+          "item": 2
+        },
+        {
+          "seconds": 132,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 7.8s. solver agreed with the key. 0 blocking, 1 advisory. First: evidence: The child makes the equal shares but is never asked to name one share in words.",
+          "costUsd": 0.0907,
+          "item": 1
+        },
+        {
+          "seconds": 132,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 0 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0907,
+          "item": 1
+        },
+        {
+          "seconds": 132,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 1 advisory note(s) left, 8s",
+          "costUsd": 0.0907,
+          "item": 1
+        },
+        {
+          "seconds": 132,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 132s, about $0.09",
+          "costUsd": 0.0907
+        },
+        {
+          "seconds": 132,
+          "stage": "run",
+          "level": "warn",
+          "text": "evidence: 0 of 4 items collect it",
+          "costUsd": 0.0907
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

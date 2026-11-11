@@ -12,8 +12,10 @@
 
 import { Type, ThinkingLevel, type Schema } from '@google/genai';
 import { ai } from '../../geminiClient';
-import { choiceOf, isEvaluableBlock } from '../../../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
-import type { DeepDiveBlock, DeepDiveSection, MisconceptionBlockData, WorkedExampleBlockData } from '../../../primitives/visual-primitives/core/deep-dive/types';
+import { choiceOf, drawnValues, isEvaluableBlock } from '../../../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
+import type { CheckBlockData, DeepDiveBlock, DeepDiveSection, MisconceptionBlockData, WorkedExampleBlockData } from '../../../primitives/visual-primitives/core/deep-dive/types';
+import { displayParts } from '../../agent-kit/displays';
+import { itemWords } from '../../agent-kit/look';
 import { norm, visibleText } from './blocks';
 
 export interface CheckVerdict {
@@ -68,8 +70,23 @@ const SCHEMA: Schema = {
 /** Fields the student has not seen when the check is asked: the question and options are shown separately, the key never. */
 const HIDDEN_UNTIL_ANSWERED = new Set(['question', 'options', 'correctIndex', 'explanation', 'optionEmojis', 'prediction', 'comprehension', 'patternCheck', 'correctAnswer', 'wordBank', 'sentence', 'tryStep']);
 
+/**
+ * What the reader picks from, and the key code compares its pick with. A kit check the reader can answer in one name
+ * has one: the parts of a point board, or the cards of a choose item by number. A sort, an order, a set to build or a
+ * board to change has none, and the reader only judges whether it can be answered.
+ */
+export function readerChoice(b: DeepDiveBlock): { question: string; options: string[]; correctIndex: number } | null {
+  if (b.blockType !== 'check') return choiceOf(b);
+  const it = (b as CheckBlockData).item;
+  if (it.surface === 'point') { const parts = displayParts(it.board); return { question: it.prompt, options: parts, correctIndex: parts.indexOf(it.key as string) }; }
+  if (it.surface === 'choose') return { question: it.prompt, options: it.options.map((_, i) => `Card ${i + 1}`), correctIndex: it.options.findIndex((o) => o.id === it.key) };
+  return null;
+}
+
 /** A block's text as it stands before the student answers it. */
 function shownBefore(b: DeepDiveBlock): string {
+  // The kit's own words for an item: its prompt, its pictures and its cards, with no key and no hint for a miss.
+  if (b.blockType === 'check') return itemWords((b as CheckBlockData).item).slice(0, 1600);
   if (b.blockType === 'worked-example' && (b as WorkedExampleBlockData).tryStep) {
     const w = b as WorkedExampleBlockData;
     return [w.problem, ...w.steps.slice(0, w.tryStep!.index).map((s) => `${s.work} (${s.reason})`)].join('\n');
@@ -81,13 +98,15 @@ function shownBefore(b: DeepDiveBlock): string {
   }
   // A mini-sim's states appear only after the student predicts.
   const rest = Object.fromEntries(Object.entries(b).filter(([k]) => !HIDDEN_UNTIL_ANSWERED.has(k) && !(b.blockType === 'mini-sim' && k === 'states'))) as unknown as DeepDiveBlock;
-  return visibleText(rest).slice(0, 1200);
+  // Drawn values are numbers, which the text walk skips; the reader needs them to answer from the picture.
+  const drawn = drawnValues(b);
+  return `${drawn ? `${drawn}\n` : ''}${visibleText(rest)}`.slice(0, 1200);
 }
 
 /** The lesson as the student meets it, with no key anywhere. */
 export function studentView(blocks: DeepDiveBlock[]): string {
   return blocks.map((b, i) => {
-    const choice = choiceOf(b);
+    const choice = readerChoice(b);
     return `[${i}] ${b.blockType}${isEvaluableBlock(b) ? ' (CHECK)' : ''} "${b.label}"\n${shownBefore(b)}${choice ? `\nQUESTION: ${choice.question}\nOPTIONS: ${choice.options.join(' | ')}` : ''}`;
   }).join('\n\n');
 }
@@ -109,7 +128,9 @@ function optionPicked(options: string[], said: string): number {
 export function readVerdicts(raw: RawVerdict[], blocks: DeepDiveBlock[]): CheckVerdict[] {
   return raw.filter((v) => blocks[v.blockIndex] && isEvaluableBlock(blocks[v.blockIndex])).map(({ answer, ...v }) => {
     const block = blocks[v.blockIndex];
-    const choice = choiceOf(block);
+    const choice = readerChoice(block);
+    // The wrong answers of a kit check are a display's other parts or cards code already checked: not distractors to rewrite.
+    if (block.blockType === 'check') v = { ...v, weakDistractors: [] };
     if (!choice) return v;
     const key = choice.options[choice.correctIndex];
     const picked = answer ? optionPicked(choice.options, answer) : -1;

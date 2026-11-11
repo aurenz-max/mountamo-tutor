@@ -1,16 +1,10 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import type { DataTableBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import {
-  LuminaTable,
-  LuminaAnswerChoice,
-  LuminaActionButton,
-  LuminaFeedbackCard,
-  type AnswerChoiceState, LuminaMathText } from '../../../../../ui';
-import { SoundManager } from '../../../../../utils/SoundManager';
-import BlockTutorHelp from './BlockTutorHelp';
+import { LuminaTable, LuminaMathText } from '../../../../../ui';
+import BlockChoiceCheck from './BlockChoiceCheck';
 import { useTapTutor, TapHint } from './TapTutor';
 
 interface DataTableBlockProps {
@@ -31,52 +25,12 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
   index,
   onAnswer,
   onAttempt,
-  answered: answeredProp,
+  answered,
   onAskTutor,
 }) => {
   const { enabled, activeKey, ask } = useTapTutor(onAskTutor);
   const patternCheck = data.patternCheck;
   const hasCheck = !!patternCheck && !!onAnswer;
-
-  // ── Pattern-check state (mirrors MultipleChoiceBlock conventions) ──
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(answeredProp ? data.patternCheck?.correctIndex ?? null : null);
-  const [attempts, setAttempts] = useState(0);
-  const [answered, setAnswered] = useState(answeredProp ?? false);
-  const [showExplanation, setShowExplanation] = useState(answeredProp ?? false);
-
-  const handleSelect = useCallback(
-    (optionIndex: number) => {
-      if (answered) return;
-      SoundManager.select();
-      setSelectedIndex(optionIndex);
-    },
-    [answered],
-  );
-
-  const handleSubmit = useCallback(() => {
-    if (!patternCheck || selectedIndex === null || answered) return;
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
-
-    onAttempt?.(selectedIndex === patternCheck.correctIndex, `Chose "${patternCheck.options[selectedIndex]}"`);
-    if (selectedIndex === patternCheck.correctIndex) {
-      SoundManager.playCorrect();
-      setAnswered(true);
-      setShowExplanation(true);
-      onAnswer?.(data.id, true, newAttempts);
-    } else if (!onAttempt && newAttempts >= 2) {
-      SoundManager.playIncorrect();
-      setAnswered(true);
-      setShowExplanation(true);
-      setSelectedIndex(patternCheck.correctIndex);
-      onAnswer?.(data.id, false, newAttempts);
-    } else {
-      SoundManager.playIncorrect();
-      setSelectedIndex(null);
-    }
-  }, [patternCheck, selectedIndex, answered, attempts, data.id, onAnswer, onAttempt]);
-
-  const wasCorrect = patternCheck ? selectedIndex === patternCheck.correctIndex : false;
 
   // ── Tap-to-explore rows ───────────────────────────────────────────
   const askAboutRow = (ri: number, row: string[]) => {
@@ -120,76 +74,16 @@ const DataTableBlock: React.FC<DataTableBlockProps> = ({
 
       {/* Find-the-pattern check — answering requires comparing rows above */}
       {hasCheck && patternCheck && (
-        <div className="mt-5 pt-5 border-t border-white/10 space-y-4">
-          <p className="text-slate-100 font-medium text-[15px] leading-relaxed">
-            <LuminaMathText text={patternCheck.question} />
-          </p>
-
-          <div className="space-y-2">
-            {patternCheck.options.map((option, i) => {
-              let state: AnswerChoiceState;
-              if (!answered) {
-                state = i === selectedIndex ? 'selected' : 'idle';
-              } else if (i === patternCheck.correctIndex) {
-                state = 'correct';
-              } else if (i === selectedIndex) {
-                state = 'incorrect';
-              } else {
-                state = 'dimmed';
-              }
-
-              return (
-                <LuminaAnswerChoice
-                  key={i}
-                  aria-label={patternCheck.options[i]}
-                  state={state}
-                  disabled={answered}
-                  onClick={() => handleSelect(i)}
-                  className="p-3 text-sm"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono">
-                      {String.fromCharCode(65 + i)}
-                    </span>
-                    <LuminaMathText text={option} />
-                  </span>
-                </LuminaAnswerChoice>
-              );
-            })}
-          </div>
-
-          {!answered && (
-            <div className="flex flex-wrap items-center gap-3">
-              <LuminaActionButton
-                action="check"
-                onClick={handleSubmit}
-                disabled={selectedIndex === null}
-              />
-              <BlockTutorHelp
-                onAskTutor={onAskTutor}
-                message={`[STUDENT_HELP_REQUEST] The student is stuck on this question about the "${data.label || data.caption || 'data'}" table: "${patternCheck.question}". Options: ${patternCheck.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('; ')}. The correct answer is "${patternCheck.options[patternCheck.correctIndex]}". Point them at WHICH rows of the table to compare — do NOT reveal or name the correct option.`}
-              />
-            </div>
-          )}
-
-          {showExplanation && (
-            <div className="space-y-1">
-              <LuminaFeedbackCard
-                status={wasCorrect ? 'correct' : 'incorrect'}
-                label={
-                  wasCorrect
-                    ? attempts === 1 ? 'Correct!' : 'Correct (2nd try)'
-                    : 'Answer revealed'
-                }
-              >
-                <LuminaMathText text={patternCheck.explanation} />
-              </LuminaFeedbackCard>
-              <p className="text-xs text-slate-500 px-1">
-                {attempts} {attempts === 1 ? 'attempt' : 'attempts'}
-              </p>
-            </div>
-          )}
-        </div>
+        <BlockChoiceCheck
+          check={patternCheck}
+          blockId={data.id}
+          onAnswer={onAnswer!}
+          onAttempt={onAttempt}
+          answered={answered}
+          onAskTutor={onAskTutor}
+          about={`the "${data.label || data.caption || 'data'}" table`}
+          lookAt="WHICH rows of the table to compare"
+        />
       )}
     </BlockWrapper>
   );

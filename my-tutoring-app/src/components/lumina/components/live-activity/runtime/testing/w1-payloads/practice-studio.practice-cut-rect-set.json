@@ -1,0 +1,920 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-set.json (cut-rect/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Cut Rectangles into Equal Squares",
+    "description": "A rectangle can be partitioned into rows and columns to form a grid of equal-sized squares.",
+    "gradeBand": "grade 2",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "set",
+        "prompt": "Cut the rectangle into 2 rows and 2 columns of equal squares.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "rectangle",
+          "cuts": [],
+          "across": [],
+          "wide": 4,
+          "tall": 4
+        },
+        "setGoal": {
+          "rows": 2,
+          "columns": 2,
+          "equal": true
+        },
+        "key": "",
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.1,
+          "reasons": [
+            "2 changes to make +0.5",
+            "3 facts to meet at once +0.8",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.3"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Cut across the middle to make 2 rows. Cut down the middle to make 2 columns.",
+            "item": {
+              "id": "studio-1-help_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 2 rows and 2 columns of equal squares.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "rectangle",
+                  "cuts": [],
+                  "across": [],
+                  "wide": 4,
+                  "tall": 4,
+                  "highlight": "cuts"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [],
+                "wide": 4,
+                "tall": 4
+              },
+              "setGoal": {
+                "rows": 2,
+                "columns": 2,
+                "equal": true
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.4,
+                "reasons": [
+                  "2 changes to make +0.5",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "Here is the cut across for 2 equal rows. Now make the cut down to make 2 columns of equal squares.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 2 rows and 2 columns of equal squares.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [
+                  2
+                ],
+                "wide": 4,
+                "tall": 4
+              },
+              "setGoal": {
+                "rows": 2,
+                "columns": 2,
+                "equal": true
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.85,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "set",
+        "prompt": "Cut the rectangle into 3 rows and 4 columns of equal squares.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "rectangle",
+          "cuts": [],
+          "across": [],
+          "wide": 8,
+          "tall": 6
+        },
+        "setGoal": {
+          "rows": 3,
+          "columns": 4,
+          "equal": true
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.05,
+          "reasons": [
+            "5 changes to make +1.25",
+            "3 facts to meet at once +0.8",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.5"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Leave space between your cuts so each part is an equal square. Make 2 cuts across and 3 cuts down.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 3 rows and 4 columns of equal squares.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "rectangle",
+                  "cuts": [],
+                  "across": [],
+                  "wide": 8,
+                  "tall": 6,
+                  "highlight": "cuts"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [],
+                "wide": 8,
+                "tall": 6
+              },
+              "setGoal": {
+                "rows": 3,
+                "columns": 4,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.35,
+                "reasons": [
+                  "5 changes to make +1.25",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The 3 rows are already cut. Tap the marks along the top to make 4 equal columns.",
+            "item": {
+              "id": "studio-2-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 3 rows and 4 columns of equal squares.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [
+                  2,
+                  4
+                ],
+                "wide": 8,
+                "tall": 6
+              },
+              "setGoal": {
+                "rows": 3,
+                "columns": 4,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.55,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "set",
+        "prompt": "Cut the rectangle into 4 rows and 3 columns of equal squares.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "rectangle",
+          "cuts": [],
+          "across": [],
+          "wide": 6,
+          "tall": 8
+        },
+        "setGoal": {
+          "rows": 4,
+          "columns": 3,
+          "equal": true
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.05,
+          "reasons": [
+            "5 changes to make +1.25",
+            "3 facts to meet at once +0.8",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.5"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Make cuts every 2 marks. Cut down to make 3 columns, and cut across to make 4 rows.",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 4 rows and 3 columns of equal squares.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "rectangle",
+                  "cuts": [],
+                  "across": [],
+                  "wide": 6,
+                  "tall": 8,
+                  "highlight": "cuts"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [],
+                "wide": 6,
+                "tall": 8
+              },
+              "setGoal": {
+                "rows": 4,
+                "columns": 3,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.35,
+                "reasons": [
+                  "5 changes to make +1.25",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The 3 columns are already cut. Tap the marks along the side to make 4 equal rows.",
+            "item": {
+              "id": "studio-3-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 4 rows and 3 columns of equal squares.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [
+                  2,
+                  4
+                ],
+                "across": [],
+                "wide": 6,
+                "tall": 8
+              },
+              "setGoal": {
+                "rows": 4,
+                "columns": 3,
+                "equal": true
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.55,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "set",
+        "prompt": "Cut the rectangle into 2 rows and 5 columns of equal squares.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "shares",
+          "shape": "rectangle",
+          "cuts": [],
+          "across": [],
+          "wide": 10,
+          "tall": 4
+        },
+        "setGoal": {
+          "rows": 2,
+          "columns": 5,
+          "equal": true
+        },
+        "key": "",
+        "tier": "hard",
+        "difficulty": {
+          "band": "hard",
+          "score": 3.05,
+          "reasons": [
+            "5 changes to make +1.25",
+            "3 facts to meet at once +0.8",
+            "the parts have to come out the same size +0.5",
+            "reading a shape cut into parts +0.5"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Each square is 2 steps wide and 2 steps tall. Cut across at 2 to make 2 rows, then cut down every 2 steps to make 5 columns.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 2 rows and 5 columns of equal squares.",
+              "stimulus": [
+                {
+                  "kind": "shares",
+                  "shape": "rectangle",
+                  "cuts": [],
+                  "across": [],
+                  "wide": 10,
+                  "tall": 4,
+                  "highlight": "cuts"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [],
+                "wide": 10,
+                "tall": 4
+              },
+              "setGoal": {
+                "rows": 2,
+                "columns": 5,
+                "equal": true
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 3.35,
+                "reasons": [
+                  "5 changes to make +1.25",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5",
+                  "reading a shape cut into parts +0.3"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The cut across for 2 rows is done. Cut down every 2 steps to make the 5 columns.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "set",
+              "prompt": "Cut the rectangle into 2 rows and 5 columns of equal squares.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "shares",
+                "shape": "rectangle",
+                "cuts": [],
+                "across": [
+                  2
+                ],
+                "wide": 10,
+                "tall": 4
+              },
+              "setGoal": {
+                "rows": 2,
+                "columns": 5,
+                "equal": true
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.8,
+                "reasons": [
+                  "4 changes to make +1",
+                  "3 facts to meet at once +0.8",
+                  "the parts have to come out the same size +0.5",
+                  "reading a shape cut into parts +0.5"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 94,
+        "costUsd": 0.1341,
+        "items": 4,
+        "rounds": 4,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 2
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "shares",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "shares": 4
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "set",
+          "on": "a whole rectangle with no lines in it",
+          "credit": "the child's cuts make the stated number of rows and columns, all the same size",
+          "notCredit": "counting squares in a rectangle that is already cut; picking a finished rectangle"
+        },
+        "items": 4,
+        "met": 4,
+        "gaps": [],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 94,
+      "costUsd": 0.1341,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "set",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 73,
+          "costUsd": 0.0415
+        },
+        {
+          "id": "studio-2",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 26,
+          "costUsd": 0.0187
+        },
+        {
+          "id": "studio-3",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 38,
+          "costUsd": 0.025
+        },
+        {
+          "id": "studio-4",
+          "surface": "set",
+          "tier": "hard",
+          "computed": "hard",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 61,
+          "costUsd": 0.0353
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 21,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 21s (6643 tokens: 1509 output, 1393 thinking)",
+          "costUsd": 0.0137
+        },
+        {
+          "seconds": 21,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, easy)",
+          "costUsd": 0.0137,
+          "item": 1
+        },
+        {
+          "seconds": 21,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0137,
+          "item": 2
+        },
+        {
+          "seconds": 21,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0137,
+          "item": 3
+        },
+        {
+          "seconds": 21,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, hard)",
+          "costUsd": 0.0137,
+          "item": 4
+        },
+        {
+          "seconds": 28,
+          "stage": "look",
+          "level": "warn",
+          "text": "screenshot 1.3s, solve 5.4s. solver agreed with the key. 1 blocking, 1 advisory. First: code check: the goal needs every mark cut, so the child can tap them all without working anything out. Give the board more marks than the answer uses",
+          "costUsd": 0.0166,
+          "item": 4
+        },
+        {
+          "seconds": 28,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 2 problem(s)",
+          "costUsd": 0.0166,
+          "item": 4
+        },
+        {
+          "seconds": 28,
+          "stage": "look",
+          "level": "warn",
+          "text": "screenshot 1.4s, solve 5.7s. solver agreed with the key. 1 blocking, 0 advisory. First: code check: the goal needs every mark cut, so the child can tap them all without working anything out. Give the board more marks than the answer uses",
+          "costUsd": 0.0199,
+          "item": 3
+        },
+        {
+          "seconds": 28,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0199,
+          "item": 3
+        },
+        {
+          "seconds": 28,
+          "stage": "look",
+          "level": "warn",
+          "text": "screenshot 1.4s, solve 5.7s. solver agreed with the key. 1 blocking, 0 advisory. First: code check: the goal needs every mark cut, so the child can tap them all without working anything out. Give the board more marks than the answer uses",
+          "costUsd": 0.0231,
+          "item": 2
+        },
+        {
+          "seconds": 28,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0231,
+          "item": 2
+        },
+        {
+          "seconds": 28,
+          "stage": "look",
+          "level": "warn",
+          "text": "screenshot 1.4s, solve 5.9s. solver agreed with the key. 1 blocking, 1 advisory. First: code check: the goal needs every mark cut, so the child can tap them all without working anything out. Give the board more marks than the answer uses",
+          "costUsd": 0.0267,
+          "item": 1
+        },
+        {
+          "seconds": 28,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 2 problem(s)",
+          "costUsd": 0.0267,
+          "item": 1
+        },
+        {
+          "seconds": 41,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 12s",
+          "costUsd": 0.0388,
+          "item": 2
+        },
+        {
+          "seconds": 41,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.0388,
+          "item": 2
+        },
+        {
+          "seconds": 47,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 6.4s. solver agreed with the key. No problems.",
+          "costUsd": 0.0421,
+          "item": 2
+        },
+        {
+          "seconds": 47,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 0 advisory note(s) left, 26s",
+          "costUsd": 0.0421,
+          "item": 2
+        },
+        {
+          "seconds": 51,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 23s",
+          "costUsd": 0.0596,
+          "item": 3
+        },
+        {
+          "seconds": 51,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.0596,
+          "item": 3
+        },
+        {
+          "seconds": 59,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 8s. solver agreed with the key. No problems.",
+          "costUsd": 0.0638,
+          "item": 3
+        },
+        {
+          "seconds": 59,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 0 advisory note(s) left, 38s",
+          "costUsd": 0.0638,
+          "item": 3
+        },
+        {
+          "seconds": 75,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 47s",
+          "costUsd": 0.0927,
+          "item": 4
+        },
+        {
+          "seconds": 75,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, hard)",
+          "costUsd": 0.0927,
+          "item": 4
+        },
+        {
+          "seconds": 82,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 6.6s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.0961,
+          "item": 4
+        },
+        {
+          "seconds": 82,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0961,
+          "item": 4
+        },
+        {
+          "seconds": 82,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 1 advisory note(s) left, 61s",
+          "costUsd": 0.0961,
+          "item": 4
+        },
+        {
+          "seconds": 86,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 58s",
+          "costUsd": 0.1304,
+          "item": 1
+        },
+        {
+          "seconds": 86,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, easy)",
+          "costUsd": 0.1304,
+          "item": 1
+        },
+        {
+          "seconds": 94,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.1s, solve 7.5s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.1341,
+          "item": 1
+        },
+        {
+          "seconds": 94,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.1341,
+          "item": 1
+        },
+        {
+          "seconds": 94,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 1 advisory note(s) left, 73s",
+          "costUsd": 0.1341,
+          "item": 1
+        },
+        {
+          "seconds": 94,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 94s, about $0.13",
+          "costUsd": 0.1341
+        },
+        {
+          "seconds": 94,
+          "stage": "run",
+          "level": "info",
+          "text": "evidence: 4 of 4 items collect it",
+          "costUsd": 0.1341
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

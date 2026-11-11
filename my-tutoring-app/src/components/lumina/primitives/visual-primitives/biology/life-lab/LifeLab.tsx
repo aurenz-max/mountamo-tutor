@@ -16,9 +16,11 @@ import { useAuthoredLevers } from '../../../../service/agent-kit/useAuthoredLeve
 import { DISPLAY_CSS } from '../../../../service/agent-kit/displays';
 import { KitDisplay } from '../../../../service/agent-kit/KitDisplay';
 import { SurfaceBoard, useSurfaceAnswer } from '../../../../service/agent-kit/SurfaceBoard';
-import { TeachPanel, useTeachPictures } from '../../../../service/agent-kit/TeachPanel';
+import { TeachPanel } from '../../../../service/agent-kit/TeachPanel';
+import { LearnMore } from '../../../../service/agent-kit/LearnMore';
+import type { Term } from '../../../../service/agent-kit/terms';
 import { describeSurfaceWork, surfaceScene } from '../../../../service/agent-kit/surfaceScene';
-import { answerReady, gradeAnswer, missHint, type Surface, type SurfaceItem } from '../../../../service/agent-kit/surfaces';
+import { answerReady, gradeAnswer, missHint, type CardSurface, type Surface, type SurfaceItem } from '../../../../service/agent-kit/surfaces';
 import type { TeachStep } from '../../../../service/agent-kit/teach';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../../components/PhaseSummaryPanel';
@@ -29,7 +31,7 @@ import {
   LIFE_MODES, MODE_LABELS, beingOf, canRun, classify, describeWork, featureWords, goalMet, initState, itemsOf, missOf, normalizeWorld, optionsOf,
   outcomeText, simulate, type Difficulty, type LifeLabMode, type LifeRun, type LifeState, type LifeWorld, type Option,
 } from './lifeLabWorld';
-import { lifeScene, withTeaching, type LifeTry } from './lifeLabWorkspace';
+import { lifeScene, withTeaching, withTerms, type LifeTry } from './lifeLabWorkspace';
 import { lifeLabBoss, lifeLabLevers } from './lifeLab.boss';
 
 // ============================================================================
@@ -46,6 +48,8 @@ export interface LifeLabChallenge {
   item?: SurfaceItem;
   /** What the child is shown before the task opens (the author's frames, played by the kit's teach step). */
   teach?: TeachStep[];
+  /** The hard words on this question, for the Learn more drawer. */
+  terms?: Term[];
   /** What the tutor asks (the agent's words, checked for leaks). */
   ask: string;
   /** The why-card after a wrong check on a world: how to look again, never the answer. */
@@ -63,7 +67,7 @@ export interface LifeLabData {
   description: string;
   /** 2-5 worlds. REQUIRED. Composed by the author agent, built and checked by code. */
   challenges: LifeLabChallenge[];
-  challengeType: LifeLabMode | Surface;
+  challengeType: LifeLabMode | CardSurface;
   gradeBand: 'K-2' | '3-5';
   /** How the session was authored (for QA; never shown). */
   agentDebug?: Record<string, unknown>;
@@ -274,7 +278,8 @@ const LifeLabSurface: React.FC<LifeLabProps> = ({ data, className, runtimePlanIt
   const board = useSurfaceAnswer();
   /** Which teach frame is up, for one session item; a retry or a lever does not replay it. */
   const [teachAt, setTeachAt] = useState<{ item: string; step: number; done: boolean }>({ item: '', step: 0, done: false });
-  const teachPictures = useTeachPictures();
+  /** Questions where the child opened Learn more. */
+  const termsOpened = useRef(new Set<string>());
   const [ws, setWs] = useState<LifeState>(() => initState(challenges[0]?.world ?? EMPTY));
   const [selected, setSelected] = useState<string | null>(null);
   const [run, setRun] = useState<RunView | null>(null);
@@ -320,13 +325,6 @@ const LifeLabSurface: React.FC<LifeLabProps> = ({ data, className, runtimePlanIt
     if (!session) return;
     const step = teachNow.step + 1;
     setTeachAt({ item: session.id, step, done: step >= teachSteps.length });
-    SoundManager.tap();
-  };
-  /** Back to the start of what this question was taught with; the work on the board stays. */
-  const lookBack = () => {
-    if (!session) return;
-    stopRun(); setRun(null);
-    setTeachAt({ item: session.id, step: 0, done: false });
     SoundManager.tap();
   };
   const solved = verdict === 'correct';
@@ -401,7 +399,7 @@ const LifeLabSurface: React.FC<LifeLabProps> = ({ data, className, runtimePlanIt
     const total = challenges.length;
     const metrics: LifeLabMetrics = {
       type: 'life-lab', challengeType, totalChallenges: total, correctCount: result.solvedCount, attemptsCount: result.attemptsCount,
-      firstTryCount: result.firstTryCount, hintsViewed: 0, overallAccuracy: result.accuracy,
+      firstTryCount: result.firstTryCount, hintsViewed: termsOpened.current.size, overallAccuracy: result.accuracy,
       averageAttemptsPerChallenge: total ? Math.round((result.attemptsCount / total) * 10) / 10 : 0, runsCount: runsTotal,
     };
     submitResult(result.passed, result.accuracy, metrics,
@@ -413,8 +411,7 @@ const LifeLabSurface: React.FC<LifeLabProps> = ({ data, className, runtimePlanIt
   useLayoutEffect(() => {
     if (!current || allChallengesComplete) return;
     const scene = current.item ? surfaceScene(current.item, { answer: board.answer, tries, solved }) : lifeScene(current, { state: ws, tries, running, solved });
-    const frame = teachSteps[Math.min(teachNow.step, teachSteps.length - 1)];
-    workspace.current = levers.publish(teaching ? withTeaching(scene, frame, teachNow.step, teachSteps.length, teachPictures.loaded(frame.picture)) : scene);
+    workspace.current = levers.publish(teaching ? withTeaching(scene, teachSteps[Math.min(teachNow.step, teachSteps.length - 1)], teachNow.step, teachSteps.length) : withTerms(scene, current.terms));
   });
 
   const localScore = useMemo(() => phaseResults.length ? Math.round(phaseResults.reduce((s, p) => s + p.score, 0) / phaseResults.length) : 0, [phaseResults]);
@@ -570,10 +567,8 @@ const LifeLabSurface: React.FC<LifeLabProps> = ({ data, className, runtimePlanIt
 
         <PipDock />
         <PipWorkspace className="space-y-3">
-          {teaching && <TeachPanel steps={teachSteps} step={teachNow.step} onNext={nextTeach} pictures={teachPictures} />}
-          {!teaching && !allChallengesComplete && teachSteps.length > 0 && !running && (
-            <div className="flex justify-end"><LuminaButton tone="ghost" data-pip-object="teach-look-back" onClick={lookBack}>Look back at the lesson</LuminaButton></div>
-          )}
+          {teaching && <TeachPanel steps={teachSteps} step={teachNow.step} onNext={nextTeach} />}
+          {current && !teaching && !allChallengesComplete && <LearnMore key={current.id} terms={current.terms} onOpen={() => termsOpened.current.add(current.id)} />}
 
           {kitItem && !teaching && !allChallengesComplete && (
             <>

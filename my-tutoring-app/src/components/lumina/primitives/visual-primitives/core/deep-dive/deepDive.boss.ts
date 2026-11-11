@@ -5,7 +5,8 @@
  * has no key, gets the gesture assignment, and plays through `show`. The card is `deepDive.card.ts`; this file holds the
  * content check, the items, the ask and key, and the harness play.
  */
-import type { DeepDiveData } from './types';
+import type { CheckBlockData, DeepDiveData } from './types';
+import { itemErrors, rightAnswer, surfaceTaps, wrongAnswer } from '../../../../service/agent-kit/surfaces';
 import { spokenBoss, hasText } from '../../../../components/live-activity/boss';
 import type { DriverInput, JourneyContext } from '../../../../components/live-activity/liveJourneySpec';
 import { deepDiveCard, type DeepDiveMiss } from './deepDive.card';
@@ -21,6 +22,10 @@ export function validateDeepDiveData(value: unknown): DeepDiveData {
   const items = deepDiveItems(d);
   if (!items.length) throw new Error('A deep dive needs at least one graded check.');
   for (const item of items) {
+    if (item.kind === 'check') {
+      const bad = itemErrors((item.block as CheckBlockData).item);
+      if (bad.length) throw new Error(`The deep-dive check "${item.label}" cannot run: ${bad[0]}`);
+    }
     const c = item.choice;
     if (c && (!hasText(c.question) || c.options.length < 2 || !Number.isInteger(c.correctIndex) || !c.options[c.correctIndex]))
       throw new Error(`The deep-dive check "${item.label}" cannot be answered as generated.`);
@@ -46,6 +51,8 @@ export const deepDiveBoss = spokenBoss<DeepDiveData, DeepDiveItem, DeepDiveMiss>
     // A keyless choice through its real controls: tap the choice, then Check Answer. A sort, an order, a labeling or a
     // lab is not driven at W1 (multi-step placements; the diagram is judged by a vision call).
     show: (right, item) => {
+      // A check on a kit surface plays through the kit's own taps (a part, cards, a tray, a board), then Check Answer.
+      if (item.kind === 'check') { const it = (item.block as CheckBlockData).item; return surfaceTaps(it, right ? rightAnswer(it) : wrongAnswer(it), 'Check Answer'); }
       if (!item.choice) throw new Error(`deep-dive ${item.kind} is not driven at W1 (placed on screen, step by step)`);
       // Tapped by the printed choice (the spoken form is for `say`).
       const c = item.choice;

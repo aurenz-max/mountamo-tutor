@@ -1,0 +1,1150 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-engine.json (weather-graph/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Weather Watchers",
+    "description": "Build and adjust weather graphs to show weather records and compare weather patterns across times and places.",
+    "gradeBand": "Kindergarten",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "set",
+        "prompt": "Set the graph to match the weather chart.",
+        "stimulus": [
+          {
+            "kind": "table",
+            "headers": [
+              "Weather",
+              "Days"
+            ],
+            "rows": [
+              [
+                "☀️ Sunny",
+                "3"
+              ],
+              [
+                "🌧️ Rainy",
+                "1"
+              ]
+            ]
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "bar_graph",
+          "title": "School Weather",
+          "y_label": "Days",
+          "labels": [
+            "Sunny",
+            "Rainy"
+          ],
+          "values": [
+            0,
+            0
+          ]
+        },
+        "controls": [
+          {
+            "field": "values[0]",
+            "label": "Sunny",
+            "min": 0,
+            "max": 4,
+            "step": 1
+          },
+          {
+            "field": "values[1]",
+            "label": "Rainy",
+            "min": 0,
+            "max": 4,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "values[0]": 3,
+          "values[1]": 1
+        },
+        "key": "",
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.2,
+          "reasons": [
+            "4 changes to make +1",
+            "2 facts to meet at once +0.4",
+            "reading a graph, number line or table +0.4",
+            "reading a graph, number line or table +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "I set Sunny to 3 for you. Now check the chart and set Rainy.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "set",
+              "prompt": "Set the graph to match the weather chart.",
+              "stimulus": [
+                {
+                  "kind": "table",
+                  "headers": [
+                    "Weather",
+                    "Days"
+                  ],
+                  "rows": [
+                    [
+                      "☀️ Sunny",
+                      "3"
+                    ],
+                    [
+                      "🌧️ Rainy",
+                      "1"
+                    ]
+                  ]
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "School Weather",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy"
+                ],
+                "values": [
+                  3,
+                  0
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 4,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 4,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "values[0]": 3,
+                "values[1]": 1
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.45,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "reading a graph, number line or table +0.4",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "set",
+        "prompt": "The valley had 2 sunny days and 4 rainy days. The hill had 2 more sunny days than the valley, and the same rainy days. Set the hill's graph.",
+        "stimulus": [
+          {
+            "kind": "bar_graph",
+            "title": "Valley Weather",
+            "y_label": "Days",
+            "labels": [
+              "Sunny",
+              "Rainy"
+            ],
+            "values": [
+              2,
+              4
+            ]
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "bar_graph",
+          "title": "Hill Weather",
+          "y_label": "Days",
+          "labels": [
+            "Sunny",
+            "Rainy"
+          ],
+          "values": [
+            2,
+            4
+          ]
+        },
+        "controls": [
+          {
+            "field": "values[0]",
+            "label": "Sunny",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          },
+          {
+            "field": "values[1]",
+            "label": "Rainy",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          }
+        ],
+        "setGoal": {
+          "values[0]": 4,
+          "values[1]": 4
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.7,
+          "reasons": [
+            "2 changes to make +0.5",
+            "2 facts to meet at once +0.4",
+            "reading a graph, number line or table +0.4",
+            "reading a graph, number line or table +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "The valley had 2 sunny days. Add 2 more for the hill: 2 plus 2 makes 4 sunny days.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "set",
+              "prompt": "The valley had 2 sunny days and 4 rainy days. The hill had 2 more sunny days than the valley, and the same rainy days. Set the hill's graph.",
+              "stimulus": [
+                {
+                  "kind": "bar_graph",
+                  "title": "Valley Weather",
+                  "y_label": "Days",
+                  "labels": [
+                    "Sunny",
+                    "Rainy"
+                  ],
+                  "values": [
+                    2,
+                    4
+                  ]
+                },
+                {
+                  "kind": "text",
+                  "text": "Hill sunny days: 2 + 2 = 4."
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "Hill Weather",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy"
+                ],
+                "values": [
+                  2,
+                  4
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "values[0]": 4,
+                "values[1]": 4
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.7,
+                "reasons": [
+                  "2 changes to make +0.5",
+                  "2 facts to meet at once +0.4",
+                  "reading a graph, number line or table +0.4",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "Sunny is at 3 now. Add 1 more sunny day so the hill reaches 4.",
+            "item": {
+              "id": "studio-2-simpler_1",
+              "surface": "set",
+              "prompt": "The valley had 2 sunny days and 4 rainy days. The hill had 2 more sunny days than the valley, and the same rainy days. Set the hill's graph.",
+              "stimulus": [
+                {
+                  "kind": "bar_graph",
+                  "title": "Valley Weather",
+                  "y_label": "Days",
+                  "labels": [
+                    "Sunny",
+                    "Rainy"
+                  ],
+                  "values": [
+                    2,
+                    4
+                  ]
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "Hill Weather",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy"
+                ],
+                "values": [
+                  3,
+                  4
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                }
+              ],
+              "setGoal": {
+                "values[0]": 4,
+                "values[1]": 4
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.45,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "reading a graph, number line or table +0.4",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "set",
+        "prompt": "Last week had 5 rainy days. This week was sunnier! Set this week to have 4 sunny days, and fewer rainy days than sunny days.",
+        "stimulus": [
+          {
+            "kind": "bar_graph",
+            "title": "Last Week",
+            "y_label": "Days",
+            "labels": [
+              "Sunny",
+              "Rainy"
+            ],
+            "values": [
+              2,
+              5
+            ]
+          }
+        ],
+        "options": [],
+        "board": {
+          "kind": "bar_graph",
+          "title": "This Week",
+          "y_label": "Days",
+          "labels": [
+            "Sunny",
+            "Rainy"
+          ],
+          "values": [
+            0,
+            0
+          ]
+        },
+        "controls": [
+          {
+            "field": "values[0]",
+            "label": "Sunny",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          },
+          {
+            "field": "values[1]",
+            "label": "Rainy",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          }
+        ],
+        "derive": {
+          "sunny_lead": {
+            "diff": [
+              "values[0]",
+              "values[1]"
+            ]
+          }
+        },
+        "setGoal": {
+          "values[0]": 4,
+          "sunny_lead": {
+            "min": 1,
+            "max": 4
+          }
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.2,
+          "reasons": [
+            "4 changes to make +1",
+            "2 facts to meet at once +0.4",
+            "reading a graph, number line or table +0.4",
+            "reading a graph, number line or table +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Set Sunny to 4. Then pick a rainy number that is less than 4, such as 1, 2, or 3.",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "set",
+              "prompt": "Last week had 5 rainy days. This week was sunnier! Set this week to have 4 sunny days, and fewer rainy days than sunny days.",
+              "stimulus": [
+                {
+                  "kind": "bar_graph",
+                  "title": "Last Week",
+                  "y_label": "Days",
+                  "labels": [
+                    "Sunny",
+                    "Rainy"
+                  ],
+                  "values": [
+                    2,
+                    5
+                  ]
+                },
+                {
+                  "kind": "text",
+                  "text": "Sunny = 4. Rainy must be less than 4 (0, 1, 2, or 3)."
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "This Week",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy"
+                ],
+                "values": [
+                  0,
+                  0
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                }
+              ],
+              "derive": {
+                "sunny_lead": {
+                  "diff": [
+                    "values[0]",
+                    "values[1]"
+                  ]
+                }
+              },
+              "setGoal": {
+                "values[0]": 4,
+                "sunny_lead": {
+                  "min": 1,
+                  "max": 4
+                }
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.2,
+                "reasons": [
+                  "4 changes to make +1",
+                  "2 facts to meet at once +0.4",
+                  "reading a graph, number line or table +0.4",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "set",
+        "prompt": "Harbor City had 6 days of weather. It had 2 sunny days, and more rainy days than cloudy days. Set the graph to show all 6 days.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "bar_graph",
+          "title": "Harbor City Weather (6 Days)",
+          "y_label": "Days",
+          "labels": [
+            "Sunny",
+            "Rainy",
+            "Cloudy"
+          ],
+          "values": [
+            0,
+            0,
+            0
+          ]
+        },
+        "controls": [
+          {
+            "field": "values[0]",
+            "label": "Sunny",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          },
+          {
+            "field": "values[1]",
+            "label": "Rainy",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          },
+          {
+            "field": "values[2]",
+            "label": "Cloudy",
+            "min": 0,
+            "max": 6,
+            "step": 1
+          }
+        ],
+        "derive": {
+          "rain_and_cloud": {
+            "sum": [
+              "values[1]",
+              "values[2]"
+            ]
+          },
+          "rain_over_cloud": {
+            "diff": [
+              "values[1]",
+              "values[2]"
+            ]
+          }
+        },
+        "setGoal": {
+          "values[0]": 2,
+          "rain_and_cloud": 4,
+          "rain_over_cloud": {
+            "min": 1,
+            "max": 4
+          }
+        },
+        "key": "",
+        "tier": "hard",
+        "difficulty": {
+          "band": "hard",
+          "score": 2.7,
+          "reasons": [
+            "6 changes to make +1.5",
+            "3 facts to meet at once +0.8",
+            "reading a graph, number line or table +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Set Sunny to 2. That leaves 4 days total for Rainy and Cloudy. Make Rainy taller than Cloudy, like 3 rainy days and 1 cloudy day.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "set",
+              "prompt": "Harbor City had 6 days of weather. It had 2 sunny days, and more rainy days than cloudy days. Set the graph to show all 6 days.",
+              "stimulus": [
+                {
+                  "kind": "text",
+                  "text": "2 sunny + 3 rainy + 1 cloudy = 6 days in all!"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "Harbor City Weather (6 Days)",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy",
+                  "Cloudy"
+                ],
+                "values": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[2]",
+                  "label": "Cloudy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                }
+              ],
+              "derive": {
+                "rain_and_cloud": {
+                  "sum": [
+                    "values[1]",
+                    "values[2]"
+                  ]
+                },
+                "rain_over_cloud": {
+                  "diff": [
+                    "values[1]",
+                    "values[2]"
+                  ]
+                }
+              },
+              "setGoal": {
+                "values[0]": 2,
+                "rain_and_cloud": 4,
+                "rain_over_cloud": {
+                  "min": 1,
+                  "max": 4
+                }
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.7,
+                "reasons": [
+                  "6 changes to make +1.5",
+                  "3 facts to meet at once +0.8",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "I set the 2 sunny days for you. Use the remaining 4 days to make Rainy taller than Cloudy.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "set",
+              "prompt": "Harbor City had 6 days of weather. It had 2 sunny days, and more rainy days than cloudy days. Set the graph to show all 6 days.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "bar_graph",
+                "title": "Harbor City Weather (6 Days)",
+                "y_label": "Days",
+                "labels": [
+                  "Sunny",
+                  "Rainy",
+                  "Cloudy"
+                ],
+                "values": [
+                  2,
+                  0,
+                  0
+                ]
+              },
+              "controls": [
+                {
+                  "field": "values[0]",
+                  "label": "Sunny",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[1]",
+                  "label": "Rainy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                },
+                {
+                  "field": "values[2]",
+                  "label": "Cloudy",
+                  "min": 0,
+                  "max": 6,
+                  "step": 1
+                }
+              ],
+              "derive": {
+                "rain_and_cloud": {
+                  "sum": [
+                    "values[1]",
+                    "values[2]"
+                  ]
+                },
+                "rain_over_cloud": {
+                  "diff": [
+                    "values[1]",
+                    "values[2]"
+                  ]
+                }
+              },
+              "setGoal": {
+                "values[0]": 2,
+                "rain_and_cloud": 4,
+                "rain_over_cloud": {
+                  "min": 1,
+                  "max": 4
+                }
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.2,
+                "reasons": [
+                  "4 changes to make +1",
+                  "3 facts to meet at once +0.8",
+                  "reading a graph, number line or table +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 108,
+        "costUsd": 0.1099,
+        "items": 4,
+        "rounds": 2,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 2
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "shares",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "table": 1,
+            "bar_graph": 6
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "set",
+          "on": "a graph of sunny, rainy and cloudy days that the child fills in",
+          "credit": "the child's graph shows what the weather record says, or a comparison the tutor asks for (more sunny than rainy days)",
+          "notCredit": "picking a finished graph"
+        },
+        "items": 4,
+        "met": 4,
+        "gaps": [],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 108,
+      "costUsd": 0.1099,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "set",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [
+            "help: it adds nothing to the screen"
+          ],
+          "drawnByHand": [],
+          "seconds": 46,
+          "costUsd": 0.0324
+        },
+        {
+          "id": "studio-2",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "medium",
+          "solver": "hard",
+          "rounds": 1,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at medium; a solver rated it hard for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 47,
+          "costUsd": 0.0339
+        },
+        {
+          "id": "studio-3",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [
+            "simplify: set: the board already meets the goal before the child does anything"
+          ],
+          "drawnByHand": [],
+          "seconds": 6,
+          "costUsd": 0.0033
+        },
+        {
+          "id": "studio-4",
+          "surface": "set",
+          "tier": "hard",
+          "computed": "hard",
+          "solver": "hard",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 9,
+          "costUsd": 0.0042
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 60,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 60s (12720 tokens: 2494 output, 6389 thinking)",
+          "costUsd": 0.0362
+        },
+        {
+          "seconds": 60,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, easy)",
+          "costUsd": 0.0362,
+          "item": 1
+        },
+        {
+          "seconds": 60,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0362,
+          "item": 2
+        },
+        {
+          "seconds": 60,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0362,
+          "item": 3
+        },
+        {
+          "seconds": 60,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, hard)",
+          "costUsd": 0.0362,
+          "item": 4
+        },
+        {
+          "seconds": 67,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.7s, solve 5.6s. solver agreed with the key. No problems.",
+          "costUsd": 0.0394,
+          "item": 3
+        },
+        {
+          "seconds": 67,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 1 lever(s), 0 advisory note(s) left, 6s",
+          "costUsd": 0.0394,
+          "item": 3
+        },
+        {
+          "seconds": 68,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.6s, solve 6.5s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it hard for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0428,
+          "item": 2
+        },
+        {
+          "seconds": 68,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0428,
+          "item": 2
+        },
+        {
+          "seconds": 69,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.7s, solve 8.3s. solver agreed with the key. No problems.",
+          "costUsd": 0.047,
+          "item": 4
+        },
+        {
+          "seconds": 69,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 9s",
+          "costUsd": 0.047,
+          "item": 4
+        },
+        {
+          "seconds": 74,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.7s, solve 12.7s. solver agreed with the key. 0 blocking, 2 advisory. First: shortcut: The tutor's instructions explicitly give away the exact numbers to enter (\"3 sunny days, 2 rainy days, and 1 cloudy day\"), so the child does …",
+          "costUsd": 0.0536,
+          "item": 1
+        },
+        {
+          "seconds": 74,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 2 problem(s)",
+          "costUsd": 0.0536,
+          "item": 1
+        },
+        {
+          "seconds": 89,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 15s",
+          "costUsd": 0.0714,
+          "item": 1
+        },
+        {
+          "seconds": 89,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, easy)",
+          "costUsd": 0.0714,
+          "item": 1
+        },
+        {
+          "seconds": 99,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 31s",
+          "costUsd": 0.097,
+          "item": 2
+        },
+        {
+          "seconds": 99,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.097,
+          "item": 2
+        },
+        {
+          "seconds": 106,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.2s, solve 17.3s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at easy; a solver rated it medium for this grade. Reach easy through structure (closer wrong options, a misconception trap, more steps), not …",
+          "costUsd": 0.1051,
+          "item": 1
+        },
+        {
+          "seconds": 106,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.1051,
+          "item": 1
+        },
+        {
+          "seconds": 106,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 1 lever(s), 1 advisory note(s) left, 46s",
+          "costUsd": 0.1051,
+          "item": 1
+        },
+        {
+          "seconds": 108,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.1s, solve 9.3s. solver agreed with the key. 0 blocking, 2 advisory. First: issue: The instruction includes two conditions ('The hill was sunnier than the valley!' and 'Make the hill graph show more sunny days than rainy days'),…",
+          "costUsd": 0.1099,
+          "item": 2
+        },
+        {
+          "seconds": 108,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.1099,
+          "item": 2
+        },
+        {
+          "seconds": 108,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 1 advisory note(s) left, 47s",
+          "costUsd": 0.1099,
+          "item": 2
+        },
+        {
+          "seconds": 108,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 108s, about $0.11",
+          "costUsd": 0.1099
+        },
+        {
+          "seconds": 108,
+          "stage": "run",
+          "level": "info",
+          "text": "evidence: 4 of 4 items collect it",
+          "costUsd": 0.1099
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

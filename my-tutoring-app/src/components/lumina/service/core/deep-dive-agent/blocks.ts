@@ -9,7 +9,10 @@
  * runs in at this eval mode, and the structural and leak checks below.
  */
 
-import { displayErrors, displayIssues, readDisplays, type Display, type DisplayCapability } from '../../agent-kit/displays';
+import { displayErrors, displayIssues, displayParts, readDisplays, type Display, type DisplayCapability } from '../../agent-kit/displays';
+import { readDraft } from '../../agent-kit/itemLoop';
+import { itemErrors, shortcutChecks } from '../../agent-kit/surfaces';
+import { chartAxis, chartDataError, optionsTooClose } from '../../insets/chartView';
 import { viewBoxOf } from '../../../primitives/visual-primitives/core/deep-dive/blocks/drawnDiagram';
 import { visibleStrings, visibleText } from '../../../primitives/visual-primitives/core/deep-dive/deepDiveWorkspace';
 import { Type, type FunctionDeclaration, type Schema } from '@google/genai';
@@ -20,6 +23,7 @@ import type { ChartInset, DefinitionBoxInset, NumberLineInset, PassageInset } fr
 import type {
   BlockType,
   ChartBlockData,
+  CheckBlockData,
   DefinitionBlockData,
   NumberLineBlockData,
   PassageBlockData,
@@ -115,7 +119,17 @@ function blockTool(name: string, description: string, properties: Record<string,
  * The kit displays a figure can hold. A deep dive covers any subject, so every domain is open. The ones it leaves out
  * repeat a richer block it already has: chart, number line, data table, timeline, process, prose.
  */
-export const DEEP_DIVE_DISPLAYS: DisplayCapability = { domains: 'all', without: ['svg', 'text', 'table', 'bar_graph', 'number_line', 'timeline', 'flow'] };
+export const DEEP_DIVE_DISPLAYS: DisplayCapability = { domains: 'all', without: ['svg', 'text', 'passage', 'table', 'bar_graph', 'chart', 'number_line', 'timeline', 'flow'] };
+
+/**
+ * The kit displays a check can hold, as its board, above its cards or on them. Wider than a figure's: a chart, a
+ * timeline or a flow is what the student taps or changes here. No drawing (the author is shown no screenshot of a
+ * check) and no model to run.
+ */
+export const CHECK_DISPLAYS: DisplayCapability = { domains: 'all', without: ['svg', 'text', 'system'] };
+
+const SHOWS_FIELD = { type: Type.STRING, nullable: true, description: 'Required with svg: one sentence on what this drawing must make visible to a student who sees only the picture, such as "the only difference between the two bridges is the triangles". A separate reader checks the picture against it. The student never sees this.' };
+const NEEDS_SHOWS = 'a drawing needs shows: one sentence on what it must make visible';
 
 /** Function declarations for the block tools, filtered to what this audience can use. */
 export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
@@ -137,7 +151,7 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
       layout: { type: Type.STRING, enum: ['flow', 'masonry', 'columns'], nullable: true, description: 'flow (default); masonry = each short paragraph becomes a card (3-4+ one-to-two-sentence paragraphs); columns = newspaper columns for longer text.' },
       reveal: { type: Type.BOOLEAN, nullable: true, description: 'Lines animate in on scroll; for a dramatic or climactic passage.' },
       insetFacts: { type: Type.ARRAY, nullable: true, description: 'Optional 3 takeaways shown in a card beside the text.', items: { type: Type.OBJECT, properties: { icon: S('Emoji'), text: S('Takeaway') }, required: ['icon', 'text'] } },
-      figurePrompt: { type: Type.STRING, nullable: true, description: 'Optional painted illustration from the image model, which is slow and costly. Leave empty unless only a realistic picture will do; write_figure draws anything simpler.' },
+      figurePrompt: { type: Type.STRING, nullable: true, description: 'Painted illustration from the image model. Use it when this block is about what a real thing looks like (an animal, a place, a moment); use write_figure for structure or motion.' },
       figureCaption: { type: Type.STRING, nullable: true, description: 'Caption for the figure.' },
     }, ['paragraphs'])],
     ['pull-quote', blockTool('write_pull_quote', 'One or two sentences that state the key insight of the blocks just before it, set large. Display only.', {
@@ -153,6 +167,10 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
     ['multiple-choice', blockTool('write_multiple_choice', 'A comprehension check (evaluable). It tests something a block above it taught.', {
       check: CHOICE,
     }, ['check'])],
+    ['check', blockTool('write_check', 'A check the student does on a picture or with cards (evaluable): tap a part of a display, pick, sort or order cards whose faces can be displays, build a set, or change a display until a goal holds. See "Checks the student does" for the item. Code draws it, judges it and computes how hard it is; the result shows the item as built.', {
+      item: S('The item as JSON text: {surface, prompt, stimulus, options, categories, goal, board, controls, derive, key, misconceptions}, as described under "Checks the student does".'),
+      explanation: S('Why the answer is right, 1-3 sentences; shown after the student answers.'),
+    }, ['item', 'explanation'])],
     ['fill-in-blank', blockTool('write_fill_in_blank', 'A vocabulary recall check (evaluable): code blanks one word of the sentence and the student picks it from a word bank.', {
       sentence: S('A complete sentence that contains the answer word exactly once.'),
       answer: S('The single key word to blank (not "the", "is", ...). Must appear in the sentence exactly once.'),
@@ -165,8 +183,9 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
       itemA: { type: Type.OBJECT, properties: { title: S('Item A'), points: strings('3-4 points') }, required: ['title', 'points'] },
       itemB: { type: Type.OBJECT, properties: { title: S('Item B'), points: strings('3-4 points') }, required: ['title', 'points'] },
     }, ['itemA', 'itemB'])],
-    ['diagram', blockTool('write_diagram', `A picture with 4-6 labelled parts, for when how parts sit together IS the idea. ${modes.diagramLabel ? 'At this level the student drags the labels onto the picture (evaluable).' : 'At this level numbered pins sit on the parts and the student taps them to read (display).'} Draw it yourself with svg; use imagePrompt instead only when the parts cannot be told apart in a drawing.`, {
+    ['diagram', blockTool('write_diagram', `A picture with 4-6 labelled parts, for when how parts sit together IS the idea. ${modes.diagramLabel ? 'At this level the student drags the labels onto the picture (evaluable).' : 'At this level numbered pins sit on the parts and the student taps them to read (display).'} Use svg when a clean textbook schematic would teach it better than a photo (a cut-away, a circuit, how parts connect). Use imagePrompt when your drawing would only be a poor likeness of a real thing (an animal's body, the rooms of a real house).`, {
       svg: { type: Type.STRING, nullable: true, description: `Your drawing: one complete <svg viewBox='0 0 400 300'>...</svg> on a white page, flat shapes, each part clearly separate and a different shape or color. A label marks one place: where a part repeats (petals, legs), draw one copy in full color and the others faded gray, so a student can only mean that one. No scripts or outside images. Do not write any part's name in it; the pins carry the names.` },
+      shows: SHOWS_FIELD,
       imagePrompt: { type: Type.STRING, nullable: true, description: 'Only when you do not give svg: the picture for the image model, each part spatially distinct, dark background, bright elements, NO text in the image.' },
       caption: S('Caption.'),
       altText: S('Accessible description.'),
@@ -176,6 +195,7 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
     ['figure', blockTool('write_figure', 'A picture that teaches an idea with no labels to tap: how something moves, what it looks like, a before and after, a cut-away, or a code-drawn display. Display only. Give display when one of the code-drawn displays can show it; otherwise draw it with svg and you get a screenshot back to check it.', {
       display: { type: Type.STRING, nullable: true, description: 'A code-drawn display as JSON text, from the list under "Pictures". You write the values and code draws it.' },
       svg: { type: Type.STRING, nullable: true, description: `Only when no code-drawn display fits: one complete <svg viewBox='0 0 400 300'>...</svg> on a white page: flat shapes, clear at a glance, no scripts or outside images. Short labels are fine, as long as none of them answers a check below it.` },
+      shows: SHOWS_FIELD,
       caption: S('One sentence on what to notice.'),
       altText: S('What the picture shows, in a sentence or two. The tutor reads this, so name what is drawn.'),
     }, ['caption', 'altText'])],
@@ -224,13 +244,14 @@ export function blockTools(ctx: BlockContext): FunctionDeclaration[] {
       actually: S('What is true, one sentence.'),
       why: S('The evidence or reasoning that settles it, 1-2 sentences.'),
     }, ['belief', 'actually', 'why'])],
-    ['chart', blockTool('write_chart', 'Real data drawn as a chart, for when the shape of the data is the idea: line for change over time, bar to compare amounts, pie for parts of a whole. Display only. Values are real and specific; the caption names the source. Text on the chart is plain (no $...$).', {
+    ['chart', blockTool('write_chart', 'Real data drawn as a chart, for when the shape of the data is the idea: line for change over time, bar to compare amounts, pie for parts of a whole. Bar and line can compare 2-4 sets of data (two cities, two species) when each point names its group. To have the student find something ON a chart (the bar, the point or the slice that answers a question), do not use this block: use write_check with surface point and the chart as its board. Display only, unless you add patternCheck: a question about the chart as a whole, answered only by reading it, by comparing two or more points or finding where the data crosses a value, which makes it evaluable. A question the overall direction or the tallest bar answers at a glance is too easy. Add one when reading the chart is what the student should practise. Values are real and specific; the caption names the source. Text on the chart is plain (no $...$).', {
       chartType: { type: Type.STRING, enum: ['bar', 'line', 'pie'] },
       title: S('What the chart shows, with units.'),
       xLabel: { type: Type.STRING, nullable: true, description: 'Bar and line: what the labels are (e.g. "Year").' },
       yLabel: { type: Type.STRING, nullable: true, description: 'Bar and line: what the values measure, with units.' },
-      data: { type: Type.ARRAY, description: '2-12 points in display order (time order for a line); a pie has 2-6 slices.', items: { type: Type.OBJECT, properties: { label: S('Category or time'), value: { type: Type.NUMBER } }, required: ['label', 'value'] } },
+      data: { type: Type.ARRAY, description: '2-12 points in display order (time order for a line), per group when there are groups; a pie has 2-6 slices. On a line chart, labels that are plain numbers (1900, 1950, 1960) are placed to scale, so use plain numbers when the points are unevenly spaced. Grouped bars need every group to have every label.', items: { type: Type.OBJECT, properties: { label: S('Category or time'), value: { type: Type.NUMBER }, group: { type: Type.STRING, nullable: true, description: 'Which set of data this point belongs to. Give it on every point or on none.' } }, required: ['label', 'value'] } },
       caption: S('Where the data comes from, one short sentence. Never states what a later check asks.'),
+      patternCheck: { ...CHOICE, nullable: true },
     }, ['chartType', 'title', 'data', 'caption'])],
     ['number-line', blockTool('write_number_line', 'A number line with labelled points and an optional shaded interval, for when where numbers sit is the idea: order, distance, fractions, negatives, rounding, an inequality. Display only. Labels are plain text (1/2, -3, x), no $...$.', {
       min: { type: Type.NUMBER }, max: { type: Type.NUMBER },
@@ -262,6 +283,7 @@ export const TOOL_TO_BLOCK: Record<string, BlockType> = {
   write_pull_quote: 'pull-quote',
   write_data_table: 'data-table',
   write_multiple_choice: 'multiple-choice',
+  write_check: 'check',
   write_fill_in_blank: 'fill-in-blank',
   write_timeline: 'timeline',
   write_compare_contrast: 'compare-contrast',
@@ -383,6 +405,26 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
       if ('error' in c) return c;
       return { ...base, blockType: 'multiple-choice', ...c } as MultipleChoiceBlockData;
     }
+    case 'check': {
+      let raw: unknown = args.item;
+      if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { return { error: 'item must be JSON text: one object {surface, prompt, ...}' }; } }
+      const given = obj(raw);
+      if (!given) return { error: 'item must be JSON text: one object {surface, prompt, ...}' };
+      const prompt = str(given.prompt);
+      const { item } = readDraft(given, 'check', Array.from(prompt).reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7));
+      const broken = itemErrors(item);
+      if (broken.length) return { error: broken[0] };
+      const shown = [...item.stimulus, ...(item.board ? [item.board] : []), ...item.options.flatMap((o) => (o.display ? [o.display] : []))];
+      const off = displayIssues(shown, CHECK_DISPLAYS);
+      if (off.length) return { error: off[0] };
+      if (ctx.preReader && shown.some((d) => d.kind === 'passage')) return { error: 'a passage needs reading; pre-readers cannot use it' };
+      const plain = plainText([...item.options.map((o) => o.label), ...(item.categories ?? [])]);
+      if (plain) return { error: `cards and categories are drawn as plain text, so they cannot hold $...$ math ("${plain}"); write it in words or as 1/2` };
+      // Cards of words under no picture are a multiple-choice question, and that block already asks one.
+      if (item.surface === 'choose' && !shown.length) return { error: 'a choose item with no display is a multiple-choice question: use write_multiple_choice, or give the cards displays, or ask about a display (a point item when the answer is one of its parts)' };
+      if (!str(args.explanation)) return { error: 'a check needs its explanation: why the answer is right' };
+      return { ...base, blockType: 'check', item, explanation: str(args.explanation) } as CheckBlockData;
+    }
     case 'fill-in-blank': {
       const sentence = str(args.sentence);
       const answer = str(args.answer);
@@ -416,10 +458,11 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
       if (!svg === !str(args.imagePrompt)) return { error: 'give exactly one of svg (your drawing) or imagePrompt' };
       const placed = svg ? placeDrawnLabels(svg, objs(args.labels), labels) : undefined;
       if (placed && 'error' in placed) return placed;
+      if (svg && !str(args.shows)) return { error: NEEDS_SHOWS };
       return {
         ...base, blockType: 'diagram', imageBase64: '', caption: str(args.caption), altText: str(args.altText),
         learningObjective: str(args.learningObjective), interactionMode: modes.diagramLabel ? 'label' : 'explore', labels: placed?.labels ?? labels,
-        ...(svg ? { svg } : {}),
+        ...(svg ? { svg, shows: str(args.shows) } : {}),
       } as DiagramBlockData;
     }
     case 'figure': {
@@ -429,7 +472,8 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
       const bad = written ? displayIssues([written], DEEP_DIVE_DISPLAYS) : displayErrors(display);
       if (bad.length) return { error: bad[0] };
       if (!str(args.altText)) return { error: 'a figure needs altText: what the picture shows, in words' };
-      return { ...base, blockType: 'figure', display, caption: str(args.caption), altText: str(args.altText) } as FigureBlockData;
+      if (!written && !str(args.shows)) return { error: NEEDS_SHOWS };
+      return { ...base, blockType: 'figure', display, caption: str(args.caption), altText: str(args.altText), ...(written ? {} : { shows: str(args.shows) }) } as FigureBlockData;
     }
     case 'mini-sim': {
       const controlType = str(args.controlType) === 'slider' ? 'slider' : 'toggle';
@@ -510,20 +554,23 @@ export function buildBlock(type: BlockType, args: Args, ctx: BlockContext): Deep
     }
     case 'chart': {
       const chartType = str(args.chartType) as ChartInset['chartType'];
-      if (!['bar', 'line', 'pie'].includes(chartType)) return { error: 'chartType must be bar, line or pie' };
-      const data = objs(args.data).map((d) => ({ label: str(d.label), value: Number(d.value) }));
-      if (data.length < 2 || data.length > 12) return { error: `a chart needs 2-12 data points, got ${data.length}` };
-      if (data.some((d) => !d.label || !Number.isFinite(d.value))) return { error: 'every data point needs a label and a numeric value' };
-      if (new Set(data.map((d) => d.label.toLowerCase())).size !== data.length) return { error: 'two data points share a label' };
-      if (chartType === 'pie' && (data.length > 6 || data.some((d) => d.value < 0))) return { error: 'a pie has 2-6 slices, none negative' };
-      if (chartType === 'line' && data.length < 3) return { error: 'a line chart needs at least 3 points' };
+      const data = objs(args.data).map((d) => ({ label: str(d.label), value: Number(d.value), ...(str(d.group) ? { group: str(d.group) } : {}) }));
+      const unusable = chartDataError(chartType, data);
+      if (unusable) return { error: unusable };
+      const groups = Array.from(new Set(data.map((d) => d.group ?? '')));
+      let patternCheck: ChartBlockData['patternCheck'];
+      if (str(obj(args.patternCheck)?.question)) {
+        const c = choiceOr(args.patternCheck, 'deep-dive-chart');
+        if ('error' in c) return { error: `patternCheck: ${c.error}` };
+        patternCheck = { question: c.question, options: c.options, correctIndex: c.correctIndex, explanation: c.explanation };
+      }
       const inset: ChartInset = {
         insetType: 'chart', chartType, title: str(args.title), data,
         ...(str(args.xLabel) ? { xLabel: str(args.xLabel) } : {}), ...(str(args.yLabel) ? { yLabel: str(args.yLabel) } : {}),
       };
-      const plain = plainText([inset.title, inset.xLabel, inset.yLabel, ...data.map((d) => d.label)]);
+      const plain = plainText([inset.title, inset.xLabel, inset.yLabel, ...data.map((d) => d.label), ...groups]);
       if (plain) return { error: `chart text is drawn as plain text, so it cannot hold $...$ math ("${plain}"); write it in words or as 1/2` };
-      return { ...base, blockType: 'chart', inset, ...(str(args.caption) ? { caption: str(args.caption) } : {}) } as ChartBlockData;
+      return { ...base, blockType: 'chart', inset, ...(str(args.caption) ? { caption: str(args.caption) } : {}), ...(patternCheck ? { patternCheck } : {}) } as ChartBlockData;
     }
     case 'number-line': {
       const min = Number(args.min);
@@ -625,6 +672,7 @@ export function blockChoice(block: DeepDiveBlock): Choice | undefined {
     case 'mini-sim': return (block as MiniSimBlockData).prediction;
     case 'perspectives': return (block as PerspectivesBlockData).comprehension;
     case 'data-table': return (block as DataTableBlockData).patternCheck;
+    case 'chart': return (block as ChartBlockData).patternCheck;
     default: return undefined;
   }
 }
@@ -634,6 +682,12 @@ export function blockAnswer(block: DeepDiveBlock): string | undefined {
   const c = blockChoice(block);
   if (c) return c.options[c.correctIndex];
   if (block.blockType === 'fill-in-blank') return (block as FillInBlankBlockData).correctAnswer;
+  if (block.blockType === 'check') {
+    // What a label or a caption could give away: the part to tap, or the words on the right card.
+    const it = (block as CheckBlockData).item;
+    if (it.surface === 'point') return it.key as string;
+    if (it.surface === 'choose') return it.options.find((o) => o.id === it.key)?.label;
+  }
   return undefined;
 }
 
@@ -664,9 +718,33 @@ export function blockIssues(block: DeepDiveBlock, ctx: BlockContext): { blocking
   if (answer && contains(block.label, answer)) blocking.push(`the label "${block.label}" names the answer`);
 
   switch (block.blockType) {
+    case 'chart': {
+      const b = block as ChartBlockData;
+      if (answer && b.caption && contains(b.caption, answer)) blocking.push('the caption names the answer, so the student need not read the chart');
+      if (b.patternCheck && answer && b.inset.chartType !== 'pie') {
+        const values = b.inset.data.map((d) => d.value);
+        const close = optionsTooClose(values, chartAxis(values).step, b.patternCheck.options, answer);
+        if (close) blocking.push(close);
+      }
+      break;
+    }
     case 'fill-in-blank': {
       const b = block as FillInBlankBlockData;
       if (new Set(b.wordBank.map(norm)).size !== b.wordBank.length) blocking.push('the word bank repeats a word');
+      break;
+    }
+    case 'check': {
+      // The kit's own checks: a broken item, and every way to get it right without the idea that code can see.
+      const it = (block as CheckBlockData).item;
+      blocking.push(...itemErrors(it), ...shortcutChecks(it));
+      if (ctx.preReader && wordCount(it.prompt) > 12) blocking.push(`the prompt is ${wordCount(it.prompt)} words; pre-readers need 12 or fewer`);
+      if (ctx.preReader && it.options.some((o) => !o.display && wordCount(o.label ?? '') > 4)) blocking.push('pre-reader cards carry a display, or a label of 1-4 words');
+      for (const d of [...it.stimulus, ...(it.board ? [it.board] : [])]) {
+        if (d.kind !== 'passage') continue;
+        const count = wordCount(d.sentences.join(' ')), max = passageLimit(ctx.grade);
+        if (count > max) blocking.push(`the passage is ${count} words; at ${ctx.grade === undefined ? 'this level' : `grade ${ctx.grade}`} keep it to ${max}`);
+      }
+      if (it.surface === 'point' && displayParts(it.board).length > 8) advisory.push(`the board has ${displayParts(it.board).length} parts to tap; fewer, larger parts are easier to tap on a phone`);
       break;
     }
     case 'compare-contrast': {

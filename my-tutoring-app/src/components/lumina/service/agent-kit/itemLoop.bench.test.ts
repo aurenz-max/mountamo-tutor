@@ -43,6 +43,19 @@ describe('runItemBench', () => {
     expect(runs.find(r => r.id === 'draft')!.result!.debug.costUsd).toBe(0);
   });
 
+  it('asks once more when the first write is not valid JSON, and gives up after that', async () => {
+    const good = generateContent.getMockImplementation()!;
+    let bad = 1;
+    generateContent.mockImplementation(async (req: { contents: Array<{ parts: Array<{ text?: string }> }> }) =>
+      (req.contents.length === 1 && !textOf(req).includes('You are checking a learning item') && bad-- > 0 ? { text: '{title: oops', usageMetadata: {} } : good(req)));
+    const [run] = await runItemBench(spec, ['draft']);
+    expect(run.result?.items).toHaveLength(1);
+    expect(textOf(generateContent.mock.calls[1][0])).toContain('every key in double quotes');
+
+    generateContent.mockImplementation(async () => ({ text: '{title: oops', usageMetadata: {} }));
+    await expect(runItemBench(spec, ['draft'])).rejects.toThrow();
+  });
+
   it('runs no solver on the settings without one', async () => {
     await runItemBench(spec, ['draft', 'self']);
     const prompts = generateContent.mock.calls.map(([req]) => textOf(req));

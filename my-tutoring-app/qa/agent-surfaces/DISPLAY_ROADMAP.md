@@ -71,6 +71,24 @@ Not solved by this exemplar (executor `/agent-primitive`):
   captured. The drawn trusses are visibly deeper than 1/10 of the span.
 - The SVG source was not saved, so its token cost is unmeasured.
 
+## Drawing guide and blind drawing look (USER 2026-11-09, deep-dive pilot)
+
+`DRAWING_GUIDE` (`displays.ts`) gives the author four kinds of teaching drawing as craft: comparison, schematic,
+cut-away, process. Code never asks which kind a drawing is. The author writes `shows`, one sentence on what the drawing
+must make visible, and `lookAtDrawing` (`look.ts`) checks the picture against it. On a diagram the reader also matches
+each pin to shuffled part names, and code grades that.
+
+Reader on 7 saved drawings, with the caption standing in for `shows` ($0.02): the two-houses safe-house diagram failed
+on all 4 pins and the flower diagram passed. Captions that claim more than a drawing can show failed too, so a run
+with real `shows` sentences is the fair test.
+
+Bench `qa/deep-dive-bench/drawing-guide-2026-11-09.json` (railroad, flower, seasons, images on, $0.75): railroad moved
+to a Big Dipper schematic and the safe-house drawing is gone; the reader sent back one drawing and the author fixed it;
+flower kept a clean cut-away; seasons drew nothing. One sample per lesson.
+
+Open: the reader does not catch colored repeats (two full-color petals, against the write_diagram rule) or a Big Dipper
+line that ends on no star. Seasons used all 12 turns with no drawing in it, cause not investigated.
+
 ## How each display is judged
 
 Run the tester's compare mode on one fixed objective before and after, and record first-write tokens, time, cost and
@@ -97,6 +115,48 @@ hand on a run. Predicted comes from the K-5 math strands and earlier row 15 note
 | AD-12 | Life-lab's drawings in the registry (beak, feet, seed, moth, critter) | shape and color values | They exist only in `LifeLab.tsx`, so other primitives cannot use them | `LifeLab.tsx` | Queued: port when a second primitive needs one |
 | AD-13 | Screenshot in `runAuthor`, so `svg` can go on life-lab's menu | none | Life-lab cannot draw a part no emoji shows | `look.ts`, `svgPng.ts` | Built 11-08: a view with `drawn` always comes back to the author; `svg` is on life-lab's menu |
 | AD-14 | Biology: `cell`, `zoom`, `food_web` | cell: kind, parts by shape with label and count. zoom: levels. food web: living things by level, who eats whom | USER 11-08: biology-specific displays. Agent drew cells and zooms on real runs | none | Built 11-08, not yet measured before and after. `drawnByHand` in real runs ranks the next (organ cross sections are the likely one) |
+| AD-15 | Deep-dive `write_chart`: numeric x-axis on a line, 2-4 groups on bar and line | group on each point | USER 11-09. A line with uneven years was drawn evenly spaced | `ChartInsetRenderer` | Built 11-09. Browser-checked on a fixture. Real lesson (`qa/deep-dive-bench/chart-series-2026-11-09.json`) wrote a chart without groups, so the model's use of groups is unobserved |
+| AD-16 | `scatter` with optional trend line | points, axis labels, trend | USER 11-09 | none | Queued |
+| AD-17 | `coordinate_plane` and function graph | points or an equation; code computes the plotted points | USER 11-09. Largest gap for middle school math | `coordinate-graph` | Queued |
+| AD-18 | `dot_plot`, `histogram`, `box_plot` | raw values; code computes bins and quartiles | USER 11-09 | `dot-plot`, `histogram` | Queued |
+| AD-19 | A check on a chart, answered only by reading it, and a highlight for the tutor's help | question; highlighted bar or point | USER 11-09. Tables have a check, charts did not | `DataTableBlock` | Check built 11-09 (optional `patternCheck` on `write_chart`, the author decides). Highlight built in the kit `chart` only; deep-dive has no help lever on a chart yet |
+| AD-20 | `chart`: line, bar or pie, 2-4 groups, numeric x to scale, one set of validation rules shared with `write_chart` | chart type, axes, points with optional group, show_values, highlight | USER 11-09: reading a chart is a capability every problem should have | `chartView.ts` | Built 11-09, real runs below. Before-and-after cost not measured. `bar_graph` stays for one plain set of bars |
+| AD-22 | Parts to tap (`point` surface) | a display names its parts (`parts` in its registry entry) and draws one unseen `data-part` shape per part; `highlight` set to a part lights it | USER 11-09: an answer surface every display with addressable parts gains | highlight targets | Built 11-09 for chart, pictograph, timeline, flow, map, zoom, food_web; `displays.test.ts` fails a display whose parts and tap shapes differ. Practice-studio and deep-dive (`write_check`) both offer it. Not yet chosen by a model in a real run (deep-dive ROADMAP DD-20). Next displays: DD-21 |
+| AD-21 | Deep-dive chart: long y-axis label is clipped ("Carbon Dioxide (" with the unit cut off) | none | Seen 11-09 in the real lesson | `ChartInsetRenderer` | Queued (`/agent-primitive`) |
+
+## Reading a chart in both primitives (2026-11-09)
+
+Practice-studio gets `chart` as a display on its answer surfaces. Deep-dive keeps `write_chart` and it can now carry a question,
+so the block becomes a check. Both use `chartView.ts` for the data model and rules. Deep-dive's blind reader did not receive a
+chart's numbers before this; it does now, because `studentView` adds them.
+
+One real run each, $0.217 (`2026-11-09-charts/`). Practice-studio, on an objective about line and double bar graphs, used `chart` on
+4 of 4 items: a value, two group comparisons and an order by combined totals. Deep-dive on CO2 since 1960 (apply) added a trend
+question to its one chart unprompted. Its distractors were weak ("dropped steadily", "stayed flat"). Browser drive of that lesson in
+the tester: chart drawn, explanation hidden until answered, wrong then right answer scored, no page errors.
+
+### What the chart questions demand (sample, 2026-11-09, $1.00)
+
+16 practice-studio items across four objectives, every key recomputed by hand from the plotted values, all correct:
+
+| Demand | Items |
+|---|---|
+| Read one value | 1 |
+| Compare two or more points or intervals | 10 |
+| Combine values or more than one step | 5 |
+
+Deep-dive, three chart questions before a prompt change and three after (one question each per lesson, too few to call a trend). Before:
+direction of a line, where data crosses 50%, "which statement is true" answered by the tallest bar. After: a ratio from two bars, direction
+of a line, largest drop. The tool now says a question answered at a glance is too easy. One lesson wrote no chart.
+
+Code added: wrong options too close to read apart on the axis are sent back (`optionsTooClose`, closer than a quarter of the axis spacing,
+when the key is a plotted value between marks). It fired on none of the shipped items, so it guards a case not seen yet.
+
+Open (executor `/agent-primitive`):
+- The largest-drop key was "1975 to 1990", the longest span offered and one that contains another option, so a child can pick it by length of time.
+- A bar chart of uneven years (1800, 1850, 1900, 1920) spaces them evenly. Only line charts are drawn to scale.
+- Plain value reading is rare (1 of 16). The objectives sampled asked for interpretation, so this may be right; check on a read-a-value objective.
+- One of 5 practice sessions died on invalid JSON from the first write. `itemLoop` now retries once. It did not recur, so the cause is unknown.
 
 ## Results (2026-11-08)
 

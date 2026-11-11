@@ -2,8 +2,8 @@
  * Life Lab's author agent (K-5 biology canvas, USER 2026-11-07; the full framework, USER 2026-11-08).
  *
  * One model runs the agent kit's author loop (`agent-kit/authorLoop.ts`) and designs a lesson on any biology concept from
- * the topic and objective, never an eval mode. It writes the lesson in order: teaching sections (the kit's `write_section`)
- * and questions, each question through one of two tools: `write_item`, the kit's answer surfaces over displays and its own drawings, and `write_world`, a small
+ * the topic and objective, never an eval mode. It teaches first (the kit's teach frames) and writes each item through one
+ * of two tools: `write_item`, the kit's answer surfaces over displays and its own drawings, and `write_world`, a small
  * living world the child changes and runs (places, living things, one rule, one control, a goal).
  *
  * On a world code runs the rules, solves every setting, labels the skill and blocks shortcuts (`lifeLabWorld.ts`). On a kit
@@ -14,8 +14,9 @@ import type { FunctionDeclaration } from '@google/genai';
 import { authoredObjective, planWithObjective, runAuthor, str, strs, arr, num, clean, type Args, type WriteOutcome } from '../../agent-kit/authorLoop';
 import { leverPrompt, slotLevers, type DraftLever, type LeverCapability } from '../../agent-kit/levers';
 import { displayIssues, displayMenu, displayPrompt, displayText, displayToolSchema, readDisplay, readDisplays, type Display } from '../../agent-kit/displays';
-import { SURFACES, difficultyOf, itemErrors, shortcutChecks, shownOrder, type Surface, type SurfaceItem, type SurfaceOption } from '../../agent-kit/surfaces';
-import { MAX_TEACH_STEPS, readSection, sectionTool, teachIssues, teachPrompt, teachText, type TeachStep } from '../../agent-kit/teach';
+import { CARD_SURFACES, difficultyOf, itemErrors, shortcutChecks, shownOrder, type Surface, type SurfaceItem, type SurfaceOption } from '../../agent-kit/surfaces';
+import { readTeach, teachIssues, teachPrompt, teachText, teachToolSchema, type TeachStep } from '../../agent-kit/teach';
+import { readTerms, termIssues, termsOnScreen, termsPrompt, termsText, termsToolSchema, type Term } from '../../agent-kit/terms';
 import { lifeLabItemView, lifeLabView } from './lifeLabView';
 import { buildScopePromptSection } from '../../scopeContext';
 import type { GenerationContext, GenerationObjective } from '../../generation/generationContext';
@@ -68,12 +69,12 @@ function systemPrompt(gctx: GenerationContext, tier: SupportTier | undefined, gr
   const suggested = String(gctx.targetEvalMode ?? (gctx.raw as { targetEvalMode?: string } | undefined)?.targetEvalMode ?? '');
   return `You design ONE Life Lab lesson on "${gctx.topic}" for a child in ${grade === undefined ? 'grades K-5' : grade === 0 ? 'Kindergarten' : `grade ${grade}`}: any concept in biology, from a whole forest to a part inside a cell.
 ${gctx.intent ? `\nThis session's job: ${gctx.intent}\n` : ''}${gctx.objective?.text ? `\nThe learning objective: ${gctx.objective.text}\n` : `\nNo learning objective was given. Write one in plan_session (objectiveText, objectiveVerb): one sentence for what this child will be able to do by the end of this lesson, narrow enough for one lesson. Every section and question serves it.\n`}${(LIFE_MODES as readonly string[]).includes(suggested) ? `\nA suggestion, only if it fits the objective: include a ${suggested} world.\n` : ''}${buildScopePromptSection(gctx.scope)}
-You teach this idea, show it and check it. A lesson is 3-5 questions on one idea, with teaching sections wherever the child needs them. You decide what the child sees and does, and you build each piece with tools; every write returns the code checks. Fix everything they block, then call finish. Look at the whole lesson first: what does this child need to see to understand this idea? What would prove they understood it? Then choose the pieces.
+You teach this idea, show it and check it. A lesson is 3-5 items on one idea. You decide what the child sees and does, and you build each piece with tools; every write returns the code checks. Fix everything they block, then call finish. Look at the whole lesson first: what does this child need to see to understand this idea? What would prove they understood it? Then choose the pieces.
 
-Work fast: in your FIRST turn call plan_session and then write every section and question in lesson order (several calls in one turn). Later turns only fix what comes back.
+Work fast: in your FIRST turn call plan_session and then write every item (several calls in one turn). Later turns only fix what comes back.
 
 ## The pieces
-- write_section (see "Teach"): what the child is taught, placed in the lesson where it is needed. The lesson opens with one.
+- teach on an item (see "Teach first"): frames the child taps through before the item opens. The first item of the lesson must teach.
 - write_item: drawn cards the child picks, sorts or orders. Use it for anything about what something looks like, what a part does, which case fits, how things group, or what happens in what order: cells, organs, tissues, body systems, classification, food webs, comparing structures.
 - write_world: a small living world the child changes and runs. Use it when what the idea needs is to change something and see what the living thing does: habitats and needs, a body part for a job, camouflage, inheritance, a life cycle, a fair test.
 Choose by the concept. A world is the right tool only when running it teaches: if the world would be one living thing on an empty background with a list to pick from, write an item with a real drawing. Vary what the child does across the lesson.
@@ -113,14 +114,13 @@ ${EXAMPLES}
 - Across the session: vary the living things and the answers and, where the objective allows, what the child does.
 
 ## Displays and drawings
-Displays go in sections, an item's stimulus and cards, and a world's show. You write the values and code draws it. On a world, add show (at most 2) only when seeing it teaches: last summer's moth counts before a prediction, a table of what each pot was given. A display is evidence or an example, never this item's answer: code reads a world's display like the ask and blocks one that names the working option, lists this world's stages in order or names a part of the path. Never show how a world's run ends.
+Displays go in teach frames, an item's stimulus and cards, and a world's show. You write the values and code draws it. On a world, add show (at most 2) only when seeing it teaches: last summer's moth counts before a prediction, a table of what each pot was given. A display is evidence or an example, never this item's answer: code reads a world's display like the ask and blocks one that names the working option, lists this world's stages in order or names a part of the path. Never show how a world's run ends.
 ${displayPrompt(LIFE_DISPLAYS)}
 When no display can show it, draw it yourself with svg: an organ in cross section, a plant's transport tubes, a muscle fiber, a before and after. The structure of the drawing is the idea, so draw it plainly: the same frame on every card with only the thing being taught changing, plain lines, one drawing language across the lesson, and at least one drawing that tests the rule. You will be shown every drawing you make, the way the child sees it.
 ${teachPrompt(`Example, how leaves get water, grade 3 (write your own for your concept, with your own drawings):
-- frame 1 says "A tall tree has leaves far above its roots, and every leaf needs water." picture: a tall oak seen from the ground, roots at the base and leaves high above. show zoom: Tree, Branch, Leaf.
+- frame 1 says "A tall tree has leaves far above its roots, and every leaf needs water." show zoom: Tree, Branch, Leaf.
 - frame 2 says "Thin tubes run from the roots up to each leaf. Water climbs them." show your own drawing of a stem cut open, with the tubes lit.
-- frame 3 says "Each part of a plant has a job in moving water." cards: Roots, Stem, Leaf, each with one line.
-- then a question asks about a new case: two plants drawn with their tubes cut in different places, and which leaves will wilt.`)}
+- then the item asks about a new case: two plants drawn with their tubes cut in different places, and which leaves will wilt.`)}
 
 ## How the child answers (respond)
 The child answers by voice or on screen; you choose which fits the world. Code checks the choice and builds what the tutor judges; you never write a key. Every write returns answeredBy.
@@ -133,6 +133,7 @@ A choice that does not fit is blocked with the reason.
 Every write returns difficulty {band, score, reasons}. Terms: more things to try (more places, options, bench items) raise it; few right settings raise it; a fair test the child designs +1.5, or +0.2 when one pot is already set to match; a prediction +0.8; more families raise it (2 families +0.3, up to 5 families +1); a coloring that starts with more and ends with fewer +1; each extra feature a part or coloring must fit (also) +1; each option that fits only some of them +0.5; each inherited trait +0.3; each young wrong in only one trait +0.4; 3+ living things +0.5; bench parts that do not belong +0.25 each; a stage from another life +0.5. Bands: easy under 1.5, medium under 3, hard 3+.
 ${tier ? `This session is ${tier.toUpperCase()}: every world must score ${tier} (the first may be one band easier). Reach it by the structure.` : 'No tier is set: start easier and build up.'}
 
+${termsPrompt(`Example: a question "which part chews leaves?" with the choices mandibles, proboscis and claspers. mandibles: "two hard, toothed plates at the front of a caterpillar's head." proboscis: "a long thin tube that stays coiled under a butterfly's head." claspers: "stubby hooked legs near a caterpillar's tail." The child reasons from the shape to the job.`)}
 ${atlasMenu()}${leverPrompt(LEVER_EXAMPLES)}`;
 }
 
@@ -186,6 +187,8 @@ const WORLD_TOOL: FunctionDeclaration = {
         variable: { type: 'string', enum: [...COND_KEYS] } }, required: ['kind'] },
       steps: { type: 'integer', description: 'Days (needs, 3-5) or families (2-5).' },
       show: { ...displayToolSchema(LIFE_DISPLAYS), description: 'At most 2 displays beside the world (see "Displays and drawings"). Usually left out.' },
+      teach: teachToolSchema(LIFE_DISPLAYS),
+      terms: termsToolSchema(LIFE_DISPLAYS),
       ask: { type: 'string', description: 'What the tutor asks: what to change and the goal, never the answer. 1-2 short sentences.' },
       why: { type: 'string', description: 'The why-card after a wrong check: how to look again, never the answer.' },
       respond: { type: 'string', enum: ['show', 'say'], description: 'What the child produces (see "How the child answers").' },
@@ -200,7 +203,7 @@ const ITEM_TOOL: FunctionDeclaration = {
   parametersJsonSchema: {
     type: 'object',
     properties: {
-      surface: { type: 'string', enum: [...SURFACES] },
+      surface: { type: 'string', enum: [...CARD_SURFACES] },
       prompt: { type: 'string', description: 'What the tutor asks, never the answer.' },
       stimulus: { ...displayToolSchema(LIFE_DISPLAYS), description: 'Up to 3 displays above the cards.' },
       options: { type: 'array', items: { type: 'object', properties: { id: s_, label: s_, display: displayToolSchema(LIFE_DISPLAYS).items }, required: ['id'] } },
@@ -209,6 +212,8 @@ const ITEM_TOOL: FunctionDeclaration = {
       order_key: { ...sa_, description: 'order only: every card id in the right order.' },
       sort_key: { type: 'array', description: 'categorize only: which box each card goes in.', items: { type: 'object', properties: { id: s_, category: s_ }, required: ['id', 'category'] } },
       misconceptions: { type: 'array', items: { type: 'object', properties: { id: s_, idea: s_ }, required: ['id', 'idea'] } },
+      teach: teachToolSchema(LIFE_DISPLAYS),
+      terms: termsToolSchema(LIFE_DISPLAYS),
       respond: { type: 'string', enum: ['show', 'say'], description: 'What the child produces (see "How the child answers").' },
       replaceIndex: { type: 'integer' },
     },
@@ -281,23 +286,41 @@ const shape = (raw: LifeWorld) => {
 };
 const sameWorld = (a: LifeWorld, b: LifeWorld) => shape(a) === shape(b);
 
-/** One piece of the lesson, in order: a world (`draft`) or a kit item (`item`) the child answers, or a `section` that teaches. */
-interface Entry { draft?: ItemDraft; item?: SurfaceItem; section?: TeachStep[]; respond?: 'show' | 'say'; mode?: LifeLabMode | Surface; key?: string; band?: SupportTier; blocking: string[] }
+/** One piece of the lesson: a world (`draft`) or a kit item (`item`), with what it teaches first and its Learn more words. */
+interface Entry { draft?: ItemDraft; item?: SurfaceItem; teach?: TeachStep[]; terms?: Term[]; respond?: 'show' | 'say'; mode?: LifeLabMode | Surface; key?: string; band?: SupportTier; blocking: string[] }
 interface State { plan?: { title: string; idea: string }; objective?: GenerationObjective; entries: Entry[]; ctx: CheckContext; tier?: SupportTier }
 
+/** Every word the child can read on a world's screen. */
+function worldScreen(world: LifeWorld, ask: string): string {
+  const w = normalizeWorld(world);
+  return [ask, ...w.zones.flatMap(z => [z.label, ...Object.values(z.cond ?? {}).map(String)]), ...w.beings.flatMap(b => [b.name ?? '', ...Object.values(b.traits ?? {}).map(String)]),
+    ...optionsOf(w).map(o => o.label), ...itemsOf(w).map(x => x.name), ...(w.show ?? []).map(displayText)].join(' ').replace(/_/g, ' ');
+}
+
 /** Read and check one world. The kit's loop lands it (append or replaceIndex). */
-function readWorld(state: State, a: Args, _opts?: { lever?: boolean }): WriteOutcome<Entry> {
+function readWorld(state: State, a: Args, opts?: { lever?: boolean }): WriteOutcome<Entry> {
   if (!state.plan) return { error: 'call plan_session first' };
   let world: LifeWorld;
   try { world = worldOf(a); } catch (e) { return { error: `could not read the world: ${(e as Error).message}` }; }
   const draft: ItemDraft = { world, ask: str(a.ask), why: str(a.why) };
   const checks = worldChecks(world, draft.ask, draft.why, state.ctx);
   if (!draft.ask || !draft.why) checks.blocking.push('ask and why are required');
+  const teach = a.teach !== undefined ? readTeach(a.teach) : undefined;
+  if (teach) checks.blocking.push(...teachIssues(teach, LIFE_DISPLAYS));
+  let terms = readTerms(a.terms);
   if (!checks.blocking.length) {
     // The same picture on every choice says nothing: the 11-08 mitochondria session put one microscope on every card.
     const pics = [...optionsOf(world), ...itemsOf(world)].map(o => o.emoji).filter(Boolean);
     const repeated = pics.find((p, i) => pics.indexOf(p) !== i);
     if (repeated) checks.blocking.push(`${repeated} is the picture on more than one choice, so the pictures tell the child nothing. Give each its own, or write this as an item with drawn cards.`);
+  }
+  if (!checks.blocking.length && terms.length) {
+    const text = worldScreen(world, draft.ask);
+    if (opts?.lever) terms = termsOnScreen(terms, text);
+    const key = (checks.key ?? '').toLowerCase();
+    const cards = optionsOf(world).map(o => ({ label: o.label, right: !!key && key.includes(o.label.toLowerCase()) }));
+    checks.blocking.push(...termIssues(terms, { text, cards }, LIFE_DISPLAYS));
+    if (key.length > 2 && terms.some(t => t.means.toLowerCase().includes(key))) checks.blocking.push('terms: a definition states the answer');
   }
   if (LIFE_MODES.some(m => sameWorld(world, COVERAGE[m].world) || draft.ask === COVERAGE[m].ask)) checks.blocking.push('this is the example world; build one for this lesson');
   const respond = str(a.respond) === 'say' || str(a.respond) === 'show' ? str(a.respond) as 'show' | 'say' : undefined;
@@ -309,7 +332,7 @@ function readWorld(state: State, a: Args, _opts?: { lever?: boolean }): WriteOut
     const key = misfit ? null : lifeSpokenKey(spoken);
     answeredBy = key ? `say (or tap): the tutor accepts ${spokenKeyText(key)}` : `show: the board checks it (${respondOf(spoken)})`;
   }
-  const item: Entry = { draft, ...(respond ? { respond } : {}), mode: checks.mode, key: checks.key, band: checks.difficulty?.band, blocking: checks.blocking };
+  const item: Entry = { draft, ...(teach?.length ? { teach } : {}), ...(terms.length ? { terms } : {}), ...(respond ? { respond } : {}), mode: checks.mode, key: checks.key, band: checks.difficulty?.band, blocking: checks.blocking };
   return { item, result: { checks: { blocking: checks.blocking, advisory: checks.advisory },
     ...(checks.mode ? { skill: `${checks.mode} (${checks.standards})` } : {}), ...(checks.difficulty ? { difficulty: checks.difficulty } : {}),
     ...(checks.key ? { key: checks.key } : {}), ...(answeredBy ? { answeredBy } : {}) } };
@@ -323,9 +346,10 @@ const seedOfIds = (ids: readonly string[]) => Array.from(ids.join('|')).reduce((
 const statesLabel = (text: string, label: string) => !!label.trim() && new RegExp(`\\b${label.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text.toLowerCase());
 
 /** A kit item as code reads it: its structure, shown order, difficulty, shortcuts and what the child produces. */
-function readItem(state: State, a: Args): WriteOutcome<Entry> {
+function readItem(state: State, a: Args, opts?: { lever?: boolean }): WriteOutcome<Entry> {
   if (!state.plan) return { error: 'call plan_session first' };
-  const surface = (SURFACES as readonly string[]).includes(str(a.surface)) ? str(a.surface) as Surface : 'choose';
+  // The kit's make surface is not offered here yet: this tool has no goal field (queued in qa/evidence-spec/QUEUE.md).
+  const surface = (CARD_SURFACES as readonly string[]).includes(str(a.surface)) ? str(a.surface) as Surface : 'choose';
   const options: SurfaceOption[] = arr(a.options).map(o => {
     const d = readDisplay(o.display);
     return { id: str(o.id), ...(str(o.label) ? { label: str(o.label) } : {}), ...(d ? { display: d } : {}) };
@@ -353,6 +377,11 @@ function readItem(state: State, a: Args): WriteOutcome<Entry> {
   // The child reads these after a miss; a note about the child ("Confuses the nucleus with...") tells them nothing.
   if (Object.values(misconceptions as Record<string, string>).some(m => /^\s*(the (child|learner|student) )?(thinks|confuses|believes|mistakes|assumes)\b/i.test(m))) blocking.push('a misconception hint is written about the child. Write it to the child, as what to look at again: "A water bag stores water. Which part makes energy?"');
   if (right?.label && Object.values(misconceptions as Record<string, string>).some(m => statesLabel(m, right.label!))) blocking.push(`a misconception hint names "${right.label}", which is the answer`);
+  const teach = a.teach !== undefined ? readTeach(a.teach) : undefined;
+  if (teach) blocking.push(...teachIssues(teach, LIFE_DISPLAYS));
+  const screen = [item.prompt, ...stimulus.map(displayText), ...options.map(o => `${o.label ?? ''} ${o.display ? displayText(o.display) : ''}`), ...(item.categories ?? [])].join(' ');
+  const terms = opts?.lever ? termsOnScreen(readTerms(a.terms), screen) : readTerms(a.terms);
+  blocking.push(...termIssues(terms, { text: screen, ...(surface === 'choose' ? { cards: options.map(o => ({ label: o.label, right: o.id === key })) } : {}), ...(item.categories ? { categories: item.categories } : {}) }, LIFE_DISPLAYS));
   const respond = str(a.respond) === 'say' || str(a.respond) === 'show' ? str(a.respond) as 'show' | 'say' : undefined;
   const spoken = { item, ...(respond ? { respond } : {}) };
   let answeredBy: string | undefined;
@@ -363,16 +392,8 @@ function readItem(state: State, a: Args): WriteOutcome<Entry> {
     answeredBy = said2 ? `say (or tap): the tutor accepts ${spokenKeyText(said2)}` : 'show: the board checks it';
   }
   const keyWords = right?.label ?? (typeof key === 'string' ? key : JSON.stringify(key));
-  const entry: Entry = { item, ...(respond ? { respond } : {}), mode: surface, key: keyWords, band: item.difficulty.band, blocking };
+  const entry: Entry = { item, ...(teach?.length ? { teach } : {}), ...(terms.length ? { terms } : {}), ...(respond ? { respond } : {}), mode: surface, key: keyWords, band: item.difficulty.band, blocking };
   return { item: entry, result: { checks: { blocking, advisory: [] }, skill: surface, difficulty: item.difficulty, key: keyWords, ...(answeredBy ? { answeredBy } : {}) } };
-}
-
-/** Read and check one teaching section. */
-function readLifeSection(state: State, a: Args): WriteOutcome<Entry> {
-  if (!state.plan) return { error: 'call plan_session first' };
-  const section = readSection(a);
-  const blocking = section.length ? teachIssues(section, LIFE_DISPLAYS) : ['a section needs at least one frame'];
-  return { item: { section, blocking }, result: { checks: { blocking, advisory: [] }, frames: section.length } };
 }
 
 /** What a write returns to the author (tests read it without the loop). */
@@ -382,8 +403,7 @@ export function writeWorld(state: State, a: Args) {
 }
 
 /** The rules over the whole lesson: the worlds' own, then the ones that span worlds and kit items. */
-function sessionOf(state: State, min = 3, lesson = state.entries, enforceTier = true) {
-  const entries = lesson.filter(e => !e.section);
+function sessionOf(state: State, min = 3, entries = state.entries, enforceTier = true) {
   const worlds = entries.filter(e => e.draft);
   const tier = enforceTier ? state.tier : undefined;
   const out = sessionChecks(worlds.map(e => ({ ...e.draft!, mode: e.mode as LifeLabMode | undefined, key: e.key, band: e.band })), { tier, min: 0 });
@@ -403,7 +423,7 @@ function sessionOf(state: State, min = 3, lesson = state.entries, enforceTier = 
     });
   }
   // A word the lesson taught, on the right card and no other: the child matches the word and looks at nothing (11-08: "Cell packed with mitochondria").
-  const taught = new Set((lesson.flatMap(e => e.section ?? []).map(s => s.says).join(' ').toLowerCase().match(/[a-z]{5,}/g) ?? []));
+  const taught = new Set((entries.flatMap(e => e.teach ?? []).map(s => s.says).join(' ').toLowerCase().match(/[a-z]{5,}/g) ?? []));
   const taughtIn = (label?: string) => (label?.toLowerCase().match(/[a-z]{5,}/g) ?? []).filter(w => taught.has(w));
   entries.forEach((e, i) => {
     const it = e.item;
@@ -413,22 +433,12 @@ function sessionOf(state: State, min = 3, lesson = state.entries, enforceTier = 
     if (words.length && it.options.filter(o => o !== right).every(o => !taughtIn(o.label).length))
       out.push(`item ${i}: only the right card's label uses a word the lesson taught ("${words[0]}"), so the child can match the word. Let the drawings differ and label the cards plainly, or give the wrong cards taught words too.`);
   });
-  if (min >= 3 && entries.length && !lesson[0].section) out.push('the first item must teach: write a section before it (write_section with insertAt 0) that shows the idea before it is asked');
-  if (lesson.at(-1)?.section) out.push('the lesson ends on a section, so the child never uses it. Put a question after it, or remove it.');
-  lesson.forEach((e, i) => {
-    if (e.section) return;
-    const frames = teachBefore(lesson, i).before.length;
-    if (frames > MAX_TEACH_STEPS) out.push(`piece ${i}: ${frames} frames before one question; the most is ${MAX_TEACH_STEPS}. Move a question between them or cut some.`);
-  });
+  if (min >= 3 && entries.length && !entries[0].teach?.length) out.push('the first item must teach: give it teach frames that show the idea before it is asked');
   return out;
 }
 
-/** The sections directly before a piece (the child taps through them first), and what earlier sections taught. */
-function teachBefore(entries: readonly Entry[], index: number) {
-  let start = index;
-  while (start > 0 && entries[start - 1].section) start--;
-  return { before: entries.slice(start, index).flatMap(e => e.section!), taught: teachText(entries.slice(0, start).flatMap(e => e.section ?? [])) };
-}
+/** What earlier items in the lesson taught: their teach frames and their Learn more words. */
+const taughtBefore = (entries: readonly Entry[], index: number) => entries.slice(0, index).map(e => `${teachText(e.teach ?? [])} ${termsText(e.terms ?? [])}`).join(' ').trim();
 
 /** Life Lab's half of the kit's lever capability: its facts, its answer words, its word-only fields. */
 const LIFE_LEVERS: LeverCapability<State, Entry> = {
@@ -441,7 +451,7 @@ const LIFE_LEVERS: LeverCapability<State, Entry> = {
   wordFields: ['ask', 'why', 'prompt', 'misconceptions'],
   // Labels and names are words; what is drawn is the rest (emoji, kinds, conditions, options, positions, displays).
   drawn: e => JSON.parse(JSON.stringify(e.draft?.world ?? { stimulus: e.item!.stimulus, cards: e.item!.options }, (k, v) => (k === 'label' || k === 'name' ? undefined : v))),
-  fixedFields: ['respond'],
+  fixedFields: ['respond', 'teach', 'terms'],
   lowest: e => e.band === 'easy',
 };
 
@@ -449,17 +459,15 @@ const LIFE_LEVERS: LeverCapability<State, Entry> = {
 export function assembleLifeLab(state: State, seed: number, grade: number | undefined, debug: Record<string, unknown>,
   leversOf: (e: Entry) => DraftLever<Entry>[] = () => []): LifeLabData {
   const rand = seededRng(seed);
-  const build = (e: Entry, id: string, teach: TeachStep[] = []): LifeLabChallenge => {
-    const shared = { ...(teach.length ? { teach } : {}), ...(e.respond ? { respond: e.respond } : {}) };
+  const build = (e: Entry, id: string): LifeLabChallenge => {
+    const shared = { ...(e.teach?.length ? { teach: e.teach } : {}), ...(e.terms?.length ? { terms: e.terms } : {}), ...(e.respond ? { respond: e.respond } : {}) };
     if (e.item) return { id, type: e.item.surface, item: { ...e.item, id }, ask: e.item.prompt, why: '', standards: '', difficulty: e.item.difficulty, ...shared };
     const world = settleBench(e.draft!.world, rand);
     const checks = worldChecks(world, e.draft!.ask, e.draft!.why, state.ctx);
     return { id, type: checks.mode!, world, ask: e.draft!.ask, why: e.draft!.why, standards: checks.standards!, difficulty: checks.difficulty!, ...shared };
   };
-  // A section ships as what the next question opens with: the runtime and the score count only questions.
-  const questions = state.entries.map((e, i) => ({ e, i })).filter(x => !x.e.section);
-  const challenges: LifeLabChallenge[] = questions.map(({ e, i }, n) => {
-    const c = build(e, `life-${n + 1}`, teachBefore(state.entries, i).before);
+  const challenges: LifeLabChallenge[] = state.entries.map((e, i) => {
+    const c = build(e, `life-${i + 1}`);
     const levers = slotLevers(leversOf(e), (le, id) => build(le, `${c.id}-${id}`));
     return levers.length ? { ...c, levers } : c;
   });
@@ -470,19 +478,12 @@ export function assembleLifeLab(state: State, seed: number, grade: number | unde
   });
 }
 
-const viewOf = (e: Entry, seed: number, before?: TeachStep[]) => (e.item ? lifeLabItemView(e.item, before) : lifeLabView(settleBench(e.draft!.world, seededRng(seed)), e.draft!.ask, before));
+const viewOf = (e: Entry, seed: number) => (e.item ? lifeLabItemView(e.item, e.teach, e.terms) : lifeLabView(settleBench(e.draft!.world, seededRng(seed)), e.draft!.ask, e.teach, e.terms));
 
 /** Every display an entry puts on screen, for the run record. */
-const shownOn = (e: Entry) => [...(e.draft?.world.show ?? []), ...(e.item?.stimulus ?? []), ...(e.item?.options.map(o => o.display) ?? []), ...(e.section ?? []).flatMap(s => [...s.show, ...(s.cards ?? []).map(c => c.display)])];
+const shownOn = (e: Entry) => [...(e.draft?.world.show ?? []), ...(e.item?.stimulus ?? []), ...(e.item?.options.map(o => o.display) ?? []), ...(e.teach ?? []).flatMap(s => s.show), ...(e.terms ?? []).map(t => t.display)];
 
 const gradeNumber = (g?: string) => (g === undefined ? undefined : g.toUpperCase() === 'K' ? 0 : Number.isFinite(Number(g)) ? Number(g) : undefined);
-
-/** At most 5 questions with their sections, and no section left with nothing after it. */
-function trimToLesson(items: Entry[]): Entry[] {
-  let questions = 0;
-  const kept = items.filter(e => e.section || ++questions <= 5);
-  return kept.slice(0, kept.map(e => !e.section).lastIndexOf(true) + 1);
-}
 
 export async function generateLifeLab(gctx: GenerationContext): Promise<LifeLabData> {
   const raw = (gctx.raw ?? {}) as { seed?: number };
@@ -511,28 +512,24 @@ export async function generateLifeLab(gctx: GenerationContext): Promise<LifeLabD
       s.plan = { title: str(a.title), idea: str(a.idea) };
       return { ok: true };
     },
-    writers: [{ decl: sectionTool(LIFE_DISPLAYS), write: readLifeSection, noLevers: true }, { decl: ITEM_TOOL, write: readItem }, { decl: WORLD_TOOL, write: readWorld }],
+    writers: [{ decl: ITEM_TOOL, write: readItem }, { decl: WORLD_TOOL, write: readWorld }],
     checks: (s, items, min, opts) => {
       // Out of budget, a world off its tier still ships: a lesson a band away beats no lesson.
       const blocking = [...items.flatMap((e, i) => e.blocking.map(b => `world ${i}: ${b}`)), ...sessionOf(s, min, items, !opts?.salvaged)];
       if (!s.plan) blocking.unshift('call plan_session first');
       return { blocking };
     },
-    summarize: (e, i) => `${i}. ${e.section ? `section, ${e.section.length} frame(s): "${e.section[0]?.says.slice(0, 60) ?? ''}"` : `${e.mode ?? '?'} (${e.band ?? '?'}) "${(e.draft?.ask ?? e.item?.prompt ?? '').slice(0, 80)}"`}${e.blocking.length ? ` BLOCKED: ${e.blocking[0]}` : ''}`,
-    salvage: (s, items) => ({ items: trimToLesson(items.filter(e => !e.blocking.length)),
+    summarize: (e, i) => `${i}. ${e.mode ?? '?'} (${e.band ?? '?'})${e.teach?.length ? ' teaches first,' : ''} "${(e.draft?.ask ?? e.item?.prompt ?? '').slice(0, 80)}"${e.blocking.length ? ` BLOCKED: ${e.blocking[0]}` : ''}`,
+    salvage: (s, items) => ({ items: items.filter(e => !e.blocking.length).slice(0, 5),
       note: `salvaged: shipped the passing worlds after the budget ran out${s.tier ? ` (requested tier ${s.tier} not enforced)` : ''}` }),
     levers: LIFE_LEVERS,
     // The bench is shuffled as it will ship, so the reader never sees stages in the order the author wrote them.
     look: { grade: grade === undefined ? 'elementary' : grade === 0 ? 'Kindergarten' : `grade ${grade}`, objective: s => s.objective?.text ?? objective,
-      view: (_s, e, at) => {
-        if (e.section) return null;
-        const { before, taught } = teachBefore(at.items, at.index);
-        return { ...viewOf(e, seed, before), taught };
-      } },
+      view: (_s, e, at) => ({ ...viewOf(e, seed), taught: taughtBefore(at.items, at.index) }) },
     displays: { offered: displayMenu(LIFE_DISPLAYS), shown: shownOn },
     ship: (s, items, { debug, leversOf }) => assembleLifeLab({ ...s, entries: items }, seed, grade, { ...debug, objective: s.objective ?? objective }, leversOf),
   }, state, { objective, tier: state.tier });
 }
 
-export const __test = { worldOf, writeWorld, readWorld, readItem, readLifeSection, teachBefore, assembleLifeLab, systemPrompt, sessionOf, LIFE_LEVERS, viewOf };
+export const __test = { worldOf, writeWorld, readWorld, readItem, taughtBefore, assembleLifeLab, systemPrompt, sessionOf, LIFE_LEVERS, viewOf };
 export type { State as LifeLabAuthorState };

@@ -39,9 +39,13 @@ the skill, solves it for shortcuts and scores it.**
 
 An eval mode in an agent primitive is a capability the agent can use (an answer surface, a display, the boss schema),
 not a task code pre-specified (life-lab's `whose_baby` was a task: it capped inheritance at one item shape). The kit
-holds the capabilities: `surfaces.ts` (choose, categorize, order: scoring, shortcut checks, structural difficulty),
+holds the capabilities: `surfaces.ts` (choose, categorize, order; make, where the child puts pieces on a tray; and set, where
+the child changes any display until a goal holds: the author names which of the display's values the child changes and what
+must be true at the end, and `setting.ts` solves it for every display, with no board written per display. A goal condition
+judges make and set, so any answer that meets it is right; and point, where the child taps one part of a display that names its parts, so the wrong answers are the display's other parts and no options are written: scoring, shortcut checks, structural difficulty), `evidence.ts` (the evidence an
+objective needs; the item loop's reader judges each item against it and the run record counts the gaps by act),
 `displays.ts` (one registry entry per display: agent SVG, table, text, and code-drawn bar graph, number line, clock,
-base ten, pattern blocks, ten frame, array, coins, picture graph, timeline, flow and map) and the write-look-revise loop
+base ten, pattern blocks, ten frame, array, coins, picture graph, timeline, flow, map and passage) and the write-look-revise loop
 (`itemLoop.ts` + `look.ts`: screenshot, blind solve, code checks, revise per item). `practice-studio` is the first
 primitive on it: one catalog entry, one mode. A new kind of item is a new surface or display in the kit. For keys
 code cannot compute (which picture), the blind solve is the independent reader (I4): on 11-07 it agreed with the
@@ -55,7 +59,7 @@ displays through `write_item`, and its own drawings; the subject adds displays t
 keep a simulation (life-lab's `write_world`) as one more writer. Never answer a weak topic with a world or a rule for that
 topic. A world is the right tool only when running it teaches.
 
-**Teaching is a lesson piece, not a preamble (USER 2026-11-08, life-lab).** `write_section` (`teach.ts`) places sections where the agent wants them; a frame is a sentence plus any of a display or drawing, a click-to-paint `picture` (prompt only) and `cards`. A picture appears only in a section, because no reader sees it at authoring time, and the sentence must teach without it. A lesson with no objective gets one from the plan tool, in the manifest's fields (`planWithObjective`), and the look reader checks against it.
+**Technical words go in Learn more (USER 2026-11-08, life-lab).** An item may carry `terms` (`service/agent-kit/terms.ts`): a drawer of definitions beside the question. A definition says what a thing is and looks like, never the job the question asks about; code refuses a word not on the screen, a definition naming a card or box, and a word defined only on the right card; the reader sees the drawer open. A generic "write a section of content" tool was built and removed the same day: it produced fact cards the child only read. A lesson with no objective gets one from the plan tool, in the manifest's fields (`planWithObjective`).
 
 **Displays before drawings (USER 2026-11-08).** When the agent keeps hand-drawing the same kind of thing, build a kit
 display: the agent writes a few values, code draws it and can check it. Hand-drawn SVG was 65-75% of the item text on
@@ -77,7 +81,7 @@ built for one domain is a registry entry with a domain tag, so every primitive t
 | Primitive | Menu (`DisplayCapability`) | Where a display goes |
 |---|---|---|
 | `practice-studio` | `ALL_DISPLAYS` | item stimulus, option cards, help levers |
-| `deep-dive` | every domain, minus the ones a richer block already covers (chart, number line, table, timeline, process) | `write_figure` |
+| `deep-dive` | every domain, minus the ones a richer block already covers (chart, number line, table, timeline, process); a check takes those too | `write_figure`; `write_check` (a kit surface item as a graded block: board, stimulus, cards) |
 | `life-lab` | `science`, `biology` and `general`, no `text` | teach frames, item stimulus and cards, `world.show`, help levers |
 | `wonder-walk`, `annotated-example` | none yet: reasons are in `NO_DISPLAYS` in the guard test | |
 
@@ -101,6 +105,10 @@ built for one domain is a registry entry with a domain tag, so every primitive t
 
 **Which picture, cheapest first:** a kit display (values) → an agent drawing (`svg`, for a concept diagram) → an
 interactive template (`gen-display`, deep-dive only today) → a catalog drawer (`embed_primitive`) → the image model.
+The order is cost, and the agent chooses (USER 2026-11-09: no ban on drawing a real thing; a weak drawing is the
+reader's to send back). Drawings follow `DRAWING_GUIDE` in `displays.ts`, which is craft the author reads, never an
+enum. `lookAtDrawing` in `look.ts` is the reader that checks a
+drawing against the author's `shows` sentence. Deep-dive is the pilot; practice-studio and life-lab have not adopted it.
 
 **Adding a display for a domain.** Same bar as any display (`DISPLAY_ROADMAP.md`: seen on more than one topic, measured
 before and after). Add a `DEFS` entry, its `DOMAINS` tag and its sample in `displays.test.ts`; the types fail until
@@ -241,6 +249,42 @@ objective asks for it.
 *Check:* the item tool has the production field and no key or miss field; one pure module derives the key from the
 stored world and the production (boss, author checks and tests share it); a production that does not fit the answer
 blocks with a sentence the agent can act on; a real generation per production kind shows the agent choosing it.
+
+**Teaching quality: I17-I22 (USER 2026-11-09).** Deep-dive is the lowest-slop agent primitive and the widest in what it
+can show and ask. These are the rules it follows that the invariants above do not state. Its files
+(`service/core/deep-dive-agent/`) are the reference. Where another primitive needs one of its parts, move the part to the
+kit (I14).
+
+**I17. The plan is a contract code checks.** The agent writes the key ideas first, and each part names what it teaches or
+tests. Code refuses an idea nothing teaches, a check on an idea not taught above it, and a section that only checks. One
+author writes all the parts and reads them together, so each part can exist because the next one needs it.
+*Check:* tests build each refused case (deep-dive: `coverageChecks` in `lesson.ts`).
+
+**I18. Reach, and each capability chosen for its job.** The prompt says what good output is, with a test for it ("could
+the student explain this to a friend?"), and when each capability fits ("a chart when the shape of the numbers is the
+idea"), and not to use one only for variety. The agent can reach past the primitive: kit displays, its own drawing, the
+image model, catalog drawers. When nothing fits, it records the need (`request_display`) and teaches with what exists.
+*Check:* every capability has a sentence on when it fits; real runs on different topics use different capabilities.
+
+**I19. The reader meets the work in the child's order and never sees a key.** It walks the lesson from the top, each check
+after only what came above it, and answers blind; code compares. It reports what cannot be answered, what is given away,
+wrong options no child would pick and essential ideas left out. A prediction is exempt from the comparison, because the
+likely guess can be wrong on purpose. The reader's findings pull against each other, so rounds are capped and what is
+left ships as an advisory.
+*Check:* a test shows the reader's text holds no key and nothing shown only after answering (deep-dive: `review.ts`).
+
+**I20. Runs differ because code varies the offer; the agent chooses the fit.** One model asked the same question converges
+on one arc. Code draws a few lesson shapes per run, the agent picks one or says "own", and code holds it to the opening
+of the one it picked. This is I7 across runs. *Check:* the same topic run several times gives different structures.
+
+**I21. Code counts what it can, on every field the child reads.** Sentence length for the grade, math that renders,
+arithmetic that is true. The agent writes the answer and the wrong options apart and code orders them. *Check:* a test per
+counted rule.
+
+**I22. A run spends where it pays and fails small.** Slow work (images) starts only after a part passes its checks. A
+part that cannot build is dropped and reported, never shipped blank, and the agent writes around it. The agent is told
+its time budget and writes many parts in one turn. *Check:* a loop change has before and after cost and seconds on fixed
+topics (`qa/deep-dive-bench/`).
 
 The domain a world serves is stated with what it does not cover. Wonder Walk's math world does counting, operations
 and sorting; shapes and measuring need a different world and stay with other primitives the manifest picks.

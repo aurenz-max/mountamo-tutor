@@ -32,7 +32,7 @@ import type {
 } from './types';
 import {
   HeroImageBlock, KeyFactsBlock, DataTableBlock, MultipleChoiceBlock, PullQuoteBlock, ProseBlock, TimelineBlock,
-  FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock, PerspectivesBlock, HypothesisLabBlock, DrawerBlock, GenDisplayBlock, InsetBlock, WorkedExampleBlock, ProcessBlock, MisconceptionBlock, FigureBlock,
+  FillInBlankBlock, CompareContrastBlock, DiagramBlock, MiniSimBlock, PerspectivesBlock, HypothesisLabBlock, DrawerBlock, GenDisplayBlock, InsetBlock, WorkedExampleBlock, ProcessBlock, MisconceptionBlock, FigureBlock, CheckBlock,
 } from './blocks';
 
 // ── Phase config for evaluable blocks ───────────────────────────────
@@ -46,6 +46,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'compare-contrast': { label: 'Sorting', icon: '⚖️', accentColor: 'blue' },
   'timeline': { label: 'Sequencing', icon: '📜', accentColor: 'pink' },
   'data-table': { label: 'Data Analysis', icon: '📊', accentColor: 'emerald' },
+  chart: { label: 'Reading a Chart', icon: '📈', accentColor: 'emerald' },
+  'worked-example': { label: 'Worked Example', icon: '🧮', accentColor: 'blue' },
+  check: { label: 'Show What You Know', icon: '👆', accentColor: 'cyan' },
 };
 
 // ── Student follow-up questions ─────────────────────────────────────
@@ -155,7 +158,8 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
     onSolved: index => solvedAloud.current(index),
   });
   const current = items[progress.currentIndex] ?? null;
-  const allComplete = progress.isComplete;
+  // At the session's end, not the last right answer: the closing sections and summary are what the last Next challenge opens.
+  const allComplete = progress.isComplete && !!progress.sessionFinished;
   const solvedIds = useMemo(() => new Set(progress.results.filter(r => r.correct).map(r => r.challengeId)), [progress.results]);
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
@@ -179,6 +183,8 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   solvedAloud.current = (index) => {
     const solved = items[index];
     if (!solved || tapped.current.has(solved.id)) return;
+    // A spoken credit has no commitCheck, so it is recorded here; the lesson's end waits on every check's result.
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: progress.currentAttempts + 1 });
     setAloud(prev => new Set(prev).add(solved.id));
   };
 
@@ -220,6 +226,16 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
   const focusId = allComplete ? null : (section ?? current)?.id ?? null;
   const cut = focusId === null ? blocks.length : blocks.findIndex(b => b.id === focusId) + 1;
   const visible = useMemo(() => blocks.slice(0, Math.max(cut, 1)), [blocks, cut]);
+
+  // What each move left on screen, beside the runtime's `[Lumina:next]` lines. A finished session the lesson does not
+  // count as finished is the state where Next challenge appears to do nothing, so it warns.
+  const sessionDone = !!progress.sessionFinished;
+  useEffect(() => {
+    (sessionDone && !allComplete ? console.warn : console.info)('[Lumina:deep-dive] screen', {
+      check: `${progress.currentIndex + 1}/${items.length}`, itemId: current?.id ?? null, section: section?.id ?? null, focusId,
+      blocksShown: `${visible.length}/${blocks.length}`, solved: solvedIds.size, allComplete, sessionDone,
+    });
+  }, [progress.currentIndex, items.length, current?.id, section?.id, focusId, visible.length, blocks.length, solvedIds.size, allComplete, sessionDone]);
 
   // ── Student questions: each one grows the dive with new blocks ─
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
@@ -418,7 +434,11 @@ const DeepDiveSurface: React.FC<DeepDiveProps> = ({ data, className, runtimePlan
           answered={answered} onAskTutor={onAskTutor} />;
       case 'figure':
         return <FigureBlock data={block} index={idx} onAskTutor={onAskTutor} />;
-      case 'chart': case 'number-line': case 'definition': case 'passage':
+      case 'check':
+        return <CheckBlock data={block} index={idx} onAnswer={onAnswer} onAttempt={onAttempt} answered={answered} />;
+      case 'chart':
+        return <InsetBlock data={block} index={idx} onAskTutor={onAskTutor} onAnswer={block.patternCheck ? onAnswer : undefined} onAttempt={onAttempt} answered={answered} />;
+      case 'number-line': case 'definition': case 'passage':
         return <InsetBlock data={block} index={idx} onAskTutor={onAskTutor} />;
       default:
         return (

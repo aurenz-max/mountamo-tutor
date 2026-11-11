@@ -4,8 +4,10 @@
 
 import { Type, type FunctionDeclaration } from '@google/genai';
 import { lessonBounds, type LessonShape } from './lesson';
-import { DEEP_DIVE_DISPLAYS, SECTION_FIELDS, tierModes } from './blocks';
-import { displayPrompt } from '../../agent-kit/displays';
+import { CHECK_DISPLAYS, DEEP_DIVE_DISPLAYS, SECTION_FIELDS, tierModes } from './blocks';
+import { displayMenu, displayPrompt, DRAWING_GUIDE } from '../../agent-kit/displays';
+import { SURFACE_LIST } from '../../agent-kit/itemLoop';
+import { SET_PROMPT } from '../../agent-kit/setting';
 import type { DrawerOption } from './drawers';
 import { displayMenuLine } from './displays';
 import type { DisplayTemplate } from '../../gen-display/types';
@@ -46,27 +48,53 @@ You work with tools. Every write returns the block as the student will see it pl
 - An arc, not a pile. Sections build on each other, and inside a section each block exists because the next one needs it: a check tests an idea a block above it taught; an explanation answers a question the lesson raised; nothing repeats what an earlier block already said.
 - Every key idea is taught by at least one block, and every block names the ideas it teaches or tests ("ideas": ["2.1"]). Code checks this against the outline.
 - The block type fits the job. A diagram when where parts sit is the idea, a figure when seeing it teaches it (how it moves, what it looks like, a cut-away, a before and after), a mini-sim for "what happens if", a table when exact numbers are the evidence, a chart when the shape of the numbers is (a trend, a comparison, parts of a whole), a number line when where numbers sit is the idea (order, distance, fractions, negatives, an inequality), a definition for a term the rest of the lesson depends on, a passage when the student must read a real text closely (a primary source, a poem, a letter), a worked example when how to solve is the idea (follow it with a check on a new problem, never the same one), a timeline when dated events are in order, a process when stages follow each other from a start to an end (a cycle that loops back is the cycle wheel display), a misconception callout when students at this grade really believe something false about the topic, perspectives when who tells it changes the story, prose for why, key facts for quick concrete facts. Do not use a block type only for variety.
+- Checks ask the student to do something, not only to pick a sentence. When the answer can be found on a display, sorted, put in order or built, use write_check; keep write_multiple_choice for an idea that only words can test.
 - Checks teach. Distractors are the errors a real student at this grade makes. Never reveal an answer in a label, a question, or a block placed right before the check that states it in the same words; the student should have to understand, not match words.
 - Facts are correct and specific: real numbers, real names, real dates.${input.preReader ? '' : `
 - Math is typeset. ${MATH_WRITING_RULE} This holds in every field: prose, facts, table cells, questions, options, explanations, headings. Code checks every expression renders.`}
 - Words fit the reader. ${input.preReader ? 'This student CANNOT READ: the tutor reads everything aloud and pictures carry the meaning. Every question is one short sentence; every option is 1-4 words with an emoji.' : input.sentenceLimit ? `Every sentence the student reads is at most ${input.sentenceLimit} words, including options, captions and explanations; code counts them. Use the everyday word when one exists and explain each new term the first time it appears.` : 'Sentences carry one or two ideas; explain each new term the first time it appears.'}
 
 ## This lesson's size
-${bounds.sections[0]}-${bounds.sections[1]} sections of ${bounds.perSection[0]}-${bounds.perSection[1]} blocks each, at most ${bounds.maxBlocks} blocks, at least ${bounds.checks} evaluable, spread across the sections (multiple-choice, fill-in-blank, mini-sim, perspectives, hypothesis-lab${tierNotes.length ? ', worked-example' : ''}${tierNotes.length ? ', and at this level also compare-contrast, timeline, diagram and data-table as described' : ''}).${tierNotes.length ? `\nAt this level: ${tierNotes.join('; ')}.` : ''}
+${bounds.sections[0]}-${bounds.sections[1]} sections of ${bounds.perSection[0]}-${bounds.perSection[1]} blocks each, at most ${bounds.maxBlocks} blocks, at least ${bounds.checks} evaluable, spread across the sections (write_check, multiple-choice, fill-in-blank, mini-sim, perspectives, hypothesis-lab, a chart with a patternCheck${tierNotes.length ? ', worked-example' : ''}${tierNotes.length ? ', and at this level also compare-contrast, timeline, diagram and data-table as described' : ''}).${tierNotes.length ? `\nAt this level: ${tierNotes.join('; ')}.` : ''}
 
 ## Lesson shape
 Code drew these shapes for this run. Choose the one that best fits the topic and the job, and build the arc it describes. If none fits, choose "own" and describe your arc in plan_lesson.
 ${input.shapes.map((s) => `- ${s.id}: ${s.move} Fits: ${s.fits}. Opens with: ${s.opens.join(' or ')}.`).join('\n')}
-The shape sets how the lesson opens and moves; the outline sets what it covers. Code checks that the first block is one the chosen shape opens with. A hero image is optional; most lessons do not need one.
+The shape sets how the lesson opens and moves; the outline sets what it covers. Code checks that the first block, or the block right after a hero image, is one the chosen shape opens with. Start with a hero image (write_hero_image) whenever the topic is something a student can picture: an animal, a plant, a place, a machine, a person, an event. Leave it out only when there is nothing to picture, such as an abstract math rule.
 ${input.templateHint ? `\n${input.templateHint}\n` : ''}
 ## Pictures
-A lesson that only tells is weaker than one that shows. Wherever seeing something would teach an idea, show it, and pick the cheapest thing that can:
+A lesson that only tells is weaker than one that shows. Wherever seeing something would teach an idea, show it, and pick the kind of picture that shows it best:
 1. Data, positions and dates: write_chart, write_number_line, write_data_table, write_timeline. Code draws them.
 2. A picture one of these code-drawn displays can show: write_figure with display set to the JSON. You write a few values and code draws it, so use one before drawing the same thing yourself.
 ${displayPrompt(DEEP_DIVE_DISPLAYS)}
-3. Anything else you can draw with shapes: write_diagram or write_figure with svg. You draw it, and the next result shows you a screenshot exactly as the student will see it.
-4. Only when it must look real (a painting, a photograph of a place): the image model (write_hero_image, or imagePrompt on a diagram). It costs about ten times as much, and you never see the result.
-Look at each screenshot. Is every part drawn and clearly separate, would this student recognize it, does each numbered pin sit on its part, is any labelled part drawn twice so that a right answer could land on the wrong copy, is anything false or cut off? If something is wrong, rewrite that block (replaceIndex). If it is right, leave it.
+3. Structure you can draw with shapes (a cut-away, a cycle, forces, how parts connect): write_diagram or write_figure with svg. You draw it, and the next result shows you a screenshot exactly as the student will see it.
+4. What a real thing looks like (an animal, a plant, a place, a painting, a moment in history): the image model, which paints these far better than shapes can. Use write_hero_image at the top, figurePrompt on a prose block further down, or imagePrompt on a diagram. A lesson on something a student can picture should have the hero image and one or two painted pictures further down, each showing something the text around it is about. You never see the result, so describe the subject, setting and composition exactly, and do not rely on it for a precise count or for text.
+
+${DRAWING_GUIDE}
+
+Look at each screenshot. Is every part drawn and clearly separate, would this student recognize it, does each numbered pin sit on its part, is any labelled part drawn twice so that a right answer could land on the wrong copy, is anything false or cut off? A second reader sees only the picture and has to find each part, and its findings come with the screenshot. If something is wrong, rewrite that block (replaceIndex), or give the idea to the image model when shapes cannot show it. If it is right, leave it.
+
+## Checks the student does (write_check)
+write_check builds a check from an answer surface and displays. Pick the surface by what the student should do with the idea:
+${SURFACE_LIST}
+
+${SET_PROMPT}
+
+The item, given to write_check as JSON text: {
+  surface: "choose"|"categorize"|"order"|"make"|"set"|"point",
+  prompt: "what the student is asked (never the answer)",
+  stimulus: [displays shown above the cards, may be empty],
+  options: [{id, label?, display?, value?}]  each option is a card: a label, a display, or both (none on set and point),
+  categories: [names]  (categorize only),
+  goal: {total, count}  (make only): the pieces' values add to total, there are exactly count pieces, or both,
+  board, controls, goal, derive: (set only) see A SET ITEM above,
+  board: (point only) one display with at least 3 named parts and no highlight,
+  key: point: the name of the right part, as its display names it | choose: option id | order: [option ids in order] | categorize: {optionId: category name} | make and set: none, code finds every right answer,
+  misconceptions: {optionId, or on a point item the name of a wrong part: "the wrong idea that leads a student there, said as a hint to look again; it never describes the right answer"}
+}
+Displays in a check: every display listed under Pictures, and these:
+${displayPrompt(CHECK_DISPLAYS, displayMenu(DEEP_DIVE_DISPLAYS))}
+Rules code checks: no answer in the prompt or on a card, no card drawn differently from the others, no order words in an order item, a make or set prompt says its goal, and a point prompt asks for what the part shows or does and never says the name written on it. The section above the check teaches the idea; the display in the check is a new case of it or the evidence itself, never a picture that already marks the answer.
 
 ${input.drawers.length ? `## Embedded displays (embed_primitive)
 These are interactive displays from the lesson catalog. You give the id and what it must show for this lesson; its own generator builds it, code checks every number in it, and the result shows you what the student will see. It is a section like any other: place it where the arc needs it and build the next block on what it showed. Use one when the idea has that display's shape and it shows the idea better than prose or key facts would. Most topics have at least one idea with such a shape (a chain of causes, a cycle, sizes across scales, then and now, parts of a whole, different points of view); look for it before you write prose about it. Displays are ungraded, so the checks stay yours. At most 2 per lesson, never two of the same id.

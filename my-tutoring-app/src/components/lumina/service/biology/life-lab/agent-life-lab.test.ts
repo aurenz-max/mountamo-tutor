@@ -53,9 +53,6 @@ const cycle = {
   zones: [], beings: [], rule: { kind: 'stages', subject: 'frog' }, control: { type: 'order', slots: 4, items: ['frog', 'egg', 'froglet', 'tadpole', 'caterpillar'] },
   goal: { kind: 'order' }, ask: 'Put the pictures of a frog\'s life in order.', why: 'What hatches from the egg?' };
 
-/** The section every lesson opens with. */
-const opener = { name: 'write_section', args: { frames: [{ says: 'A body is built for one kind of place.', show: [{ kind: 'zoom', levels: [{ label: 'Pond', icon: '🌊' }, { label: 'Frog', icon: '🐸' }] }] }] } };
-
 beforeEach(() => { model.turns = []; model.seen = []; reader.next = []; reader.views = []; reader.objectives = []; });
 
 describe('the look stage', () => {
@@ -78,8 +75,8 @@ describe('the look stage', () => {
 
   it('sends a flagged world back with its screenshot, reads only what changed, and records the run', async () => {
     reader.next = [{ shortcut: 'the paws are the only furry option' }, {}, {}, {}];
-    model.turns = [[plan, opener, ...three, { name: 'finish', args: {} }],
-      [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 1 } }, { name: 'finish', args: {} }]];
+    model.turns = [[plan, ...three, { name: 'finish', args: {} }],
+      [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 0 } }, { name: 'finish', args: {} }]];
     const data = await generateLifeLab(ctx);
     expect(reader.views).toHaveLength(4);
     const reply = JSON.stringify(model.seen[1]);
@@ -96,16 +93,16 @@ describe('the look stage', () => {
 
   it('a problem the author leaves in place ships as an advisory after the look rounds run out', async () => {
     reader.next = [{ issues: 'the penguin picture is unclear' }, {}, {}];
-    model.turns = [[plan, opener, ...three, { name: 'finish', args: {} }], [{ name: 'finish', args: {} }]];
+    model.turns = [[plan, ...three, { name: 'finish', args: {} }], [{ name: 'finish', args: {} }]];
     const data = await generateLifeLab(ctx);
     const d = data.agentDebug as unknown as Debug;
     expect(reader.views).toHaveLength(3);
-    expect(d.advisories.join()).toMatch(/look: world 1: .*penguin picture/);
+    expect(d.advisories.join()).toMatch(/look: world 0: .*penguin picture/);
     expect(d.run.look.problems).toBe(1);
   });
 
   it('a decline is refused while the author holds worlds that pass, and the lesson ships', async () => {
-    model.turns = [[plan, opener, ...three], [{ name: 'decline', args: { reason: 'above Kindergarten' } }], [{ name: 'finish', args: {} }]];
+    model.turns = [[plan, ...three], [{ name: 'decline', args: { reason: 'above Kindergarten' } }], [{ name: 'finish', args: {} }]];
     const data = await generateLifeLab(ctx);
     expect(data.challenges).toHaveLength(3);
     expect(JSON.stringify(model.seen[2])).toMatch(/refused: you hold worlds that pass/);
@@ -114,8 +111,8 @@ describe('the look stage', () => {
   it('takes the objective, not a mode: any kind of world is kept, and an off-objective world goes back', async () => {
     reader.next = [{ offObjective: 'moving animals does not practise life cycles' }, {}, {}, {}];
     const objective = { ...ctx, objective: { text: 'Order the stages of a life cycle' }, targetEvalMode: 'whose_baby' } as GenerationContext;
-    model.turns = [[plan, opener, ...three, { name: 'finish', args: {} }],
-      [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 1 } }, { name: 'finish', args: {} }]];
+    model.turns = [[plan, ...three, { name: 'finish', args: {} }],
+      [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 0 } }, { name: 'finish', args: {} }]];
     const data = await generateLifeLab(objective);
     expect(data.challenges.map(c => c.type)).toEqual(['where_it_lives', 'part_for_the_job', 'life_cycle']);
     expect(reader.objectives[0]).toBe('Order the stages of a life cycle');
@@ -124,8 +121,8 @@ describe('the look stage', () => {
 
   it('a rewrite after the last look round is still read, and what it finds ships as an advisory', async () => {
     reader.next = [{ issues: 'first' }, {}, {}, { issues: 'second' }, { issues: 'still unclear' }];
-    const rewrite = (ask: string) => [{ name: 'write_world', args: { ...homesWorld(ask), replaceIndex: 1 } }, { name: 'finish', args: {} }];
-    model.turns = [[plan, opener, ...three, { name: 'finish', args: {} }],
+    const rewrite = (ask: string) => [{ name: 'write_world', args: { ...homesWorld(ask), replaceIndex: 0 } }, { name: 'finish', args: {} }];
+    model.turns = [[plan, ...three, { name: 'finish', args: {} }],
       rewrite('Some animals are not at home. Help each one find a place it can live.'),
       rewrite('These animals need new homes. Help each one find a place it can live.')];
     const d = (await generateLifeLab(ctx)).agentDebug as unknown as Debug;
@@ -136,15 +133,15 @@ describe('the look stage', () => {
 
   it('out of turns, a rewrite no one read is still read before it ships', async () => {
     reader.next = [{ issues: 'found on the last read' }];
-    const rewrite = [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 1 } }];
-    model.turns = [[plan, opener, ...three], ...Array.from({ length: 13 }, () => rewrite)];
+    const rewrite = [{ name: 'write_world', args: { ...homesWorld('Some animals are not at home. Help each one find a place it can live.'), replaceIndex: 0 } }];
+    model.turns = [[plan, ...three], ...Array.from({ length: 13 }, () => rewrite)];
     const d = (await generateLifeLab(ctx)).agentDebug as unknown as Debug;
     expect(d.run.look).toMatchObject({ unread: 0 });
     expect(d.advisories.join()).toMatch(/found on the last read/);
   });
 
   it('a tier the budget could not reach still ships a lesson, and says so', async () => {
-    model.turns = [[plan, opener, ...three, { name: 'finish', args: {} }]];
+    model.turns = [[plan, ...three, { name: 'finish', args: {} }]];
     const data = await generateLifeLab({ ...ctx, supportTier: 'hard' } as GenerationContext);
     expect(data.challenges.length).toBeGreaterThanOrEqual(2);
     expect((data.agentDebug as unknown as Debug).advisories.join()).toMatch(/requested tier hard not enforced/);
@@ -165,10 +162,10 @@ describe('the look stage', () => {
 describe('the author loop', () => {
   it('a world whose ask names the answer is blocked, the fix lands, and finish ships three code-named worlds', async () => {
     model.turns = [
-      [{ name: 'plan_session', args: { title: 'Homes and bodies', idea: 'Animals live where their bodies fit', objectiveText: 'Match animals to homes that meet their needs.', objectiveVerb: 'apply' } }, opener,
+      [{ name: 'plan_session', args: { title: 'Homes and bodies', idea: 'Animals live where their bodies fit', objectiveText: 'Match animals to homes that meet their needs.', objectiveVerb: 'apply' } },
         { name: 'write_world', args: homes('Move the penguin to the snowy shore and the lizard to the sand dunes.') },
         { name: 'write_world', args: feet }, { name: 'write_world', args: cycle }, { name: 'finish', args: {} }],
-      [{ name: 'write_world', args: { ...homes('These animals are in the wrong places. Move each one to where it can live.'), replaceIndex: 1 } }, { name: 'finish', args: {} }],
+      [{ name: 'write_world', args: { ...homes('These animals are in the wrong places. Move each one to where it can live.'), replaceIndex: 0 } }, { name: 'finish', args: {} }],
     ];
     const data = await generateLifeLab(ctx);
     expect(data.challenges.map(c => c.type)).toEqual(['where_it_lives', 'part_for_the_job', 'life_cycle']);
@@ -278,9 +275,7 @@ describe('the author loop', () => {
       expect(blocking(words).join()).toMatch(/only words/);
       expect(blocking({ ...cells, prompt: 'Is it Cell A?' }).join()).toMatch(/names "Cell A"/);
       expect(blocking({ ...cells, stimulus: [{ kind: 'clock', hour: 3, minute: 0 }] }).join()).toMatch(/clock display is not offered/);
-      const section = __test.readLifeSection(state() as never, { frames: [{ says: 'Words only.' }] });
-      if ('error' in section) throw new Error(section.error);
-      expect(section.item.blocking.join()).toMatch(/show a drawing/);
+      expect(blocking({ ...cells, teach: [{ says: 'Words only.', show: [] }] }).join()).toMatch(/show a drawing/);
       expect(blocking({ ...cells, misconceptions: [{ id: 'few', idea: 'Cell A has more of them.' }] }).join()).toMatch(/misconception hint names/);
       expect(blocking({ ...cells, misconceptions: [{ id: 'few', idea: 'Confuses the bean with the nucleus.' }] }).join()).toMatch(/written about the child/);
     });
@@ -290,10 +285,8 @@ describe('the author loop', () => {
       expect(blocking(token).join()).toMatch(/only a shape or two/);
       const s = state();
       const read = (a: Record<string, unknown>) => { const o = __test.readItem(s as never, a); if ('error' in o) throw new Error(o.error); return o.item; };
-      const named = read({ ...cells, options: [{ ...cells.options[0], label: 'Packed with energy' }, { ...cells.options[1], label: 'Cell B' }, { ...cells.options[2], label: 'Cell C' }] });
-      const lesson = __test.readLifeSection(s as never, { frames: [{ says: 'Tiny parts make energy.', show: [{ kind: 'zoom', levels: [{ label: 'Muscle' }, { label: 'Cell' }] }] }] });
-      if ('error' in lesson) throw new Error(lesson.error);
-      expect(__test.sessionOf(s as never, 1, [lesson.item, named]).join()).toMatch(/only the right card's label uses a word the lesson taught \("energy"\)/);
+      const named = read({ ...cells, options: [{ ...cells.options[0], label: 'Packed with energy' }, { ...cells.options[1], label: 'Cell B' }, { ...cells.options[2], label: 'Cell C' }], teach: [{ says: 'Tiny parts make energy.', show: [{ kind: 'zoom', levels: [{ label: 'Muscle' }, { label: 'Cell' }] }] }] });
+      expect(__test.sessionOf(s as never, 1, [named]).join()).toMatch(/only the right card's label uses a word the lesson taught \("energy"\)/);
       expect(__test.sessionOf(s as never, 1, [read(cells)]).join()).not.toMatch(/lesson taught/);
     });
 
@@ -312,7 +305,7 @@ describe('the author loop', () => {
       ] } }, { name: 'write_item', args: { ...cells, teach: undefined, surface: 'order', prompt: 'Put these cells from the fewest parts to the most.', answer: undefined, order_key: ['one', 'few', 'many'], misconceptions: undefined, levers: [
         { kind: 'help', when: 'stuck', says: 'Count the beans.', change: { stimulus: [{ kind: 'zoom', levels: [{ label: 'Muscle', icon: '💪' }, { label: 'Cell' }] }] } },
       ] } }, finish],
-      [{ name: 'write_section', args: { title: 'Energy', frames: cells.teach, insertAt: 0 } }, finish]];
+      [{ name: 'write_item', args: { ...cells, replaceIndex: 0 } }, finish]];
       const data = await generateLifeLab(ctx);
       expect(JSON.stringify(model.seen[1])).toMatch(/the first item must teach/);
       expect(data.challenges.map(c => c.type)).toEqual(['choose', 'part_for_the_job', 'order']);
@@ -330,8 +323,8 @@ describe('the author loop', () => {
         { kind: 'simplify', when: 'two', says: 'One animal.', change: { beings: [{ id: 'p', subject: 'penguin', zone: 'hot' }], rule: { kind: 'needs', beings: ['p'] }, control: { type: 'move', beings: ['p'], zones: ['cold', 'hot'] } } },
       ] };
       reader.next = [{}, { disagrees: 'a careful reader answered 2, but your key is "many".' }, {}, {}];
-      model.turns = [[plan, opener, { name: 'write_world', args: homeLevers }, { name: 'write_item', args: { ...cells, teach: undefined } }, { name: 'write_item', args: order }, finish],
-        [{ name: 'write_item', args: { ...cells, teach: undefined, prompt: 'Which cell has the most energy parts for a muscle that never rests?', replaceIndex: 2 } }, finish]];
+      model.turns = [[plan, { name: 'write_world', args: homeLevers }, { name: 'write_item', args: { ...cells, teach: undefined } }, { name: 'write_item', args: order }, finish],
+        [{ name: 'write_item', args: { ...cells, teach: undefined, prompt: 'Which cell has the most energy parts for a muscle that never rests?', replaceIndex: 1 } }, finish]];
       const data = await generateLifeLab(ctx);
       expect(JSON.stringify(model.seen[1])).toMatch(/careful reader answered 2/);
       expect(reader.views[1].solve).toBeTruthy();
@@ -347,7 +340,7 @@ describe('the author loop', () => {
         { kind: 'help', when: 'stuck', says: 'Look at each place.', change: { zones: [{ id: 'cold', label: 'Snowy shore', kind: 'ice', emoji: '❄️', cond: { temp: 0, water: 2 } }, { id: 'hot', label: 'Sand dunes', kind: 'desert', emoji: '☀️', cond: { temp: 2, water: 0 } }] } },
         { kind: 'simplify', when: 'two', says: 'One animal.', change: { beings: [{ id: 'p', subject: 'penguin', zone: 'hot' }], rule: { kind: 'needs', beings: ['p'] }, control: { type: 'move', beings: ['p'], zones: ['cold', 'hot'] } } },
       ] };
-      model.turns = [[plan, opener, { name: 'write_world', args: homeLevers }, { name: 'write_item', args: drawn }, { name: 'write_item', args: order }, finish], [finish]];
+      model.turns = [[plan, { name: 'write_world', args: homeLevers }, { name: 'write_item', args: drawn }, { name: 'write_item', args: order }, finish], [finish]];
       const data = await generateLifeLab(ctx);
       const reply = JSON.stringify(model.seen[1]);
       expect(reply).toMatch(/here is your own drawing/);
@@ -359,52 +352,34 @@ describe('the author loop', () => {
     it('the reader sees the teach frames above the task and the tutor reads the current frame', () => {
       const out = __test.readItem(state() as never, cells);
       if ('error' in out) throw new Error(out.error);
-      const view = __test.viewOf(out.item, 7, cells.teach as never);
+      const view = __test.viewOf(out.item, 7);
       expect(view.html).toContain('Shown first');
       expect(view.html).toContain('tiny parts that make energy');
-      expect(view.design).toMatch(/only repeats a sentence/);
+      expect(view.design).toMatch(/recalling or using what the panel taught is the activity/);
       expect(view.solve).toBeTruthy();
     });
   });
 
-  describe('sections and the authored objective', () => {
+  describe('the authored objective and Learn more', () => {
     const finish = { name: 'finish', args: {} };
     const plan = { name: 'plan_session', args: { title: 'Energy in cells', idea: 'Cells make energy', objectiveText: 'Explain why busy cells need more energy parts.', objectiveVerb: 'explain' } };
-    const zoom = { kind: 'zoom', levels: [{ label: 'Muscle', icon: '💪' }, { label: 'Cell' }] };
-    const order = { ...cells, surface: 'order', prompt: 'Put these cells from the fewest parts to the most.', answer: undefined, order_key: ['one', 'few', 'many'], misconceptions: undefined, levers: [cells.levers[0]] };
+    const order = { ...cells, teach: undefined, surface: 'order', prompt: 'Put these cells from the fewest parts to the most.', answer: undefined, order_key: ['one', 'few', 'many'], misconceptions: undefined, levers: [cells.levers[0]] };
     const world = { ...feet, levers: [
       { kind: 'help', when: 'stuck', says: 'Look how deep the snow is.', change: { zones: [{ id: 'hill', label: 'Snowy hill', kind: 'snow', emoji: '❄️', cond: { ground: 'snow' } }] } },
       { kind: 'simplify', when: 'two', says: 'Just two.', change: { control: { type: 'trait', being: 'a', part: 'feet', options: ['claws', 'snowshoe'] } } },
     ] };
-    const first = { name: 'write_section', args: { title: 'Busy cells', frames: [{ says: 'Busy cells have many energy parts.', cards: [{ title: 'Energy part', text: 'Makes energy for the cell.' }] }] } };
-    const second = { name: 'write_section', args: { frames: [{ says: 'A real muscle fiber is packed tight.', picture: { prompt: 'a muscle fiber under a microscope', caption: 'A muscle fiber' } }, { says: 'Look inside one.', show: [zoom] }] } };
     const items = [{ name: 'write_item', args: cells }, { name: 'write_item', args: order }, { name: 'write_world', args: world }];
-
-    it('sections ship on the question after them, are not questions, and the reader is told what came earlier', async () => {
-      model.turns = [[plan, first, items[0], second, items[1], items[2], finish], [finish]];
-      const data = await generateLifeLab(ctx);
-      expect(data.challenges.map(c => c.id)).toEqual(['life-1', 'life-2', 'life-3']);
-      expect(data.challenges[0].teach!.map(s => s.says)).toEqual(['Busy cells have many energy parts.']);
-      expect(data.challenges[0].teach![0].heading).toBe('Busy cells');
-      expect(data.challenges[1].teach!.map(s => s.picture?.caption ?? null)).toEqual(['A muscle fiber', null]);
-      expect(data.challenges[2].teach).toBeUndefined();
-      expect(reader.views).toHaveLength(3);
-      expect((reader.views[1] as { taught?: string }).taught).toContain('Busy cells');
-      expect(reader.views[1].html).toContain('A painted picture the child can open');
-      expect(reader.views[1].html).not.toContain('under a microscope');
-    });
-
-    it('a section rewritten before a question sends that question back to the reader', async () => {
-      model.turns = [[plan, first, ...items, finish], [{ name: 'write_section', args: { ...first.args, replaceIndex: 0, frames: [{ says: 'Muscles work hard all day.', show: [zoom] }] } }, finish], [finish]];
-      reader.next = [{ issues: 'the cell picture is unclear' }];
-      await generateLifeLab(ctx);
-      expect(reader.views.length).toBeGreaterThan(3);
-      expect(reader.views.at(-3)!.html + reader.views.at(-1)!.html).toBeTruthy();
-      expect(reader.views.some(v => v.html.includes('Muscles work hard all day.'))).toBe(true);
-    });
+    const state = () => ({ plan: { title: 't', idea: 'i' }, entries: [], ctx: {} });
+    const mouth = {
+      surface: 'choose', prompt: 'Which part lets a caterpillar chew a leaf?', answer: 'man', misconceptions: [{ id: 'pro', idea: 'Could a thin tube bite a leaf?' }, { id: 'cla', idea: 'Where on the body is this part?' }],
+      options: ['man', 'pro', 'cla'].map((id, n) => ({ id, label: ['Mandibles', 'Proboscis', 'Claspers'][n], display: cellOf(n + 1) })),
+    };
+    const define = { term: 'Mandibles', means: 'Two hard, toothed plates at the front of the head.' };
+    const others = [{ term: 'Proboscis', means: 'A long thin tube coiled under the head.' }, { term: 'Claspers', means: 'Stubby hooked legs near the tail.' }];
+    const issues = (a: Record<string, unknown>) => { const o = __test.readItem(state() as never, a); if ('error' in o) throw new Error(o.error); return o.item.blocking.join(); };
 
     it('writes the objective in the manifest shape when the lesson has none, and the reader checks against it', async () => {
-      model.turns = [[plan, first, ...items, finish], [finish]];
+      model.turns = [[plan, ...items, finish], [finish]];
       const data = await generateLifeLab(ctx);
       expect(data.agentDebug).toMatchObject({ objective: { id: 'obj1', text: 'Explain why busy cells need more energy parts.', verb: 'explain' } });
       expect(reader.objectives[0]).toBe('Explain why busy cells need more energy parts.');
@@ -412,23 +387,44 @@ describe('the author loop', () => {
 
     it('refuses a plan with no objective when none was given, and keeps a given objective', async () => {
       const bare = { name: 'plan_session', args: { title: 'T', idea: 'I' } };
-      model.turns = [[bare], [plan, first, ...items, finish], [finish]];
+      model.turns = [[bare], [plan, ...items, finish], [finish]];
       await generateLifeLab(ctx);
       expect(JSON.stringify(model.seen[1])).toMatch(/has no objective/);
-      model.turns = [[bare, first, ...items, finish], [finish]];
+      model.turns = [[bare, ...items, finish], [finish]];
       reader.objectives = [];
       const data = await generateLifeLab({ ...ctx, objective: { id: 'o7', text: 'From the curriculum.', verb: 'identify' } });
       expect(data.agentDebug).toMatchObject({ objective: { id: 'o7', text: 'From the curriculum.' } });
       expect(reader.objectives[0]).toBe('From the curriculum.');
     });
 
-    it('blocks a lesson that ends on a section and a frame with a half-written picture', () => {
-      const s = { plan: { title: 't', idea: 'i' }, entries: [], ctx: {} };
-      const read = (a: Record<string, unknown>) => { const o = __test.readLifeSection(s as never, a); if ('error' in o) throw new Error(o.error); return o.item; };
-      expect(read({ frames: [{ says: 'Look.', picture: { prompt: 'a moth', caption: '' } }] }).blocking.join()).toMatch(/prompt and a caption/);
-      const item = __test.readItem(s as never, cells);
-      if ('error' in item) throw new Error(item.error);
-      expect(__test.sessionOf(s as never, 1, [read(first.args), item.item, read(first.args)]).join()).toMatch(/ends on a section/);
+    it('takes definitions of every hard choice, ships them, and shows the reader the open drawer', () => {
+      expect(issues({ ...mouth, terms: [define, ...others] })).toBe('');
+      const out = __test.readItem(state() as never, { ...mouth, terms: [define, ...others] });
+      if ('error' in out) throw new Error(out.error);
+      const view = __test.viewOf(out.item, 7);
+      expect(view.html).toContain('Learn more drawer');
+      expect(view.html).toContain('toothed plates');
+      expect(view.design).toMatch(/must not give the answer/);
+    });
+
+    it('refuses a word not on the screen, a Learn more word only on the right choice, a definition naming a card or a box', () => {
+      expect(issues({ ...mouth, terms: [{ term: 'Spiracle', means: 'A tiny hole in the side.' }] })).toMatch(/not on this screen/);
+      expect(issues({ ...mouth, terms: [define] })).toMatch(/only the right choice/);
+      expect(issues({ ...mouth, terms: [{ term: 'Mandibles', means: 'Not the same as Claspers.' }, ...others] })).toMatch(/names the card "Claspers"/);
+      const sort = { surface: 'categorize', prompt: 'Sort each part to the stage that has it.', categories: ['Caterpillar Stage', 'Adult Stage'], sort_key: [{ id: 'man', category: 'Caterpillar Stage' }, { id: 'pro', category: 'Adult Stage' }, { id: 'cla', category: 'Caterpillar Stage' }],
+        options: mouth.options };
+      expect(issues({ ...sort, terms: [{ term: 'Mandibles', means: 'Hard plates on a caterpillar head.' }] })).toMatch(/name of a box/);
+    });
+
+    it('a simplify that drops a card drops its word and is not refused for it', () => {
+      const a = { ...mouth, terms: [define, ...others] };
+      const base = __test.readItem(state() as never, a);
+      if ('error' in base) throw new Error(base.error);
+      const cut = { ...a, options: mouth.options.filter(o => o.id !== 'cla'), misconceptions: [mouth.misconceptions[0]] };
+      const out = __test.readItem(state() as never, cut, { lever: true });
+      if ('error' in out) throw new Error(out.error);
+      expect(out.item.blocking).toEqual([]);
+      expect(out.item.terms!.map(t => t.term)).toEqual(['Mandibles', 'Proboscis']);
     });
   });
 

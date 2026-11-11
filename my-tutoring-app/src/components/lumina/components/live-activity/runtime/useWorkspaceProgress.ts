@@ -57,6 +57,8 @@ export interface Progress extends UseChallengeProgressReturn {
   commitCheck: (response: string, correct: boolean, miss?: string) => void;
   /** Workspace only: false while a checked answer waits for Try again or Next challenge. */
   canAttempt?: boolean;
+  /** Workspace only: the runtime moved past the last item, by Next challenge or the tutor. `isComplete` is true earlier, at the last right answer. */
+  sessionFinished?: boolean;
   /** Workspace only: the practice item on screen has been credited and is held there. */
   practiceSolved?: boolean;
   /**
@@ -139,7 +141,7 @@ export function useWorkspaceProgressFor(primitiveId: string) {
         if (correct && !now.practice) mergeResult(baseResult(now.currentItem.id, attemptCount.current));
         now.commitGesture({ response, correct, miss, cue: () => '' });
       },
-      canAttempt: run.canAttempt, practiceSolved: run.practiceSolved, recordsEvaluation, publishWorkspace: run.publishWorkspace,
+      canAttempt: run.canAttempt, sessionFinished: run.stage === 'done', practiceSolved: run.practiceSolved, recordsEvaluation, publishWorkspace: run.publishWorkspace,
       requestHear: run.requestHear,
       practiceSummary: run.practiceSummary, teachingResult: run.teachingResult,
     };

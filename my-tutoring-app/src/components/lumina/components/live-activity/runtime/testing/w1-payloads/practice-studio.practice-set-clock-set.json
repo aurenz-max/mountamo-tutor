@@ -1,0 +1,743 @@
+{
+  "source": "qa/evidence-spec/2026-11-09-engine.json (set-clock/studio/spec)",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Set the Clock: Morning to Night",
+    "description": "An analog clock shows the hour and minutes of our daily morning and evening routines.",
+    "gradeBand": "grade 2",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "set",
+        "prompt": "School starts in the morning at 8:00 a.m. Set the clock to 8:00.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "clock",
+          "hour": 12,
+          "minute": 0
+        },
+        "setGoal": {
+          "hour": 8,
+          "minute": 0
+        },
+        "key": "",
+        "tier": "easy",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.8,
+          "reasons": [
+            "4 changes to make +1",
+            "2 facts to meet at once +0.4",
+            "reading a clock to the hour +0.4"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "For 8:00, move the short hour hand to point at the 8. Keep the long minute hand at the 12.",
+            "item": {
+              "id": "studio-1-help_1",
+              "surface": "set",
+              "prompt": "School starts in the morning at 8:00 a.m. Set the clock to 8:00.",
+              "stimulus": [
+                {
+                  "kind": "clock",
+                  "hour": 12,
+                  "minute": 0,
+                  "highlight": "hour"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 12,
+                "minute": 0
+              },
+              "setGoal": {
+                "hour": 8,
+                "minute": 0
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.2,
+                "reasons": [
+                  "4 changes to make +1",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the hour +0.4",
+                  "reading a clock to the hour +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The short hand is almost at 8. Move it one hour forward to 8:00.",
+            "item": {
+              "id": "studio-1-simpler_1",
+              "surface": "set",
+              "prompt": "School starts in the morning at 8:00 a.m. Set the clock to 8:00.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 7,
+                "minute": 0
+              },
+              "setGoal": {
+                "hour": 8,
+                "minute": 0
+              },
+              "key": "",
+              "tier": "easy",
+              "difficulty": {
+                "band": "easy",
+                "score": 1.05,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the hour +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "set",
+        "prompt": "Bedtime stories start in the evening at 7:30 p.m. Set the clock to 7:30.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "clock",
+          "hour": 12,
+          "minute": 0
+        },
+        "setGoal": {
+          "hour": 7,
+          "minute": 30
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "hard",
+          "score": 2.5,
+          "reasons": [
+            "11 changes to make +1.5",
+            "2 facts to meet at once +0.4",
+            "reading a clock to the half hour +0.6"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Move the short hour hand halfway between 7 and 8. Move the long minute hand straight down to 6 for 30 minutes.",
+            "item": {
+              "id": "studio-2-help_1",
+              "surface": "set",
+              "prompt": "Bedtime stories start in the evening at 7:30 p.m. Set the clock to 7:30.",
+              "stimulus": [
+                {
+                  "kind": "clock",
+                  "hour": 12,
+                  "minute": 0,
+                  "highlight": "hour"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 12,
+                "minute": 0
+              },
+              "setGoal": {
+                "hour": 7,
+                "minute": 30
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.9,
+                "reasons": [
+                  "11 changes to make +1.5",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the half hour +0.6",
+                  "reading a clock to the hour +0.4"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-3",
+        "surface": "set",
+        "prompt": "Eating lunch in the cafeteria is at 12:15 p.m. Set the clock to 12:15.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "clock",
+          "hour": 12,
+          "minute": 0
+        },
+        "setGoal": {
+          "hour": 12,
+          "minute": 15
+        },
+        "key": "",
+        "tier": "medium",
+        "difficulty": {
+          "band": "medium",
+          "score": 1.95,
+          "reasons": [
+            "3 changes to make +0.75",
+            "2 facts to meet at once +0.4",
+            "reading a clock to the quarter hour +0.8"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Count by fives to find 15 minutes: 5, 10, 15. The long minute hand points to the 3.",
+            "item": {
+              "id": "studio-3-help_1",
+              "surface": "set",
+              "prompt": "Eating lunch in the cafeteria is at 12:15 p.m. Set the clock to 12:15.",
+              "stimulus": [
+                {
+                  "kind": "clock",
+                  "hour": 12,
+                  "minute": 0,
+                  "highlight": "minute"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 12,
+                "minute": 0
+              },
+              "setGoal": {
+                "hour": 12,
+                "minute": 15
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 2.35,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the quarter hour +0.8",
+                  "reading a clock to the hour +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The minute hand is at 10 minutes. Move it one more number to reach 15 minutes.",
+            "item": {
+              "id": "studio-3-simpler_1",
+              "surface": "set",
+              "prompt": "Eating lunch in the cafeteria is at 12:15 p.m. Set the clock to 12:15.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 12,
+                "minute": 10
+              },
+              "setGoal": {
+                "hour": 12,
+                "minute": 15
+              },
+              "key": "",
+              "tier": "medium",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.65,
+                "reasons": [
+                  "1 change to make +0.25",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to five minutes +1"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-4",
+        "surface": "set",
+        "prompt": "The morning alarm rings 15 minutes before 7:00 a.m. Set the clock to show the alarm time.",
+        "stimulus": [],
+        "options": [],
+        "board": {
+          "kind": "clock",
+          "hour": 7,
+          "minute": 0
+        },
+        "setGoal": {
+          "hour": 6,
+          "minute": 45
+        },
+        "key": "",
+        "tier": "hard",
+        "difficulty": {
+          "band": "medium",
+          "score": 2.2,
+          "reasons": [
+            "4 changes to make +1",
+            "2 facts to meet at once +0.4",
+            "reading a clock to the quarter hour +0.8"
+          ]
+        },
+        "levers": [
+          {
+            "id": "help_1",
+            "kind": "help",
+            "when": "the learner misses once or is stuck",
+            "says": "Fifteen minutes before 7:00 means the hour is still 6. Count back 15 minutes from the 12 to the 9 to show 6:45.",
+            "item": {
+              "id": "studio-4-help_1",
+              "surface": "set",
+              "prompt": "The morning alarm rings 15 minutes before 7:00 a.m. Set the clock to show the alarm time.",
+              "stimulus": [
+                {
+                  "kind": "clock",
+                  "hour": 7,
+                  "minute": 0,
+                  "highlight": "minute"
+                }
+              ],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 7,
+                "minute": 0
+              },
+              "setGoal": {
+                "hour": 6,
+                "minute": 45
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "hard",
+                "score": 2.6,
+                "reasons": [
+                  "4 changes to make +1",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the quarter hour +0.8",
+                  "reading a clock to the hour +0.4"
+                ]
+              }
+            }
+          },
+          {
+            "id": "simpler_1",
+            "kind": "simplify",
+            "when": "the learner misses twice",
+            "says": "The alarm is at 6:45 a.m. The clock is at 6:30. Move the minute hand to 45.",
+            "item": {
+              "id": "studio-4-simpler_1",
+              "surface": "set",
+              "prompt": "The morning alarm rings 15 minutes before 7:00 a.m. Set the clock to show the alarm time.",
+              "stimulus": [],
+              "options": [],
+              "board": {
+                "kind": "clock",
+                "hour": 6,
+                "minute": 30
+              },
+              "setGoal": {
+                "hour": 6,
+                "minute": 45
+              },
+              "key": "",
+              "tier": "hard",
+              "difficulty": {
+                "band": "medium",
+                "score": 1.95,
+                "reasons": [
+                  "3 changes to make +0.75",
+                  "2 facts to meet at once +0.4",
+                  "reading a clock to the quarter hour +0.8"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": {
+      "run": {
+        "author": "PracticeStudio",
+        "loop": "item",
+        "seconds": 121,
+        "costUsd": 0.12,
+        "items": 4,
+        "rounds": 2,
+        "look": {
+          "ran": true,
+          "looked": 4,
+          "unread": 0,
+          "screenshots": 4,
+          "problems": 2
+        },
+        "displays": {
+          "offered": [
+            "svg",
+            "bar_graph",
+            "chart",
+            "number_line",
+            "table",
+            "text",
+            "clock",
+            "base_ten",
+            "pattern_blocks",
+            "ten_frame",
+            "array",
+            "coins",
+            "shares",
+            "pictograph",
+            "timeline",
+            "flow",
+            "map",
+            "cell",
+            "zoom",
+            "food_web"
+          ],
+          "used": {
+            "clock": 4
+          }
+        }
+      },
+      "evidence": {
+        "spec": {
+          "act": "set",
+          "on": "an analog clock whose hands the child moves",
+          "credit": "the child's hands show the requested time",
+          "notCredit": "picking a clock that already shows the time; reading a time aloud"
+        },
+        "items": 4,
+        "met": 4,
+        "gaps": [],
+        "unsupported": null
+      },
+      "variant": "full",
+      "model": {
+        "requested": "gemini-flash-latest",
+        "served": "gemini-3.8-flash"
+      },
+      "seconds": 121,
+      "costUsd": 0.12,
+      "items": [
+        {
+          "id": "studio-1",
+          "surface": "set",
+          "tier": "easy",
+          "computed": "medium",
+          "solver": "easy",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 5,
+          "costUsd": 0.0022
+        },
+        {
+          "id": "studio-2",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "hard",
+          "solver": "easy",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [
+            "simplify: it is not easier by the computed difficulty"
+          ],
+          "drawnByHand": [],
+          "seconds": 72,
+          "costUsd": 0.0435
+        },
+        {
+          "id": "studio-3",
+          "surface": "set",
+          "tier": "medium",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 0,
+          "changed": false,
+          "kept": true,
+          "blocking": [],
+          "advisory": [],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 7,
+          "costUsd": 0.0032
+        },
+        {
+          "id": "studio-4",
+          "surface": "set",
+          "tier": "hard",
+          "computed": "medium",
+          "solver": "medium",
+          "rounds": 1,
+          "changed": true,
+          "kept": true,
+          "blocking": [],
+          "advisory": [
+            "you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not more reading."
+          ],
+          "evidenceGap": null,
+          "refusedLevers": [],
+          "drawnByHand": [],
+          "seconds": 89,
+          "costUsd": 0.0506
+        }
+      ],
+      "events": [
+        {
+          "seconds": 0,
+          "stage": "write",
+          "level": "info",
+          "text": "the author is writing 4 items (easy, medium, medium, hard)",
+          "costUsd": 0
+        },
+        {
+          "seconds": 32,
+          "stage": "write",
+          "level": "info",
+          "text": "wrote 4 items in 32s (8629 tokens: 1301 output, 3423 thinking)",
+          "costUsd": 0.0206
+        },
+        {
+          "seconds": 32,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, easy)",
+          "costUsd": 0.0206,
+          "item": 1
+        },
+        {
+          "seconds": 32,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0206,
+          "item": 2
+        },
+        {
+          "seconds": 32,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, medium)",
+          "costUsd": 0.0206,
+          "item": 3
+        },
+        {
+          "seconds": 32,
+          "stage": "look",
+          "level": "info",
+          "text": "first look (set, hard)",
+          "costUsd": 0.0206,
+          "item": 4
+        },
+        {
+          "seconds": 37,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 1.2s, solve 4s. solver agreed with the key. No problems.",
+          "costUsd": 0.0228,
+          "item": 1
+        },
+        {
+          "seconds": 37,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 5s",
+          "costUsd": 0.0228,
+          "item": 1
+        },
+        {
+          "seconds": 39,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 1.2s, solve 5.8s. solver agreed with the key. No problems.",
+          "costUsd": 0.026,
+          "item": 3
+        },
+        {
+          "seconds": 39,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 0 round(s), 2 lever(s), 0 advisory note(s) left, 7s",
+          "costUsd": 0.026,
+          "item": 3
+        },
+        {
+          "seconds": 40,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 1.2s, solve 6.1s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0291,
+          "item": 2
+        },
+        {
+          "seconds": 40,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0291,
+          "item": 2
+        },
+        {
+          "seconds": 40,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 1.2s, solve 6.7s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.0329,
+          "item": 4
+        },
+        {
+          "seconds": 40,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 of 2: the author is revising 1 problem(s)",
+          "costUsd": 0.0329,
+          "item": 4
+        },
+        {
+          "seconds": 99,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 60s",
+          "costUsd": 0.071,
+          "item": 2
+        },
+        {
+          "seconds": 99,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, medium)",
+          "costUsd": 0.071,
+          "item": 2
+        },
+        {
+          "seconds": 105,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.1s, solve 5.2s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at medium; a solver rated it easy for this grade. Reach medium through structure (closer wrong options, a misconception trap, more steps), not…",
+          "costUsd": 0.0732,
+          "item": 2
+        },
+        {
+          "seconds": 105,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.0732,
+          "item": 2
+        },
+        {
+          "seconds": 105,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 1 lever(s), 1 advisory note(s) left, 72s",
+          "costUsd": 0.0732,
+          "item": 2
+        },
+        {
+          "seconds": 116,
+          "stage": "revise",
+          "level": "info",
+          "text": "round 1 written in 76s",
+          "costUsd": 0.1176,
+          "item": 4
+        },
+        {
+          "seconds": 116,
+          "stage": "look",
+          "level": "info",
+          "text": "look after round 1 (set, hard)",
+          "costUsd": 0.1176,
+          "item": 4
+        },
+        {
+          "seconds": 121,
+          "stage": "look",
+          "level": "info",
+          "text": "screenshot 0.3s, solve 4.7s. solver agreed with the key. 0 blocking, 1 advisory. First: you aimed at hard; a solver rated it medium for this grade. Reach hard through structure (closer wrong options, a misconception trap, more steps), not m…",
+          "costUsd": 0.12,
+          "item": 4
+        },
+        {
+          "seconds": 121,
+          "stage": "revise",
+          "level": "warn",
+          "text": "stopped after 1 round(s): no time left for another inside the 140s budget",
+          "costUsd": 0.12,
+          "item": 4
+        },
+        {
+          "seconds": 121,
+          "stage": "item",
+          "level": "info",
+          "text": "kept after 1 round(s), 2 lever(s), 1 advisory note(s) left, 89s",
+          "costUsd": 0.12,
+          "item": 4
+        },
+        {
+          "seconds": 121,
+          "stage": "run",
+          "level": "info",
+          "text": "kept 4 of 4 items in 121s, about $0.12",
+          "costUsd": 0.12
+        },
+        {
+          "seconds": 121,
+          "stage": "run",
+          "level": "info",
+          "text": "evidence: 4 of 4 items collect it",
+          "costUsd": 0.12
+        }
+      ],
+      "tiers": [
+        "easy",
+        "medium",
+        "medium",
+        "hard"
+      ]
+    }
+  }
+}

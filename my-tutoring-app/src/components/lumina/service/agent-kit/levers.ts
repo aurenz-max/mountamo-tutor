@@ -52,7 +52,7 @@ export interface LeverCapability<S, I> {
 /** The pending lever on a written draft: its kind, words, and the changed draft. */
 export interface DraftLever<I> { kind: LeverKind; when: string; says: string; item: I }
 
-const KIT_FIELDS = ['replaceIndex', 'insertAt', 'levers'];
+const KIT_FIELDS = ['replaceIndex', 'levers'];
 
 /** A writer's declaration with the `levers` field added: `change` takes the writer's own fields. */
 export function withLevers(decl: FunctionDeclaration, cap: Pick<LeverCapability<never, never>, 'fixedFields'>): FunctionDeclaration {

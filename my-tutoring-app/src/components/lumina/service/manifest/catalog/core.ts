@@ -541,11 +541,13 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'deep-dive',
     description:
-      'Orchestrated multi-block learning experience. Assembles hero images, key facts, data tables, and interactive questions '
-      + 'into a cohesive vertical scroll lesson on any topic. Perfect for introducing new subjects, building background knowledge, '
-      + 'or creating comprehensive topic overviews. ESSENTIAL for any topic requiring broad coverage with embedded comprehension checks.',
+      'A full illustrated article on the lesson\'s topic, like a good encyclopedia entry written for this student: a vertical scroll of '
+      + 'sections with a hero picture, diagrams, data tables, timelines, compare-and-contrast, mini-simulations and graded questions spread '
+      + 'through it, with a tutor beside the student. Its blocks are chosen for the topic. ESSENTIAL for learning about a real thing: '
+      + 'a machine, an animal, a place, a person, an event. The strongest way to introduce a topic and build background knowledge, and it '
+      + 'checks understanding as it goes, which a fact card or profile does not.',
     constraints:
-      'Requires orchestrator + parallel generation. Best for topics with enough depth for 5+ blocks.',
+      'Long: usually one per lesson, opening the objective that introduces the topic. Not a substitute for a manipulative when the student must move something to learn the idea.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: ['introduce', 'visualize', 'apply'], minutes: 7 },
     evalModes: [
       {
@@ -589,16 +591,17 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'practice-studio',
     description:
-      'Practice items built for the lesson objective by an author agent: 3-4 short items, each one the learner answers by '
-      + 'choosing one card, sorting cards into 2-3 boxes, or putting cards in order. The agent draws the pictures itself or uses '
-      + 'code-drawn bar graphs, number lines and tables, and short texts, picks wrong options from real misconceptions, and looks at '
-      + 'each item as the learner will see it, fixing anything a child could guess. Use for K-5 practice on an objective that can be '
-      + 'checked by choosing, sorting or ordering and that no more specific primitive fits: comparing groups, reading a graph, placing '
-      + 'fractions, sorting by a property, traits shared with parents, sequencing events or stages.',
+      'Custom practice written for exactly this objective and topic: 3-4 short items about the lesson\'s own content (the parts of THIS '
+      + 'machine, what THIS animal eats), each answered by choosing one card, sorting cards into 2-3 boxes, or putting cards in order. '
+      + 'An author agent draws the pictures or uses code-drawn bar graphs, number lines and tables, and short texts, picks wrong options '
+      + 'from real misconceptions, and looks at each item as the learner will see it, fixing anything a child could guess. '
+      + 'ESSENTIAL for the K-5 Apply step of an objective, on any subject: identifying parts and jobs, cause and effect, comparing, reading a graph, placing '
+      + 'fractions, sorting by a property, sequencing events or stages. The most closely fitted practice in the catalog; use it '
+      + 'rather than a general quiz inside an objective.',
     constraints:
       'Grades K-5. Items are choose, sort or order only: not for answers a learner must say, write, draw, build or measure. '
       + 'The manifest must NOT supply items, pictures or answers: the author agent writes them and code checks them. '
-      + 'config.difficulty sets the target tier. Authoring takes 1-3 minutes.',
+      + 'config.difficulty sets the target tier.',
     affordances: { representation: 'pictorial', reader: 'emerging', answers: ['tap'], role: ['apply'], minutes: 5 },
     evalModes: [
       {

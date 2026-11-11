@@ -18,7 +18,8 @@ import { ThinkingLevel, type Content, type FunctionCall, type Part } from '@goog
 import { ai } from '../../geminiClient';
 import { startTrace, type KitTrace } from '../../agent-kit/trace';
 import { svgToPng } from '../../agent-kit/svgPng';
-import { drawnSvg, isDrawn, pinKey } from './drawn';
+import { lookAtDrawing } from '../../agent-kit/look';
+import { drawnShows, drawnSvg, isDrawn, pinKey, pinNames } from './drawn';
 import { withSpendTally, type SpendTally } from '../../spend/spendMeter';
 import { buildScopePromptSection } from '../../scopeContext';
 import { generateImage, isPreReaderAudience, placeDiagramLabels } from '../gemini-deep-dive';
@@ -323,6 +324,7 @@ async function authorLesson(gctx: GenerationContext, tally: SpendTally, trace: K
   let shipped: DeepDiveData | undefined;
   let finishAttempts = 0;
   const looked = new Set<number>();
+  const drawingFindings = new Map<number, string[]>();
 
   const elapsed = () => Date.now() - started;
   const checks = () => lessonChecks({ ctx, planned: !!state.plan, blocks: state.entries.map((e) => e.block), requiredSequence: state.requiredSequence, shape: state.plan?.shape, offered: shapes, seeAlso: preReader ? null : state.seeAlso, outline: state.plan?.sections });
@@ -335,10 +337,13 @@ async function authorLesson(gctx: GenerationContext, tally: SpendTally, trace: K
       return { checks: [], missingIdeas: [] };
     }) ?? Promise.resolve({ checks: [], missingIdeas: [] }));
     const reviewIssues = verdictIssues(verdicts);
-    if (allowRevise && reviewIssues.length && elapsed() < SOFT_DEADLINE_MS) {
-      return { status: 'revise', blocking: reviewIssues.map((x) => `review: ${x}`) };
+    // A rewritten drawing is a new entry, so only findings on what is still in the lesson count.
+    const drawingIssues = state.entries.flatMap((e, i) => (drawingFindings.get(e.uid) ?? []).map((p) => `block ${i} drawing: ${p}`));
+    if (allowRevise && (reviewIssues.length || drawingIssues.length) && elapsed() < SOFT_DEADLINE_MS) {
+      return { status: 'revise', blocking: [...reviewIssues.map((x) => `review: ${x}`), ...drawingIssues] };
     }
     reviewIssues.forEach((x) => advisory.push(`review: ${x}`));
+    advisory.push(...drawingIssues);
     const pendingWork = state.entries.filter((e) => e.ready).length;
     if (pendingWork) say('look', `waiting for ${pendingWork} image(s) and display(s) to finish`);
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -461,11 +466,24 @@ async function authorLesson(gctx: GenerationContext, tally: SpendTally, trace: K
     if (debug.imagesStarted > imagesBefore) say('write', `started ${debug.imagesStarted - imagesBefore} image(s) in the background`);
     // The author sees each new drawing as the student will, in this turn's report.
     const toShow = state.entries.filter((e) => isDrawn(e.block) && !looked.has(e.uid));
-    const shots = await Promise.all(toShow.map(async (entry) => ({ entry, render: await svgToPng(drawnSvg(entry.block)) })));
+    const shots = await Promise.all(toShow.map(async (entry) => {
+      const render = await svgToPng(drawnSvg(entry.block));
+      const reading = 'png' in render ? await lookAtDrawing({ png: render.png, grade: gradeLevel, shows: drawnShows(entry.block), pins: pinNames(entry.block) }) : undefined;
+      return { entry, render, reading };
+    }));
     toShow.forEach((e) => looked.add(e.uid));
     const shown = shots.filter((x) => 'png' in x.render);
     const unseen = shots.filter((x) => 'error' in x.render);
-    if (shown.length) say('look', `the author is shown ${shown.length} drawing(s)`);
+    for (const { entry, reading } of shots) {
+      if (!reading) continue;
+      drawingFindings.set(entry.uid, reading.problems);
+      (debug.drawingLooks ??= []).push({ turn: debug.turns, block: entry.block.label, shows: drawnShows(entry.block), seen: reading.seen, problems: reading.problems, ...(reading.error ? { error: reading.error } : {}) });
+      if (reading.error) say('look', `the drawing reader failed on "${entry.block.label}": ${reading.error}`, { level: 'warn' });
+    }
+    if (shown.length) {
+      const found = shown.flatMap((x) => x.reading?.problems ?? []);
+      say('look', `the author is shown ${shown.length} drawing(s); the blind reader found ${found.length} problem(s)${found[0] ? `. First: ${found[0]}` : ''}`, { level: found.length ? 'warn' : 'info' });
+    }
     if (unseen.length) say('look', `${unseen.length} drawing(s) could not be rendered. First: ${'error' in unseen[0].render ? unseen[0].render.error : ''}`, { level: 'warn' });
     for (const { i, uid } of written) {
       const index = state.entries.findIndex((e) => e.uid === uid);
@@ -512,7 +530,7 @@ async function authorLesson(gctx: GenerationContext, tally: SpendTally, trace: K
             : 'Time is up. Fix only blocking issues, then call finish now.',
         }),
       });
-      for (const { entry, render } of shots) {
+      for (const { entry, render, reading } of shots) {
         const at = state.entries.indexOf(entry);
         if ('error' in render) {
           parts.push({ text: `Block ${at} ("${entry.block.label}"): your drawing could not be rendered, so check it is well-formed XML (write & as &amp;, close every tag). ${render.error}` });
@@ -521,6 +539,7 @@ async function authorLesson(gctx: GenerationContext, tally: SpendTally, trace: K
         const pins = pinKey(entry.block);
         parts.push({ text: `Block ${at} ("${entry.block.label}") as the student will see it.${pins ? ` Pins: ${pins}.` : ''}` });
         parts.push({ inlineData: { mimeType: 'image/png', data: render.png.toString('base64') } });
+        if (reading?.problems.length) parts.push({ text: `A reader who saw only this picture reported: ${reading.problems.join(' ')}` });
       }
     }
     contents.push({ role: 'user', parts });

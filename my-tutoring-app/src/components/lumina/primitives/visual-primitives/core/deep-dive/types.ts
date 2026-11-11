@@ -11,6 +11,7 @@ import type { DeepDiveMetrics } from '../../../../evaluation/types';
 import type { ChartInset, DefinitionBoxInset, NumberLineInset, PassageInset } from '../../../../types';
 import type { KitEvent } from '../../../../service/agent-kit/trace';
 import type { Display } from '../../../../service/agent-kit/displays';
+import type { SurfaceItem } from '../../../../service/agent-kit/surfaces';
 
 // ── Wrapper Layout Strategies ──────────────────────────────────────
 export type WrapperLayout = 'stack' | 'grid_2col' | 'reveal_progressive' | 'masonry';
@@ -51,7 +52,9 @@ export type BlockType =
   // A common wrong idea set against what is true
   | 'misconception'
   // A picture the author drew (kit display), shown to the student and to the author's screenshot alike
-  | 'figure';
+  | 'figure'
+  // A check on a kit answer surface: tap a part of a display, pick, sort or order cards, build a set, change a display
+  | 'check';
 
 // ── Base Block Data ─────────────────────────────────────────────────
 export interface BaseBlockData {
@@ -206,6 +209,8 @@ export interface DiagramBlockData extends BaseBlockData {
   altText: string;
   /** A drawing by the author, instead of `imageBase64`. Its labels carry positions the author gave, and code grades them. */
   svg?: string;
+  /** With `svg`: what the author says the drawing must make visible. Never shown; a blind reader checks the picture against it. */
+  shows?: string;
   /** 'explore' = AI places labels, student clicks to learn; 'label' = student drags labels, LLM evaluates */
   interactionMode: 'explore' | 'label';
   labels: Array<{
@@ -352,6 +357,8 @@ export interface ChartBlockData extends BaseBlockData {
   inset: ChartInset;
   /** Where the data comes from. */
   caption?: string;
+  /** A question answered only by reading this chart. The author adds one when reading the chart is what to practise; the block is then evaluable. */
+  patternCheck?: DataTableBlockData['patternCheck'];
 }
 
 /** Numbers placed on a line: order, distance, fractions, negatives, an interval. Ungraded. */
@@ -416,6 +423,20 @@ export interface FigureBlockData extends BaseBlockData {
   caption: string;
   /** What the picture shows, in words: for screen readers and the tutor. */
   altText: string;
+  /** On a drawing: what the author says it must make visible. Never shown; a blind reader checks the picture against it. */
+  shows?: string;
+}
+
+/**
+ * A check the student does on a kit answer surface (`service/agent-kit/surfaces.ts`): tap a part of a display (point),
+ * pick, sort or order cards whose faces can be displays, build a set (make), or change a display until a goal holds
+ * (set). The kit draws it and judges it. Always evaluable.
+ */
+export interface CheckBlockData extends BaseBlockData {
+  blockType: 'check';
+  item: SurfaceItem;
+  /** Why the answer is right; shown after the student answers. */
+  explanation: string;
 }
 
 /** A related question the learner can open below the lesson; it runs through the follow-up path. */
@@ -448,12 +469,13 @@ export type DeepDiveBlock =
   | WorkedExampleBlockData
   | ProcessBlockData
   | MisconceptionBlockData
-  | FigureBlockData;
+  | FigureBlockData
+  | CheckBlockData;
 
 // ── Evaluable block type guard ──────────────────────────────────────
 
-export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData | PerspectivesBlockData | HypothesisLabBlockData | WorkedExampleBlockData {
-  if (block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank') return true;
+export function isEvaluableBlock(block: DeepDiveBlock): block is MultipleChoiceBlockData | FillInBlankBlockData | DiagramBlockData | MiniSimBlockData | PerspectivesBlockData | HypothesisLabBlockData | WorkedExampleBlockData | CheckBlockData {
+  if (block.blockType === 'multiple-choice' || block.blockType === 'fill-in-blank' || block.blockType === 'check') return true;
   if (block.blockType === 'worked-example') return !!(block as WorkedExampleBlockData).tryStep;
   if (block.blockType === 'diagram') return (block as DiagramBlockData).interactionMode === 'label';
   if (block.blockType === 'mini-sim') return !!(block as MiniSimBlockData).prediction;
@@ -481,6 +503,8 @@ export interface DeepDiveAgentDebug {
   reviews: number;
   imagesStarted: number;
   imagesDiscarded: number;
+  /** Each time a blind reader looked at a drawing: what it was meant to show, what the reader saw, what it sent back. */
+  drawingLooks?: Array<{ turn: number; block: string; shows: string; seen: string | null; problems: string[]; error?: string }>;
   /** What the author did, step by step. */
   events?: KitEvent[];
 }

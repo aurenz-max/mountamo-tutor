@@ -14,9 +14,12 @@ import type { KnownMiss } from '../../../../components/live-activity/runtime/spo
 import { askLeaks, containsPhrase, type SpokenKey } from '../../../../components/live-activity/spokenKey';
 import type { SceneOf } from '../../../../components/live-activity/bossLevers';
 import { spokenMath } from '../../../../utils/mathText';
+import { chartWords } from '../../../../service/insets/chartView';
+import { displayWords } from '../../../../service/agent-kit/displays';
+import { surfaceScene } from '../../../../service/agent-kit/surfaceScene';
 import type {
-  CompareContrastBlockData, DataTableBlockData, DeepDiveBlock, DeepDiveData, DiagramBlockData, FillInBlankBlockData,
-  MiniSimBlockData, MultipleChoiceBlockData, PerspectivesBlockData, TimelineBlockData, WorkedExampleBlockData,
+  ChartBlockData, CheckBlockData, CompareContrastBlockData, DataTableBlockData, DeepDiveBlock, DeepDiveData, DiagramBlockData, FigureBlockData, FillInBlankBlockData,
+  MiniSimBlockData, NumberLineBlockData, MultipleChoiceBlockData, PerspectivesBlockData, TimelineBlockData, WorkedExampleBlockData,
 } from './types';
 import type { DeepDiveMiss } from './deepDive.card';
 
@@ -25,7 +28,7 @@ export type { DeepDiveMiss };
 /** Whether a block is graded: a choice, or an on-screen sort, order, labeling or lab. */
 export function isEvaluableBlock(block: DeepDiveBlock): boolean {
   switch (block.blockType) {
-    case 'multiple-choice': case 'fill-in-blank': case 'hypothesis-lab': return true;
+    case 'multiple-choice': case 'fill-in-blank': case 'hypothesis-lab': case 'check': return true;
     case 'worked-example': return !!(block as WorkedExampleBlockData).tryStep;
     case 'diagram': return (block as DiagramBlockData).interactionMode === 'label';
     case 'mini-sim': return !!(block as MiniSimBlockData).prediction;
@@ -33,6 +36,7 @@ export function isEvaluableBlock(block: DeepDiveBlock): boolean {
     case 'compare-contrast': return (block as CompareContrastBlockData).interactionMode === 'sort';
     case 'timeline': return (block as TimelineBlockData).interactionMode === 'order' && (block as TimelineBlockData).events.length >= 3;
     case 'data-table': return !!(block as DataTableBlockData).patternCheck;
+    case 'chart': return !!(block as ChartBlockData).patternCheck;
     default: return false;
   }
 }
@@ -44,7 +48,7 @@ export interface DeepDiveChoice { question: string; options: string[]; correctIn
 export function choiceOf(block: DeepDiveBlock): DeepDiveChoice | null {
   switch (block.blockType) {
     case 'multiple-choice': { const b = block as MultipleChoiceBlockData; return { question: b.question, options: b.options, correctIndex: b.correctIndex }; }
-    case 'data-table': { const p = (block as DataTableBlockData).patternCheck; return p ? { question: p.question, options: p.options, correctIndex: p.correctIndex } : null; }
+    case 'data-table': case 'chart': { const p = (block as DataTableBlockData | ChartBlockData).patternCheck; return p ? { question: p.question, options: p.options, correctIndex: p.correctIndex } : null; }
     case 'perspectives': { const c = (block as PerspectivesBlockData).comprehension; return c ? { question: c.question, options: c.options, correctIndex: c.correctIndex } : null; }
     case 'mini-sim': { const p = (block as MiniSimBlockData).prediction; return p ? { question: p.question, options: p.options, correctIndex: p.correctIndex } : null; }
     case 'worked-example': {
@@ -55,6 +59,15 @@ export function choiceOf(block: DeepDiveBlock): DeepDiveChoice | null {
       const b = block as FillInBlankBlockData;
       const at = b.wordBank.findIndex(w => w.toLowerCase().trim() === b.correctAnswer.toLowerCase().trim());
       return at < 0 ? null : { question: `Which word fills the blank? ${b.sentence}`, options: b.wordBank, correctIndex: at };
+    }
+    case 'check': {
+      // A choose check whose every card carries its own words can be said; cards told apart only by a picture cannot.
+      const it = (block as CheckBlockData).item;
+      const labels = it.options.map(o => o.label?.trim() ?? '');
+      // A bare letter or number on a picture card is a tag, not words about the choice.
+      const tag = (l: string, i: number) => !!it.options[i].display && /^(card|option|picture)?\s*[a-z0-9]$/i.test(l);
+      if (it.surface !== 'choose' || labels.some((l, i) => !l || tag(l, i)) || new Set(labels.map(l => l.toLowerCase())).size !== labels.length) return null;
+      return { question: it.prompt, options: labels, correctIndex: it.options.findIndex(o => o.id === it.key) };
     }
     default: return null;
   }
@@ -87,6 +100,7 @@ export function deepDiveAsk(item: DeepDiveItem): string {
       return `Sort each statement under "${b.itemA.title}" or "${b.itemB.title}", then check.`;
     }
     case 'diagram': return `Drag each label onto its place in the diagram "${item.label}", then check.`;
+    case 'check': return (item.block as CheckBlockData).item.prompt;
     case 'hypothesis-lab': return 'Sort the factors of this experiment: the one that is changed, the one that is measured, the ones kept the same, and the ones that do not belong. Then check.';
     default: return `Answer the check in "${item.label}".`;
   }
@@ -106,8 +120,10 @@ export function deepDiveKey(item: DeepDiveItem): SpokenKey | null {
   const answer = (c.options[c.correctIndex] ?? '').trim();
   if (!answer) return null;
   const options = c.options.map(o => o.trim());
-  if (options.every(o => containsPhrase(c.question, o))) return { answer, alsoAccept: [], menu: options };
-  const key: SpokenKey = { answer, alsoAccept: [], signatureError: 'Naming two choices, or hedging between them, is not an answer.' };
+  // A kit card prints its number above its words, so "card two" names it as well.
+  const alsoAccept = item.kind === 'check' ? [`card ${c.correctIndex + 1}`] : [];
+  if (options.every(o => containsPhrase(c.question, o))) return { answer, alsoAccept, menu: options };
+  const key: SpokenKey = { answer, alsoAccept, signatureError: 'Naming two choices, or hedging between them, is not an answer.' };
   return askLeaks(c.question, key).length ? null : key;
 }
 
@@ -121,6 +137,10 @@ function spokenChoice(item: DeepDiveItem): DeepDiveChoice | null {
 export function deepDiveMiss(item: DeepDiveItem): DeepDiveMiss {
   if (item.choice) return 'wrong_choice';
   switch (item.kind) {
+    case 'check': {
+      const surface = (item.block as CheckBlockData).item.surface;
+      return surface === 'order' ? 'out_of_order' : surface === 'categorize' ? 'wrong_side' : surface === 'make' || surface === 'set' ? 'off_goal' : 'wrong_choice';
+    }
     case 'timeline': return 'out_of_order';
     case 'compare-contrast': return 'wrong_side';
     case 'diagram': return 'misplaced_label';
@@ -133,8 +153,9 @@ export function deepDiveSpokenMisses(item: DeepDiveItem): KnownMiss[] {
   const c = spokenChoice(item);
   if (!c || !deepDiveKey(item)) return [];
   const others = c.options.filter((_, i) => i !== c.correctIndex).map(o => o.trim());
+  const cards = item.kind === 'check' ? c.options.flatMap((_, i) => (i === c.correctIndex ? [] : [`card ${i + 1}`])) : [];
   return others.length
-    ? [{ id: 'wrong_choice', pattern: `The learner's answer is another of the choices: ${others.join(', ')}.`, examples: others.slice(0, 3) }]
+    ? [{ id: 'wrong_choice', pattern: `The learner's answer is another of the choices: ${[...others, ...cards].join(', ')}.`, examples: others.slice(0, 3) }]
     : [];
 }
 
@@ -144,12 +165,31 @@ export function visibleStrings(block: DeepDiveBlock): string[] {
   const parts: string[] = [];
   const walk = (v: unknown, key = '') => {
     if (typeof v === 'string') {
-      if (!/^(id|blockType|drawerId|displayId|html|svg|expr|ideas|imageBase64|tutoringBrief|transitionCue|interactionMode|controlType|condition|role|placement|layout|insetType|chartType|format|kind|icon)$/.test(key)) parts.push(v);
+      if (!/^(id|blockType|drawerId|displayId|html|svg|shows|expr|ideas|imageBase64|tutoringBrief|transitionCue|interactionMode|controlType|condition|role|placement|layout|insetType|chartType|format|kind|icon|key|surface|tier|band|reasons|field|chart_type)$/.test(key)) parts.push(v);
     } else if (Array.isArray(v)) v.forEach((x) => walk(x, key));
     else if (v && typeof v === 'object') Object.entries(v).forEach(([k, x]) => walk(x, k));
   };
   walk(b);
   return parts;
+}
+
+/**
+ * What a block draws from numbers, in words, for a reader who cannot see it (the tutor, the blind reader). `visibleText`
+ * skips numbers, and stays that way: it feeds the check for an answer given away earlier in the lesson.
+ */
+export function drawnValues(block: DeepDiveBlock): string {
+  if (block.blockType === 'chart') return chartWords((block as ChartBlockData).inset);
+  if (block.blockType === 'number-line') {
+    const n = (block as NumberLineBlockData).inset;
+    const marks = (n.points ?? []).map(p => `${p.label} at ${p.value}`).join(', ');
+    return `a number line from ${n.min} to ${n.max}${marks ? `, marked ${marks}` : ''}${n.region ? `, shaded from ${n.region.from} to ${n.region.to}` : ''}`;
+  }
+  if (block.blockType === 'figure' && (block as FigureBlockData).display.kind !== 'svg') return displayWords((block as FigureBlockData).display);
+  if (block.blockType === 'check') {
+    const it = (block as CheckBlockData).item;
+    return [...it.stimulus, ...(it.board ? [it.board] : []), ...it.options.flatMap(o => (o.display ? [o.display] : []))].map(displayWords).filter(Boolean).join('; ');
+  }
+  return '';
 }
 
 /** Everything the student reads in a block, for length and overlap checks. */
@@ -205,7 +245,7 @@ export function sectionScene(data: Pick<DeepDiveData, 'title'>, block: DeepDiveB
       stage: 'a teaching section: nothing here is scored',
       section: block.label || block.blockType,
       ...(preReader ? { reader: 'a pre-reader: the learner cannot read yet, so you say everything the section says, and the pictures carry the rest' } : {}),
-      ...Object.fromEntries(inParts(visibleText(block).slice(0, 2000)).map((part, i) => [`sectionContent${i + 1}`, part])),
+      ...Object.fromEntries(inParts(`${drawnValues(block) ? `${drawnValues(block)}. ` : ''}${visibleText(block)}`.slice(0, 2000)).map((part, i) => [`sectionContent${i + 1}`, part])),
       ...(block.tutoringBrief ? { sectionBrief: block.tutoringBrief } : {}),
       ...(learnerCan ? { learnerCan } : {}),
       sectionsLeftBeforeCheck: left,
@@ -236,6 +276,15 @@ const HOW: Partial<Record<DeepDiveItem['kind'], string>> = {
   'hypothesis-lab': 'a lab: the learner places each factor in a zone (changed, measured, kept the same, does not belong), then presses Check',
 };
 
+/** A check on a kit surface, as the kit describes it to the tutor: what the learner does, the pictures in words, the cards. Never the key. */
+function checkFacts(item: DeepDiveItem): Record<string, string | number> {
+  if (item.kind !== 'check') return {};
+  const facts = surfaceScene((item.block as CheckBlockData).item, { answer: {}, tries: [], solved: false }).facts as Record<string, string>;
+  const { task, shown, cards } = facts;
+  const boards = Object.fromEntries(Object.entries(facts).filter(([k]) => /^board\d?$/.test(k)));
+  return { kind: `${task}, then presses Check`, ...(shown ? { pictures: shown } : {}), ...boards, ...(cards ? { cards } : {}) };
+}
+
 /** What is drawn and asked. The choices are on screen, so they are listed; never the key or the sections' text. */
 export function workspaceScene(data: Pick<DeepDiveData, 'title'>, item: DeepDiveItem, view: DeepDiveView): SceneOf {
   const asked = view.asked.map(a => `"${a.question}" (${a.status === 'ready' ? `answered by the sections ${a.sections.join(', ')}`
@@ -250,6 +299,9 @@ export function workspaceScene(data: Pick<DeepDiveData, 'title'>, item: DeepDive
       sectionsAbove: view.sections.join(', '),
       kind: item.choice ? 'a choice: the learner taps one choice, then presses Check' : HOW[item.kind] ?? 'answered on screen',
       question: deepDiveAsk(item),
+      ...checkFacts(item),
+      // What to point at: the chart's kind and axes. Its values stay on screen for the learner to read.
+      ...(item.block.blockType === 'chart' ? { chartOnScreen: chartWords({ ...(item.block as ChartBlockData).inset, data: [] }).replace(/:\s*$/, '') } : {}),
       ...(item.choice ? { choices: item.choice.options.join(' | ') } : {}),
       learnerWork: view.work || 'Nothing checked yet',
       ...(asked.length ? { learnerQuestions: `The learner typed these questions in the Ask box; their sections sit below the lesson as practice, never scored, and are not this item: ${asked.join('; ')}` } : {}),

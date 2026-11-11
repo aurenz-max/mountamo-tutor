@@ -14,12 +14,14 @@ import { defineCard, SAY_OR_SHOW, SPOKEN_AUDIO } from '../../../../components/li
  * - `out_of_order`: the timeline's events in the wrong order;
  * - `wrong_side`: a statement sorted under the other heading;
  * - `misplaced_label`: a diagram label on the wrong part;
- * - `wrong_role`: a lab factor in the wrong zone.
+ * - `wrong_role`: a lab factor in the wrong zone;
+ * - `off_goal`: a set of pieces, or a changed picture, that does not meet the goal the check gives.
+ * A check on a kit surface uses these too: a tapped part or a card is `wrong_choice`, a sort is `wrong_side`.
  */
-export type DeepDiveMiss = 'wrong_choice' | 'out_of_order' | 'wrong_side' | 'misplaced_label' | 'wrong_role';
-export const DEEP_DIVE_MISSES = ['wrong_choice', 'out_of_order', 'wrong_side', 'misplaced_label', 'wrong_role'] as const satisfies readonly DeepDiveMiss[];
+export type DeepDiveMiss = 'wrong_choice' | 'out_of_order' | 'wrong_side' | 'misplaced_label' | 'wrong_role' | 'off_goal';
+export const DEEP_DIVE_MISSES = ['wrong_choice', 'out_of_order', 'wrong_side', 'misplaced_label', 'wrong_role', 'off_goal'] as const satisfies readonly DeepDiveMiss[];
 
-const MOVES = 'may instead tap a choice and press Check; a sort, an order, a diagram\'s labels, a lab, or a choice that cannot be said is answered only on screen';
+const MOVES = 'may instead tap a choice and press Check; a sort, an order, a diagram\'s labels, a lab, a tap on a picture, a set of pieces, a picture to change, or a choice that cannot be said is answered only on screen';
 /** No in-item levers yet (`/add-support-tiers` designs them); every miss is answered by the tutor's own help. */
 const mode = { ...SAY_OR_SHOW, moves: MOVES, misses: DEEP_DIVE_MISSES, unanswered: DEEP_DIVE_MISSES };
 

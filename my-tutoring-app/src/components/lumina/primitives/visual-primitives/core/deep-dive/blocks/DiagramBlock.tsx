@@ -12,6 +12,7 @@ import {
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
+import { useTapTutor } from './TapTutor';
 import { sanitizeSvg } from '../../../../../service/agent-kit/displays';
 import { gradeDrawnLabels } from './drawnDiagram';
 
@@ -114,9 +115,7 @@ const ExploreMode: React.FC<{
   const [activeLabelId, setActiveLabelId] = useState<string | null>(null);
   const [revealedCount, setRevealedCount] = useState(0);
   const [hasInitialized, setHasInitialized] = useState(false);
-  // Debounce spoken reads — each hotspot tap triggers a tutor turn; a rapid
-  // double-tap would talk over itself.
-  const lastSpokeAtRef = useRef(0);
+  const { ask } = useTapTutor(onAskTutor);
 
   // Staggered marker entrance — reveal one every 120ms
   useEffect(() => {
@@ -137,18 +136,19 @@ const ExploreMode: React.FC<{
     return () => clearInterval(interval);
   }, [data.labels, hasInitialized]);
 
-  // Pre-reader: the flyout text is invisible to the child, so tapping a hotspot
-  // (or its chip) has the tutor read that part's name + description aloud. Reader
-  // explore is unchanged — the visible flyout carries it, no tutor turn fires.
+  // Tapping a hotspot (or its chip) opens its card and has the tutor talk about that part.
+  // A pre-reader cannot read the card, so the tutor reads it word for word; a reader has
+  // read it, so the tutor adds to it instead of repeating it.
   const speakLabel = (label: DiagramBlockData['labels'][number]) => {
-    if (!preReader || !onAskTutor) return;
-    const now = Date.now();
-    if (now - lastSpokeAtRef.current < 1200) return;
-    lastSpokeAtRef.current = now;
-    onAskTutor(
-      `[DIAGRAM_EXPLORE] A pre-reader tapped the "${label.text}" part of the picture and cannot read about it. `
-      + `Read it aloud to them word for word, warmly: "${label.text}. ${label.description}". `
-      + `Then add one short lively sentence. Keep it brief.`,
+    ask(
+      label.id,
+      preReader
+        ? `[DIAGRAM_EXPLORE] A pre-reader tapped the "${label.text}" part of the picture and cannot read about it. `
+          + `Read it aloud to them word for word, warmly: "${label.text}. ${label.description}". `
+          + `Then add one short lively sentence. Keep it brief.`
+        : `[DIAGRAM_EXPLORE] The student tapped the "${label.text}" part of the picture${data.label ? ` in "${data.label}"` : ''}. `
+          + `The card on screen says: "${label.description}". Do not read the card back. In your own words, say what this `
+          + `part does for the whole thing, with one vivid detail. Do not mention tapping.`,
     );
   };
 

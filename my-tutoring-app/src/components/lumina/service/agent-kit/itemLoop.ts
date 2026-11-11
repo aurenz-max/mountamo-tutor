@@ -18,12 +18,14 @@ import { ai } from '../geminiClient';
 import { priceCall } from '../spend/spendMeter';
 import { startTrace, tallyDisplays, type KitTrace, type RunRecord } from './trace';
 import { ALL_DISPLAYS, displayMenu, displayPrompt, readDisplay, sameState, withHighlight, type Display } from './displays';
+import { SET_PROMPT, type Clause, type ControlSpec, type Derive, type SetGoal } from './setting';
+import { evidencePlanAsk, evidencePrompt, readEvidence, unsupportedAct, type EvidenceRecord, type EvidenceSpec } from './evidence';
 import { slotLevers, type DraftLever } from './levers';
 import { Looker, lookAt, type Look } from './look';
 import { FULL_REVIEW_ID, KIT_MODEL, REVIEW_VARIANTS, reviewVariant, type ReviewVariant } from './reviewVariants';
 import {
-  SURFACES, TIERS, difficultyOf, itemErrors, shortcutChecks, shownOrder,
-  type Surface, type SurfaceItem, type SurfaceOption, type Tier,
+  SURFACES, TIERS, difficultyOf, itemErrors, makeSolutions, shortcutChecks, shownOrder,
+  type MakeGoal, type Surface, type SurfaceItem, type SurfaceOption, type Tier,
 } from './surfaces';
 
 type Args = Record<string, unknown>;
@@ -32,6 +34,14 @@ const arr = (v: unknown): Args[] => (Array.isArray(v) ? v : []).map(x => (x ?? {
 
 // ── The capability, as the author reads it ──────────────────────────────────
 
+/** The answer surfaces, one line each, as every author reads them. */
+export const SURFACE_LIST = `- choose: pick the one right option (2-5 options).
+- categorize: put each option into one of 2-3 categories (3-8 options).
+- order: put the options in the right order (3-6 options).
+- make: put pieces on a tray until they meet a goal (3-12 pieces, each an option card). Any set that meets the goal is right, and code finds them all. Use it when the child should build a thing and not pick one: an amount from coins, a number from base ten blocks, a total from number cards.
+- point: the child taps one part of a picture (the board): a bar or a point on a chart, a row of a picture graph, an event on a timeline, a step in a flow, a place on a map, a level of a zoom, a living thing in a food web, a row of a table, a mark on a number line, a part of a cell (with no names on it, to ask which part does a job), a sentence of a passage (the claim, the evidence). No options. Use it when the answer is somewhere on a display and finding it there is the skill: which year the line crosses 300, which step comes before the pupa, which animal the hawk depends on. The prompt asks for what the part shows or does and never says the name written on it.
+- set: the child changes a picture (the board) until a goal holds. Use it when the child should do the thing to a model and not pick a finished one: cut a shape into equal shares, set a clock, build a number from tens and ones, make an array, put a point on a number line, make a graph show something. For a topic about how something works (a machine, a force, a circuit, what a living thing needs, a recipe, a budget), the board is a system display: the child sets its parts and runs it.`;
+
 /**
  * What every author of surface items is told about the parts it can use. A primitive adds the lesson around it.
  * `without` hides displays from the author, so a bench can measure a display against the agent drawing it by hand.
@@ -39,9 +49,9 @@ const arr = (v: unknown): Args[] => (Array.isArray(v) ? v : []).map(x => (x ?? {
 export const surfacePrompt = (without: readonly string[] = []) => `You assemble learning items from generic parts. For each item pick the parts that teach the objective best.
 
 ANSWER SURFACES (what the child does):
-- choose: pick the one right option (2-5 options).
-- categorize: put each option into one of 2-3 categories (3-8 options).
-- order: put the options in the right order (3-6 options).
+${SURFACE_LIST}
+
+${SET_PROMPT}
 
 DISPLAYS (what the child sees). A display is an object {kind, ...}:
 ${displayPrompt(ALL_DISPLAYS, without)}
@@ -49,15 +59,18 @@ When a code-drawn display can show the content, use it, including inside option 
 
 AN ITEM: {
   tier: "easy"|"medium"|"hard",
-  surface: "choose"|"categorize"|"order",
+  surface: "choose"|"categorize"|"order"|"make"|"set"|"point",
   prompt: "what the tutor asks the child (never the answer)",
   stimulus: [displays shown above the options, may be empty],
-  options: [{id, label?, display?}]  each option is a card: a label, a display, or both,
+  options: [{id, label?, display?, value?}]  each option is a card: a label, a display, or both,
   categories: [names]  (categorize only),
-  key: choose: option id | order: [option ids in order] | categorize: {optionId: category name},
-  misconceptions: {optionId: "the wrong idea that leads a child to this option, said as a hint to look again; it never describes the right option"},
+  goal: {total, count}  (make only) what the tray must come to: the pieces' values add to total, there are exactly count pieces, or both. A piece's value is what its display shows (coins in cents, base ten, a ten frame) or the number in its "value",
+  board, controls, goal, derive: (set only) see A SET ITEM above,
+  board: (point only) one display with at least 3 named parts and no highlight; no options,
+  key: point: the name of the right part, as its display names it | choose: option id | order: [option ids in order] | categorize: {optionId: category name} | make: none, code works out every set that meets the goal | set: none,
+  misconceptions: {optionId (point: the name of a wrong part): "the wrong idea that leads a child to this option, said as a hint to look again; it never describes the right option"},
   help: {says: "what the tutor says", add_stimulus: [displays that show more: an example, a worked first step, or the same display again with its highlight set, which replaces it], highlight_cards: "a highlight value applied the same way to every card's display (optional)"},
-  simplify: {says: "what the tutor says", remove_options: [ids]}  the same task with fewer cards,
+  simplify: {says: "what the tutor says", remove_options: [ids]}  the same task with fewer cards; on a set item give board instead: the same board with part of the work already done; on a point item give board: the same board with fewer parts, the right one still on it,
   why: "why this item teaches the objective"
 }
 
@@ -67,29 +80,49 @@ RULES:
 - Pictures must let a child tell the options apart by the feature that matters, at a glance.
 - Difficulty comes from structure (closer wrong options, a misconception trap, more steps, a less familiar case), never from more reading.
 - A help draws something new on screen (not only words). A simplify keeps the right answer and the task.
+- A make item says its goal in the prompt (the total, and the number of pieces when there is one), gives more pieces than a right set needs, and includes pieces that tempt a wrong set. One card is one piece.
+- A set item's prompt says what to make in the words of the lesson ("Cut the circle into 3 equal shares"). Its board starts short of the goal and never shows it, and nothing above the board shows a finished answer.
+- A system board uses a real rule of the topic, and the item asks for a result ("Make the arm lift the rock"), never for a part's number. The prompt and the labels do not say which part to change or by how much.
 - Vary the surfaces and displays across the session when the objective allows.`;
 
 // ── Reading a draft ─────────────────────────────────────────────────────────
 
 const displays = (v: unknown) => (Array.isArray(v) ? v : []).map(readDisplay).filter((d): d is Display => !!d);
 
-export interface SurfaceDraft { item: SurfaceItem; help?: { says: string; add: Display[]; highlightCards?: string }; simplify?: { says: string; remove: string[] }; why: string }
+export interface SurfaceDraft { item: SurfaceItem; help?: { says: string; add: Display[]; highlightCards?: string }; simplify?: { says: string; remove: string[]; board?: Display }; why: string }
 
 /** A draft as code reads it: the item (options in a shown order), its lever requests and its rationale. */
 export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft {
   const a = (raw ?? {}) as Args;
   const options: SurfaceOption[] = arr(a.options).map(o => {
     const d = readDisplay(o.display);
-    return { id: str(o.id), ...(str(o.label) ? { label: str(o.label) } : {}), ...(d ? { display: d } : {}) };
+    return { id: str(o.id), ...(str(o.label) ? { label: str(o.label) } : {}), ...(d ? { display: d } : {}), ...(typeof o.value === 'number' && Number.isFinite(o.value) ? { value: o.value } : {}) };
   });
   const surface = (SURFACES as readonly string[]).includes(str(a.surface)) ? str(a.surface) as Surface : 'choose';
-  const key = surface === 'order' ? (Array.isArray(a.key) ? a.key.map(String) : [])
+  const g = (a.goal ?? {}) as Args;
+  const goal: MakeGoal = { ...(typeof g.total === 'number' ? { total: g.total } : {}), ...(typeof g.count === 'number' ? { count: g.count } : {}) };
+  const board = surface === 'set' || surface === 'point' ? readDisplay(a.board) : null;
+  const n = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  const clause = (v: unknown): Clause | undefined => (typeof v === 'boolean' || n(v) ? v
+    : v && typeof v === 'object' && (n((v as Args).min) || n((v as Args).max)) ? { ...(n((v as Args).min) ? { min: (v as Args).min as number } : {}), ...(n((v as Args).max) ? { max: (v as Args).max as number } : {}) } : undefined);
+  const setGoal: SetGoal = Object.fromEntries(Object.entries(g).map(([k, v]) => [k, clause(v)]).filter(([, v]) => v !== undefined)) as SetGoal;
+  const controls: ControlSpec[] = arr(a.controls).filter(c => str(c.field)).map(c => ({
+    field: str(c.field), ...(str(c.label) ? { label: str(c.label) } : {}),
+    ...(Array.isArray(c.toggle) ? { toggle: c.toggle.filter(n) } : { ...(n(c.min) ? { min: c.min } : {}), ...(n(c.max) ? { max: c.max } : {}), ...(n(c.step) ? { step: c.step } : {}), ...(c.wrap === true ? { wrap: true } : {}) }),
+  }));
+  const paths = (v: unknown) => (Array.isArray(v) ? v.map(String) : undefined);
+  const derive: Derive = Object.fromEntries(Object.entries((a.derive ?? {}) as Args).map(([k, v]) => [k, { ...(paths((v as Args)?.sum) ? { sum: paths((v as Args).sum) } : {}), ...(paths((v as Args)?.diff) ? { diff: paths((v as Args).diff) } : {}) }]));
+  const key = surface === 'make' ? [] : surface === 'set' ? ''
+    : surface === 'order' ? (Array.isArray(a.key) ? a.key.map(String) : [])
     : surface === 'categorize' ? Object.fromEntries(Object.entries((a.key ?? {}) as Args).map(([k, v]) => [k, String(v)]))
-    : String(a.key ?? '');
+    : String(a.key ?? '').trim();
   const misconceptions = Object.fromEntries(Object.entries((a.misconceptions ?? {}) as Args).map(([k, v]) => [k, str(v)]).filter(([, v]) => v));
   const base: SurfaceItem = {
     id, surface, prompt: str(a.prompt), stimulus: displays(a.stimulus), options,
     ...(surface === 'categorize' ? { categories: (Array.isArray(a.categories) ? a.categories : []).map(String) } : {}),
+    ...(surface === 'make' ? { goal } : {}),
+    ...(surface === 'set' ? { ...(board ? { board } : {}), ...(controls.length ? { controls } : {}), ...(Object.keys(derive).length ? { derive } : {}), setGoal } : {}),
+    ...(surface === 'point' && board ? { board } : {}),
     key, ...(Object.keys(misconceptions).length ? { misconceptions } : {}),
     tier: (TIERS as readonly string[]).includes(str(a.tier)) ? str(a.tier) as Tier : 'medium',
     difficulty: { band: 'easy', score: 0, reasons: [] },
@@ -99,13 +132,14 @@ export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft 
   return {
     item,
     ...(str(h.says) ? { help: { says: str(h.says), add: displays(h.add_stimulus), ...(str(h.highlight_cards) ? { highlightCards: str(h.highlight_cards) } : {}) } } : {}),
-    ...(str(s.says) ? { simplify: { says: str(s.says), remove: (Array.isArray(s.remove_options) ? s.remove_options : []).map(String) } } : {}),
+    ...(str(s.says) ? { simplify: { says: str(s.says), remove: (Array.isArray(s.remove_options) ? s.remove_options : []).map(String), ...(readDisplay(s.board) ? { board: readDisplay(s.board)! } : {}) } } : {}),
     why: str(a.why),
   };
 }
 
-/** Options in their shown order and the difficulty computed from structure. */
-function settle(item: SurfaceItem, seed: number): SurfaceItem {
+/** Options in their shown order, a make item's key from the solver (I4), and the difficulty computed from structure. */
+function settle(drafted: SurfaceItem, seed: number): SurfaceItem {
+  const item = drafted.surface === 'make' ? { ...drafted, key: makeSolutions(drafted)[0] ?? [] } : drafted;
   const ok = !itemErrors({ ...item, difficulty: item.difficulty }).length;
   const shown = ok ? shownOrder(item, seed) : item.options;
   const out = { ...item, options: shown };
@@ -134,7 +168,7 @@ export function buildSurfaceLevers(d: SurfaceDraft, seed: number): { levers: Dra
   if (d.help) {
     const helped = applyHelp(item, d.help);
     const extra = shortcutChecks(helped).filter(f => !shortcutChecks(item).includes(f));
-    const screen = (x: SurfaceItem) => JSON.stringify([x.stimulus, x.options.map(o => o.display)]);
+    const screen = (x: SurfaceItem) => JSON.stringify([x.stimulus, x.options.map(o => o.display), x.board]);
     if (screen(helped) === screen(item)) refused.push('help: it adds nothing to the screen');
     else if (itemErrors(helped).length) refused.push(`help: ${itemErrors(helped)[0]}`);
     else if (extra.length) refused.push(`help: ${extra[0]}`);
@@ -144,13 +178,19 @@ export function buildSurfaceLevers(d: SurfaceDraft, seed: number): { levers: Dra
     const drop = new Set(d.simplify.remove);
     let simpler: SurfaceItem = { ...item, options: item.options.filter(o => !drop.has(o.id)) };
     if (item.surface === 'order') simpler = { ...simpler, key: (item.key as string[]).filter(id => !drop.has(id)) };
+    // make: the goal stays; `settle` solves the smaller tray again, and a tray no set of which works is refused below.
     if (item.surface === 'categorize') simpler = { ...simpler, key: Object.fromEntries(Object.entries(item.key as Record<string, string>).filter(([id]) => !drop.has(id))) };
     if (item.misconceptions) simpler = { ...simpler, misconceptions: Object.fromEntries(Object.entries(item.misconceptions).filter(([id]) => !drop.has(id))) };
+    // set: the simpler item is the same goal from a board with part of the work done; the checks below are the same.
+    if ((item.surface === 'set' || item.surface === 'point') && d.simplify.board) simpler = { ...item, board: d.simplify.board };
     simpler = settle(simpler, seed + 7);
     if (item.surface === 'choose' && drop.has(item.key as string)) refused.push('simplify: it removes the right answer');
-    else if (!drop.size) refused.push('simplify: it removes nothing');
+    else if (item.surface === 'set' && !d.simplify.board) refused.push('simplify: on a set item it gives a board with part of the work done');
+    else if (item.surface === 'point' && !d.simplify.board) refused.push('simplify: on a point item it gives the same board with fewer parts');
+    else if (item.surface !== 'set' && item.surface !== 'point' && !drop.size) refused.push('simplify: it removes nothing');
     else if (itemErrors(simpler).length) refused.push(`simplify: ${itemErrors(simpler)[0]}`);
     else if (simpler.difficulty.score >= item.difficulty.score) refused.push('simplify: it is not easier by the computed difficulty');
+    else if (item.surface === 'make' && shortcutChecks(simpler).some(f => !shortcutChecks(item).includes(f))) refused.push(`simplify: ${shortcutChecks(simpler).find(f => !shortcutChecks(item).includes(f))}`);
     else levers.push({ kind: 'simplify', when: 'the learner misses twice', says: d.simplify.says, item: simpler });
   }
   return { levers, refused };
@@ -174,6 +214,10 @@ export interface ItemLoopSpec {
   minItems: number;
   idPrefix: string;
   seed: number;
+  /** The evidence the lesson must collect: the blind reader judges every item against it (`evidence.ts`). */
+  evidence?: EvidenceSpec;
+  /** The objective in words. With no `evidence`, the loop plans a spec from it first, so a lesson is never without one. */
+  objective?: string;
   /** Displays hidden from the author for a bench: they are left out of what the run record says was offered. */
   hiddenDisplays?: readonly string[];
 }
@@ -198,7 +242,8 @@ async function gen(contents: Content[], trace: KitTrace): Promise<Generated> {
   };
 }
 
-const rank = (l: Look) => l.blocking.length * 10 + l.advisory.length;
+// An evidence gap outweighs two other notes: between two clean versions, keep the one whose right answer earns credit.
+const rank = (l: Look) => l.blocking.length * 10 + l.advisory.length + (l.advisory.some(a => a.startsWith('evidence: ')) ? 2 : 0);
 const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** One look in a sentence: what ran, what the solver did, how many problems and the first of them. */
@@ -217,12 +262,37 @@ function lookLine(l: Look): string {
 
 interface Written { history: Content[]; drafts: Args[]; title: string; idea: string; costUsd: number; served?: string }
 
+/** A lesson with no spec gets one planned from its objective: the author is told it and the reader holds every item to it. */
+async function withEvidence(spec: ItemLoopSpec, trace: KitTrace): Promise<ItemLoopSpec> {
+  if (spec.evidence || !spec.objective) return spec;
+  try {
+    const planned = readEvidence((await gen([{ role: 'user', parts: [{ text: evidencePlanAsk(spec.objective, spec.grade) }] }], trace)).json);
+    if (!planned) { trace.say('write', 'no evidence spec could be planned; the author picks any surface', { level: 'warn' }); return spec; }
+    trace.say('write', `evidence planned from the objective: ${planned.act}, credit when ${planned.credit}`);
+    return { ...spec, evidence: planned, prompt: `${spec.prompt}\n\n${evidencePrompt(planned)}` };
+  } catch (e) {
+    trace.say('write', `evidence planning failed, the author picks any surface: ${messageOf(e)}`, { level: 'warn' });
+    return spec;
+  }
+}
+
+/** The first write has no earlier draft to fall back on, so one malformed reply gets one more try instead of ending the session. */
+async function genFirstWrite(ask: string, trace: KitTrace): Promise<Generated> {
+  try {
+    return await gen([{ role: 'user', parts: [{ text: ask }] }], trace);
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) throw e;
+    trace.say('write', `the reply was not valid JSON (${e.message}); asking once more`, { level: 'warn' });
+    return gen([{ role: 'user', parts: [{ text: `${ask}\n\nYour last reply could not be parsed (${e.message}). Reply with strict JSON: every key in double quotes, no trailing commas.` }] }], trace);
+  }
+}
+
 /** The one call that writes every item of the session. */
 async function writeItems(spec: ItemLoopSpec, trace: KitTrace): Promise<Written> {
   const ask = `${spec.prompt}\n\nWrite ${spec.tiers.length} items, in this order of tiers: ${spec.tiers.join(', ')}.\nReturn JSON: {"title": "a short friendly title for the session", "idea": "the one idea, in a sentence", "items": [item, ...]}`;
   const history: Content[] = [{ role: 'user', parts: [{ text: ask }] }];
   trace.say('write', `the author is writing ${spec.tiers.length} items (${spec.tiers.join(', ')})`);
-  const first = await gen(history, trace);
+  const first = await genFirstWrite(ask, trace);
   history.push(first.content);
   const drafts = arr(first.json.items);
   if (!drafts.length) throw new Error(`${spec.tag}: the author wrote no items`);
@@ -253,7 +323,7 @@ async function reviewItems({ spec, written, variant, trace, looker, started, pre
     let itemCost = 0;
     const lookNow = async (item: SurfaceItem, what: string): Promise<Look> => {
       say('look', `${what} (${item.surface}, ${item.tier})`, { item: itemNo });
-      const seen = await lookAt(item, { grade: spec.grade, looker, plan: variant.look });
+      const seen = await lookAt(item, { grade: spec.grade, looker, plan: variant.look, ...(spec.evidence ? { evidence: spec.evidence } : {}) });
       trace.addCost(seen.costUsd);
       itemCost += seen.costUsd;
       say('look', lookLine(seen), { item: itemNo, level: seen.blocking.length || seen.solved.error ? 'warn' : 'info' });
@@ -267,7 +337,9 @@ async function reviewItems({ spec, written, variant, trace, looker, started, pre
     let selfReviewOwed = variant.selfReview;
     const branch: Content[] = [...written.history];
     // A revise round (one author call, one look) takes 30-60 s: start one only while it can finish inside the budget.
-    while (variant.revise && used < rounds && (problemsOf(look).length || selfReviewOwed) && !tooLate()) {
+    // An item that cannot run gets one round even past the budget: a slow first write (4 drawn models took 219 s on
+    // 11-09) otherwise drops every item for a fault one revision fixes.
+    while (variant.revise && used < rounds && (problemsOf(look).length || selfReviewOwed) && (!tooLate() || (used === 0 && look.blocking.length > 0))) {
       used++;
       const problems = problemsOf(look);
       const parts: Part[] = [{ text: selfReviewOwed
@@ -319,28 +391,34 @@ async function reviewItems({ spec, written, variant, trace, looker, started, pre
     look: { ran: true, looked: all.length, unread: 0, screenshots: all.filter(x => x.look.shotSeconds > 0).length, problems: kept.reduce((n, x) => n + x.look.advisory.length, 0) },
     displays: {
       offered: displayMenu(ALL_DISPLAYS).filter(k => !spec.hiddenDisplays?.includes(k)),
-      used: tallyDisplays(kept.flatMap(x => [...x.item.stimulus, ...x.item.options.map(o => o.display)])),
+      used: tallyDisplays(kept.flatMap(x => [...x.item.stimulus, ...x.item.options.map(o => o.display), x.item.board])),
     },
   };
+  const gaps = kept.flatMap(x => (x.look.evidenceGap ? [{ id: x.item.id, gap: x.look.evidenceGap }] : []));
+  const evidence: EvidenceRecord | undefined = spec.evidence
+    ? { spec: spec.evidence, items: kept.length, met: kept.length - gaps.length, gaps, unsupported: unsupportedAct(spec.evidence) } : undefined;
+  if (evidence) say('run', `evidence: ${evidence.met} of ${evidence.items} items collect it${evidence.unsupported ? `; ${evidence.unsupported}` : ''}`, { level: evidence.met ? 'info' : 'warn' });
   const debug: Args = {
     run,
+    ...(evidence ? { evidence } : {}),
     variant: variant.id,
     model: { requested: MODEL, served: written.served },
     seconds,
     costUsd: +costUsd.toFixed(4),
     items: all.map(x => ({ id: x.item.id, surface: x.item.surface, tier: x.item.tier, computed: x.item.difficulty.band, solver: x.look.solved.difficulty,
-      rounds: x.rounds, changed: x.changed, kept: !x.blocking.length, blocking: x.blocking, advisory: x.look.advisory, refusedLevers: x.refusedLevers, drawnByHand: drawnByHand(x.item),
+      rounds: x.rounds, changed: x.changed, kept: !x.blocking.length, blocking: x.blocking, advisory: x.look.advisory, ...(x.look.evidenceGap !== undefined ? { evidenceGap: x.look.evidenceGap } : {}), refusedLevers: x.refusedLevers, drawnByHand: drawnByHand(x.item),
       seconds: x.seconds, costUsd: +x.costUsd.toFixed(4), ...(x.look.solved.error ? { solverError: x.look.solved.error } : {}) })),
     events: prefix ? trace.events.filter(e => e.text.startsWith(prefix)) : trace.events,
   };
   return { title: written.title, idea: written.idea, items: kept, debug };
 }
 
-export async function runItemLoop(spec: ItemLoopSpec): Promise<ItemLoopResult> {
+export async function runItemLoop(given: ItemLoopSpec): Promise<ItemLoopResult> {
   const started = Date.now();
-  const trace = startTrace(spec.tag);
+  const trace = startTrace(given.tag);
   const looker = new Looker();
   try {
+    const spec = await withEvidence(given, trace);
     const written = await writeItems(spec, trace);
     return await reviewItems({ spec, written, variant: reviewVariant(FULL_REVIEW_ID)!, trace, looker, started, prefix: '' });
   } catch (e) {
@@ -354,13 +432,14 @@ export async function runItemLoop(spec: ItemLoopSpec): Promise<ItemLoopResult> {
 export interface BenchRun { id: string; label: string; result?: ItemLoopResult; error?: string }
 
 /** One first write, then each review setting on those same drafts, so the settings differ only in their review. */
-export async function runItemBench(spec: ItemLoopSpec, variantIds: readonly string[]): Promise<BenchRun[]> {
+export async function runItemBench(given: ItemLoopSpec, variantIds: readonly string[]): Promise<BenchRun[]> {
   const started = Date.now();
-  const trace = startTrace(spec.tag);
+  const trace = startTrace(given.tag);
   const looker = new Looker();
   const variants = REVIEW_VARIANTS.filter(v => variantIds.includes(v.id));
-  if (!variants.length) throw new Error(`${spec.tag}: no known review setting in ${variantIds.join(', ')}`);
+  if (!variants.length) throw new Error(`${given.tag}: no known review setting in ${variantIds.join(', ')}`);
   try {
+    const spec = await withEvidence(given, trace);
     const written = await writeItems(spec, trace);
     const runs = await Promise.all(variants.map(async (variant): Promise<BenchRun> => {
       const prefix = `[${variant.id}] `;

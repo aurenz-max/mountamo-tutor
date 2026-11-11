@@ -19,8 +19,6 @@ vi.mock('@/contexts/LuminaAIContext', () => ({ useMicLevel: () => 0, useLuminaAI
 vi.mock('../../../../evaluation', () => ({ useEvaluationContext: () => seam.evaluationContext,
   usePrimitiveEvaluation: () => ({ hasSubmitted: false, submitResult: seam.submit, elapsedMs: 0 }) }));
 vi.mock('../../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => () => true }) }));
-const painted = vi.hoisted(() => ({ image: vi.fn(async () => 'data:image/png;base64,AA') }));
-vi.mock('../../../../service/geminiClient-api', () => ({ generateConceptImage: painted.image }));
 import LifeLab, { type LifeLabData } from './LifeLab';
 import { __test } from '../../../../service/biology/life-lab/agent-life-lab';
 import { COVERAGE } from './lifeLab.fixtures';
@@ -118,27 +116,18 @@ it('a life cycle on a shuffled bench: a foreign stage is named; the real order c
   expect(h.state().task!.evidence.correctness).toBe('correct');
 });
 
-it('a picture is painted only on a click, the tutor hears of it only once it shows, cards draw, and Look back keeps it', async () => {
+it('Learn more sits on its own question, opens on a tap, and the tutor can read the words', () => {
   const c = COVERAGE.where_it_lives, k = worldChecks(c.world, c.ask, c.why);
-  const section = __test.readLifeSection({ plan: { title: 't', idea: 'i' }, entries: [], ctx: {} } as never, { title: 'Homes', frames: [
-    { says: 'Polar bears live on ice.', picture: { prompt: 'a polar bear on sea ice', caption: 'A polar bear at home' }, cards: [{ title: 'Fur', text: 'Thick fur keeps it warm.' }] }] });
-  if ('error' in section) throw new Error(section.error);
-  expect(section.item.blocking).toEqual([]);
   const world = { draft: { world: c.world, ask: c.ask, why: c.why }, mode: k.mode, key: k.key, band: k.difficulty?.band, blocking: [] };
-  const data = __test.assembleLifeLab({ plan: { title: 'Homes', idea: 'i' }, ctx: {}, entries: [section.item, world, world] }, 1, 3, {});
+  const data = __test.assembleLifeLab({ plan: { title: 'Homes', idea: 'i' }, ctx: {},
+    entries: [{ ...world, terms: [{ term: 'Habitat', means: 'The place where a living thing makes its home.' }] }, world] }, 1, 3, {});
   const h = mount(data, 'world');
-  expect(screen.getByText('Thick fur keeps it warm.')).toBeTruthy();
-  expect(painted.image).not.toHaveBeenCalled();
-  expect(h.demand()).not.toContain('A polar bear at home');
-  await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Show picture' })); await Promise.resolve(); await Promise.resolve(); });
-  expect(painted.image).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole('img', { name: 'A polar bear at home' })).toBeTruthy();
-  expect(h.demand()).toContain('a picture: A polar bear at home');
-  h.tap('teach-next');
-  expect(document.querySelector('[data-teach-panel]')).toBeNull();
-  h.tap('teach-look-back');
-  expect(screen.getByRole('img', { name: 'A polar bear at home' })).toBeTruthy();
-  expect(painted.image).toHaveBeenCalledTimes(1);
+  const drawer = screen.getByRole('button', { name: 'Learn more' });
+  expect(drawer.getAttribute('aria-expanded')).toBe('false');
+  act(() => { fireEvent.click(drawer); });
+  expect(drawer.getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByText(/makes its home/)).toBeTruthy();
+  expect(h.demand()).toContain('Habitat: The place where a living thing makes its home.');
 });
 
 it('teach frames open first; then a kit item is picked on the board, a wrong card names its miss, and the right one completes', () => {
@@ -147,16 +136,14 @@ it('teach frames open first; then a kit item is picked on the board, a wrong car
     surface: 'choose', prompt: 'Which cell comes from a muscle that works all day?',
     options: [{ id: 'many', display: cell(9) }, { id: 'few', display: cell(3) }], answer: 'many',
     misconceptions: [{ id: 'few', idea: 'Think about how much work this muscle does.' }],
+    teach: [{ says: 'Muscles need energy.', show: [{ kind: 'zoom', levels: [{ label: 'Runner', icon: '🏃' }, { label: 'Muscle', icon: '💪' }] }] },
+      { says: 'Tiny parts in the cell make it.', show: [{ kind: 'cell', parts: [{ shape: 'bean', count: 4, label: 'energy parts' }] }] }],
   });
   if ('error' in written) throw new Error(written.error);
-  const section = __test.readLifeSection({ plan: { title: 't', idea: 'i' }, entries: [], ctx: {} } as never, { frames: [
-    { says: 'Muscles need energy.', show: [{ kind: 'zoom', levels: [{ label: 'Runner', icon: '🏃' }, { label: 'Muscle', icon: '💪' }] }] },
-    { says: 'Tiny parts in the cell make it.', show: [{ kind: 'cell', parts: [{ shape: 'bean', count: 4, label: 'energy parts' }] }] }] });
-  if ('error' in section) throw new Error(section.error);
   expect(written.item.blocking).toEqual([]);
   const c = COVERAGE.where_it_lives, k = worldChecks(c.world, c.ask, c.why);
   const data = __test.assembleLifeLab({ plan: { title: 'Cells', idea: 'The idea is not shown to the child' }, ctx: {},
-    entries: [section.item, written.item, { draft: { world: c.world, ask: c.ask, why: c.why }, mode: k.mode, key: k.key, band: k.difficulty?.band, blocking: [] }] }, 1, 3, {});
+    entries: [written.item, { draft: { world: c.world, ask: c.ask, why: c.why }, mode: k.mode, key: k.key, band: k.difficulty?.band, blocking: [] }] }, 1, 3, {});
   const h = mount(data, 'world');
   expect(screen.queryByText(/The idea is not shown/)).toBeNull();
   expect(screen.getByText('Muscles need energy.')).toBeTruthy();

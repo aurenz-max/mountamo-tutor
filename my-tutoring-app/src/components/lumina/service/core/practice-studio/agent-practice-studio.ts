@@ -5,8 +5,10 @@
  *
  * This file owns only the lesson around the kit: the objective, grade, scope, remediation focus and tier plan.
  */
+import { isPreReaderAudience } from '../gemini-deep-dive';
 import { buildScopePromptSection } from '../../scopeContext';
 import type { GenerationContext } from '../../generation/generationContext';
+import { evidencePrompt, readEvidence, type EvidenceSpec } from '../../agent-kit/evidence';
 import { surfacePrompt, runItemBench, runItemLoop, shipLevers, type ItemLoopResult, type ItemLoopSpec } from '../../agent-kit/itemLoop';
 import type { Tier } from '../../agent-kit/surfaces';
 import type { PracticeStudioData } from '../../../primitives/visual-primitives/core/practice-studio/PracticeStudio';
@@ -23,24 +25,29 @@ export function tierPlan(tier: Tier | undefined): Tier[] {
 
 const gradeWords = (g?: string) => (!g ? 'elementary' : g.toUpperCase() === 'K' ? 'Kindergarten' : /^\d+$/.test(g) ? `grade ${g}` : g);
 
-export function lessonPrompt(gctx: GenerationContext, withoutDisplays: readonly string[] = []): string {
+export function lessonPrompt(gctx: GenerationContext, withoutDisplays: readonly string[] = [], evidence?: EvidenceSpec): string {
   return `${surfacePrompt(withoutDisplays)}
 
 THE LESSON (from the curriculum and the lesson plan):
 - Topic: ${gctx.topic}
 - Grade: ${gradeWords(gctx.grade ?? gctx.gradeContext)}
 ${gctx.objective?.text ? `- Objective: ${gctx.objective.text}\n` : ''}${gctx.intent ? `- This item set's job: ${gctx.intent}\n` : ''}${gctx.remediationFocus ? `- A misconception this learner shows: ${gctx.remediationFocus}. Include a wrong option that tests it.\n` : ''}${buildScopePromptSection(gctx.scope)}
-Every item practises this objective. Kindergarten and grade 1 children do not read yet: keep labels to a word or two, let pictures carry the item, and keep any text short enough to read aloud.`;
+${evidence ? `${evidencePrompt(evidence)}\n` : ''}Every item practises this objective. Kindergarten and grade 1 children do not read yet: keep labels to a word or two, let pictures carry the item, and keep any text short enough to read aloud.`;
 }
 
 export async function generatePracticeStudio(gctx: GenerationContext): Promise<PracticeStudioData> {
-  const raw = (gctx.raw ?? {}) as { seed?: number; reviewBench?: unknown; withoutDisplays?: unknown };
+  const raw = (gctx.raw ?? {}) as { seed?: number; reviewBench?: unknown; withoutDisplays?: unknown; evidence?: unknown };
+  // The evidence spec rides on the manifest item's config until the manifest emits it per objective.
+  const evidence = readEvidence(raw.evidence);
   const seed = Number(raw.seed) || Math.floor(Math.random() * 2 ** 31);
   const tiers = tierPlan(gctx.supportTier as Tier | undefined);
   // Tester only: hide displays from the author, to measure one against the agent drawing it by hand.
-  const withoutDisplays = Array.isArray(raw.withoutDisplays) ? raw.withoutDisplays.map(String) : [];
+  // A passage is for reading, which a pre-reader cannot do yet.
+  const withoutDisplays = [...(Array.isArray(raw.withoutDisplays) ? raw.withoutDisplays.map(String) : []), ...(isPreReaderAudience(`Grade ${gctx.grade ?? ''} ${gctx.gradeContext ?? ''}`) ? ['passage'] : [])];
   const spec: ItemLoopSpec = {
-    tag: 'PracticeStudio', prompt: lessonPrompt(gctx, withoutDisplays), grade: gradeWords(gctx.grade ?? gctx.gradeContext),
+    tag: 'PracticeStudio', prompt: lessonPrompt(gctx, withoutDisplays, evidence), ...(evidence ? { evidence } : {}), grade: gradeWords(gctx.grade ?? gctx.gradeContext),
+    // No spec from the lesson: the loop plans one from the objective, so the default is never "any surface".
+    objective: [gctx.topic, gctx.objective?.text, gctx.intent].filter(Boolean).join('. '),
     tiers, minItems: 2, idPrefix: 'studio', seed, hiddenDisplays: withoutDisplays,
   };
   const build = (r: ItemLoopResult) => {

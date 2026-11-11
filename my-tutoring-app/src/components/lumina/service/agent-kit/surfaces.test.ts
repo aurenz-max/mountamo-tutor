@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { displayErrors, displayHtml, displayWords, sanitizeSvg, withHighlight, type Display } from './displays';
+import { displayErrors, displayHtml, displayParts, displayWords, sanitizeSvg, withHighlight, type Display } from './displays';
 import { buildSurfaceLevers, readDraft } from './itemLoop';
 import {
-  difficultyOf, gradeAnswer, inAnswerOrder, itemErrors, missHint, rightAnswer, shortcutChecks, shownOrder, wrongAnswer, type SurfaceItem,
+  answerReady, difficultyOf, gradeAnswer, inAnswerOrder, itemErrors, missHint, rightAnswer, shortcutChecks, shownOrder, surfaceTaps, wrongAnswer, type SurfaceItem,
 } from './surfaces';
 
 const base = { stimulus: [], tier: 'medium' as const, difficulty: { band: 'easy' as const, score: 0, reasons: [] } };
@@ -16,6 +16,26 @@ const order: SurfaceItem = { ...base, id: 'o', surface: 'order', prompt: 'Put th
 const sort: SurfaceItem = { ...base, id: 's', surface: 'categorize', prompt: 'Hard or soft?', categories: ['Hard', 'Soft'],
   options: [{ id: 'rock', label: 'rock' }, { id: 'pillow', label: 'pillow' }, { id: 'spoon', label: 'spoon' }],
   key: { rock: 'Hard', pillow: 'Soft', spoon: 'Hard' } };
+
+describe('reading a graph', () => {
+  const plant = { kind: 'chart' as const, chart_type: 'line' as const, points: [{ label: 'Week 1', value: 4 }, { label: 'Week 2', value: 14 }, { label: 'Week 3', value: 20 }] };
+  const ask = (stimulus: Display, labels: string[]): SurfaceItem => ({ ...base, id: 'g', surface: 'choose', prompt: 'How tall in Week 2?', stimulus: [stimulus], options: labels.map((label, i) => ({ id: `o${i}`, label })), key: 'o0' });
+
+  it('flags a wrong option too close to read apart from a value between axis marks', () => {
+    expect(shortcutChecks(ask(plant, ['14 cm', '13 cm', '20 cm', '4 cm'])).join()).toMatch(/too close/);
+    expect(shortcutChecks(ask(plant, ['14 cm', '12 cm', '20 cm', '4 cm'])).join()).not.toMatch(/too close/);
+  });
+
+  it('leaves a value on an axis mark, printed values, and answers that are not plotted', () => {
+    expect(shortcutChecks(ask({ ...plant, points: [...plant.points.slice(0, 1), { label: 'Week 2', value: 15 }, plant.points[2]] }, ['15 cm', '14 cm', '20 cm'])).join()).not.toMatch(/too close/);
+    expect(shortcutChecks(ask({ ...plant, show_values: true }, ['14 cm', '13 cm', '20 cm'])).join()).not.toMatch(/too close/);
+    expect(shortcutChecks(ask(plant, ['3 weeks', '2 weeks', '1 week'])).join()).not.toMatch(/too close/);
+  });
+
+  it('holds on a plain bar graph too', () => {
+    expect(shortcutChecks(ask({ kind: 'bar_graph', labels: ['a', 'b'], values: [14, 20] }, ['14', '13', '20'])).join()).toMatch(/too close/);
+  });
+});
 
 describe('surfaces', () => {
   it('accepts well-formed items and names what a broken one lacks', () => {
@@ -243,5 +263,120 @@ describe('levers', () => {
     expect(levers).toEqual([]);
     expect(refused.join(' ')).toMatch(/adds nothing/);
     expect(refused.join(' ')).toMatch(/removes the right answer/);
+  });
+});
+
+describe('point: the child taps one part of a display', () => {
+  const co2 = { kind: 'chart' as const, chart_type: 'line' as const, title: 'CO2 in the air', x_label: 'Year', y_label: 'ppm',
+    points: [{ label: '1960', value: 317 }, { label: '1980', value: 339 }, { label: '2000', value: 370 }, { label: '2020', value: 414 }] };
+  const point: SurfaceItem = { ...base, id: 'p', surface: 'point', prompt: 'Tap the first year the line is above 350.', options: [], board: co2, key: '2000',
+    misconceptions: { '1980': 'Read the height of that point on the axis. Is it above 350?' } };
+
+  it('runs, and is judged by the part tapped', () => {
+    expect(itemErrors(point)).toEqual([]);
+    expect(gradeAnswer(point, { part: '2000' })).toEqual({ correct: true });
+    expect(gradeAnswer(point, { part: '1980' })).toEqual({ correct: false, miss: 'wrong_choice' });
+    expect(gradeAnswer(point, {})).toEqual({ correct: false, miss: 'wrong_choice' });
+    expect(gradeAnswer(point, rightAnswer(point)).correct).toBe(true);
+    expect(gradeAnswer(point, wrongAnswer(point)).correct).toBe(false);
+    expect(answerReady(point, {})).toBe(false);
+    expect(answerReady(point, { part: '1960' })).toBe(true);
+    expect(surfaceTaps(point, rightAnswer(point), 'Check')).toEqual([{ type: 'touch', target: 'part-2000' }, { type: 'choose', label: 'Check' }]);
+    expect(missHint(point, { part: '1980' })).toMatch(/above 350/);
+  });
+
+  it('refuses a board with nothing to tap, too few parts, a key that is not a part, cards, or a part already lit', () => {
+    expect(itemErrors({ ...point, board: { kind: 'clock', hour: 3, minute: 0 } }).join()).toMatch(/no parts to tap/);
+    expect(itemErrors({ ...point, board: { ...co2, points: co2.points.slice(2) } }).join()).toMatch(/at least 3/);
+    expect(itemErrors({ ...point, key: '1990' }).join()).toMatch(/the key is the name of one part/);
+    expect(itemErrors({ ...point, options: [{ id: 'a', label: '2000' }] }).join()).toMatch(/no option cards/);
+    expect(itemErrors({ ...point, board: { ...co2, highlight: '2000' } }).join()).toMatch(/must not start with a highlight/);
+    expect(itemErrors({ ...point, board: undefined }).join()).toMatch(/needs a board/);
+  });
+
+  describe.each([
+    ['a table row', { kind: 'table', headers: ['Planet', 'Moons'], rows: [['Earth', '1'], ['Mars', '2'], ['Venus', '0']] }, 'Tap the planet with the most moons.', 'Mars'],
+    ['a number-line mark', { kind: 'number_line', min: 0, max: 1, step: 0.25, marks: [{ value: 0.25, label: 'A' }, { value: 0.5, label: 'B' }, { value: 0.75, label: 'C' }] }, 'Tap the mark at three quarters.', 'C'],
+    ['an unlabelled cell part', { kind: 'cell', cell: 'plant', parts: [{ shape: 'round' }, { shape: 'oval', count: 3 }, { shape: 'sac' }] }, 'Tap the part that catches sunlight.', 'oval'],
+    ['a sentence of a passage', { kind: 'passage', sentences: ['Otters are the best pets.', 'They eat too much.', 'Otters bite when scared.'] }, 'Tap the claim the writer makes.', 'Sentence 1'],
+  ] as const)('%s', (_name, board, prompt, key) => {
+    const item = { ...base, id: 'n', surface: 'point', prompt, options: [], board, key } as unknown as SurfaceItem;
+
+    it('runs, is judged by the part tapped, and plays through its own tap target', () => {
+      expect(itemErrors(item)).toEqual([]);
+      expect(shortcutChecks(item)).toEqual([]);
+      expect(gradeAnswer(item, rightAnswer(item)).correct).toBe(true);
+      expect(gradeAnswer(item, wrongAnswer(item)).correct).toBe(false);
+      expect(surfaceTaps(item, rightAnswer(item), 'Check')[0]).toEqual({ type: 'touch', target: `part-${key}` });
+      expect(difficultyOf(item).score).toBeGreaterThan(0);
+    });
+  });
+
+  it('refuses number-line marks too close to tap apart, and rows that share a first cell', () => {
+    const marks = (b: number) => ({ ...base, id: 'm', surface: 'point', prompt: 'Tap the larger one.', options: [], key: 'C',
+      board: { kind: 'number_line', min: 0, max: 10, step: 1, marks: [{ value: 1, label: 'A' }, { value: b, label: 'B' }, { value: 8, label: 'C' }] } }) as unknown as SurfaceItem;
+    expect(itemErrors(marks(5))).toEqual([]);
+    expect(itemErrors(marks(1.5)).join()).toMatch(/too close to tap apart/);
+    const rows = { ...base, id: 'r', surface: 'point', prompt: 'Tap one.', options: [], key: 'x',
+      board: { kind: 'table', headers: ['a', 'b'], rows: [['x', '1'], ['x', '2'], ['y', '3']] } } as unknown as SurfaceItem;
+    expect(itemErrors(rows).join()).toMatch(/share a name/);
+  });
+
+  it('blocks a prompt that repeats the right sentence, and keeps a prompt that only shares the topic', () => {
+    const board = { kind: 'passage', sentences: ['The river froze in December.', 'Boats stayed in the harbor.', 'Spring brought the fish back.'] };
+    const item = (prompt: string) => ({ ...base, id: 'r', surface: 'point', prompt, options: [], key: 'Sentence 1', board }) as unknown as SurfaceItem;
+    expect(shortcutChecks(item('Tap the sentence that says the river froze in December.')).join()).toMatch(/repeats the words/);
+    expect(shortcutChecks(item('Tap the sentence that tells why the boats could not sail.'))).toEqual([]);
+  });
+
+  it('refuses a passage too long for the tutor and the reader to get whole', () => {
+    expect(displayErrors({ kind: 'passage', sentences: Array.from({ length: 8 }, () => 'x'.repeat(200)) }).join()).toMatch(/in all/);
+  });
+
+  it('blocks a key sentence a child can find by its length, and a prompt that names the shape of an unlabelled part', () => {
+    const long = { ...base, id: 'l', surface: 'point', prompt: 'Tap the evidence.', options: [], key: 'Sentence 3',
+      board: { kind: 'passage', sentences: ['Otters are good.', 'They swim well.', 'A study of two hundred otters found that they use stones as tools to open shells on the sea floor.'] } } as unknown as SurfaceItem;
+    expect(shortcutChecks(long).join()).toMatch(/by its length/);
+    const shape = { ...base, id: 's', surface: 'point', prompt: 'Tap the bean part.', options: [], key: 'bean',
+      board: { kind: 'cell', parts: [{ shape: 'round' }, { shape: 'bean' }, { shape: 'sac' }] } } as unknown as SurfaceItem;
+    expect(shortcutChecks(shape).join()).toMatch(/name written on the part/);
+  });
+
+  it('blocks a prompt that says the name written on the part', () => {
+    expect(shortcutChecks(point)).toEqual([]);
+    expect(shortcutChecks({ ...point, prompt: 'Tap the point for 2000.' }).join()).toMatch(/name written on the part/);
+    const web: SurfaceItem = { ...base, id: 'w', surface: 'point', prompt: 'Tap the animal that would go hungry first if the grass died.', options: [], key: 'Rabbit',
+      board: { kind: 'food_web', living: [{ name: 'Grass', level: 1 }, { name: 'Rabbit', level: 2 }, { name: 'Fox', level: 3 }], eats: [['Rabbit', 'Grass'], ['Fox', 'Rabbit']] } };
+    expect(itemErrors(web)).toEqual([]);
+    expect(shortcutChecks(web)).toEqual([]);
+    expect(shortcutChecks({ ...web, prompt: 'Which one is the rabbit?' }).join()).toMatch(/name written on the part/);
+  });
+
+  it('reaches every band from the number of parts, the reading and the traps (I6)', () => {
+    const picture = (n: number): SurfaceItem => ({ ...base, id: 'd', surface: 'point', prompt: 'Tap the row with the most.', options: [], key: 'r1',
+      board: { kind: 'pictograph', icon: '🍎', key_value: 1, labels: Array.from({ length: n }, (_, i) => `r${i + 1}`), values: Array.from({ length: n }, (_, i) => n - i) } });
+    expect(difficultyOf(picture(3)).band).toBe('easy');
+    expect(difficultyOf(point).band).toBe('medium');
+    const hard = { ...point, board: { ...co2, points: [...co2.points, { label: '2010', value: 390 }, { label: '1990', value: 354 }, { label: '1970', value: 326 }] },
+      misconceptions: { '1980': 'Read its height.', '2010': 'Is there an earlier one?', '1990': 'Read its height.' }, key: '1990' };
+    expect(itemErrors(hard)).toEqual([]);
+    expect(difficultyOf(hard).band).toBe('hard');
+    expect(difficultyOf(hard).reasons.join()).toMatch(/7 parts to choose from/);
+  });
+
+  it('is read from a draft, and a simplify gives the same board with fewer parts', () => {
+    const raw = { tier: 'medium', surface: 'point', prompt: point.prompt, board: co2, key: ' 2000 ', misconceptions: point.misconceptions,
+      simplify: { says: 'Look at just these three years.', board: { ...co2, points: co2.points.slice(1) } },
+      help: { says: 'Here is the 350 line.', add_stimulus: [{ kind: 'number_line', min: 300, max: 420, step: 10, marks: [{ value: 350, label: '350' }] }] } };
+    const draft = readDraft(raw, 'p1', 3);
+    expect(draft.item.surface).toBe('point');
+    expect(draft.item.key).toBe('2000');
+    expect(itemErrors(draft.item)).toEqual([]);
+    const { levers, refused } = buildSurfaceLevers(draft, 3);
+    expect(refused).toEqual([]);
+    expect(levers.map(l => l.kind).sort()).toEqual(['help', 'simplify']);
+    expect(displayParts(levers.find(l => l.kind === 'simplify')!.item.board)).toEqual(['1980', '2000', '2020']);
+    const gone = buildSurfaceLevers(readDraft({ ...raw, simplify: { says: 'x', board: { ...co2, points: co2.points.filter(p => p.label !== '2000') } } }, 'p1', 3), 3);
+    expect(gone.refused.join()).toMatch(/simplify: point: the key is the name of one part/);
   });
 });
