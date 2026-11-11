@@ -6,7 +6,7 @@
 import type { ShapeTracerChallenge, ShapeTracerData } from './ShapeTracer';
 import { bossAssignment, defineBoss } from '../../../components/live-activity/boss';
 import type { DriverInput } from '../../../components/live-activity/liveJourneySpec';
-import { drawCorners, shapeTask } from './shapeTracerWorkspace';
+import { drawCorners, freeTrace, shapeTask } from './shapeTracerWorkspace';
 import { SHAPE_TRACER_LEVERS, practiceItem, practiceParent } from './shapeTracerLevers';
 import { shapeTracerCard, type ShapeTracerMiss } from './shapeTracer.card';
 
@@ -66,13 +66,17 @@ export const shapeTracerBoss = defineBoss<ShapeTracerData, ShapeTracerChallenge,
       const parent = practiceParent(String(ctx.itemId ?? ''), all);
       return parent ? practiceItem(parent) ?? undefined : all.find(c => c.id === ctx.itemId);
     },
-    // Every type through its real dots. trace and complete tap the corners in turn and finish themselves; a tap out of
-    // turn is refused on the dot, never checked, so they have no wrong input. connect-dots: the wrong answer starts at
-    // the second number (`started_elsewhere`). draw-from-description places a regular polygon on the grid
+    // Every type through its real dots. trace and complete tap the corners in turn and finish themselves; the wrong
+    // answer is a corner out of turn: the second corner first (`started_elsewhere`), or on a free trace, where any
+    // corner may start, back to the first after two (`went_back`). A completion with one open corner has no wrong tap.
+    // connect-dots: the wrong answer starts at the second number (`started_elsewhere`). draw-from-description places a regular polygon on the grid
     // (`drawCorners`) and presses Check Shape; the wrong one has one corner fewer (one more on a triangle).
     play: (right, c, ctx) => {
-      if (c.type === 'trace') return right ? touch('vertex', each(c.tracePath)) : [];
-      if (c.type === 'complete') return right ? touch('remaining', each(c.remainingVertices)) : [];
+      if (c.type === 'trace') return touch('vertex', right ? each(c.tracePath) : freeTrace(c) ? [0, 1, 0] : [1]);
+      if (c.type === 'complete') {
+        const open = each(c.remainingVertices);
+        return right ? touch('remaining', open) : open.length > 1 ? touch('remaining', [1]) : [];
+      }
       if (c.type === 'connect-dots') {
         const order = c.correctOrder ?? [];
         return touch('dot', right ? order : [order[1]]);

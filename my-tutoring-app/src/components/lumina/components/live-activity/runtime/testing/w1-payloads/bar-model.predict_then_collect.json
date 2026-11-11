@@ -1,0 +1,239 @@
+{
+ "source": "eval-test route 2026-11-11 (bar-model predict_then_collect, medium)",
+ "primitiveId": "bar-model",
+ "evalMode": "predict_then_collect",
+ "data": {
+  "title": "Our Toy Box Vote",
+  "description": "Let us see which toy the class likes best.",
+  "challenges": [
+   {
+    "id": "bm-1",
+    "evalMode": "predict_then_collect",
+    "values": [
+     {
+      "label": "Blocks",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🧱"
+     },
+     {
+      "label": "Puzzle",
+      "value": 0,
+      "color": "green",
+      "emoji": "🧩"
+     },
+     {
+      "label": "Train",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🚂"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 7,
+     "iconEmoji": "🧱",
+     "iconValue": 1
+    },
+    "prompt": "Which toy do you want to play with first?",
+    "hint": "Look at each toy, then put one sticker in its row.",
+    "sourceItems": [
+     {
+      "emoji": "🧱",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🧱",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🧱",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🧩",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🚂",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🧩",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🧩",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🚂",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🚂",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🚂",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🚂",
+      "categoryIndex": 2
+     }
+    ],
+    "sourceScattered": false,
+    "expectedCounts": [
+     3,
+     3,
+     5
+    ],
+    "showBarValues": false,
+    "showTargetHighlight": false,
+    "supportTier": "medium"
+   },
+   {
+    "id": "bm-2",
+    "evalMode": "predict_then_collect",
+    "values": [
+     {
+      "label": "Apple",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🍎"
+     },
+     {
+      "label": "Crackers",
+      "value": 0,
+      "color": "green",
+      "emoji": "🍘"
+     },
+     {
+      "label": "Cheese",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🧀"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 5,
+     "iconEmoji": "🍎",
+     "iconValue": 1
+    },
+    "prompt": "Which snack do you want to eat?",
+    "hint": "Look at each answer, then put one sticker in its row",
+    "sourceItems": [
+     {
+      "emoji": "🍘",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🍎",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🍘",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🍘",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🧀",
+      "categoryIndex": 2
+     }
+    ],
+    "sourceScattered": false,
+    "expectedCounts": [
+     1,
+     3,
+     1
+    ],
+    "showBarValues": false,
+    "showTargetHighlight": false,
+    "supportTier": "medium"
+   },
+   {
+    "id": "bm-3",
+    "evalMode": "predict_then_collect",
+    "values": [
+     {
+      "label": "Swing",
+      "value": 0,
+      "color": "blue",
+      "emoji": "🛝"
+     },
+     {
+      "label": "Slide",
+      "value": 0,
+      "color": "green",
+      "emoji": "🔵"
+     },
+     {
+      "label": "Tag",
+      "value": 0,
+      "color": "purple",
+      "emoji": "🏃"
+     }
+    ],
+    "graphStyle": "picture",
+    "scale": {
+     "step": 1,
+     "max": 6,
+     "iconEmoji": "🛝",
+     "iconValue": 1
+    },
+    "prompt": "Which game do you like to play best?",
+    "hint": "Look at each game, then put one sticker in its row.",
+    "sourceItems": [
+     {
+      "emoji": "🏃",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🏃",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🛝",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🔵",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🛝",
+      "categoryIndex": 0
+     },
+     {
+      "emoji": "🏃",
+      "categoryIndex": 2
+     },
+     {
+      "emoji": "🔵",
+      "categoryIndex": 1
+     },
+     {
+      "emoji": "🏃",
+      "categoryIndex": 2
+     }
+    ],
+    "sourceScattered": false,
+    "expectedCounts": [
+     2,
+     2,
+     4
+    ],
+    "showBarValues": false,
+    "showTargetHighlight": false,
+    "supportTier": "medium"
+   }
+  ]
+ }
+}

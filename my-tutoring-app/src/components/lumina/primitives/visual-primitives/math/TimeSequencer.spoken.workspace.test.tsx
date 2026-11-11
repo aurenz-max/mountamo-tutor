@@ -30,6 +30,10 @@ const TIME: TimeSequencerChallenge = { id: 't', type: 'match-time-of-day', instr
 const BEFORE: TimeSequencerChallenge = { id: 'ba', type: 'before-after', instruction: 'What happens before school?',
   referenceEvent: ev('s', 'Go to school'), relation: 'before',
   options: [ev('o1', 'Eat breakfast'), ev('o2', 'Eat dinner'), ev('o3', 'Go to bed')], correctEvent: 'o1' };
+const MIDDLE: TimeSequencerChallenge = { id: 'm', type: 'missing-middle', instruction: 'Something is missing in the middle. Which one goes there?',
+  firstEvent: ev('f', 'Brush teeth'), lastEvent: ev('l', 'Put on shoes'),
+  options: [ev('o1', 'Wake up'), ev('o2', 'Eat breakfast'), ev('o3', 'Ride the bus')], correctEvent: 'o2',
+  optionPlaces: { o1: 'before', o3: 'after' } };
 const LONGER: TimeSequencerChallenge = { id: 'd', type: 'duration-compare', instruction: 'Which takes longer?',
   eventA: ev('a', 'Brush teeth'), eventB: ev('b', 'A school day'), correctAnswer: 'B' };
 const SCHEDULE: TimeSequencerChallenge = { id: 'r', type: 'read-schedule', instruction: 'What happens at 10:00?', targetTime: '10:00',
@@ -42,6 +46,7 @@ const SCHEDULE: TimeSequencerChallenge = { id: 'r', type: 'read-schedule', instr
 const SPOKEN: Array<[string, TimeSequencerChallenge, string, string, string]> = [
   ['time-of-day', TIME, 'in the afternoon', 'in the morning', 'Morning'],
   ['before-after', BEFORE, 'eat dinner', 'breakfast', 'Eat breakfast'],
+  ['missing-middle', MIDDLE, 'ride the bus', 'breakfast', 'Eat breakfast'],
   ['duration-compare', LONGER, 'the same', 'the school day', 'A school day'],
   ['read-schedule', SCHEDULE, 'the bus', 'the dinosaurs', 'Explore the dinosaur fossils'],
 ];

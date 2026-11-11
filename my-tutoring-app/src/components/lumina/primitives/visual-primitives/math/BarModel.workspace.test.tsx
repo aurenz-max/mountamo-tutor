@@ -35,7 +35,10 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 const ROWS = [{ label: 'Apples', value: 4, emoji: '🍎' }, { label: 'Pears', value: 2, emoji: '🍐' }, { label: 'Plums', value: 3, emoji: '🟣' }];
 const MODES = ['read_one_to_one', 'most_least', 'compare_bars', 'match_to_bar', 'build_one_to_one', 'say_what_it_shows',
-  'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem', 'build_graph', 'make_graph'] as const;
+  'compare_two_graphs', 'read_scale', 'picture_graph', 'scaled_bar_graph', 'graph_word_problem', 'build_graph', 'make_graph',
+  'predict_then_collect'] as const;
+/** predict_then_collect's answers, in the order they come in: Apples 4, Pears 2, Plums 3. */
+const ARRIVALS = [0, 1, 2, 0, 2, 0, 1, 2, 0];
 const SPOKEN = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs']);
 
 /** One answerable challenge per mode, in the shape the generator emits. */
@@ -48,6 +51,8 @@ function challengeFor(mode: BarModelEvalMode, id: string = mode): BarModelChalle
         ...(mode === 'scaled_bar_graph' || mode === 'read_scale' ? { graphStyle: 'scaled_bar' as const } : {}) };
     case 'most_least': case 'compare_bars': case 'match_to_bar': return { ...base, targetBarIndex: 0 };
     case 'build_one_to_one': return { ...base, values: ROWS.map(r => ({ ...r, value: 0 })), expectedCounts: [4, 2, 3] };
+    case 'predict_then_collect': return { ...base, values: ROWS.map(r => ({ ...r, value: 0 })), expectedCounts: [4, 2, 3],
+      prompt: 'Which fruit do you like best?', sourceItems: ARRIVALS.map(i => ({ emoji: ROWS[i].emoji, categoryIndex: i })) };
     case 'build_graph': return { ...base, graphStyle: 'bar', values: ROWS.map(r => ({ ...r, value: 0 })),
       expectedDataset: ROWS.map(r => ({ label: r.label, value: r.value })), expectedScaleStep: 2, availableScaleSteps: [1, 2, 5] };
     case 'make_graph': return { ...base, values: ROWS.map(r => ({ ...r, value: 0 })), graphRule: { kind: 'most', a: 0 },
@@ -244,4 +249,28 @@ it('validation refuses a spoken graph with no comparison to judge, and a choice 
 
 it('its fixture list covers every catalog mode, and validation holds', () => {
   expect([...LIVE_ADAPTERS['bar-model'].modes].sort()).toEqual([...MODES].sort());
+});
+
+it('predict_then_collect: the guess comes first and no answer shows before it; each answer is recorded as it comes in; '
+  + 'a wrong verdict is wrong_verdict, and Try again keeps the guess', () => {
+  const h = mount('predict_then_collect', [challengeFor('predict_then_collect')]);
+  // Before the guess no answer is drawn and no row takes a sticker.
+  expect(screen.queryByLabelText('the next answer')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Apples row' })).toBeNull();
+  expect(h.state().task!.demand).toMatchObject({ answers: 'hidden until the learner guesses', guess: 'not made yet' });
+  h.choose('Guess Pears');
+  expect(screen.getByLabelText('the next answer').textContent).toBe('🍎');
+  for (const i of ARRIVALS) h.choose(`${ROWS[i].label} row`);
+  expect(h.state().task!.evidence.attemptNumber).toBe(0);
+  h.choose('Yes');
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  expect(JSON.stringify(h.state().task)).toContain('"wrong_verdict"');
+  h.dispatch('retry');
+  expect(h.state().task!.demand).toMatchObject({ guess: 'Pears' });
+  expect(screen.queryByRole('button', { name: 'Guess Pears' })).toBeNull();
+  // A mis-tap is taken back, then the record is finished and the right verdict credited.
+  h.choose('Plums row'); h.choose('Take back the last answer');
+  for (const i of ARRIVALS) h.choose(`${ROWS[i].label} row`);
+  h.choose('No');
+  expect(h.state().task!.evidence.correctness).toBe('correct');
 });

@@ -16,12 +16,15 @@ import { defineCard, SAY_OR_SHOW, SPOKEN_AUDIO } from '../../../components/live-
  * - tile_and_count / estimate_then_tile: `tiled_to_guess` (stopped at the guess, not the end of the object),
  *   `one_short` / `one_over` (a gap or an overlap's worth), `short` / `over`;
  * - two_unit_compare: `chose_bigger_unit` (picked the unit that took fewer);
+ * - measure_compare: `miscounted` (a measurement does not reach the object's end, or goes past it), `picked_other`
+ *   (both counts right, the other object named);
  * - order: `reversed_order` (longest first), `swapped_pair` (two neighbours swapped), `other_order`;
  * - indirect: `chose_shorter` (the other object), `said_same`.
  */
 export type LengthMiss = 'reversed' | 'said_same' | 'missed_same'
   | 'tiled_to_guess' | 'one_short' | 'one_over' | 'short' | 'over'
   | 'chose_bigger_unit'
+  | 'miscounted' | 'picked_other'
   | 'reversed_order' | 'swapped_pair' | 'other_order'
   | 'chose_shorter';
 
@@ -30,6 +33,7 @@ export const LENGTH_MISSES = {
   compare: ['reversed', 'said_same', 'missed_same'],
   estimate_then_tile: ['tiled_to_guess', 'one_short', 'one_over', 'short', 'over'],
   two_unit_compare: ['chose_bigger_unit'],
+  measure_compare: ['miscounted', 'picked_other'],
   tile_and_count: ['one_short', 'one_over', 'short', 'over'],
   order: ['reversed_order', 'swapped_pair', 'other_order'],
   indirect: ['chose_shorter', 'said_same'],
@@ -46,6 +50,9 @@ export const lengthLabCard = defineCard<LengthMiss>({
       moves: `taps a guess (never marked), then ${LAY}`, misses: LENGTH_MISSES.estimate_then_tile },
     two_unit_compare: { answer: 'manipulate', judge: 'activity', flow: 'board',
       moves: 'measures with each unit (+, then Check), then taps the unit needed more of', misses: LENGTH_MISSES.two_unit_compare },
+    measure_compare: { answer: 'manipulate', judge: 'activity', flow: 'board',
+      moves: 'measures the first object (+, then Done), then the second the same way, then taps the object the ask names',
+      misses: LENGTH_MISSES.measure_compare },
     tile_and_count: { answer: 'manipulate', judge: 'activity', flow: 'board', moves: LAY, misses: LENGTH_MISSES.tile_and_count },
     order: { answer: 'manipulate', judge: 'activity', flow: 'board',
       moves: 'taps the objects into the slots, shortest first, then presses Check Order',

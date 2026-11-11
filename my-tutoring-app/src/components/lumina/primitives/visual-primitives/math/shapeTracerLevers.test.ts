@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { ShapeTracerChallenge } from './ShapeTracer';
-import { checkShapeProperties, drawCorners, gridDots, shapeTracerMiss } from './shapeTracerWorkspace';
+import { CORNER_MISSES, checkShapeProperties, drawCorners, gridDots, shapeTracerMiss } from './shapeTracerWorkspace';
 import {
   BARS_LEVER, FADE_LEVER, GLOW_LEVER, NUMBERS_LEVER, OUTLINE_LEVER, RINGS_LEVER, SHAPE_TRACER_LEVERS, SIMPLER_LEVER,
   STRIP_LEVER, cornerRings, glowOffered, guidesWith, practiceItem, practiceLeaks, practiceParent, sideBars, startingLevers,
@@ -142,6 +142,9 @@ it('every miss the catalog lists for a mode is answered by an open lever on ever
       for (const m of misses[mode] ?? []) {
         // sides_unequal is only possible when the clue asks for equal sides.
         if (m === 'sides_unequal' && !c.requiredProperties?.allSidesEqual) continue;
+        // A corner out of turn on a trace or completion that already shows every guide and is the smallest of its kind
+        // (a triangle, one open corner): nothing is left to pull, so the tutor coaches it in words.
+        if ((CORNER_MISSES as readonly string[]).includes(m) && levers.every(l => l.pulled) && !practiceItem(c)) continue;
         expect(levers.some(l => !l.pulled && l.answers?.includes(m)), `${mode} ${c.id} ${m}`).toBe(true);
       }
       const p = practiceItem(c);

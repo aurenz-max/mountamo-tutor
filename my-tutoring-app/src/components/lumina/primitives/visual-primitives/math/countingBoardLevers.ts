@@ -15,6 +15,7 @@
  * - `smaller_give` (easier): about half as many, at least two, from the same pile (or an empty scene of its size).
  * - `two_hands` (custom): the hand farthest from the group is gone; only when one hand is uniquely farthest.
  * - `pair_up` (custom): after a wrong hand, the group in a row above the fingers of that hand, joined pair by pair.
+ * - `line_up` on name_numeral (layout): a wrong numeral card is a miscount, so the board's objects go into one row.
  * The spoken modes:
  * - `five_groups` (subitize, layout): rows of five; at K also another look at the flash.
  * - `tag_one_group` (group, marks): the first group numbered one to its size, only where the board draws its groups.
@@ -170,6 +171,10 @@ export const COUNTING_LEVERS = leverSet<CountingItem, CountingLeverContext>({
     // A hand match: the row answers a hand one off; a far hand is what `two_hands` answers.
     { id: LINE_LEVER, type: 'layout', modes: HAND, answers: ['one_short', 'one_over'], offer: row,
       when: 'The learner cannot take the group in at a glance while it is spread out.', does: ROW_DOES, fact: ROW_FACT },
+    // A numeral card off from the board: the count went wrong, so the row is the help (a 0 or 1 board gets none).
+    { id: LINE_LEVER, type: 'layout', modes: ['name_numeral'], answers: OFF_BY, offer: row,
+      when: item => `The learner taps a number card that is not how many ${item.objectWord} are on a spread-out board.`,
+      does: ROW_DOES, fact: ROW_FACT },
     { id: LINE_LEVER, type: 'layout', modes: ['count', 'count_on'], answers: ['skipped_a_number', 'one_short', 'one_over'], offer: row,
       when: item => `The learner skips or repeats ${item.objectWord} while counting a spread-out board.`, does: ROW_DOES, fact: ROW_FACT },
     { id: LINE_LEVER, type: 'layout', modes: ['take_away', 'add_more', 'recount_moved'], answers: ['one_short', 'one_over'], offer: row,

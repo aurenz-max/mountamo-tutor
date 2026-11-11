@@ -26,10 +26,11 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import { timeSequencerBoss } from './timeSequencer.boss';
-import { EMPTY_TIME_VIEW, describeTimeWork, timeScene, timeSequencerMiss, type TimeView } from './timeSequencerWorkspace';
+import { EMPTY_TIME_VIEW, describeTimeWork, isOrdering, timeScene, timeSequencerMiss, type TimeView } from './timeSequencerWorkspace';
 import {
-  DAY_ANCHORS_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, OPTION_PICTURES_LEVER, PRACTICE_NOTE, RELATION_MODEL_LEVER,
-  SKY_STRIP_LEVER, TIME_LEVERS, dayAnchors, durationModel, optionPictures, relationModel, tierPulled,
+  DAY_ANCHORS_LEVER, DURATION_LADDER_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, MIDDLE_MODEL_LEVER, OPTION_PICTURES_LEVER,
+  PRACTICE_NOTE, RELATION_MODEL_LEVER, SKY_STRIP_LEVER, TIME_LEVERS, dayAnchors, durationLadder, durationModel, middleModel,
+  optionPictures, relationModel, tierPulled,
 } from './timeSequencerLevers';
 
 // ============================================================================
@@ -58,6 +59,11 @@ export interface EventCard {
    * challenge whose events are not all on the hour.
    */
   clockHour?: number;
+  /**
+   * duration-order: about how many minutes the activity takes. The order key is derived from it in code
+   * (shortest first), and it is NEVER drawn: a number on the card would be the answer.
+   */
+  minutes?: number;
 }
 
 export interface ScheduleEntry {
@@ -68,10 +74,11 @@ export interface ScheduleEntry {
 
 export interface TimeSequencerChallenge {
   id: string;
-  type: 'sequence-events' | 'clock-sequence' | 'match-time-of-day' | 'before-after' | 'duration-compare' | 'read-schedule';
+  type: 'sequence-events' | 'clock-sequence' | 'match-time-of-day' | 'before-after' | 'duration-compare' | 'read-schedule'
+    | 'missing-middle' | 'duration-order';
   instruction: string;
 
-  // sequence-events
+  // sequence-events, clock-sequence, duration-order
   events?: EventCard[];
   correctOrder?: string[];
 
@@ -86,6 +93,12 @@ export interface TimeSequencerChallenge {
   relation?: 'before' | 'after';
   options?: EventCard[];
   correctEvent?: string;
+
+  // missing-middle: the first and last step of a routine, the middle one picked from `options` (key `correctEvent`).
+  firstEvent?: EventCard;
+  lastEvent?: EventCard;
+  /** Where each wrong option sits in the routine: before the first card or after the last one (its named miss). */
+  optionPlaces?: Record<string, 'before' | 'after'>;
 
   // duration-compare
   eventA?: EventCard;
@@ -143,15 +156,22 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'clock-sequence': { label: 'Clock Order', icon: '🕐', accentColor: 'purple' },
   'match-time-of-day': { label: 'Time of Day', icon: '🌅', accentColor: 'orange' },
   'before-after': { label: 'Before/After', icon: '⏪', accentColor: 'blue' },
+  'missing-middle': { label: 'Missing Step', icon: '🧩', accentColor: 'blue' },
   'duration-compare': { label: 'Duration', icon: '⏱️', accentColor: 'emerald' },
+  'duration-order': { label: 'How Long', icon: '⏳', accentColor: 'emerald' },
   'read-schedule': { label: 'Schedule', icon: '📅', accentColor: 'cyan' },
 };
 
-const PERIOD_DISPLAY: Record<string, { label: string; emoji: string; color: string }> = {
-  morning: { label: 'Morning', emoji: '🌅', color: 'bg-amber-500/20 border-amber-400/50 text-amber-300' },
-  afternoon: { label: 'Afternoon', emoji: '☀️', color: 'bg-yellow-500/20 border-yellow-400/50 text-yellow-300' },
-  evening: { label: 'Evening', emoji: '🌇', color: 'bg-orange-500/20 border-orange-400/50 text-orange-300' },
-  night: { label: 'Night', emoji: '🌙', color: 'bg-indigo-500/20 border-indigo-400/50 text-indigo-300' },
+/**
+ * The four parts of the day, each with where the sun (or moon) sits in it (`sun`, a day fraction). Every choice draws
+ * its own sky strip, so the child matches the activity to a picture of the sky; the activity card itself has none,
+ * because a sky drawn at the activity's time would be the answer (TIME001-01-A).
+ */
+const PERIOD_DISPLAY: Record<string, { label: string; emoji: string; color: string; sun: number }> = {
+  morning: { label: 'Morning', emoji: '🌅', color: 'bg-amber-500/20 border-amber-400/50 text-amber-300', sun: 0.33 },
+  afternoon: { label: 'Afternoon', emoji: '☀️', color: 'bg-yellow-500/20 border-yellow-400/50 text-yellow-300', sun: 0.58 },
+  evening: { label: 'Evening', emoji: '🌇', color: 'bg-orange-500/20 border-orange-400/50 text-orange-300', sun: 0.76 },
+  night: { label: 'Night', emoji: '🌙', color: 'bg-indigo-500/20 border-indigo-400/50 text-indigo-300', sun: 0.93 },
 };
 
 // ============================================================================
@@ -209,15 +229,6 @@ function skyWindowFor(fractions: (number | undefined)[]): [number, number] {
 }
 
 /**
- * The sun (or moon) drawn on a slice of sky at the event's own time — the pre-reader's
- * replacement for the printed clock time.
- *
- * It is a POSITION, not one of four sky emojis, on purpose: three events inside one
- * morning would all be the same sunrise picture and the child could not order them.
- * The marker slides monotonically with the time, so two events that differ in time
- * differ on screen.
- */
-/**
  * A small analog face at a whole hour — the PICTURE form of a clock time.
  *
  * The hour hand is the load-bearing mark and is drawn short and thick; the
@@ -268,7 +279,16 @@ const ClockFace: React.FC<{ hour: number; size?: number; numbers?: boolean }> = 
   );
 };
 
-const SkyStrip: React.FC<{ fraction: number; window?: [number, number] }> = ({ fraction, window }) => {
+/**
+ * The sun (or moon) drawn on a slice of sky at the event's own time — the pre-reader's
+ * replacement for the printed clock time.
+ *
+ * It is a POSITION, not one of four sky emojis, on purpose: three events inside one
+ * morning would all be the same sunrise picture and the child could not order them.
+ * The marker slides monotonically with the time, so two events that differ in time
+ * differ on screen.
+ */
+const SkyStrip: React.FC<{ fraction: number; window?: [number, number]; className?: string }> = ({ fraction, window, className = '' }) => {
   const clamped = Math.min(1, Math.max(0, fraction));
   const [start, end] = window ?? [0, 1];
   const span = Math.max(0.02, end - start);
@@ -287,7 +307,7 @@ const SkyStrip: React.FC<{ fraction: number; window?: [number, number] }> = ({ f
     <div
       aria-hidden
       data-sky-strip
-      className="relative mt-1 h-3.5 w-full max-w-[150px] rounded-full overflow-hidden border border-white/10"
+      className={`relative mt-1 h-3.5 w-full max-w-[150px] rounded-full overflow-hidden border border-white/10 ${className}`}
       style={{ background: `linear-gradient(90deg, ${gradient})` }}
     >
       <span
@@ -378,6 +398,9 @@ const seededOrder = (c: TimeSequencerChallenge | undefined | null): string[] =>
   c && (c.type === 'sequence-events' || c.type === 'clock-sequence') && c.prelabelFirstSlot && (c.correctOrder?.length ?? 0) > 1
     ? [c.correctOrder![0]] : [];
 
+/** The bar a model activity is drawn with, by how long it takes (a log scale, so a blink still shows). */
+const barWidth = (minutes: number) => Math.round(8 + (Math.log10(Math.max(0.05, minutes)) + 1.4) / 4.2 * 82);
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -461,13 +484,13 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
 
-  // sequence-events: ordered list built by tapping events
+  // sequence-events, clock-sequence, duration-order: ordered list built by tapping cards
   const [orderedEvents, setOrderedEvents] = useState<string[]>([]);
 
   // match-time-of-day
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
 
-  // before-after
+  // before-after, missing-middle: the option card picked
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
 
   // duration-compare
@@ -531,7 +554,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     if (!currentChallenge) return false;
     const correct = JSON.stringify(orderedEvents) === JSON.stringify(currentChallenge.correctOrder);
     if (correct) {
-      setFeedback('Perfect order! You know the sequence!');
+      setFeedback(currentChallenge.type === 'duration-order' ? 'Yes! From the quickest to the longest!' : 'Perfect order! You know the sequence!');
       setFeedbackType('success');
     } else {
       // Count how many are in the right position
@@ -574,6 +597,25 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     return correct;
   }, [currentChallenge, selectedEvent]);
 
+  const handleCheckMiddle = useCallback(() => {
+    if (!currentChallenge || !selectedEvent) return false;
+    const correct = selectedEvent === currentChallenge.correctEvent;
+    if (correct) {
+      setFeedback('Yes! That one goes in the middle!');
+      setFeedbackType('success');
+    } else {
+      // Never the answer: where the picked card sits, said as the routine's own order.
+      const place = currentChallenge.optionPlaces?.[selectedEvent];
+      setFeedback(place === 'before'
+        ? `Not quite. That one happens before "${currentChallenge.firstEvent?.label}".`
+        : place === 'after'
+          ? `Not quite. That one happens after "${currentChallenge.lastEvent?.label}".`
+          : 'Not quite. What happens between the first card and the last one?');
+      setFeedbackType('error');
+    }
+    return correct;
+  }, [currentChallenge, selectedEvent]);
+
   const handleCheckDuration = useCallback(() => {
     if (!currentChallenge || !durationAnswer) return false;
     const correct = durationAnswer === currentChallenge.correctAnswer;
@@ -611,11 +653,13 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
 
     let correct = false;
     switch (currentChallenge.type) {
-      // clock-sequence IS the ordering interaction — same gesture, same
-      // `correctOrder` key. What differs is what each card carries.
-      case 'sequence-events': case 'clock-sequence': correct = handleCheckSequence(); break;
+      // clock-sequence and duration-order ARE the ordering interaction — same
+      // gesture, same `correctOrder` key. What differs is what each card carries
+      // and what the order is by.
+      case 'sequence-events': case 'clock-sequence': case 'duration-order': correct = handleCheckSequence(); break;
       case 'match-time-of-day': correct = handleCheckTimeOfDay(); break;
       case 'before-after': correct = handleCheckBeforeAfter(); break;
+      case 'missing-middle': correct = handleCheckMiddle(); break;
       case 'duration-compare': correct = handleCheckDuration(); break;
       case 'read-schedule': correct = handleCheckSchedule(); break;
     }
@@ -627,7 +671,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     const work = timeView.current;
     commitCheck.current(describeTimeWork(currentChallenge, work), correct,
       correct ? undefined : timeSequencerMiss(currentChallenge, work));
-  }, [currentChallenge, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckDuration, handleCheckSchedule]);
+  }, [currentChallenge, handleCheckSequence, handleCheckTimeOfDay, handleCheckBeforeAfter, handleCheckMiddle, handleCheckDuration, handleCheckSchedule]);
 
   // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
   // evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
@@ -653,7 +697,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     if (!solved || tappedCorrect.current === solved.id) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
     if (solved.type === 'match-time-of-day') setSelectedPeriod(solved.correctPeriod ?? null);
-    else if (solved.type === 'before-after') setSelectedEvent(solved.correctEvent ?? null);
+    else if (solved.type === 'before-after' || solved.type === 'missing-middle') setSelectedEvent(solved.correctEvent ?? null);
     else if (solved.type === 'duration-compare') setDurationAnswer(solved.correctAnswer ?? null);
     else if (solved.type === 'read-schedule') setScheduleAnswer(solved.correctActivity ?? null);
     setFeedback("Yes, that's right!");
@@ -665,7 +709,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
   practiceAloud.current = (source) => {
     if (source !== 'speech' || !practice) return;
     if (practice.type === 'match-time-of-day') setSelectedPeriod(practice.correctPeriod ?? null);
-    else if (practice.type === 'before-after') setSelectedEvent(practice.correctEvent ?? null);
+    else if (practice.type === 'before-after' || practice.type === 'missing-middle') setSelectedEvent(practice.correctEvent ?? null);
     else if (practice.type === 'duration-compare') setDurationAnswer(practice.correctAnswer ?? null);
     else if (practice.type === 'read-schedule') setScheduleAnswer(practice.correctActivity ?? null);
     setFeedback("Yes, that's right!");
@@ -744,10 +788,12 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     switch (currentChallenge.type) {
       case 'sequence-events':
       case 'clock-sequence':
+      case 'duration-order':
         return orderedEvents.length === (currentChallenge.events?.length ?? 0);
       case 'match-time-of-day':
         return !!selectedPeriod;
       case 'before-after':
+      case 'missing-middle':
         return !!selectedEvent;
       case 'duration-compare':
         return !!durationAnswer;
@@ -771,29 +817,47 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
 
   // ── Render Helpers ─────────────────────────────────────────────────
 
+  /** The bar a lever's model activity is drawn with: as long as it takes. */
+  const modelBar = (card: { label: string; emoji: string }, width: number, key?: string) => (
+    <div key={key ?? card.label} className="flex items-center gap-2">
+      <span className="w-40 truncate text-xs text-slate-300"><span aria-hidden className="mr-1">{card.emoji}</span>{card.label}</span>
+      <div className="h-2.5 rounded-full bg-emerald-400/70" data-lever="duration-bar" style={{ width: `${width}%` }} />
+    </div>
+  );
+
   const renderSequenceEvents = () => {
     if (!currentChallenge) return null;
     const events = shuffledEvents;
+    const byDuration = currentChallenge.type === 'duration-order';
     // One window for every card in this challenge — a per-card window would put each
     // sun in the middle of its own strip and destroy the comparison.
     const skyWindow = skyWindowFor(events.map((e) => e.dayFraction));
     const unselected = events.filter((e) => !orderedEvents.includes(e.id));
     const selected = orderedEvents.map((id) => events.find((e) => e.id === id)!).filter(Boolean);
+    // duration-order draws no time anchor and no sky: neither says how LONG an activity takes, and the minutes are the key.
     const cardProps = {
-      showTime: currentChallenge.showTimeAnchors,
-      showSky: skyOn,
+      showTime: !byDuration && currentChallenge.showTimeAnchors,
+      showSky: !byDuration && skyOn,
       showClock: currentChallenge.showClockFace,
       clockNumbers: leverOn(FACE_NUMBERS_LEVER),
       skyWindow,
       disabled: isCurrentChallengeCorrect,
     };
+    const ladder = byDuration && leverOn(DURATION_LADDER_LEVER) ? durationLadder(currentChallenge) : null;
 
     return (
       <div className="space-y-4">
+        {/* The duration_ladder lever: three OTHER activities, shortest to longest, each with a bar as long as it takes. */}
+        {ladder && (
+          <div data-lever="duration-ladder" className="space-y-1 rounded-xl border border-white/10 bg-slate-800/20 p-2">
+            {ladder.map((card) => modelBar(card, barWidth(card.minutes)))}
+          </div>
+        )}
+
         {/* Selected order */}
         {selected.length > 0 && (
           <div className="space-y-2">
-            <span className="text-slate-400 text-xs font-medium">Your order:</span>
+            <span className="text-slate-400 text-xs font-medium">{byDuration ? 'Shortest first:' : 'Your order:'}</span>
             {selected.map((event, i) => (
               <EventCardVisual key={event.id} event={event} index={i} selected {...cardProps}
                 onClick={() => handleToggleSequenceEvent(event.id)} />
@@ -805,7 +869,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
         {unselected.length > 0 && (
           <div className="space-y-2">
             <span className="text-slate-400 text-xs font-medium">
-              {selected.length === 0 ? 'Tap events in order:' : 'Remaining:'}
+              {selected.length === 0 ? (byDuration ? 'Tap the quickest one first:' : 'Tap events in order:') : 'Remaining:'}
             </span>
             {unselected.map((event) => (
               <EventCardVisual key={event.id} event={event} {...cardProps}
@@ -822,7 +886,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     const anchors = leverOn(DAY_ANCHORS_LEVER) ? dayAnchors(currentChallenge) : null;
     return (
       <div className="space-y-4">
-        {/* No time anchor here — the clock time would reveal the period (the answer). */}
+        {/* No time anchor and no sky on the activity card — the clock time or the sky at its time would reveal the
+            period (the answer). The sky goes on every CHOICE instead: each part of the day with its own sun. */}
         <div className="flex justify-center">
           <EventCardVisual event={currentChallenge.event} disabled className="max-w-xs" />
         </div>
@@ -845,6 +910,9 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
             >
               <span className="text-2xl block">{display.emoji}</span>
               <span className="text-sm font-medium">{display.label}</span>
+              <span className="flex justify-center" data-period-sky={period}>
+                <SkyStrip fraction={display.sun} className="mx-auto" />
+              </span>
               {anchors && (
                 <span data-lever="day-anchor" className="mt-1 block text-xs text-slate-400">
                   <span className="text-lg mr-1" aria-hidden>{anchors[period as keyof typeof anchors].emoji}</span>
@@ -910,17 +978,71 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
     );
   };
 
+  const renderMissingMiddle = () => {
+    if (!currentChallenge) return null;
+    const { firstEvent, lastEvent } = currentChallenge;
+    const opts = currentChallenge.options || [];
+    const placed = opts.find((o) => o.id === selectedEvent);
+    const model = leverOn(MIDDLE_MODEL_LEVER) ? middleModel(currentChallenge) : null;
+    const endCard = (card: EventCard | undefined, key: string) => card && (
+      <div key={key} className="flex w-24 flex-col items-center rounded-xl border-2 border-white/10 bg-slate-800/30 px-2 py-2 text-center">
+        <span className="text-2xl" aria-hidden>{card.emoji}</span>
+        <span className="text-xs text-slate-200">{card.label}</span>
+      </div>
+    );
+
+    return (
+      <div className="space-y-4">
+        {/* The middle_model lever: three OTHER cards in day order, the middle one marked. */}
+        {model && (
+          <div data-lever="middle-model" className="flex items-end justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/20 p-2">
+            {model.map((card, i) => (
+              <React.Fragment key={card.label}>
+                {i > 0 && <span className="pb-6 text-slate-500" aria-hidden>→</span>}
+                <div className={`flex flex-col items-center rounded-lg px-2 py-1 ${i === 1 ? 'border border-blue-400/40' : ''}`}>
+                  <span className="text-2xl" aria-hidden>{card.emoji}</span>
+                  <span className="text-xs text-slate-300">{card.label}</span>
+                  <span className="min-h-4 text-[11px] font-bold text-blue-300">{i === 1 ? 'middle' : ''}</span>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+        {/* The routine: first card, the empty middle place (the picked card goes in it), last card. The empty place
+            looks the same whatever the answer is. */}
+        <div className="flex items-center justify-center gap-2" data-pip-object="routine">
+          {endCard(firstEvent, 'first')}
+          <span className="text-slate-500" aria-hidden>→</span>
+          <div data-middle-slot
+            className={`flex h-[72px] w-24 flex-col items-center justify-center rounded-xl border-2 border-dashed px-2 text-center ${
+              placed ? 'border-emerald-400/60 bg-emerald-500/10' : 'border-white/20 bg-slate-800/20'}`}>
+            {placed
+              ? <><span className="text-2xl" aria-hidden>{placed.emoji}</span><span className="text-xs text-slate-200">{placed.label}</span></>
+              : <span className="text-2xl text-slate-500">?</span>}
+          </div>
+          <span className="text-slate-500" aria-hidden>→</span>
+          {endCard(lastEvent, 'last')}
+        </div>
+        <div className="space-y-2">
+          {opts.map((event) => (
+            <EventCardVisual
+              key={event.id}
+              event={event}
+              selected={selectedEvent === event.id}
+              onClick={() => pick(() => setSelectedEvent(event.id))}
+              disabled={isCurrentChallengeCorrect}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderDurationCompare = () => {
     if (!currentChallenge) return null;
     const { eventA, eventB } = currentChallenge;
     if (!eventA || !eventB) return null;
     const model = leverOn(DURATION_MODEL_LEVER) ? durationModel(currentChallenge) : null;
-    const bar = (card: { label: string; emoji: string }, width: number) => (
-      <div key={card.label} className="flex items-center gap-2">
-        <span className="w-40 truncate text-xs text-slate-300"><span aria-hidden className="mr-1">{card.emoji}</span>{card.label}</span>
-        <div className="h-2.5 rounded-full bg-emerald-400/70" data-lever="duration-bar" style={{ width: `${width}%` }} />
-      </div>
-    );
     const side = (key: 'A' | 'B', event: EventCard) => (
       <button
         type="button"
@@ -943,8 +1065,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
         {/* The duration_model lever: two OTHER pairs, each activity with a bar as long as it takes. */}
         {model && (
           <div data-lever="duration-model" className="space-y-2 rounded-xl border border-white/10 bg-slate-800/20 p-2">
-            <div className="space-y-1">{bar(model.far[0], 6)}{bar(model.far[1], 55)}</div>
-            <div className="space-y-1 border-t border-white/5 pt-1">{bar(model.same[0], 14)}{bar(model.same[1], 14)}</div>
+            <div className="space-y-1">{modelBar(model.far[0], 6)}{modelBar(model.far[1], 55)}</div>
+            <div className="space-y-1 border-t border-white/5 pt-1">{modelBar(model.same[0], 14)}{modelBar(model.same[1], 14)}</div>
           </div>
         )}
         <div className="grid grid-cols-2 gap-4">
@@ -1112,9 +1234,10 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId }: TimeSequen
                 activity as one region, never a single card or choice. */}
             <PipDock />
             <PipWorkspace className="space-y-4">
-              {(currentChallenge.type === 'sequence-events' || currentChallenge.type === 'clock-sequence') && renderSequenceEvents()}
+              {isOrdering(currentChallenge) && renderSequenceEvents()}
               {currentChallenge.type === 'match-time-of-day' && renderMatchTimeOfDay()}
               {currentChallenge.type === 'before-after' && renderBeforeAfter()}
+              {currentChallenge.type === 'missing-middle' && renderMissingMiddle()}
               {currentChallenge.type === 'duration-compare' && renderDurationCompare()}
               {currentChallenge.type === 'read-schedule' && renderReadSchedule()}
 

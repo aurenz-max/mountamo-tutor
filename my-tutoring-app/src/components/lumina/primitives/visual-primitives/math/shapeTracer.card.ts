@@ -7,17 +7,19 @@
 import { defineCard } from '../../../components/live-activity/boss';
 
 /**
- * What a wrong check shows (`shapeTracerMiss`, `TeachingAttempt.miss`, handoff 20). Only connect-dots and
- * draw-from-description have a wrong check: a trace or completion tap that is not the next corner is refused on the
- * dot, never checked.
+ * What a wrong check shows (`shapeTracerMiss`, `TeachingAttempt.miss`, handoff 20). Every mode has a wrong check:
+ * - trace and complete, from the corner tapped instead of the next one (a tap out of turn counts as an attempt):
+ *   `started_elsewhere` (the first tap is not where the trace starts, or not where the drawn sides stop),
+ *   `skipped_corner` (a corner further on), `went_back` (a corner already tapped);
  * - connect-dots, from the dot tapped instead of the next number: `went_back` (a dot already joined),
  *   `started_elsewhere` (the first tap is not the first number), `skipped_number` (a later number);
  * - draw-from-description, from the checked corners: `too_few_sides`, `too_many_sides`, `sides_unequal` (the
  *   right count, but the clue asks for sides of one length and these are not).
  */
-export type ShapeTracerMiss = 'went_back' | 'started_elsewhere' | 'skipped_number'
+export type ShapeTracerMiss = 'went_back' | 'started_elsewhere' | 'skipped_number' | 'skipped_corner'
   | 'too_few_sides' | 'too_many_sides' | 'sides_unequal';
 
+export const CORNER_MISSES: readonly ShapeTracerMiss[] = ['started_elsewhere', 'skipped_corner', 'went_back'];
 export const DOT_MISSES: readonly ShapeTracerMiss[] = ['started_elsewhere', 'skipped_number', 'went_back'];
 export const DRAW_MISSES: readonly ShapeTracerMiss[] = ['too_few_sides', 'too_many_sides', 'sides_unequal'];
 
@@ -28,11 +30,11 @@ export const shapeTracerCard = defineCard<ShapeTracerMiss>({
   grades: ['Kindergarten', 'Grade 1'],
   // Every mode publishes levers (`shapeTracerLevers.ts`).
   modes: {
-    trace: { ...TAPPED, misses: [],
+    trace: { ...TAPPED, misses: CORNER_MISSES,
       moves: 'taps the corners on the canvas one after another (Undo takes back the last); the shape closes on the last one' },
     connect_dots: { ...TAPPED, misses: DOT_MISSES,
       moves: 'taps the numbered dots in number order, starting at 1 (Undo takes back the last); the shape appears when every dot is joined' },
-    complete: { ...TAPPED, misses: [],
+    complete: { ...TAPPED, misses: CORNER_MISSES,
       moves: 'taps the open corners one after another, carrying on from where the drawn sides stop (Undo takes back the last); '
         + 'the shape closes on the last one' },
     draw_from_description: { ...TAPPED, misses: DRAW_MISSES,

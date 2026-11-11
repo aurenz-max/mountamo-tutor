@@ -13,6 +13,7 @@ export const STRATEGY_LABELS: Record<StrategyId, string> = {
   'counting-on': 'Counting On',
   'counting-back': 'Counting Back',
   'make-ten': 'Make Ten',
+  'ten-frame': 'Ten Frame',
   'doubles': 'Doubles',
   'near-doubles': 'Near Doubles',
   'tally-marks': 'Tally Marks',
@@ -47,7 +48,7 @@ export function strategyPickerMatches(c: StrategyPickerChallenge, v: StrategyPic
 /** Strategies that draw the same kind of picture: a number line, equal groups, or every object counted. */
 export const PICTURE_KIND: Record<StrategyId, string> = {
   'counting-on': 'line', 'counting-back': 'line', doubles: 'groups', 'near-doubles': 'groups',
-  'tally-marks': 'count-all', 'draw-objects': 'count-all', 'make-ten': 'frame',
+  'tally-marks': 'count-all', 'draw-objects': 'count-all', 'make-ten': 'frame', 'ten-frame': 'frame',
 };
 
 /** What a wrong Check shows (`TeachingAttempt.miss`); the misses are listed on the card. */
@@ -80,6 +81,8 @@ const PICTURES: Record<StrategyId, string> = {
   'counting-on': 'a number line with a dot on the first number and one +1 hop for each of the second',
   'counting-back': 'a number line with a dot on the first number and one −1 hop for each of the second',
   'make-ten': 'a ten frame: the first number in blue counters, the second in yellow',
+  'ten-frame': 'an empty ten frame the learner fills by tapping: each tap puts in the next counter, top row first, blue '
+    + 'for the first number and then yellow; tapping the last counter takes it out',
   'doubles': 'two equal groups of dots',
   'near-doubles': 'two equal groups of dots and one extra dot',
   'tally-marks': 'tally marks for both numbers together',
@@ -113,7 +116,8 @@ function coaching(c: StrategyPickerChallenge, tier: StrategyPickerTier | undefin
   return 'Do not re-teach the strategy. Ask what the learner sees in the picture.';
 }
 
-export function strategyPickerScene(c: StrategyPickerChallenge, view: { chosen: StrategyId | null; supportTier?: StrategyPickerTier },
+export function strategyPickerScene(c: StrategyPickerChallenge,
+  view: { chosen: StrategyId | null; supportTier?: StrategyPickerTier; framePlaced?: number },
   introduced: StrategyId[] = []): SceneOf {
   const tier = c.supportTier ?? view.supportTier;
   const tip = coaching(c, tier);
@@ -128,6 +132,8 @@ export function strategyPickerScene(c: StrategyPickerChallenge, view: { chosen: 
     ...(menu.length ? { menu: menu.map(strategyLabel).join(' | ') } : {}),
     ...(c.type === 'choose-your-strategy' ? { chosen: view.chosen ? strategyLabel(view.chosen) : 'none yet' } : {}),
     ...(drawn && solves(c) ? { picture: PICTURES[drawn] } : {}),
+    // The learner's own counters on the ten frame they fill.
+    ...(drawn === 'ten-frame' && solves(c) ? { countersPlaced: view.framePlaced ?? 0 } : {}),
     ...(c.type === 'match-strategy' ? {
       workedSolution: c.workedSolution ?? '',
       choices: (c.strategyOptions ?? []).map(strategyLabel).join(' | '),

@@ -24,7 +24,7 @@ import { leverScene } from '../../../components/live-activity/bossLevers';
 import { lengthLabBoss } from './lengthLab.boss';
 import { describeLengthWork, lengthLabMatches, lengthMiss, lengthScene, type LengthView } from './lengthLabWorkspace';
 import {
-  CHAIN_MODEL_LEVER, END_LINES_LEVER, LENGTH_LEVERS, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER,
+  CHAIN_MODEL_LEVER, COUNT_ROWS_LEVER, END_LINES_LEVER, LENGTH_LEVERS, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER,
   WORD_MODEL_LEVER,
 } from './lengthLabLevers';
 import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
@@ -41,7 +41,9 @@ export interface LengthLabChallenge {
   type:
     | 'compare' | 'tile_and_count' | 'order' | 'indirect'
     // K measuring family: guess before you measure, and measure the same thing twice.
-    | 'estimate_then_tile' | 'two_unit_compare';
+    | 'estimate_then_tile' | 'two_unit_compare'
+    // Measure two objects with the same unit, then compare them by the counts (MEAS001-01-D, -05-F).
+    | 'measure_compare';
   instruction: string;
   hint: string;
   narration: string;
@@ -66,6 +68,9 @@ export interface LengthLabChallenge {
    *  estimate is RECORDED, never marked right or wrong — a guess that can be
    *  wrong is not a guess. Code-owned so the true count is always among them. */
   estimateOptions?: number[];
+  /** measure_compare: the word the ask compares by. The key (`correctAnswer`) is the object it picks, re-derived from
+   *  the two lengths (`measureCompareAnswer`); object 1's count is `correctUnitCountB`. */
+  compareWord?: 'longer' | 'shorter';
   /** two_unit_compare: the second unit the same object is measured with. */
   unitTypeB?: string;
   correctUnitCountB?: number;
@@ -107,6 +112,7 @@ export interface LengthLabData {
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   estimate_then_tile: { label: 'Guess, Then Measure', icon: '🤔', accentColor: 'amber' },
   two_unit_compare:   { label: 'Two Units',           icon: '⚖️', accentColor: 'purple' },
+  measure_compare:    { label: 'Measure & Compare',   icon: '📐', accentColor: 'emerald' },
   compare:        { label: 'Compare',        icon: '↔️', accentColor: 'blue' },
   tile_and_count: { label: 'Tile & Count',   icon: '🧱', accentColor: 'emerald' },
   order:          { label: 'Order',           icon: '📏', accentColor: 'purple' },
@@ -263,9 +269,11 @@ interface TilingWorkspaceProps {
   onCountChange?: (count: number) => void;
   /** object_outline lever: a dashed outline of the object's length behind the units. */
   outline?: boolean;
+  /** No verdict on this row: its button says Done and it records the count. The item's own check judges it later. */
+  quiet?: boolean;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, revealOnMiss = true, onCountChange, outline = false }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, revealOnMiss = true, onCountChange, outline = false, quiet = false }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -299,8 +307,8 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
 
   const tileWidthPx = UNIT_WIDTH * Math.max(1, unitSpan);
   const unitWidthPx = placedUnits * tileWidthPx;
-  const isCorrect = submitted && placedUnits === correctCount;
-  const isWrong = submitted && placedUnits !== correctCount;
+  const isCorrect = !quiet && submitted && placedUnits === correctCount;
+  const isWrong = !quiet && submitted && placedUnits !== correctCount;
 
   return (
     <div className="space-y-4">
@@ -375,7 +383,7 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
             onClick={handleSubmit}
             disabled={disabled}
           >
-            Check
+            {quiet ? 'Done' : 'Check'}
           </Button>
         )}
       </div>
@@ -812,6 +820,14 @@ const LengthLabSurface = ({ data, runtimePlanItemId }: LengthLabProps) => {
     if (commit(view({ answer: answerUnit }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
   };
 
+  /** measure_compare: the object named after both measurements; the check reads both counts and the choice. */
+  const handleMeasureAnswer = (name: string) => {
+    if (!currentChallenge || showFeedback || learnerBlocked()) return;
+    setSelectedAnswer(name);
+    setShowFeedback(true);
+    if (commit(view({ answer: name }))) SoundManager.playCorrect(); else SoundManager.playIncorrect();
+  };
+
   // ── Handle tile completion ──
   const handleTileComplete = (count: number) => {
     if (!currentChallenge) return;
@@ -843,7 +859,8 @@ const LengthLabSurface = ({ data, runtimePlanItemId }: LengthLabProps) => {
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
     const scene = lengthScene(currentChallenge, view());
-    const ctx = { ticksShown: !!sessionChallenge.showUnitTicks, sessionUnit: unitType, guessed: estimate !== null };
+    const ctx = { ticksShown: !!sessionChallenge.showUnitTicks, sessionUnit: unitType, guessed: estimate !== null,
+      measuredBoth: unitACount !== null && unitBCount !== null };
     const onScreen = practice ? '' : LENGTH_LEVERS.onScreen(sessionChallenge, ctx, pulledLevers);
     const levers = practice ? [] : LENGTH_LEVERS.declare(sessionChallenge, ctx, pulledLevers);
     workspace.current = {
@@ -1056,6 +1073,91 @@ const LengthLabSurface = ({ data, runtimePlanItemId }: LengthLabProps) => {
                 ) : null}
               </div>
             ) : null}
+          </div>
+        );
+      }
+
+      // ── Measure two objects with the same unit, one at a time, then compare by the counts. Only the object being
+      // measured is drawn, so the comparison is read from the two counts, not by eye. No row is judged on its own:
+      // the item's check reads both counts and the choice. ──
+      case 'measure_compare': {
+        const unitWords = unitA.replace('_', ' ');
+        const measuring = unitACount === null ? 0 : unitBCount === null ? 1 : null;
+        const correct = showFeedback && lengthLabMatches(ch, view());
+        const rows: Array<[number, string]> = [[unitACount ?? 0, ch.objectColor0], [unitBCount ?? 0, ch.objectColor1]];
+        return (
+          <div className="space-y-5">
+            {unitACount !== null ? (
+              <div className="space-y-1 text-sm text-slate-300">
+                <p>The {ch.objectName0}: you laid <span className="font-mono text-emerald-300">{unitACount}</span> {unitWords}.</p>
+                {unitBCount !== null ? (
+                  <p>The {ch.objectName1}: you laid <span className="font-mono text-emerald-300">{unitBCount}</span> {unitWords}.</p>
+                ) : null}
+              </div>
+            ) : null}
+            {measuring !== null ? (
+              <div className="space-y-2">
+                <p className="text-sm text-slate-300">
+                  {measuring === 0 ? `First, measure the ${ch.objectName0}.` : `Now measure the ${ch.objectName1}.`}
+                </p>
+                <TilingWorkspace
+                  key={`${ch.id}-${measuring}-${attemptKey}`}
+                  objectName={measuring === 0 ? ch.objectName0 : ch.objectName1}
+                  objectLength={measuring === 0 ? ch.objectLength0 : ch.objectLength1}
+                  objectColor={measuring === 0 ? ch.objectColor0 : ch.objectColor1}
+                  unitType={unitA}
+                  correctCount={measuring === 0 ? ch.objectLength0 : ch.objectLength1}
+                  onComplete={measuring === 0 ? handleUnitATile : handleUnitBTile}
+                  disabled={inputClosed}
+                  showAlignmentFeedback={ch.showAlignmentFeedback !== false}
+                  quiet
+                  onCountChange={setTiles}
+                  outline={leverOn(OUTLINE_LEVER)}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {leverOn(COUNT_ROWS_LEVER) ? (
+                  <div data-lever="count-rows" aria-hidden className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+                    {rows.map(([n, color], r) => (
+                      <div key={r} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: color }} />
+                        <div className="flex">{Array.from({ length: n }).map((_, i) => (
+                          <div key={i} className="border border-white/30 bg-white/10" style={{ width: '24px', height: '16px' }} />))}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                <p className="text-sm text-emerald-300">Which one is {ch.compareWord ?? 'longer'}?</p>
+                <div className="flex flex-wrap gap-2">
+                  {[ch.objectName0, ch.objectName1].map((name, i) => {
+                    const isSelected = selectedAnswer === name;
+                    return (
+                      <Button
+                        key={name}
+                        variant="ghost"
+                        aria-label={name}
+                        className={`bg-white/5 border border-white/20 hover:bg-white/10 flex items-center gap-2 ${
+                          isSelected && showFeedback && correct ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' :
+                          isSelected && showFeedback ? 'bg-red-500/20 border-red-400/30 text-red-300' : ''
+                        }`}
+                        onClick={() => handleMeasureAnswer(name)}
+                        disabled={showFeedback || inputClosed}
+                      >
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: i === 0 ? ch.objectColor0 : ch.objectColor1 }} />
+                        {name}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {showFeedback && correct ? (
+                  <div className="text-emerald-400 text-sm font-medium">That&apos;s right: you measured both and compared the counts.</div>
+                ) : null}
+                {showFeedback && !correct ? (
+                  <div className="text-red-400 text-sm font-medium">Not quite. Look at how you measured each one, and at your two counts.</div>
+                ) : null}
+              </div>
+            )}
           </div>
         );
       }

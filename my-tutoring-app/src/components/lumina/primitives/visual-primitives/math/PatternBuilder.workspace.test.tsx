@@ -37,7 +37,15 @@ const create: PatternBuilderChallenge = { ...base, id: 'c1', type: 'create', ins
 const findRule: PatternBuilderChallenge = { ...base, id: 'f1', type: 'find_rule', instruction: 'Find the rule and keep going.',
   sequence: { given: ['2', '4', '6', '8'], hidden: ['10', '12'], core: ['2', '4'] },
   availableTokens: ['9', '10', '11', '12', '14'] };
-const BY_MODE: Record<string, PatternBuilderChallenge> = { extend, identify_core: identify, translate, create, find_rule: findRule };
+const copy: PatternBuilderChallenge = { ...base, id: 'k1', type: 'copy', instruction: 'Make the same pattern.',
+  sequence: { given: ['green', 'yellow', 'green', 'yellow'], hidden: [], core: ['green', 'yellow'] },
+  availableTokens: ['yellow', 'red', 'green'] };
+// The gap holds 'blue' (index 3, between two reds); its neighbours are the other token.
+const fillGap: PatternBuilderChallenge = { ...base, id: 'g1', type: 'fill_gap', instruction: 'Which token goes in the gap?',
+  sequence: { given: ['red', 'blue', 'red', 'blue', 'red', 'blue'], hidden: ['blue'], core: ['red', 'blue'] }, gapIndex: 3,
+  availableTokens: ['blue', 'green', 'red'] };
+const BY_MODE: Record<string, PatternBuilderChallenge> = { extend, identify_core: identify, translate, create, find_rule: findRule,
+  copy, fill_gap: fillGap };
 
 const builder = (challenges: PatternBuilderChallenge[]): PatternBuilderData => ({
   title: 'Patterns', patternType: 'repeating', gradeBand: 'K-1',
@@ -79,13 +87,27 @@ it.each(Object.entries(BY_MODE))('%s: a checked gesture that publishes no key; a
     const data = builder([c]);
     const h = mountWorkspace({ primitiveId: 'pattern-builder', evalMode: mode, data: data as never });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
+    // fill_gap's one token may also be said (its key reaches the judge); every other mode is a gesture with no key.
+    if (c.type === 'fill_gap') {
+      expect(task.demand.response).toBe('speech');
+      expect(task.workspace!.expectedAnswer).toMatch(/blue/);
+    } else {
+      expect(task.workspace!.expectedAnswer).toBeUndefined();
+      expect(task.demand.response).toBe('gesture');
+    }
     const published = JSON.stringify(task);
     for (const key of ['"hidden"', '"answer"', '"core"', 'narration']) expect(published).not.toContain(key);
     if (c.type === 'extend') expect(published).toContain('red, blue, red, blue, ?, ?');
     if (c.type === 'find_rule') { expect(published).not.toContain('10, 12'); expect(published).toContain('2, 4, 6, 8, ?, ?'); }
     if (c.type === 'translate') { expect(published).not.toContain('circle, square, circle'); expect(published).toContain('red → circle'); }
+    // The gap's token is never drawn or told: the row reaches the tutor with "?" in its place.
+    if (c.type === 'fill_gap') {
+      expect(published).toContain('red, blue, red, ?, red, blue');
+      expect(published).not.toContain('red, blue, red, blue, red, blue');
+      const cells = Array.from(h.view.container.querySelectorAll('[data-pip-object="pattern"] > div')).map(el => el.textContent);
+      expect(cells[3]).toBe('?');
+    }
+    if (c.type === 'copy') expect(published).toContain('green, yellow, green, yellow');
     // The row is drawn; the part that repeats is never a fact of its own.
     if (c.type === 'identify_core') expect(Object.values(task.demand)).not.toContain('star, star, heart');
 
@@ -133,4 +155,21 @@ it('the adapter refuses a challenge its tokens cannot answer', () => {
   expect(() => LIVE_ADAPTERS['pattern-builder'].validate(builder([{ ...identify,
     sequence: { given: ['star', 'heart'], hidden: [], core: ['moon'] } }]))).toThrow();
   expect(() => LIVE_ADAPTERS['pattern-builder'].validate(builder([{ ...create, availableTokens: ['red'] }]))).toThrow();
+  // A gap at the end is extend, and a gap whose token is not on the palette cannot be filled.
+  expect(() => LIVE_ADAPTERS['pattern-builder'].validate(builder([{ ...fillGap, gapIndex: 5 }]))).toThrow();
+  expect(() => LIVE_ADAPTERS['pattern-builder'].validate(builder([{ ...fillGap, availableTokens: ['red', 'green'] }]))).toThrow();
+  expect(() => LIVE_ADAPTERS['pattern-builder'].validate(builder([{ ...copy, availableTokens: ['green', 'red'] }]))).toThrow();
+});
+
+it('fill_gap said aloud: a wrong token retries, the right one is credited once and shown in the gap', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'pattern-builder', evalMode: 'fill_gap', data: builder([fillGap]) as never });
+  h.say('red'); h.feedback('incorrect', 'retry');
+  expect(h.state().status).not.toBe('completed');
+  h.say('blue'); h.feedback('correct', 'advance');
+  expect(h.view.container.querySelector('[data-pip-object="slot-0"]')!.textContent).not.toBe('?');
+  h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await flushScoring();
+  expect(seam.submit).toHaveBeenCalledOnce();
 });

@@ -200,3 +200,38 @@ it('set_time_ampm: the hands and a.m./p.m. are checked apart; the right time wit
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.close();
 });
+
+it("set_time at K on the hour: the minute hand stays on 12, the drag turns the hour hand; never opens on the answer", () => {
+  const h = mount('set_time', [
+    { id: 'k3', type: 'set_time', instruction: 'Set the clock to 3:00.', targetHour: 3, targetMinute: 0, hint: '' },
+  ], 'K');
+  expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 12:00' });
+  dragMinute(h, 30); // the pointer at the 6: the short hand goes to 6, the long hand stays on 12
+  expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 6:00' });
+  dragMinute(h, 15); // the pointer at the 3
+  expect(demand(h)).toMatchObject({ learnerWork: 'The hands show 3:00' });
+  check(h);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.close(); cleanup();
+
+  // 12:00 is where the hands open, so a 12 o'clock target opens at 6:00.
+  const twelve = mount('set_time', [
+    { id: 'k12', type: 'set_time', instruction: 'Set the clock to 12:00.', targetHour: 12, targetMinute: 0, hint: '' },
+  ], 'K');
+  expect(demand(twelve)).toMatchObject({ learnerWork: 'The hands show 6:00' });
+  check(twelve);
+  expect(twelve.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false });
+  twelve.close(); cleanup();
+
+  // A K half hour and every other band still drag the minute hand.
+  const half = mount('set_time', [CHALLENGES.set_time], 'K');
+  dragMinute(half, 30);
+  expect(demand(half)).toMatchObject({ learnerWork: 'The hands show 12:30' });
+  half.close(); cleanup();
+  const g1 = mount('set_time', [
+    { id: 'g3', type: 'set_time', instruction: 'Set the clock to 3:00.', targetHour: 3, targetMinute: 0, hint: '' },
+  ]);
+  dragMinute(g1, 15);
+  expect(demand(g1)).toMatchObject({ learnerWork: 'The hands show 12:15' });
+  g1.close();
+});

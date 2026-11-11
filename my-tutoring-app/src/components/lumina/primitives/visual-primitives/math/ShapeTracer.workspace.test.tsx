@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * W1 minimal binding, plain shape: the real ShapeTracer on the shared teaching workspace, mounted the way a lesson
- * mounts it. A finished trace or completion, a connect-dots tap out of order, and Check Shape each commit a checked
+ * mounts it. A finished trace or completion, a trace, completion or connect-dots tap out of turn, and Check Shape each commit a checked
  * gesture; the runtime owns progression; the scored session is what gets submitted. The tutor is never handed the
  * dot order or a shape the screen has not named.
  */
@@ -105,34 +105,61 @@ it('draw_from_description: three corners for a four-sided clue is too_few_sides;
   h.close();
 });
 
-it('trace: a corner out of turn is refused on the dot, never checked; the corners in turn close the shape', () => {
+it('trace: a corner out of turn is a checked miss that counts as an attempt; Try again keeps the corners in turn', () => {
+  seam.evaluationContext = { lesson: 'test' };
   const h = mount('trace', [CHALLENGES.trace]);
   h.touch('vertex-2');
-  expect(h.state().task!.workspace!.attempts).toHaveLength(0);
-  expect(String(demand(h).learnerWork)).toMatch(/not drawn/);
-  taps(h, 'vertex', [0, 1, 2, 3]);
+  expect(last(h)).toMatchObject({ correct: false, miss: 'started_elsewhere' });
+  expect(String(seam.send.mock.calls.at(-1)![0])).toContain('Tapped corner 3');
+  // Closed until Try again: a tap now changes nothing.
+  h.touch('vertex-0');
+  expect(demand(h)).toMatchObject({ learnerWork: 'No corner tapped yet' });
+  h.dispatch('retry');
+  taps(h, 'vertex', [0, 1]);
+  h.touch('vertex-1'); // a double tap on the last corner is not a miss
+  h.touch('vertex-3');
+  expect(last(h)).toMatchObject({ correct: false, miss: 'skipped_corner' });
+  h.dispatch('retry');
+  expect(demand(h)).toMatchObject({ learnerWork: 'Tapped 2 of 4 corners in turn' });
+  taps(h, 'vertex', [2, 3]);
   expect(h.state().task!.evidence.correctness).toBe('correct');
-  expect(h.state().task!.workspace!.attempts).toHaveLength(1);
+  expect(h.state().task!.workspace!.attempts).toHaveLength(3);
+  h.dispatch('advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  // The scored session reflects the misses: solved, but not a first-try 100.
+  expect(seam.submit).toHaveBeenCalledOnce();
+  const [success, score, , work, , evidence] = seam.submit.mock.calls[0];
+  expect(success).toBe(true);
+  expect(score).toBeLessThan(100);
+  expect(work.teachingAttempts).toHaveLength(3);
+  expect(evidence.firstResponseScore).toBe(0);
+  expect(evidence.phases.map((p: { miss?: string }) => p.miss)).toEqual(['started_elsewhere', 'skipped_corner']);
   h.close();
 });
 
-it('trace with no numbers and no glow starts at any corner and goes either way round', () => {
+it('trace with no numbers and no glow starts at any corner and goes either way round; a corner not beside the last is a miss', () => {
   const free = { ...CHALLENGES.trace, showOrderNumbers: false, showNextCue: false, showGuidePath: false, showDirectionArrows: false };
   const h = mount('trace', [free]);
   expect(String(demand(h).howToAnswer)).toMatch(/any corner/);
   h.touch('vertex-2'); h.touch('vertex-0');
-  expect(String(demand(h).learnerWork)).toMatch(/not drawn/);
+  expect(last(h)).toMatchObject({ correct: false, miss: 'skipped_corner' });
+  // The numbers are hidden, so the tutor is not told a corner number.
+  expect(String(seam.send.mock.calls.at(-1)![0])).toContain('a corner out of turn');
+  h.dispatch('retry');
   taps(h, 'vertex', [1, 0, 3]);
   expect(h.state().task!.evidence.correctness).toBe('correct');
   h.close();
 });
 
-it('complete: the open corners in turn finish the shape', () => {
+it('complete: an open corner out of turn is a checked miss; the open corners in turn finish the shape', () => {
   const h = mount('complete', [CHALLENGES.complete]);
   h.touch('remaining-1');
-  expect(h.state().task!.workspace!.attempts).toHaveLength(0);
+  expect(last(h)).toMatchObject({ correct: false, miss: 'started_elsewhere' });
+  expect(h.state().task!.workspace!.attempts).toHaveLength(1);
+  h.dispatch('retry');
   taps(h, 'remaining', [0, 1]);
   expect(h.state().task!.evidence.correctness).toBe('correct');
+  expect(h.state().task!.workspace!.attempts).toHaveLength(2);
   h.close();
 });
 
@@ -141,6 +168,14 @@ it('shapeTracerMiss names each wrong check; drawCorners builds shapes the check 
   expect(shapeTracerMiss(cd, { tapped: [0], points: [], wrongDot: 0 })).toBe('went_back');
   expect(shapeTracerMiss(cd, { tapped: [0], points: [], wrongDot: 2 })).toBe('skipped_number');
   expect(shapeTracerMiss(cd, { tapped: [0], points: [], wrongDot: 1 })).toBeUndefined();
+  const tr = CHALLENGES.trace, free = { ...tr, showOrderNumbers: false, showNextCue: false };
+  expect(shapeTracerMiss(tr, { tapped: [], points: [], wrongDot: 1 })).toBe('started_elsewhere');
+  expect(shapeTracerMiss(tr, { tapped: [0, 1], points: [], wrongDot: 0 })).toBe('went_back');
+  expect(shapeTracerMiss(tr, { tapped: [0], points: [], wrongDot: 2 })).toBe('skipped_corner');
+  expect(shapeTracerMiss(tr, { tapped: [0], points: [], wrongDot: 1 })).toBeUndefined();
+  expect(shapeTracerMiss(free, { tapped: [], points: [], wrongDot: 2 })).toBeUndefined();
+  expect(shapeTracerMiss(free, { tapped: [2], points: [], wrongDot: 3 })).toBeUndefined();
+  expect(shapeTracerMiss(CHALLENGES.complete, { tapped: [], points: [], wrongDot: 1 })).toBe('started_elsewhere');
   const grid = gridDots(50);
   const pts = (ids: number[]) => ids.map(i => grid[i]);
   expect(shapeTracerMiss(fd, { tapped: [], points: pts(drawCorners({ ...fd, requiredProperties: { sides: 5 } }, 50)) })).toBe('too_many_sides');

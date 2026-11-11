@@ -25,6 +25,17 @@
  * - `two_cards` (simplify): another reference card with two options, one on the asked side and one far on the
  *   other side of the day.
  *
+ * missing-middle. The card that goes between the first and the last step is the answer.
+ * - `middle_model` (help): a model day of three OTHER cards in order, the middle one marked as the one between the
+ *   other two. Never a card on the item.
+ * - `two_middle_cards` (simplify): another first and last card with two options, the middle step and one after the
+ *   last card.
+ *
+ * duration-order. The order from shortest to longest is the answer, so no lever places or ranks a card.
+ * - `duration_ladder` (help): three OTHER activities in order from shortest to longest, each with a bar as long as it
+ *   takes. The item's cards get no bar.
+ * - `far_apart_durations` (simplify): three other activities very far apart in how long they take.
+ *
  * duration-compare. Which takes longer (or about the same) is the answer.
  * - `duration_model` (help): two OTHER pairs drawn as bars, one long against short and one about the same.
  * - `far_pair` (simplify): another pair, very short against very long.
@@ -49,6 +60,10 @@ export const DURATION_MODEL_LEVER = 'duration_model';
 export const FAR_PAIR_LEVER = 'far_pair';
 export const OPTION_PICTURES_LEVER = 'option_pictures';
 export const SHORT_SCHEDULE_LEVER = 'short_schedule';
+export const MIDDLE_MODEL_LEVER = 'middle_model';
+export const TWO_MIDDLE_LEVER = 'two_middle_cards';
+export const DURATION_LADDER_LEVER = 'duration_ladder';
+export const FAR_DURATIONS_LEVER = 'far_apart_durations';
 
 export const PRACTICE_SUFFIX = '~smaller';
 export const PRACTICE_NOTE = 'An easier practice item, ungraded; the full item comes back after it.';
@@ -97,6 +112,7 @@ export function clashes(label: string, itemLabels: readonly string[]): boolean {
 export function itemLabels(c: TimeSequencerChallenge): string[] {
   return [
     ...(c.events ?? []).map(e => e.label), c.event?.label, c.referenceEvent?.label, ...(c.options ?? []).map(e => e.label),
+    c.firstEvent?.label, c.lastEvent?.label,
     c.eventA?.label, c.eventB?.label, ...(c.schedule ?? []).map(r => r.activity), ...(c.activityOptions ?? []),
   ].filter((s): s is string => !!s);
 }
@@ -157,6 +173,17 @@ const SAME_PAIRS: readonly (readonly [BankCard, BankCard])[] = [
   [{ label: 'Put on your left sock', emoji: '🧦' }, { label: 'Put on your right sock', emoji: '🧦' }],
   [{ label: 'Clap two times', emoji: '👏' }, { label: 'Stomp two times', emoji: '🦶' }],
   [{ label: 'Say your name', emoji: '🗣️' }, { label: 'Wave hello', emoji: '👋' }],
+];
+
+/** duration-order: activities by how long they take, each slot many times the one before (minutes). */
+type TimedCard = BankCard & { minutes: number };
+const DURATION_SLOTS: readonly (readonly TimedCard[])[] = [
+  [{ label: 'Blink your eyes', emoji: '👀', minutes: 0.05 }, { label: 'Clap your hands once', emoji: '👏', minutes: 0.05 },
+    { label: 'Say hi', emoji: '👋', minutes: 0.05 }],
+  [{ label: 'Eat a snack', emoji: '🍎', minutes: 10 }, { label: 'Read a story', emoji: '📖', minutes: 10 },
+    { label: 'Take a bath', emoji: '🛁', minutes: 15 }],
+  [{ label: 'Sleep all night', emoji: '😴', minutes: 600 }, { label: 'A whole day at school', emoji: '🏫', minutes: 400 },
+    { label: 'Ride a long car trip', emoji: '🚗', minutes: 300 }],
 ];
 
 /** read-schedule: whole hours, two hours apart; none at a half hour. */
@@ -267,6 +294,57 @@ export function twoCards(c: TimeSequencerChallenge): TimeSequencerChallenge | nu
   });
 }
 
+// ── missing-middle ─────────────────────────────────────────────────────────────
+
+/** Three other cards in day order (morning, afternoon, night), for the middle model. */
+export function middleModel(c: TimeSequencerChallenge): BankCard[] | null {
+  if (c.type !== 'missing-middle') return null;
+  const avoid = itemLabels(c);
+  const cards = [0, 2, 4].map(s => pick(DAY_SLOTS[s], avoid));
+  return cards.some(x => !x) ? null : cards as BankCard[];
+}
+
+/** Another first (morning) and last (evening) card with two options: the step between them and one after the last. */
+export function twoMiddleCards(c: TimeSequencerChallenge): TimeSequencerChallenge | null {
+  if (c.type !== 'missing-middle' || isPractice(c)) return null;
+  const avoid = itemLabels(c);
+  const first = pick(DAY_SLOTS[0], avoid), middle = pick(DAY_SLOTS[2], avoid), last = pick(DAY_SLOTS[3], avoid);
+  const foil = pick(DAY_SLOTS[4], avoid);
+  if (!first || !middle || !last || !foil) return null;
+  const opts: EventCard[] = [{ id: 'p1', label: middle.label, emoji: middle.emoji }, { id: 'p2', label: foil.label, emoji: foil.emoji }];
+  if (seed(c.id) % 2) opts.reverse();
+  return practiceBase(c, {
+    instruction: 'Which one goes in the middle?', firstEvent: asEvent(first, 8, false), lastEvent: asEvent(last, 9, false),
+    options: opts, correctEvent: 'p1', optionPlaces: { p2: 'after' },
+  });
+}
+
+// ── duration-order ─────────────────────────────────────────────────────────────
+
+/** Three other activities, shortest to longest, for the bar model. */
+export function durationLadder(c: TimeSequencerChallenge): TimedCard[] | null {
+  if (c.type !== 'duration-order') return null;
+  const avoid = itemLabels(c);
+  const cards = DURATION_SLOTS.map(s => pick(s, avoid));
+  return cards.some(x => !x) ? null : cards as TimedCard[];
+}
+
+/** Three other activities, very far apart in how long they take, other than the bar model's own where the bank allows. */
+export function farApartDurations(c: TimeSequencerChallenge): TimeSequencerChallenge | null {
+  if (c.type !== 'duration-order' || isPractice(c)) return null;
+  const model = durationLadder(c)?.map(m => m.label) ?? [];
+  const avoid = itemLabels(c);
+  const cards = DURATION_SLOTS.map(s => s.find(a => !clashes(a.label, avoid) && !model.includes(a.label)) ?? pick(s, avoid));
+  if (cards.some(x => !x)) return null;
+  const events: EventCard[] = (cards as TimedCard[])
+    .map((card, i) => ({ id: `p${i + 1}`, label: card.label, emoji: card.emoji, minutes: card.minutes }));
+  const rot = seed(c.id) % 3;
+  return practiceBase(c, {
+    instruction: 'Put these from the quickest to the longest.',
+    events: [...events.slice(rot), ...events.slice(0, rot)], correctOrder: events.map(e => e.id),
+  });
+}
+
 // ── duration-compare ───────────────────────────────────────────────────────────
 
 /** Two other pairs for the bar model: one short against long, one about the same. */
@@ -331,6 +409,8 @@ export function practiceItem(c: TimeSequencerChallenge): TimeSequencerChallenge 
     case 'sequence-events': case 'clock-sequence': return farApartCards(c);
     case 'match-time-of-day': return twoChoices(c);
     case 'before-after': return twoCards(c);
+    case 'missing-middle': return twoMiddleCards(c);
+    case 'duration-order': return farApartDurations(c);
     case 'duration-compare': return farPair(c);
     case 'read-schedule': return shortSchedule(c);
   }
@@ -398,6 +478,26 @@ export const TIME_LEVERS = leverSet<TimeSequencerChallenge, null>({
     { id: TWO_CARDS_LEVER, type: 'easier', carrier: 'shown', modes: ['before-after'], answers: 'all', content: twoCards,
       when: 'The learner cannot pick between cards this close in the day yet.',
       does: `Opens an easier practice first: another card with only two choices, far apart in the day. ${PRACTICE}` },
+    { id: MIDDLE_MODEL_LEVER, type: 'custom', carrier: 'shown', why: PICTURE_ONLY, modes: ['missing-middle'], answers: 'all',
+      content: middleModel,
+      when: 'The learner picks a step that comes before the first card or after the last one.',
+      does: 'Shows a model day of three other cards in order above the choices, the middle one marked as the one between '
+        + 'the other two. None of them is on the item.',
+      fact: (m: BankCard[]) => `Above the choices is a model day of three other cards in order: ${m[0].label}, then `
+        + `${m[1].label}, then ${m[2].label}; ${m[1].label} is marked as the one in the middle.` },
+    { id: TWO_MIDDLE_LEVER, type: 'easier', carrier: 'shown', modes: ['missing-middle'], answers: 'all', content: twoMiddleCards,
+      when: 'The learner cannot pick the middle step from three cards yet.',
+      does: `Opens an easier practice first: another first and last card with only two choices. ${PRACTICE}` },
+    { id: DURATION_LADDER_LEVER, type: 'custom', carrier: 'shown', why: PICTURE_ONLY, modes: ['duration-order'], answers: 'all',
+      content: durationLadder,
+      when: 'The learner puts the activities out of order, or puts the longest one first.',
+      does: 'Shows three other activities above the cards in order from the shortest to the longest, each with a bar as '
+        + 'long as it takes. The item\'s cards get no bar and none is placed.',
+      fact: (m: TimedCard[]) => 'Above the cards are three other activities in order from the shortest to the longest, '
+        + `each with a bar as long as it takes: ${m.map(x => x.label).join(', then ')}.` },
+    { id: FAR_DURATIONS_LEVER, type: 'easier', carrier: 'shown', modes: ['duration-order'], answers: 'all', content: farApartDurations,
+      when: 'The learner cannot order activities this close in length yet.',
+      does: `Opens an easier practice first: three other activities, one very quick, one longer, one very long. ${PRACTICE}` },
     { id: DURATION_MODEL_LEVER, type: 'custom', carrier: 'shown', why: PICTURE_ONLY, modes: ['duration-compare'],
       answers: 'all', content: durationModel,
       when: 'The learner picks the shorter activity, or mixes up "about the same" with "longer".',

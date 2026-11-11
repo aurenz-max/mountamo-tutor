@@ -1,0 +1,318 @@
+{
+ "source": "eval-test say_rule K hard 2026-11-11 (K math audit CV1, PTRN001-02-G)",
+ "primitiveId": "sorting-station",
+ "evalMode": "say_rule",
+ "data": {
+  "title": "Spot the Odd One Out!",
+  "description": "Look at the sorted groups and find the objects that do not belong!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "say-rule",
+    "instruction": "Can you look at these groups of things we need and things we want, and tell why they belong together?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj1",
+      "label": "Water",
+      "emoji": "\ud83d\udca7",
+      "attributes": {
+       "color": "blue",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj2",
+      "label": "Apple",
+      "emoji": "\ud83c\udf4e",
+      "attributes": {
+       "color": "red",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj3",
+      "label": "Shirt",
+      "emoji": "\ud83d\udc55",
+      "attributes": {
+       "color": "blue",
+       "category": "need"
+      }
+     },
+     {
+      "id": "obj4",
+      "label": "Toy",
+      "emoji": "\ud83e\uddf8",
+      "attributes": {
+       "color": "brown",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj5",
+      "label": "Game",
+      "emoji": "\ud83c\udfae",
+      "attributes": {
+       "color": "black",
+       "category": "want"
+      }
+     },
+     {
+      "id": "obj6",
+      "label": "Kite",
+      "emoji": "\ud83e\ude81",
+      "attributes": {
+       "color": "red",
+       "category": "want"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Need",
+      "rule": {
+       "category": "need"
+      },
+      "bucketEmoji": "\ud83c\udfe0"
+     },
+     {
+      "label": "Want",
+      "rule": {
+       "category": "want"
+      },
+      "bucketEmoji": "\ud83c\udf81"
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "say-rule",
+    "instruction": "Check these sorted groups of living and non-living things. Can you explain their groups?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj7",
+      "label": "Dog",
+      "emoji": "\ud83d\udc36",
+      "attributes": {
+       "color": "brown",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj8",
+      "label": "Flower",
+      "emoji": "\ud83c\udf37",
+      "attributes": {
+       "color": "red",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj9",
+      "label": "Bird",
+      "emoji": "\ud83d\udc26",
+      "attributes": {
+       "color": "blue",
+       "category": "living"
+      }
+     },
+     {
+      "id": "obj10",
+      "label": "Rock",
+      "emoji": "\ud83e\udea8",
+      "attributes": {
+       "color": "gray",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj11",
+      "label": "Car",
+      "emoji": "\ud83d\ude97",
+      "attributes": {
+       "color": "red",
+       "category": "non-living"
+      }
+     },
+     {
+      "id": "obj12",
+      "label": "Book",
+      "emoji": "\ud83d\udcd6",
+      "attributes": {
+       "color": "blue",
+       "category": "non-living"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Living",
+      "rule": {
+       "category": "living"
+      },
+      "bucketEmoji": "\ud83c\udf31"
+     },
+     {
+      "label": "Non-living",
+      "rule": {
+       "category": "non-living"
+      },
+      "bucketEmoji": "\ud83e\uddf1"
+     }
+    ],
+    "intruder": {
+     "objectId": "obj9",
+     "trayLabel": "Non-living"
+    }
+   },
+   {
+    "id": "c3",
+    "type": "say-rule",
+    "instruction": "Look at these helper groups. Can you tell why these helpers belong in their groups?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj13",
+      "label": "Firefighter",
+      "emoji": "\ud83d\udc69\u200d\ud83d\ude92",
+      "attributes": {
+       "color": "red",
+       "category": "safety"
+      }
+     },
+     {
+      "id": "obj14",
+      "label": "Police",
+      "emoji": "\ud83d\udc6e",
+      "attributes": {
+       "color": "blue",
+       "category": "safety"
+      }
+     },
+     {
+      "id": "obj15",
+      "label": "Doctor",
+      "emoji": "\ud83d\udc69\u200d\u2695\ufe0f",
+      "attributes": {
+       "color": "white",
+       "category": "health"
+      }
+     },
+     {
+      "id": "obj16",
+      "label": "Nurse",
+      "emoji": "\ud83d\udc68\u200d\u2695\ufe0f",
+      "attributes": {
+       "color": "white",
+       "category": "health"
+      }
+     },
+     {
+      "id": "obj17",
+      "label": "Dentist",
+      "emoji": "\ud83e\uddb7",
+      "attributes": {
+       "color": "blue",
+       "category": "health"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Safety",
+      "rule": {
+       "category": "safety"
+      },
+      "bucketEmoji": "\ud83d\udea8"
+     },
+     {
+      "label": "Health",
+      "rule": {
+       "category": "health"
+      },
+      "bucketEmoji": "\ud83e\ude7a"
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "say-rule",
+    "instruction": "Examine these groups of farm animals and zoo animals. Why do they fit together?",
+    "sortingAttribute": "category",
+    "objects": [
+     {
+      "id": "obj18",
+      "label": "Cow",
+      "emoji": "\ud83d\udc2e",
+      "attributes": {
+       "color": "white",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj19",
+      "label": "Pig",
+      "emoji": "\ud83d\udc37",
+      "attributes": {
+       "color": "pink",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj20",
+      "label": "Sheep",
+      "emoji": "\ud83d\udc11",
+      "attributes": {
+       "color": "white",
+       "category": "farm"
+      }
+     },
+     {
+      "id": "obj21",
+      "label": "Monkey",
+      "emoji": "\ud83d\udc35",
+      "attributes": {
+       "color": "brown",
+       "category": "zoo"
+      }
+     },
+     {
+      "id": "obj22",
+      "label": "Zebra",
+      "emoji": "\ud83e\udd93",
+      "attributes": {
+       "color": "black",
+       "category": "zoo"
+      }
+     }
+    ],
+    "categories": [
+     {
+      "label": "Farm",
+      "rule": {
+       "category": "farm"
+      },
+      "bucketEmoji": "\ud83d\ude9c"
+     },
+     {
+      "label": "Zoo",
+      "rule": {
+       "category": "zoo"
+      },
+      "bucketEmoji": "\ud83e\udd81"
+     }
+    ],
+    "intruder": {
+     "objectId": "obj20",
+     "trayLabel": "Zoo"
+    }
+   }
+  ],
+  "maxCategories": 2,
+  "showCounts": false,
+  "showTallyChart": false,
+  "gradeBand": "K",
+  "supportTier": "hard"
+ }
+}

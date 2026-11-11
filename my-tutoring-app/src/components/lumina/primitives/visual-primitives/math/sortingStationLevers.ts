@@ -18,6 +18,10 @@
  * - `tap_marks` (count_group): the counted tray's pictures can be tapped; a tapped one gets a ring. No numbers.
  * - `line_up` (compare): each group's pictures in a row, a picture per column, both rows from the same left edge.
  * - `check_boxes` (both_criteria): an empty box beside each of the two criteria; the learner taps it to yes / no.
+ * - `focus_group` (say-rule): every group but the ringed one dims. Answers naming another group's rule or one card.
+ * - `group_row` (name_rule): the ringed group's cards lined up in one row, side by side, so one property can be checked
+ *   across all of them. Answers a rule only some of them share. Names nothing.
+ * - `odd_model` also serves say-rule's misfit (the card in the wrong group): the same fixed model row.
  * Simplify (an ungraded easier item of the same kind, new pictures, then the full item):
  * - `three_cards` (odd_one, 4+ cards): three new cards, two of one kind and one of a far kind.
  * - `far_compare` (compare, groups within 2 of each other): two new groups of one and four.
@@ -41,12 +45,14 @@ export const LINE_UP_LEVER = 'line_up';
 export const CHECKS_LEVER = 'check_boxes';
 export const THREE_CARDS_LEVER = 'three_cards';
 export const FAR_COMPARE_LEVER = 'far_compare';
+export const FOCUS_GROUP_LEVER = 'focus_group';
+export const GROUP_ROW_LEVER = 'group_row';
 
 /** The catalog eval mode an item belongs to (its challenge type, as the catalog names it). */
 const CATALOG_MODE: Record<SortingStationMode, string> = {
   'sort-by-one': 'sort_one', 'sort-by-attribute': 'sort_attribute', 'sort-variety': 'sort_variety',
   'count-and-compare': 'count_compare', 'odd-one-out': 'odd_one_out', 'two-attributes': 'two_attributes',
-  'tally-record': 'tally_record',
+  'tally-record': 'tally_record', 'say-rule': 'say_rule',
 };
 export const catalogModeOf = (item: SortingStationItem): string => CATALOG_MODE[item.mode];
 
@@ -191,7 +197,8 @@ export const SORTING_LEVERS = leverSet<SortingStationItem, SortingLeverContext>(
       when: 'The learner names another way to sort.',
       does: 'Shows the empty trays the cards will go into, each with its picture and name. It never says the way to sort: the learner still names it.',
       fact: 'Under the cards are the empty trays, each with its picture and name.' },
-    { id: ODD_MODEL_LEVER, type: 'custom', modes: ['odd_one_out'], carrier: 'both', answers: ['said_all_belong', 'belonging_card'],
+    { id: ODD_MODEL_LEVER, type: 'custom', modes: ['odd_one_out', 'say_rule'], carrier: 'both', answers: ['said_all_belong', 'belonging_card'],
+      offer: item => item.kind === 'odd_one' || item.kind === 'misfit',
       why: 'A fixed abstract row (three circles, one square) that shows what "does not belong" means; it is not a solved item of this lesson.',
       when: 'The learner says they all belong, or names a card that belongs.',
       does: 'Shows a model row beside the cards: three blue circles and one red square. Point at the model, not the cards. Never say what '
@@ -221,5 +228,14 @@ export const SORTING_LEVERS = leverSet<SortingStationItem, SortingLeverContext>(
       does: 'Puts an empty box beside each of the two things asked about; the learner taps a box to tick or cross it. '
         + 'Ask about one thing at a time; the boxes start empty and nothing fills them for the learner.',
       fact: 'Beside each of the two things asked about is an empty box the learner can tap to tick or cross.' },
+    { id: FOCUS_GROUP_LEVER, type: 'marks', modes: ['say_rule'], answers: ['other_group_rule', 'said_card'],
+      offer: item => item.kind === 'name_rule' || item.kind === 'misfit',
+      when: "The learner gives another group's rule, or names one card.",
+      does: 'Dims every group but the ringed one. Names nothing.',
+      fact: 'Every group but the ringed one is dimmed.' },
+    { id: GROUP_ROW_LEVER, type: 'layout', modes: ['say_rule'], answers: ['partial_rule', 'said_card'], offer: kindIs('name_rule'),
+      when: 'The learner names something only some of the cards are.',
+      does: "Lines the ringed group's cards up in one row, side by side, so one thing can be checked on every card. Names nothing.",
+      fact: "The ringed group's cards are lined up in one row, side by side." },
   ],
 });

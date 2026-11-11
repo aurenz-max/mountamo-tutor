@@ -1,0 +1,228 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (pb-copy.json)",
+ "primitiveId": "pattern-builder",
+ "evalMode": "copy",
+ "data": {
+  "title": "Copy AB Color Patterns",
+  "description": "Practice copying simple AB color patterns by placing tokens in the correct order.",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ],
+   "rule": "AB repeating"
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple"
+   ],
+   "type": "colors"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "copy",
+    "instruction": "Look at this pattern. Make the same pattern in the empty row, one token at a time.",
+    "answer": [
+     "red",
+     "blue",
+     "red",
+     "blue",
+     "red",
+     "blue"
+    ],
+    "hint": "Look at the first token on top, then tap the same one. Then the next.",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "hidden": [],
+     "core": [
+      "red",
+      "blue"
+     ]
+    },
+    "availableTokens": [
+     "blue",
+     "red",
+     "green"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "copy",
+    "instruction": "Look at this pattern. Make the same pattern in the empty row, one token at a time.",
+    "answer": [
+     "green",
+     "yellow",
+     "green",
+     "yellow",
+     "green",
+     "yellow"
+    ],
+    "hint": "Look at the first token on top, then tap the same one. Then the next.",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "green",
+      "yellow",
+      "green",
+      "yellow",
+      "green",
+      "yellow"
+     ],
+     "hidden": [],
+     "core": [
+      "green",
+      "yellow"
+     ]
+    },
+    "availableTokens": [
+     "green",
+     "yellow",
+     "purple"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "copy",
+    "instruction": "Look at this pattern. Make the same pattern in the empty row, one token at a time.",
+    "answer": [
+     "purple",
+     "pink",
+     "pink",
+     "purple",
+     "pink",
+     "pink"
+    ],
+    "hint": "Look at the first token on top, then tap the same one. Then the next.",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "purple",
+      "pink",
+      "pink",
+      "purple",
+      "pink",
+      "pink"
+     ],
+     "hidden": [],
+     "core": [
+      "purple",
+      "pink",
+      "pink"
+     ]
+    },
+    "availableTokens": [
+     "pink",
+     "orange",
+     "purple"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "copy",
+    "instruction": "Look at this pattern. Make the same pattern in the empty row, one token at a time.",
+    "answer": [
+     "orange",
+     "orange",
+     "red",
+     "orange",
+     "orange",
+     "red"
+    ],
+    "hint": "Look at the first token on top, then tap the same one. Then the next.",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "orange",
+      "orange",
+      "red",
+      "orange",
+      "orange",
+      "red"
+     ],
+     "hidden": [],
+     "core": [
+      "orange",
+      "orange",
+      "red"
+     ]
+    },
+    "availableTokens": [
+     "orange",
+     "red",
+     "blue"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "copy",
+    "instruction": "Look at this pattern. Make the same pattern in the empty row, one token at a time.",
+    "answer": [
+     "blue",
+     "green",
+     "yellow",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "hint": "Look at the first token on top, then tap the same one. Then the next.",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "blue",
+      "green",
+      "yellow",
+      "blue",
+      "green",
+      "yellow"
+     ],
+     "hidden": [],
+     "core": [
+      "blue",
+      "green",
+      "yellow"
+     ]
+    },
+    "availableTokens": [
+     "purple",
+     "green",
+     "blue",
+     "yellow"
+    ]
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": true,
+   "audioMode": false
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

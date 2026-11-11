@@ -11,6 +11,7 @@ import { spokenBoss } from '../../../components/live-activity/boss';
 import { barModelCard, type BarModelMiss, type SpokenGraphMiss } from './barModel.card';
 import { BAR_LEVERS, simplerGraph, simplerParent } from './barModelLevers';
 import { GRAPH_MAX, twoBarPractice } from './barModelBuild';
+import { collectVerdict, mostRow } from './barModelCollect';
 import {
   OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, barModelKey, barModelSpokenMisses, graphComparisonFacts,
   graphExplanationAsk, isSpokenGraph,
@@ -26,6 +27,13 @@ function answerable(c: BarModelChallenge): boolean {
   if (ROW_TAP_MODES.has(c.evalMode)) return Number.isInteger(c.targetBarIndex) && c.targetBarIndex! >= 0 && c.targetBarIndex! < rows;
   if (c.evalMode === 'build_one_to_one') return Array.isArray(c.expectedCounts) && c.expectedCounts.length === rows
     && c.expectedCounts.every(count);
+  // A survey: one row holds the most, every answer arrives once, and the chart starts empty.
+  if (c.evalMode === 'predict_then_collect') {
+    const want = c.expectedCounts ?? [], items = c.sourceItems ?? [];
+    return want.length === rows && rows >= 2 && want.every(n => Number.isInteger(n) && n >= 1) && mostRow(want) >= 0
+      && c.values.every(v => v.value === 0) && items.length === want.reduce((a, b) => a + b, 0)
+      && want.every((n, i) => items.filter(it => it.categoryIndex === i).length === n);
+  }
   if (c.evalMode === 'build_graph') return Array.isArray(c.expectedDataset) && c.expectedDataset.length === rows
     && c.expectedDataset.every(e => c.values.some(v => v.label === e.label) && count(e.value))
     && (c.availableScaleSteps ?? [1, 2, 5, 10]).includes(c.expectedScaleStep as number);
@@ -91,6 +99,17 @@ export const barModelBoss = spokenBoss<BarModelData, BarModelChallenge, BarModel
         if (n < 0) throw new Error(`bar-model ${c.evalMode}: the chart starts above its target`);
         return Array.from({ length: n }, () => choose(label));
       };
+      // predict_then_collect: a guess (the first row that is not the winner, so the right verdict is "No"), each answer
+      // into its own row as it comes in, then the verdict. A wrong one is the other verdict.
+      if (c.evalMode === 'predict_then_collect') {
+        // Try again keeps the guess (it was made before any answer came in), read back from the scene's `guess` fact.
+        const want = c.expectedCounts ?? [], kept = c.values.findIndex(v => v.label === ctx.demand?.guess);
+        const guess = kept >= 0 ? kept : mostRow(want) === 0 ? 1 : 0;
+        const verdict = collectVerdict(want, guess) === 'yes' ? 'Yes' : 'No';
+        return [...(kept >= 0 ? [] : [choose(`Guess ${c.values[guess].label}`)]),
+          ...(c.sourceItems ?? []).map(it => choose(row(it.categoryIndex))),
+          choose(wrong ? (verdict === 'Yes' ? 'No' : 'Yes') : verdict)];
+      }
       if (c.evalMode === 'build_one_to_one') {
         const counts = (c.expectedCounts ?? []).map((n, i) => wrong && i === 0 ? (n === 0 ? 1 : n - 1) : n);
         return [...counts.flatMap((n, i) => presses(row(i), n - c.values[i].value)), { type: 'check' }];

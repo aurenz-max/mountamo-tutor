@@ -33,7 +33,14 @@ export type CountingItemKind =
   // ── Open build (the build layer, /add-eval-modes references/build-mode.md) ──
   // give_me_n's judgment on an empty scene: the child MAKES a set of the named
   // size by putting objects in, instead of picking them out of a pile we drew.
-  | 'build_n';
+  | 'build_n'
+  // ── Count and name it with a numeral (COUNT001-01-A) ──────────────────────
+  // Count a set of 0-10, then tap the written numeral that tells how many. An
+  // empty board is a real item: its numeral is 0.
+  | 'name_numeral';
+
+/** The largest set a name_numeral board shows: the numerals it offers run 0-10. */
+export const NUMERAL_MAX = 10;
 
 /** The kinds answered by making a set of the asked-for size and handing it over. */
 export const makesASet = (kind: CountingItemKind | undefined): boolean => kind === 'give_me_n' || kind === 'build_n';
@@ -70,6 +77,9 @@ export interface CountingItem extends TeachingItem {
    *  ask, so it is public — and never equal to the answer (the generator
    *  refuses that draw, because "take away three, three left" recites it). */
   changeBy?: number;
+  /** recount_moved: whether the objects are drawn bigger or smaller after the move (COUNT001-02-C: the count
+   *  does not change when objects are bigger or smaller). Absent = the same size. */
+  sizeChange?: 'bigger' | 'smaller';
 }
 
 // ── Number words — code-owned, never asked of the model ─────────────────────
@@ -97,7 +107,7 @@ export const responseClassFor = (item: { kind: CountingItemKind; target: number 
   // child already heard the number in the ask. Same gesture class as the
   // pre-numeric hand match (the spell_word ruling: porting it to speech would
   // delete the mode's identity, which is producing a quantity).
-  if (item.kind === 'subitize_perceptual' || makesASet(item.kind)) return 'manipulation';
+  if (item.kind === 'subitize_perceptual' || item.kind === 'name_numeral' || makesASet(item.kind)) return 'manipulation';
   return item.target <= 20 ? 'number_word_to_20' : 'number_word_to_120';
 };
 
@@ -199,6 +209,8 @@ export const howToPlayFor = (item: CountingItem): string => {
       return `Touch the ${item.objectWord} to take away. Then say how many are left. `;
     case 'add_more':
       return `Touch the faded ${item.objectWord} to put them on the board. Then say how many altogether. `;
+    case 'name_numeral':
+      return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} as you count. Then tap the number that tells how many. `;
     default:
       return `Touch each ${objectSingularFor(item.objectWord, item.objectSingular)} one time as you count. Then say how many! `;
   }
@@ -236,6 +248,9 @@ export const askFor = (item: CountingItem): string => {
       return `Take away ${countedNoun(item.changeBy ?? 1, item.objectWord, item.objectSingular)}. Your turn. How many ${item.objectWord} are left?`;
     case 'add_more':
       return `Put ${countedNoun(item.changeBy ?? 1, item.objectWord, item.objectSingular)} more on the board. Your turn. How many ${item.objectWord} altogether?`;
+    case 'name_numeral':
+      // The same ask on an empty board: seeing none and tapping 0 is the item.
+      return `Count the ${item.objectWord}. Your turn. Tap the number that tells how many.`;
     default:
       return `Count the ${item.objectWord}. Your turn. How many ${item.objectWord}?`;
   }
@@ -255,6 +270,7 @@ export interface CountingChallengeLike {
   groupSize?: number | null;
   compareGroups?: number[] | null;
   changeBy?: number | null;
+  sizeChange?: 'bigger' | 'smaller' | null;
 }
 
 /** Task identity for the how-to-play re-speak policy. Counting, quick-look,
@@ -272,6 +288,7 @@ export const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
   take_away: 'take-away',
   add_more: 'add-more',
   build_n: 'build',
+  name_numeral: 'numeral',
 };
 
 /** The catalog eval mode a board type is tracked under. Two types carry a different name from their
@@ -311,7 +328,11 @@ export const itemFromChallenge = (
   opts: { objectWord: string; objectSingular?: string },
 ): CountingItem | null => {
   const target = ch.targetAnswer;
-  if (!Number.isFinite(target) || target < 1) return null;
+  // name_numeral: a set of 0-10 shown in full, so its numeral is its count; zero (an empty board) is a real item,
+  // answered by a tap, not a spoken "zero".
+  if (ch.type === 'name_numeral') {
+    if (!Number.isInteger(target) || target < 0 || target > NUMERAL_MAX || ch.count !== target) return null;
+  } else if (!Number.isFinite(target) || target < 1) return null;
 
   const startFrom = ch.startFrom ?? undefined;
   if (ch.type === 'count_on' && (startFrom === undefined || startFrom < 1 || startFrom >= target)) {
@@ -346,7 +367,7 @@ export const itemFromChallenge = (
   return {
     id: ch.id,
     kind: ch.type,
-    answerKind: ch.type === 'subitize_perceptual' || makesASet(ch.type) ? 'gesture' : 'voice',
+    answerKind: ch.type === 'subitize_perceptual' || ch.type === 'name_numeral' || makesASet(ch.type) ? 'gesture' : 'voice',
     responseClass: responseClassFor({ kind: ch.type, target }),
     action: ACTION_FOR_KIND[ch.type],
     objectWord: opts.objectWord,
@@ -357,8 +378,28 @@ export const itemFromChallenge = (
     groupSize: ch.groupSize ?? undefined,
     compareGroups,
     changeBy,
+    ...(ch.type === 'recount_moved' && (ch.sizeChange === 'bigger' || ch.sizeChange === 'smaller') ? { sizeChange: ch.sizeChange } : {}),
   };
 };
+
+/**
+ * The numeral cards a name_numeral item offers: the answer and its neighbours, four cards from 0-10, in an order
+ * seeded by the item id. The neighbours (one more and one less, where they exist) are the cards a miscount lands
+ * on, so the answer is never the odd one out and never in a fixed place.
+ */
+export function numeralOptions(item: Pick<CountingItem, 'id' | 'target'>): number[] {
+  const t = item.target;
+  const near = [t - 1, t + 1, t - 2, t + 2, t - 3, t + 3].filter(n => n >= 0 && n <= NUMERAL_MAX);
+  const cards = [t, ...near.slice(0, 3)];
+  let h = 0;
+  for (let i = 0; i < item.id.length; i++) h = (h * 31 + item.id.charCodeAt(i)) >>> 0;
+  const rand = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 0x100000000; };
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
 
 export const itemsFromChallenges = (
   challenges: CountingChallengeLike[],
@@ -398,7 +439,7 @@ export const drawnCount = (item: CountingItem): number =>
 export type CountMiss = 'one_short' | 'one_over' | 'short_by_more' | 'over_by_more' | 'gave_all';
 
 export function countMiss(item: CountingItem | null, committed: number): CountMiss | undefined {
-  if (!item || (!makesASet(item.kind) && item.kind !== 'subitize_perceptual')) return undefined;
+  if (!item || (!makesASet(item.kind) && item.kind !== 'subitize_perceptual' && item.kind !== 'name_numeral')) return undefined;
   const off = committed - item.target;
   if (off === 0) return undefined;
   if (off === -1) return 'one_short';
@@ -509,6 +550,8 @@ export function workspaceScene(item: CountingItem, view: CountingBoardView): Wor
     facts: { kind: item.kind, objects: item.objectWord, markedOnBoard: view.counted.size,
       takenOff: view.removed.size, putOn: view.added.size, moved: view.moved ? 'yes' : 'no',
       startFrom: item.startFrom ?? '', changeBy: item.changeBy ?? '',
+      // What is drawn after the move: the same objects, bigger or smaller than before. Never a number.
+      ...(item.kind === 'recount_moved' && item.sizeChange && view.moved ? { objectSize: `${item.sizeChange} than before the move` } : {}),
       // Only what the card's moves and the doctrine do not say: the hand match is pre-numeric, and a quick look is
       // shown before it is answered. (recount_moved's freeze is the card's `moves`.)
       constraints: item.kind === 'subitize_perceptual' ? 'Pre-numeric matching: use no number words.'
@@ -559,6 +602,9 @@ export const stimulusFor = (item: CountingItem): string => {
       return `a group of ${item.objectWord}, ${numberWordFor(item.changeBy ?? 0)} of them to take away`;
     case 'add_more':
       return `a group of ${item.objectWord}, with ${numberWordFor(item.changeBy ?? 0)} more to put on`;
+    case 'name_numeral':
+      // The board may be empty; saying so here would name the answer.
+      return `a board of ${item.objectWord} to count, and number cards to tap`;
     default:
       return `a group of ${item.objectWord} to touch and count`;
   }
@@ -656,6 +702,18 @@ export const countingBoardHarnessAnswers = (item: CountingItem): CountingHarness
           why: 'the starting number said back — the contract names it as NOT the answer',
         },
       };
+    case 'name_numeral': {
+      // A miscount lands on a neighbour card, which the item always offers.
+      const wrongCard = item.target > 0 ? item.target - 1 : item.target + 1;
+      return {
+        ...base,
+        correct: `tapped the numeral ${item.target}`,
+        plainWrong: `tapped the numeral ${wrongCard}`,
+        placed: { correct: item.target, wrong: wrongCard },
+        // A tap answers it: nothing is spoken that could leak.
+        leakTokens: [],
+      };
+    }
     case 'build_n':
     case 'give_me_n': {
       // One too many is the miss: the child keeps counting past the ask.

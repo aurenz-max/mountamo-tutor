@@ -5,6 +5,7 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import { tierWindow } from '../itemSpace';
 import { twoUnitItems } from './lengthLabTwoUnit';
+import { measureCompareAnswer, measureCompareItems } from '../../primitives/visual-primitives/math/lengthLabMeasureCompare';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -31,6 +32,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `child says which unit they needed more of. Give objectName0, objectLength0 and objectColor0 only — the app `
       + `picks both units and works out both counts. Never state a number in the instruction.`,
     schemaDescription: "'two_unit_compare' (K: the same object, two units)",
+  },
+  measure_compare: {
+    promptDoc:
+      `"measure_compare": Kindergarten. The child measures TWO objects with the same unit, one at a time, then says `
+      + `which is longer (or shorter) by the two counts. Give objectName0, objectColor0, objectName1 and objectColor1 `
+      + `only — two different everyday objects. The app picks both lengths, the question and the answer. Never state `
+      + `a number or which object is longer in the instruction, hint or narration.`,
+    schemaDescription: "'measure_compare' (K: measure two objects, compare by the counts)",
   },
   compare: {
     promptDoc:
@@ -589,7 +598,7 @@ Return the complete length lab configuration.
 
   const validChallengeTypes = [
     'compare', 'tile_and_count', 'order', 'indirect',
-    'estimate_then_tile', 'two_unit_compare',
+    'estimate_then_tile', 'two_unit_compare', 'measure_compare',
   ];
 
   // Filter to valid challenge types
@@ -657,6 +666,11 @@ Return the complete length lab configuration.
       // (lengthLabTwoUnit.ts), because the inverse relationship between unit size and count is the
       // thing being taught. ──
       case 'two_unit_compare':
+        break;
+
+      // ── Measure two objects, then compare by the counts: code builds both lengths and the key after this loop
+      // (lengthLabMeasureCompare.ts). ──
+      case 'measure_compare':
         break;
 
       case 'tile_and_count': {
@@ -805,6 +819,27 @@ Return the complete length lab configuration.
     console.log(`[LengthLab] two_unit_compare ${supportTier ?? 'no-tier'} items ${items.map((it) => `${it.objectLength0}: ${it.unitType} ${it.correctUnitCount} / ${it.unitTypeB} ${it.correctUnitCountB}`).join(' | ')}`);
   }
 
+  // ── measure_compare: code builds both lengths, the ask's word and the key (lengthLabMeasureCompare.ts). The model
+  // writes only the two object names; a repeated name is replaced so the two buttons differ. ──
+  const measured = (data.challenges as Array<Record<string, unknown>>).filter((c) => c.type === 'measure_compare');
+  if (measured.length) {
+    const items = measureCompareItems(supportTier, measured.length);
+    const unitWords = String(data.unitType).replace('_', ' ');
+    measured.forEach((c, i) => {
+      const name0 = String(c.objectName0 || objectPool[i % objectPool.length]);
+      let name1 = String(c.objectName1 || objectPool[(i + 1) % objectPool.length]);
+      if (name1.toLowerCase() === name0.toLowerCase()) name1 = objectPool.find((n) => n !== name0.toLowerCase()) ?? 'ribbon';
+      Object.assign(c, items[i], { objectName0: name0, objectName1: name1, unitType: data.unitType });
+      delete c.answerIndex;
+      c.correctAnswer = measureCompareAnswer(c as unknown as Parameters<typeof measureCompareAnswer>[0]);
+      c.instruction = `Measure the ${name0} and the ${name1} with ${unitWords}. Which one is ${items[i].compareWord}?`;
+      c.hint = `Lay the ${unitWords} end to end along each one and count them. Then look at your two counts.`;
+      // The model's narration was written before code chose the lengths, so it can name the wrong object.
+      c.narration = c.instruction;
+    });
+    console.log(`[LengthLab] measure_compare ${supportTier ?? 'no-tier'} items ${(measured as Array<{ objectLength0: number; objectLength1: number; compareWord: string }>).map((c) => `${c.objectLength0}/${c.objectLength1} ${c.compareWord}`).join(' | ')}`);
+  }
+
   // ── Counting modes: the tier sets how many units long the objects are. A mode whose difficulty is one
   // ordered quantity (how far the learner counts) takes the tier's window of counts (/add-item-space,
   // tierWindow). The model's counts were 3-10 at every tier (10-14 probe). Kindergarten counts 2-10, grade 1
@@ -846,6 +881,10 @@ Return the complete length lab configuration.
       }
       if (ch.type === 'tile_and_count') {
         ch.showAlignmentFeedback = sc.showAlignmentFeedback;
+      }
+      // measure_compare: the fit line is the easy tier's self-check on each measurement, as on tile_and_count.
+      if (ch.type === 'measure_compare') {
+        ch.showAlignmentFeedback = supportTier === 'easy';
       }
 
       // #2 instruction-as-scaffold (indirect): append the chain tip, or leave bare

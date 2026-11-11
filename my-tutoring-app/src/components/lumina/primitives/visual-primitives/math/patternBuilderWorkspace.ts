@@ -5,15 +5,21 @@
  *   - identify_core: the tokens of the repeating part tapped in the row, then Check;
  *   - translate: the new tokens tapped in order, following the drawn key, then Check;
  *   - create (open build, OB-9M): the learner's own row in the pattern shape the ask names (AB, ABB, ...), then
- *     "I'm done!"; the check is code (a part of that shape, repeated at least twice). Try again keeps the row.
+ *     "I'm done!"; the check is code (a part of that shape, repeated at least twice). When the row makes the shape,
+ *     the rule turn: the learner picks which part of their own row repeats (`ruleChoices`), and that pick commits.
+ *     Try again keeps the row.
+ *   - copy: the model row rebuilt token by token in an empty row below it, then Check;
+ *   - fill_gap: the token that belongs in the "?" inside the row, then Check.
  */
 import type { SceneOf } from '../../../components/live-activity/bossLevers';
+import type { SpokenKey } from '../../../components/live-activity/spokenKey';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
 import type { PatternBuilderMiss } from './patternBuilder.card';
 
 export { PATTERN_MISSES_BY_MODE, type PatternBuilderMiss } from './patternBuilder.card';
 
-export type PatternPhase = 'copy' | 'identify' | 'create' | 'translate';
+export type PatternPhase = 'copy' | 'identify' | 'create' | 'translate' | 'rebuild' | 'gap';
 export type PatternTier = 'easy' | 'medium' | 'hard';
 type PatternSource = Pick<PatternBuilderData, 'sequence' | 'tokens' | 'translationTarget' | 'showOptions'>;
 
@@ -21,6 +27,8 @@ export function phaseFor(type: PatternBuilderChallenge['type'] | undefined): Pat
   if (type === 'identify_core') return 'identify';
   if (type === 'create') return 'create';
   if (type === 'translate') return 'translate';
+  if (type === 'copy') return 'rebuild';
+  if (type === 'fill_gap') return 'gap';
   return 'copy';
 }
 
@@ -111,12 +119,75 @@ export function repeatKey(given: readonly string[], blanks: number): { core: str
   return { core: part, hidden: Array.from({ length: blanks }, (_, i) => part[(given.length + i) % part.length]) };
 }
 
+/**
+ * fill_gap: the row as drawn, with "?" at the gap. The generator keeps the gap's token in `given` (so the row's part is
+ * code-derived); nothing the tutor or the screen sees may carry it.
+ */
+export function shownRow(data: PatternSource, c: PatternBuilderChallenge): string[] {
+  const given = activeSequence(data, c).given;
+  return c.type === 'fill_gap' && Number.isInteger(c.gapIndex) ? given.map((t, i) => (i === c.gapIndex ? '?' : t)) : given;
+}
+
+/**
+ * fill_gap's spoken key: the gap's token is one sayable word ("blue", "star"), so the item also takes it said (user
+ * ruling 10-13, voice beside the tap). The tap is still checked by the activity. Null on every other mode.
+ */
+export function gapKey(c: PatternBuilderChallenge): SpokenKey | null {
+  const t = c.type === 'fill_gap' ? c.sequence?.hidden[0] : undefined;
+  if (!t) return null;
+  return { answer: t, alsoAccept: [`the ${t} one`, `${t} one`, `a ${t}`],
+    acceptRule: `A sentence that names it, such as "it is ${t}", counts.`, signatureError: 'Naming any other token is wrong.' };
+}
+
+/** fill_gap's known spoken misses, with the tap's ids: a token beside the gap, or another token on the palette. */
+export function gapSpokenMisses(c: PatternBuilderChallenge): KnownMiss[] {
+  const seq = c.sequence, key = seq?.hidden[0], gap = c.gapIndex ?? -1;
+  if (c.type !== 'fill_gap' || !seq || !key) return [];
+  const lowerKey = key.toLowerCase();
+  const near = Array.from(new Set([seq.given[gap - 1], seq.given[gap + 1]].filter((t): t is string => !!t && t.toLowerCase() !== lowerKey)));
+  const other = Array.from(new Set((c.availableTokens ?? []).filter(t => t.toLowerCase() !== lowerKey && !near.includes(t))));
+  const fact = `The answer is "${key}", the token the pattern puts in the gap.`;
+  return [
+    ...(near.length ? [{ id: 'copied_neighbour', pattern: `${fact} The learner names ${near.map(t => `"${t}"`).join(' or ')}, `
+      + 'the token beside the gap.', examples: near }] : []),
+    ...(other.length ? [{ id: 'one_wrong', pattern: `${fact} The learner names another token: ${other.map(t => `"${t}"`).join(', ')}.`,
+      examples: other }] : []),
+  ];
+}
+
+/** A small stable number from an id, so an item's choices come in the same order every time it is drawn. */
+const seedOf = (id: string) => Array.from(id).reduce((s, ch) => (s * 31 + ch.charCodeAt(0)) >>> 0, 7);
+
+/**
+ * create's rule turn: three parts of the learner's own row to pick the one that repeats from — the part the asked shape
+ * has, one token short of it and one token over. Each is the row's own start, so no choice brings a token the learner
+ * did not place, and only the part of the asked length repeats through the row. Rotated by the item's id. Empty when
+ * the row does not make the shape (the turn opens only after it does).
+ */
+export function ruleChoices(c: PatternBuilderChallenge, row: readonly string[]): string[][] {
+  const k = c.createShape?.length ?? 0;
+  if (c.type !== 'create' || !c.createShape || !makesShape([...row], c.createShape)) return [];
+  const parts = [row.slice(0, k - 1), row.slice(0, k), row.slice(0, k + 1)].filter(p => p.length > 0);
+  const rot = seedOf(c.id) % parts.length;
+  return [...parts.slice(rot), ...parts.slice(0, rot)];
+}
+
+/** Which of `ruleChoices` is the part that repeats; -1 when there is no turn. */
+export function ruleKeyIndex(c: PatternBuilderChallenge, row: readonly string[]): number {
+  const k = c.createShape?.length ?? 0;
+  return ruleChoices(c, row).findIndex(p => p.length === k);
+}
+
 /** The learner's work on the current challenge. */
 export interface PatternBuilderView {
   extension: string[];
   coreIndices: number[];
   created: string[];
   translated: string[];
+  /** copy: the row rebuilt below the model. */
+  copied?: string[];
+  /** create's rule turn: the part of their row the learner picked as the part that repeats, once picked. */
+  rule?: string[] | null;
 }
 
 const selectedTokens = (data: PatternSource, c: PatternBuilderChallenge, v: PatternBuilderView) => {
@@ -132,8 +203,13 @@ export function patternBuilderMatches(data: PatternSource, c: PatternBuilderChal
     case 'extend':
     case 'find_rule': return same(v.extension, seq.hidden);
     case 'identify_core': return same(selectedTokens(data, c, v), seq.core);
-    case 'create': return c.createShape ? makesShape(v.created, c.createShape) : repeatsAPart(v.created);
+    // An asked shape is judged with its rule turn: the shape made, and the part picked is the part that repeats.
+    case 'create': return c.createShape
+      ? makesShape(v.created, c.createShape) && !!v.rule && same(v.rule, v.created.slice(0, c.createShape.length))
+      : repeatsAPart(v.created);
     case 'translate': { const expected = translationOf(data, c); return !!expected && same(v.translated, expected); }
+    case 'copy': return same(v.copied ?? [], seq.given);
+    case 'fill_gap': return same(v.extension, seq.hidden);
   }
 }
 
@@ -159,6 +235,14 @@ export function patternBuilderMiss(data: PatternSource, c: PatternBuilderChallen
       return rowMiss(got, seq.hidden);
     }
     case 'translate': return rowMiss(v.translated, translationOf(data, c) ?? []);
+    case 'copy': return rowMiss(v.copied ?? [], seq.given);
+    case 'fill_gap': {
+      const got = v.extension[0], gap = c.gapIndex ?? -1;
+      if (!got) return 'blanks_left';
+      // The token on either side of the gap: copying a neighbour, not following the pattern.
+      const near = [seq.given[gap - 1], seq.given[gap + 1]].filter(Boolean).map(t => t.toLowerCase());
+      return near.includes(got.toLowerCase()) ? 'copied_neighbour' : 'one_wrong';
+    }
     case 'identify_core': {
       const got = selectedTokens(data, c, v);
       if (same(got, [...seq.core, ...seq.core])) return 'two_repeats';
@@ -166,6 +250,11 @@ export function patternBuilderMiss(data: PatternSource, c: PatternBuilderChallen
     }
     case 'create': {
       const min = c.createShape ? 2 * c.createShape.length : 4;
+      // The shape made: no miss until the rule turn's pick; a wrong pick is one token short of the part, or one over.
+      if (c.createShape && makesShape(v.created, c.createShape)) {
+        if (!v.rule) return undefined;
+        return v.rule.length < c.createShape.length ? 'rule_short' : 'rule_long';
+      }
       if (v.created.length < min) return 'too_short';
       const part = repeatedPart(v.created);
       if (!part) return 'no_repeat';
@@ -181,8 +270,10 @@ export function describePatternBuilderCheck(data: PatternSource, c: PatternBuild
     case 'extend':
     case 'find_rule': return `Placed ${row(v.extension)} in the ${activeSequence(data, c).hidden.length} blanks`;
     case 'identify_core': return `Selected ${row(selectedTokens(data, c, v))}`;
-    case 'create': return `Built ${row(v.created)}`;
+    case 'create': return `Built ${row(v.created)}${v.rule ? `; picked ${row(v.rule)} as the part that repeats` : ''}`;
     case 'translate': return `Built ${row(v.translated)}`;
+    case 'copy': return `Built ${row(v.copied ?? [])} below the model row`;
+    case 'fill_gap': return v.extension.length ? `Placed ${row(v.extension)} in the gap` : 'Nothing placed in the gap';
   }
 }
 
@@ -195,7 +286,11 @@ const CONSTRAINTS: Record<PatternBuilderChallenge['type'], string> = {
     + 'color"). The new row is the answer: never say it, or which token goes in any place.',
   create: 'There is no single answer: the builder accepts any tokens whose first part has the asked shape and repeats at '
     + 'least two whole times. You may explain the shape with tokens that are not on the palette, but never tell the '
-    + 'learner which tokens to tap or say their next one.',
+    + 'learner which tokens to tap or say their next one. In the rule turn, ask the learner to say or tap the part of '
+    + 'their row that repeats; never say which choice it is.',
+  copy: 'The model row is on screen and copying it is the task: you may ask which token of the model comes next, but '
+    + 'never say a token to tap.',
+  fill_gap: 'The token in the gap is the answer: never say it, point to its choice, or say what the pattern says at the gap.',
 };
 
 /** How far the tutor may coach at this support tier, so it never says what the tier withheld on screen. */
@@ -233,8 +328,10 @@ export function patternBuilderScene(data: PatternSource, c: PatternBuilderChalle
   return { objects: [], facts: {
     kind: c.type,
     ...(phase === 'copy' ? { pattern: [...seq.given, ...seq.hidden.map(() => '?')].join(', ') } : {}),
+    ...(phase === 'gap' ? { pattern: shownRow(data, c).join(', '), gap: 'one place inside the row is empty ("?")' } : {}),
+    ...(phase === 'rebuild' ? { modelRow: seq.given.join(', '), buildRow: 'an empty row below the model' } : {}),
     ...(phase === 'identify' || phase === 'translate' ? { pattern: seq.given.join(', ') } : {}),
-    ...(phase === 'copy' && data.showOptions?.showCore ? { highlightedPart: seq.core.join(', ') } : {}),
+    ...((phase === 'copy' || phase === 'gap') && data.showOptions?.showCore ? { highlightedPart: seq.core.join(', ') } : {}),
     ...(phase === 'translate' && mapping ? { key: Object.entries(mapping).map(([from, to]) => `${from} → ${to}`).join(', ') } : {}),
     ...(phase !== 'identify' ? { choices: paletteFor(data, c).join(' | ') } : {}),
     ...(c.type === 'create' && c.createShape ? { askedShape: shapeLetters(c.createShape) } : {}),
@@ -283,6 +380,15 @@ export function patternBuilderHarnessInputs(data: PatternSource, c: PatternBuild
   if (c.type === 'extend' || c.type === 'find_rule') {
     return [...tapRow(palette, wrong ? spoil(palette, seq.hidden) : seq.hidden), check];
   }
+  if (c.type === 'copy') return [...tapRow(palette, wrong ? spoil(palette, seq.given) : seq.given), check];
+  if (c.type === 'fill_gap') {
+    // Wrong: the token beside the gap (copying a neighbour), or any other token.
+    const key = seq.hidden[0], gap = c.gapIndex ?? 0;
+    const near = [seq.given[gap - 1], seq.given[gap + 1]].find(t => t && t.toLowerCase() !== key.toLowerCase());
+    const other = near ?? palette.find(t => t.toLowerCase() !== key.toLowerCase());
+    if (!other) throw new Error(`fill_gap ${c.id} has no wrong token`);
+    return [...tapRow(palette, [wrong ? other : key]), check];
+  }
   if (c.type === 'translate') {
     const row = translationOf(data, c);
     if (!row) throw new Error(`No translation key for ${c.id}`);
@@ -302,7 +408,10 @@ export function patternBuilderHarnessInputs(data: PatternSource, c: PatternBuild
     if (distinct.length < tokensNeeded(madeShape)) throw new Error(`create ${c.id} has too few different tokens for ${madeShape}`);
     const part = madeShape.split('').map(l => distinct[l.charCodeAt(0) - 65]);
     const clear: HarnessInput[] = kept ? [{ type: 'choose', label: START_OVER_LABEL }] : [];
-    return [...clear, ...tapRow(palette, [...part, ...part]), { type: 'choose', label: DONE_LABEL }];
+    const row = [...part, ...part];
+    // A row of the asked shape opens the rule turn: the right answer picks the part that repeats.
+    const rule: HarnessInput[] = wrong ? [] : [{ type: 'touch', target: `rule-${ruleKeyIndex(c, row)}` }];
+    return [...clear, ...tapRow(palette, row), { type: 'choose', label: DONE_LABEL }, ...rule];
   }
   // identify_core: the first place the core appears in the row, or one token more.
   const n = seq.core.length;

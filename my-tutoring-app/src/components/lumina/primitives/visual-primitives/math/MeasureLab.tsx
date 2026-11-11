@@ -15,6 +15,8 @@
  *   capacity_predict — say which holds more, then pour both full and count
  *   pour_count       — fill one container with cups and say how many it took
  *   order_capacity   — put three identical jars in order, least to most
+ *   fill_level       — look at the water drawn inside: empty or full, and which of two identical containers has
+ *                      more (or less); code sets every level, nothing on screen names the answer
  *
  * PREDICTION BEFORE TEST is the pedagogy, so it is also the mechanic: the
  * prediction modes will not run the test until the child has committed, and the
@@ -59,7 +61,7 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import { describeMeasureWork, measureMiss, workspaceScene, type MeasureView } from './measureLabWorkspace';
 import {
-  CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, LEVEL_LINES, LEVEL_LINES_LEVER, MEASURE_LEVERS, ORDER_STEPS,
+  CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, FILL_WORDS, FILL_WORDS_LEVER, LEVEL_LINES, LEVEL_LINES_LEVER, MEASURE_LEVERS, ORDER_STEPS,
   ORDER_STEPS_LEVER, POURED_SHELF_LEVER, PRACTICE_NOTE, shelfCups,
 } from './measureLabLevers';
 import { measureLabBoss } from './measureLab.boss';
@@ -72,7 +74,8 @@ export type MeasureLabChallengeType =
   | 'balance_predict'
   | 'capacity_predict'
   | 'pour_count'
-  | 'order_capacity';
+  | 'order_capacity'
+  | 'fill_level';
 
 export interface MeasureObject {
   id: string;
@@ -117,8 +120,12 @@ export interface MeasureLabChallenge {
   containerA?: MeasureContainer;
   containerB?: MeasureContainer;
 
-  /** order_capacity — three identical jars, different amounts inside. */
+  /** order_capacity — three identical jars, different amounts inside. fill_level (more or less) — two identical ones. */
   containers?: MeasureContainer[];
+
+  /** fill_level: the ask. 'empty_full' is one container (`container`, its `filled` 0 or full); 'more' and 'less' are two
+   *  identical containers. The key is `expectedChoice`: 'empty' | 'full', or the container id. */
+  fillAsk?: 'empty_full' | 'more' | 'less';
 
   /** The unit the child pours with ("cups"). */
   unitName?: string;
@@ -273,6 +280,21 @@ const DownModel: React.FC = () => {
   );
 };
 
+/** fill_words lever: fixed model containers with their words, outside the item. Never the item's containers. */
+const FillWords: React.FC = () => (
+  <div data-lever="fill-words" aria-label="a word picture" className="flex flex-wrap items-end justify-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+    {FILL_WORDS.map(({ fill, word }) => (
+      <div key={word} className="flex flex-col items-center gap-1">
+        <svg width={36} height={52} viewBox="0 0 36 52" aria-hidden>
+          <rect x={4} y={4 + Math.round(44 * (1 - fill))} width={28} height={Math.round(44 * fill)} rx={3} fill="rgba(56,189,248,0.55)" />
+          <rect x={4} y={4} width={28} height={44} rx={4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2} />
+        </svg>
+        <span className="text-xs text-amber-200">{word}</span>
+      </div>
+    ))}
+  </div>
+);
+
 // ---------------------------------------------------------------------------
 // Phase config
 // ---------------------------------------------------------------------------
@@ -282,6 +304,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   capacity_predict: { label: 'Holds More', icon: '🫗', accentColor: 'cyan' },
   pour_count: { label: 'How Many Cups', icon: '🥤', accentColor: 'emerald' },
   order_capacity: { label: 'Least to Most', icon: '📶', accentColor: 'purple' },
+  fill_level: { label: 'Empty, Full, More', icon: '🥛', accentColor: 'cyan' },
 };
 
 // ---------------------------------------------------------------------------
@@ -310,13 +333,19 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabPro
   // The runtime moves the index; a fresh item and Try again clear the bench (bound below).
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below; a spoken fill_level answer the observer credited (`onSolved`, which fires for a tap too). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; a spoken answer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   const progress = useMeasureProgress({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: measureLabBoss.assignment!,
+    workspace, assignment: measureLabBoss.assignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
+    onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const { currentIndex, results, isComplete } = progress;
   /** A checked answer stays closed until Try again or Next challenge on the shell. */
@@ -428,6 +457,21 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabPro
 
   submitRef.current = submit;
 
+  // A spoken fill_level answer the observer credited: the credited choice shown as a correct tap shows it. A tap has
+  // already recorded itself, so nothing happens twice.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || solved.type !== 'fill_level' || recordedRef.current || solved.id !== currentChallenge?.id) return;
+    recordedRef.current = true;
+    setPrediction(solved.expectedChoice ?? null);
+    setFeedback('correct');
+  };
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || practice.type !== 'fill_level') return;
+    setPrediction(practice.expectedChoice ?? null);
+    setFeedback('correct');
+  };
+
   // Under a lesson's evaluation provider only: the scored session, whose item scores count corrections and whose
   // evidence carries each wrong check's named miss.
   finish.current = (result) => {
@@ -517,6 +561,14 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabPro
     }
   };
 
+  /** fill_level: one tap, checked at once: 'empty' | 'full', or the container tapped. */
+  const handleFillChoice = (choice: string) => {
+    if (!currentChallenge || feedback === 'correct' || learnerBlocked()) return;
+    SoundManager.select();
+    setPrediction(choice);
+    submit(choice === currentChallenge.expectedChoice, { prediction: choice });
+  };
+
   const handleCountChoice = (n: number) => {
     if (!currentChallenge || feedback === 'correct' || learnerBlocked()) return;
     setChosenCount(n);
@@ -546,7 +598,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabPro
           if (!easier) return 'This item has no easier version; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); clearWork(); setPractice(easier);
-          return { practice: measureLabBoss.assignment!(easier) };
+          return { practice: measureLabBoss.assignment(easier) };
         }
         setLeverState(pulled);
         return true;
@@ -809,6 +861,61 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId }: MeasureLabPro
                       </div>
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+
+              {/* ── fill_level ────────────────────────────────────────────── */}
+              {ch.type === 'fill_level' ? (
+                <div className="space-y-4">
+                  {ch.fillAsk === 'empty_full' && ch.container ? (
+                    <>
+                      <div className="flex justify-center">
+                        <ContainerView
+                          container={ch.container}
+                          poured={ch.container.filled ?? 0}
+                          capacity={ch.container.capacity}
+                          levelLines={leverOn(LEVEL_LINES_LEVER) ? LEVEL_LINES : undefined}
+                        />
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        {(['empty', 'full'] as const).map((word) => (
+                          <LuminaAnswerChoice
+                            key={word}
+                            aria-label={word === 'empty' ? 'Empty' : 'Full'}
+                            state={prediction === word ? (feedback === 'correct' ? 'correct' : feedback === 'incorrect' ? 'incorrect' : 'selected') : 'idle'}
+                            disabled={feedback === 'correct'}
+                            onClick={() => handleFillChoice(word)}
+                            className="w-auto min-w-[96px] pl-5 pr-9 py-3 text-center text-lg"
+                          >
+                            {word === 'empty' ? 'Empty' : 'Full'}
+                          </LuminaAnswerChoice>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                  {ch.fillAsk !== 'empty_full' && ch.containers ? (
+                    <>
+                      <div className="text-center">
+                        <LuminaSectionLabel accent="cyan" size="sm">
+                          Tap the one with {ch.fillAsk} water
+                        </LuminaSectionLabel>
+                      </div>
+                      <div className="flex flex-wrap justify-center items-end gap-4 sm:gap-8">
+                        {ch.containers.map((c) => (
+                          <ContainerView
+                            key={c.id}
+                            container={c}
+                            poured={c.filled ?? 0}
+                            capacity={c.capacity}
+                            state={prediction === c.id ? (feedback === 'correct' ? 'correct' : feedback === 'incorrect' ? 'incorrect' : 'selected') : 'idle'}
+                            levelLines={leverOn(LEVEL_LINES_LEVER) ? LEVEL_LINES : undefined}
+                            onClick={feedback === 'correct' ? undefined : () => handleFillChoice(c.id)}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                  {leverOn(FILL_WORDS_LEVER) ? <div className="flex justify-center"><FillWords /></div> : null}
                 </div>
               ) : null}
 

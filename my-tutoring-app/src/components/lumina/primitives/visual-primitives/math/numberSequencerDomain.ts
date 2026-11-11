@@ -23,7 +23,8 @@ import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss
   from '../../../components/live-activity/runtime/spokenMissContract';
 import { decadeWord, spokenIntegerWord } from './spokenNumberWords';
 
-const isNumber = (n: unknown): n is number => Number.isInteger(n) && Number(n) >= 1 && Number(n) <= 120;
+// Zero is a number on the train: a K count-back lesson ends on it (COUNT001-02-H), and its word is "zero".
+const isNumber = (n: unknown): n is number => Number.isInteger(n) && Number(n) >= 0 && Number(n) <= 120;
 /** Exported because the order cue and the gesture checker both compare arrangements. */
 export const sameOrder = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
 
@@ -57,7 +58,7 @@ export interface SequencerItem extends TeachingItem {
 }
 
 /** Independent key check. Cached and generated content pass the same gate.
- * Zero is outside the spoken-number contract; no invalid key is repaired here. */
+ * Values run 0-120; no invalid key is repaired here. */
 export function sequencerChallengeValid(c: NumberSequencerChallenge): boolean {
   if (!c || typeof c.id !== 'string' || !c.id.trim() || !Array.isArray(c.sequence)
     || !Array.isArray(c.correctAnswers) || !c.correctAnswers.length

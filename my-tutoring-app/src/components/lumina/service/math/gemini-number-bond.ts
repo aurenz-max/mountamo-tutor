@@ -14,6 +14,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { resolveObjectiveRange } from "../objectiveNumberWindow";
 import { resolveTeenWindow, teenSweep, TEEN_MIN as TEEN_WHOLE_MIN, TEEN_MAX as TEEN_WHOLE_MAX } from "./teenWindow";
 import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
 import type { Bond10Item } from "../itemSpace/bonds10";
@@ -546,10 +547,29 @@ export const generateNumberBond = async (
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
-  // ── Item space: with a tier, code picks every bond at the tier's difficulty ──
-  // The bond window is the band's (K 5, Grade 1 10), narrowed by an explicit config.maxNumber.
+  // ── The bond window. K 5 is the DEFAULT, not a cap (math-k audit 2026-11-10: "within 10",
+  // OPS001-02-G, shipped bonds to 5 even with maxNumber set). An explicit config.maxNumber wins;
+  // else a K lesson that names its range gets it from resolveObjectiveRange, up to what the
+  // board scores (wholes to BOND_CAPACITY); null (no range named) keeps 5. Grade 1 stays 10. ──
   const isK = ctx.grade === 'K' || gradeLevel.toLowerCase().includes('kinder');
-  const spaceMax = Math.min(config?.maxNumber ?? 10, isK ? 5 : 10);
+  const BOND_CAPACITY = 10;
+  const objectiveRange = isK && !hasTeenType && config?.maxNumber === undefined
+    ? await resolveObjectiveRange({
+      topic, intent: ctx.intent, objectiveText: ctx.scope?.objectiveText, gradeLevel,
+      quantity: 'the whole numbers the child breaks into two parts (bond wholes)',
+      bandDefault: { min: 0, max: 5 }, capacity: { min: 0, max: BOND_CAPACITY }, logPrefix: 'NumberBond',
+    })
+    : null;
+  const kMax = config?.maxNumber !== undefined
+    ? Math.max(2, Math.min(config.maxNumber, BOND_CAPACITY))
+    : objectiveRange?.max ?? 5;
+  /** Band ceiling for a gradeBand: K's window above, Grade 1 the board's 10. */
+  const bandMax = (band: string) => (band === 'K' ? kMax : BOND_CAPACITY);
+  // The window the lesson set (a named range or an explicit maxNumber), told to the model and held below.
+  const windowSet = isK && (objectiveRange !== null || config?.maxNumber !== undefined);
+
+  // ── Item space: with a tier, code picks every bond at the tier's difficulty ──
+  const spaceMax = Math.min(config?.maxNumber ?? BOND_CAPACITY, isK ? kMax : BOND_CAPACITY);
   const spaceBonds = await bondsFromItemSpace({
     // The symbolic modes stay Grade 1 (R1): at K they keep their own path, which strips them.
     difficulty: config?.difficulty, type: isK && (pinnedType === 'fact-family' || pinnedType === 'build-equation') ? undefined : pinnedType,
@@ -582,7 +602,7 @@ ${tierSection}${spaceSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
-  * maxNumber: 5 (wholes range from 2 to 5)
+  * maxNumber: ${kMax} (wholes range from 2 to ${kMax})
   * Focus on 'decompose', 'missing-part' and 'related-fact' types ONLY — EXCEPT 'ten-and-ones',
     which is a Kindergarten place-value mode (CCSS K.NBT.1) whose wholes are 11-19
   * Use warm, playful language ("Can you break apart 4? How many ways?")
@@ -600,6 +620,7 @@ GUIDELINES FOR GRADE LEVELS:
 ${(() => {
   const hints: string[] = [];
   if (config?.maxNumber) hints.push(`- Max number: ${config.maxNumber}`);
+  else if (windowSet) hints.push(`- Max number: ${kMax} (this lesson's range: use wholes across 2-${kMax}, not only the small ones)`);
   if (effectiveChallengeTypes) hints.push(`- Challenge types to include: ${effectiveChallengeTypes.join(', ')}`);
   hints.push(`- Number of challenges: ${instanceCount}`);
   return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
@@ -665,14 +686,11 @@ Return the complete number bond configuration.
   if (hasTeenType) {
     data.maxNumber = TEEN_WHOLE_MAX;
   } else {
-    if (!data.maxNumber || data.maxNumber < 2) {
-      data.maxNumber = data.gradeBand === 'K' ? 5 : 10;
+    if (!data.maxNumber || data.maxNumber < 2 || (windowSet && data.gradeBand === 'K')) {
+      data.maxNumber = bandMax(data.gradeBand);
     }
-    if (data.gradeBand === 'K' && data.maxNumber > 5) {
-      data.maxNumber = 5;
-    }
-    if (data.maxNumber > 10) {
-      data.maxNumber = 10;
+    if (data.maxNumber > bandMax(data.gradeBand)) {
+      data.maxNumber = bandMax(data.gradeBand);
     }
   }
 
@@ -996,7 +1014,7 @@ Return the complete number bond configuration.
     // A manifest maxNumber override must not shrink a teen session back under
     // its own window — every item would then be repaired out of the objective.
     if (config.maxNumber !== undefined && !hasTeenType) {
-      data.maxNumber = Math.min(config.maxNumber, data.gradeBand === 'K' ? 5 : 10);
+      data.maxNumber = Math.min(config.maxNumber, bandMax(data.gradeBand));
     }
   }
 

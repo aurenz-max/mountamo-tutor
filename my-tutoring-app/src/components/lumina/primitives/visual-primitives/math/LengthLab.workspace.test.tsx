@@ -44,6 +44,14 @@ const CASES: Record<LengthLabChallenge['type'], Case> = {
     right: [...add('cubes', 6), 'Check', ...add('bears', 2), 'Check', 'cubes'], miss: 'chose_bigger_unit',
     blank: 'Measuring with the first unit', secret: /\b6\b|\b2\b/,
   },
+  measure_compare: {
+    c: { ...base, id: 'm1', type: 'measure_compare', instruction: 'Measure the pencil and the crayon with cubes. Which one is shorter?',
+      objectName0: 'pencil', objectLength0: 5, correctUnitCount: 5, correctUnitCountB: 3, compareWord: 'shorter',
+      correctAnswer: 'crayon', unitType: 'cubes' },
+    wrong: [...add('cubes', 5), 'Done', ...add('cubes', 3), 'Done', 'pencil'],
+    right: [...add('cubes', 5), 'Done', ...add('cubes', 3), 'Done', 'crayon'], miss: 'picked_other',
+    blank: 'Measuring the pencil', secret: /\b5\b|\b3\b/,
+  },
   tile_and_count: {
     c: { ...base, id: 'k1', type: 'tile_and_count', instruction: 'How many cubes long is the crayon?', objectName0: 'crayon',
       objectLength0: 4, correctAnswer: '4', correctUnitCount: 4, unitType: 'cubes' },

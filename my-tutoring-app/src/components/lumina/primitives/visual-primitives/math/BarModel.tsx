@@ -36,6 +36,8 @@ import { BAR_LEVERS, BAR_VALUES, DATA_BESIDE, GROUP_FIVES, GUIDE_LINE, ICON_VALU
   PILE_ROW, PRACTICE_NOTE, SORT_PILE, STEP_MARKS, WORD_MODEL, fivesRows, isSimplerGraph, minorStep, namedRows, stepMarks,
   tierPulled, wordModel, type BarLeverView, type WordModel } from './barModelLevers';
 import { barModelBoss } from './barModel.boss';
+import { collectCorrect, recordedCount } from './barModelCollect';
+import { ANSWERS_SO_FAR, MARK_GUESS, answersSoFar } from './barModelLevers';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 
 // ---------------------------------------------------------------------------
@@ -47,6 +49,8 @@ export type BarModelGraphStyle = 'bar' | 'scaled_bar' | 'picture';
 export type BarModelEvalMode =
   // K one-to-one data family (K.MD.B.3) — one icon per object, no scale to read.
   | 'build_one_to_one'
+  // Guess which choice will be most popular, record the answers as they come in, say whether the guess held (MEAS001-03-F).
+  | 'predict_then_collect'
   | 'read_one_to_one'
   | 'match_to_bar'
   | 'say_what_it_shows'
@@ -95,7 +99,8 @@ export interface BarModelChallenge {
   sourceItems?: { emoji: string; categoryIndex: number }[];
   /** K one-to-one: draw the source as a mixed pile rather than tidy groups. */
   sourceScattered?: boolean;
-  /** build_one_to_one answer key — the true count for each row, in row order. */
+  /** build_one_to_one answer key — the true count for each row, in row order. predict_then_collect: the survey's
+   *  counts; `sourceItems` are its answers in the order they come in. */
   expectedCounts?: number[];
   /** match_to_bar: how many objects are in the stimulus cluster. */
   stimulusCount?: number;
@@ -731,6 +736,11 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   const [showHint, setShowHint] = useState(false);
   /** make_graph: the check's words about the learner's own graph; they stay until the next check. */
   const [verdictText, setVerdictText] = useState('');
+  /** predict_then_collect: the row guessed before any answer came in (kept through Try again, never graded), each
+   *  answer's row in the order recorded, and the learner's yes or no about the guess. */
+  const [prediction, setPrediction] = useState<number | null>(null);
+  const [placements, setPlacements] = useState<number[]>([]);
+  const [collectVerdictSaid, setCollectVerdictSaid] = useState<'yes' | 'no' | null>(null);
   const graphSvgRef = useRef<SVGSVGElement | null>(null);
 
   const recordedRef = useRef(false);
@@ -753,8 +763,11 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
     setFeedback(null);
     setShowHint(false);
     setBuiltValues(next.values);
+    setPlacements([]);
+    setCollectVerdictSaid(null);
     if (retry) { spokenMisses.current += 1; return; }
     spokenMisses.current = 0;
+    setPrediction(null);
     setChosenStep(null);
     recordedRef.current = false;
   };
@@ -869,6 +882,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   // ── Interaction handlers ───────────────────────────────────────────────────
   const handleBarClick = (i: number) => {
     if (learnerBlocked() || !currentChallenge || feedback === 'correct' || isComplete) return;
+    if (currentChallenge.evalMode === 'predict_then_collect') { handleRecord(i); return; }
     // K sticker chart: tapping a row places one sticker in it. The row's own
     // capacity is two cells longer than the answer, so running out of room can
     // never tell the child they are finished.
@@ -886,6 +900,38 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
       setSelectedBarIndex(i);
       submitResult(correct, { selectedIndex: i }, { selectedRow: i });
     }
+  };
+
+  // ── predict_then_collect: a guess first, then each answer into a row as it comes in, then yes or no ──
+  const isCollect = currentChallenge?.evalMode === 'predict_then_collect';
+  const answers = isCollect ? currentChallenge?.sourceItems ?? [] : [];
+  const recorded = recordedCount(builtValues);
+  const collecting = isCollect && prediction != null && recorded < answers.length;
+  const collected = isCollect && prediction != null && answers.length > 0 && recorded >= answers.length;
+  const collectOpen = () => !learnerBlocked() && !!currentChallenge && feedback !== 'correct' && !isComplete;
+  const handleGuess = (i: number) => {
+    if (!collectOpen() || prediction != null) return;
+    SoundManager.select();
+    setPrediction(i);
+  };
+  const handleRecord = (i: number) => {
+    if (!collectOpen() || !collecting) return;
+    SoundManager.tick();
+    setPlacements(prev => [...prev, i]);
+    setBuiltValues(prev => prev.map((v, idx) => (idx === i ? { ...v, value: v.value + 1 } : v)));
+  };
+  const handleUndoRecord = () => {
+    if (!collectOpen() || !placements.length || collectVerdictSaid) return;
+    const last = placements[placements.length - 1];
+    setPlacements(prev => prev.slice(0, -1));
+    setBuiltValues(prev => prev.map((v, idx) => (idx === last ? { ...v, value: Math.max(0, v.value - 1) } : v)));
+  };
+  const handleCollectVerdict = (v: 'yes' | 'no') => {
+    if (!collectOpen() || !collected || !currentChallenge) return;
+    setCollectVerdictSaid(v);
+    const built = builtValues.map(b => b.value);
+    submitResult(collectCorrect(currentChallenge, built, prediction, v),
+      { placedCounts: built, prediction, verdict: v }, { prediction, verdict: v });
   };
 
   const handleStickerRemove = (i: number) => {
@@ -946,7 +992,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   };
   const graphRule = isMakeGraph ? currentChallenge?.graphRule : undefined;
   // The levers (`BAR_LEVERS`): drawn on the session graph only while pulled (or on from the tier), never on an easier graph.
-  const leverView: BarLeverView = { built: builtValues };
+  const leverView: BarLeverView = { built: builtValues, prediction };
   const itemLevers = practice || !sessionChallenge ? []
     : BAR_LEVERS.declare(sessionChallenge, leverView, [...pulledLevers, ...tierPulled(sessionChallenge)]);
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
@@ -966,7 +1012,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   const isStickerBuild = currentChallenge?.evalMode === 'build_one_to_one';
 
   const valuesToRender: BarValue[] =
-    currentChallenge?.evalMode === 'build_graph' || isStickerBuild || isMakeGraph
+    currentChallenge?.evalMode === 'build_graph' || isStickerBuild || isMakeGraph || isCollect
       ? builtValues
       : (currentChallenge?.values ?? []);
 
@@ -992,7 +1038,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   const highlightedIndex =
     answerBarIndex != null && (currentChallenge?.showTargetHighlight !== false || helpOn(MARK_ROW))
       ? answerBarIndex
-      : null;
+      : isCollect && helpOn(MARK_GUESS) ? prediction : null;
   // What the pulled help levers draw (`barModelLevers.ts`); each is off on an easier graph.
   const leverDraw = !currentChallenge || practice ? null : {
     fives: helpOn(GROUP_FIVES) ? fivesRows(currentChallenge) : [],
@@ -1023,12 +1069,13 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
   // put on screen and when the model comes (`leverScene`).
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const scene = workspaceScene(currentChallenge, { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep });
+    const scene = workspaceScene(currentChallenge, { built: builtValues, selectedOption, selectedRow: selectedBarIndex, chosenStep,
+      prediction, verdict: collectVerdictSaid });
     const levers = itemLevers;
     /** A practice graph and the full graph it stands in for share no work. */
     const showItem = (c: BarModelChallenge) => {
       setBuiltValues(c.values); setFeedback(null); setVerdictText(''); setSelectedOption(null); setSelectedBarIndex(null);
-      setChosenStep(null); setShowHint(false);
+      setChosenStep(null); setShowHint(false); setPrediction(null); setPlacements([]); setCollectVerdictSaid(null);
     };
     const onScreen = practice ? '' : BAR_LEVERS.onScreen(sessionChallenge, leverView, pulledLevers);
     const published = leverScene(scene, { support: BAR_LEVERS.support(practice ? null : sessionChallenge, leverView), onScreen });
@@ -1125,7 +1172,48 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   workspace as one region, never a single row. */}
               <PipDock />
               <PipWorkspace className="space-y-6">
-              {currentChallenge.sourceItems && currentChallenge.sourceItems.length > 0 ? (
+              {/* predict_then_collect: the answers are never drawn as a pile, which would show the winner before the guess. */}
+              {isCollect ? (
+                <div className="space-y-3">
+                  {prediction == null ? (
+                    <LuminaPanel className="px-4 py-4 space-y-3">
+                      <div className="text-center">
+                        <LuminaSectionLabel accent="amber" size="sm">Before we ask: which one do you think will get the most?</LuminaSectionLabel>
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        {currentChallenge.values.map((v, i) => (
+                          <LuminaButton key={v.label} tone="ghost" aria-label={`Guess ${v.label}`} disabled={answerClosed}
+                            onClick={() => handleGuess(i)} className="flex items-center gap-2 px-4 py-2">
+                            <span className="text-2xl leading-none">{v.emoji ?? currentChallenge.scale?.iconEmoji}</span>
+                            <span>{v.label}</span>
+                          </LuminaButton>
+                        ))}
+                      </div>
+                    </LuminaPanel>
+                  ) : (
+                    <div className="text-center text-sm text-slate-300">
+                      Your guess: <span className="font-semibold text-amber-200">{currentChallenge.values[prediction]?.label}</span>
+                    </div>
+                  )}
+                  {collecting ? (
+                    <LuminaPanel className="px-4 py-4">
+                      <div className="flex flex-col items-center gap-2" data-collect="next-answer">
+                        <LuminaSectionLabel accent="cyan" size="sm">Here is the next answer. Tap its row.</LuminaSectionLabel>
+                        <span className="text-5xl leading-none select-none" aria-label="the next answer">{answers[recorded]?.emoji}</span>
+                        {placements.length > 0 ? (
+                          <LuminaButton size="sm" tone="ghost" disabled={answerClosed} onClick={handleUndoRecord}>
+                            Take back the last answer
+                          </LuminaButton>
+                        ) : null}
+                      </div>
+                    </LuminaPanel>
+                  ) : null}
+                  {helpOn(ANSWERS_SO_FAR) && prediction != null ? (
+                    <SourceCollection sorted heading="Answers so far"
+                      items={answers.slice(0, recorded)} />
+                  ) : null}
+                </div>
+              ) : currentChallenge.sourceItems && currentChallenge.sourceItems.length > 0 ? (
                 <div>
                   <SourceCollection
                     items={currentChallenge.sourceItems}
@@ -1154,18 +1242,18 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                     highlightedIndex={highlightedIndex}
                     selectedIndex={selectedBarIndex}
                     onBarClick={
-                      isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode)
+                      isStickerBuild || isCollect || ROW_TAP_MODES.has(currentChallenge.evalMode)
                         ? handleBarClick
                         : undefined
                     }
                     clickable={
-                      (isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode))
+                      ((isStickerBuild || ROW_TAP_MODES.has(currentChallenge.evalMode)) || collecting)
                       && !answerClosed
                     }
                     feedbackIndex={rowTapFeedback}
                     showBarValues={(currentChallenge.showBarValues ?? true) || helpOn(BAR_VALUES)}
                     answerBarIndex={answerBarIndex}
-                    showEmptySlots={isStickerBuild}
+                    showEmptySlots={isStickerBuild || isCollect}
                     showPlacedCount={false}
                     markedRows={leverDraw?.marked}
                     fivesRows={leverDraw?.fives}
@@ -1205,6 +1293,26 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
                   An easier graph first. It is not graded; the full graph comes back after it.
                 </div>
               )}
+
+              {collected ? (
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <LuminaSectionLabel accent="amber" size="sm">
+                      {`Did ${currentChallenge.values[prediction ?? 0]?.label} get the most?`}
+                    </LuminaSectionLabel>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    {(['yes', 'no'] as const).map(v => (
+                      <LuminaAnswerChoice key={v} aria-label={v === 'yes' ? 'Yes' : 'No'}
+                        state={collectVerdictSaid === v ? (feedback === 'correct' ? 'correct' : feedback === 'incorrect' ? 'incorrect' : 'selected') : 'idle'}
+                        disabled={answerClosed} onClick={() => handleCollectVerdict(v)}
+                        className="w-auto min-w-[88px] pl-5 pr-9 py-3 text-center text-lg">
+                        {v === 'yes' ? 'Yes' : 'No'}
+                      </LuminaAnswerChoice>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               {isStickerBuild ? (
                 <div className="space-y-4">

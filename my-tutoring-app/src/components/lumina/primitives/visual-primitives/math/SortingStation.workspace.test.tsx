@@ -44,7 +44,8 @@ const CATEGORIES = [{ label: 'Red', rule: { color: 'Red' } }, { label: 'Yellow',
 
 /** The catalog mode and the challenge type the generator emits for it. */
 const MODES = [['sort_one', 'sort-by-one'], ['sort_attribute', 'sort-by-attribute'], ['sort_variety', 'sort-variety'],
-  ['count_compare', 'count-and-compare'], ['odd_one_out', 'odd-one-out'], ['two_attributes', 'two-attributes']] as const;
+  ['count_compare', 'count-and-compare'], ['odd_one_out', 'odd-one-out'], ['two_attributes', 'two-attributes'],
+  ['say_rule', 'say-rule']] as const;
 
 function challengeFor(type: string): Record<string, any> {
   const base = { id: 'c1', type, instruction: 'Sort by color.', sortingAttribute: 'color', categories: CATEGORIES, objects: FRUITS };

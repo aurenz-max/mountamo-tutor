@@ -1,0 +1,167 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (ts-do.json)",
+ "primitiveId": "time-sequencer",
+ "evalMode": "duration-order",
+ "data": {
+  "title": "Morning Routine Explorer",
+  "description": "Put your fun school morning activities in order from the one that takes the shortest time to the one that takes the longest time",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "duration-order",
+    "instruction": "Put these in order, from the quickest to the one that takes the longest.",
+    "hint": "Picture doing each one. Which one is over the quickest?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "ride the bus",
+      "emoji": "🚌",
+      "minutes": 30
+     },
+     {
+      "id": "e2",
+      "label": "brush your teeth",
+      "emoji": "🦷",
+      "minutes": 2
+     },
+     {
+      "id": "e3",
+      "label": "eat breakfast",
+      "emoji": "🍳",
+      "minutes": 10
+     }
+    ],
+    "correctOrder": [
+     "e2",
+     "e3",
+     "e1"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "duration-order",
+    "instruction": "Put these in order, from the quickest to the one that takes the longest.",
+    "hint": "Picture doing each one. Which one is over the quickest?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "pack your backpack",
+      "emoji": "🎒",
+      "minutes": 5
+     },
+     {
+      "id": "e2",
+      "label": "walk to school",
+      "emoji": "🏃",
+      "minutes": 20
+     },
+     {
+      "id": "e3",
+      "label": "put on socks",
+      "emoji": "🌅",
+      "minutes": 1
+     }
+    ],
+    "correctOrder": [
+     "e3",
+     "e1",
+     "e2"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "duration-order",
+    "instruction": "Put these in order, from the quickest to the one that takes the longest.",
+    "hint": "Picture doing each one. Which one is over the quickest?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "eat an apple",
+      "emoji": "🍎",
+      "minutes": 5
+     },
+     {
+      "id": "e2",
+      "label": "ride the bus",
+      "emoji": "🚌",
+      "minutes": 30
+     },
+     {
+      "id": "e3",
+      "label": "wash your hands",
+      "emoji": "🛁",
+      "minutes": 1
+     }
+    ],
+    "correctOrder": [
+     "e3",
+     "e1",
+     "e2"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "duration-order",
+    "instruction": "Put these in order, from the quickest to the one that takes the longest.",
+    "hint": "Picture doing each one. Which one is over the quickest?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "eat breakfast",
+      "emoji": "🍳",
+      "minutes": 15
+     },
+     {
+      "id": "e2",
+      "label": "brush your teeth",
+      "emoji": "🦷",
+      "minutes": 2
+     },
+     {
+      "id": "e3",
+      "label": "ride the bus",
+      "emoji": "🚌",
+      "minutes": 45
+     }
+    ],
+    "correctOrder": [
+     "e2",
+     "e1",
+     "e3"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "duration-order",
+    "instruction": "Put these in order, from the quickest to the one that takes the longest.",
+    "hint": "Picture doing each one. Which one is over the quickest?",
+    "events": [
+     {
+      "id": "e1",
+      "label": "walk to school",
+      "emoji": "🏃",
+      "minutes": 20
+     },
+     {
+      "id": "e2",
+      "label": "drink some juice",
+      "emoji": "🥤",
+      "minutes": 2
+     },
+     {
+      "id": "e3",
+      "label": "pack your backpack",
+      "emoji": "🎒",
+      "minutes": 6
+     }
+    ],
+    "correctOrder": [
+     "e2",
+     "e3",
+     "e1"
+    ]
+   }
+  ]
+ }
+}

@@ -6,6 +6,7 @@ import {
   SortingCategory,
 } from "../../primitives/visual-primitives/math/SortingStation";
 import { ai } from "../geminiClient";
+import { resolveObjectiveRange } from "../objectiveNumberWindow";
 import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
@@ -24,6 +25,7 @@ import {
 import {
   isSayableLabel,
   isSayableObject,
+  isSizeWord,
   optionsEarSeparable,
   opensWithSentinel,
 } from '../../primitives/visual-primitives/math/sortingStationDomain';
@@ -57,6 +59,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc: `"tally-record": Sort objects and record the count of each group using tallies.`,
     schemaDescription: "'tally-record' (sort and tally counts)",
   },
+  'say-rule': {
+    promptDoc: `"say-rule": A FINISHED sort is shown (every card already in its group, the groups unnamed). The child says WHY one group's cards go together (its rule: "they are all red"), and may find the one card placed in the wrong group.`,
+    schemaDescription: "'say-rule' (say the rule of a finished sort)",
+  },
   'sort-variety': {
     promptDoc: `"sort-variety": FLEXIBLE CLASSIFICATION — one fixed object set, sorted by a DIFFERENT valid rule each round (the rule rotation IS the taught skill). Renders as a single-attribute sort per round.`,
     schemaDescription: "'sort-variety' (re-sort the same set by a different rule)",
@@ -70,7 +76,8 @@ type ChallengeType =
   | 'odd-one-out'
   | 'two-attributes'
   | 'tally-record'
-  | 'sort-variety';
+  | 'sort-variety'
+  | 'say-rule';
 
 // ============================================================================
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -132,6 +139,46 @@ interface ProblemShape {
 function gradeObjectWindow(gradeBand: 'K' | '1'): { min: number; max: number } {
   return gradeBand === 'K' ? { min: 4, max: 6 } : { min: 5, max: 8 };
 }
+
+/**
+ * The objects-per-challenge window when the OBJECTIVE names how many go in a group ("count up to 10 objects per
+ * category", MEAS001-02-C). The band window above is the default, not a cap (K math audit 2026-11-10: K showed 4-6
+ * cards where the objective counts to 10 in a group). `groupMax` is the most one group may hold, and the largest group
+ * of every challenge must come within 2 of it, so the counts the objective names are reached; the total leaves room
+ * for the other groups.
+ */
+export interface ObjectWindow { min: number; max: number; groupMax?: number }
+
+/** The most cards one group may hold: the spoken count range tops out at 20, but a K-1 page of cards at 10. */
+const MAX_GROUP_OBJECTS = 10;
+
+export function objectWindowFor(gradeBand: 'K' | '1', groupRange: { min: number; max: number } | null): ObjectWindow {
+  const band = gradeObjectWindow(gradeBand);
+  if (!groupRange) return band;
+  const groupMax = Math.min(MAX_GROUP_OBJECTS, groupRange.max);
+  return { min: Math.max(band.min, groupMax), max: Math.max(band.max, groupMax + 6), groupMax };
+}
+
+/** Why a challenge misses the objective's per-group count, or null. */
+export function groupWindowFault(ch: { objects: { attributes: Record<string, string> }[]; sortingAttribute?: string },
+  window: ObjectWindow): string | null {
+  if (!window.groupMax || !ch.sortingAttribute) return null;
+  const sizes = new Map<string, number>();
+  for (const o of ch.objects) {
+    const v = (o.attributes[ch.sortingAttribute] ?? '').toLowerCase();
+    if (v) sizes.set(v, (sizes.get(v) ?? 0) + 1);
+  }
+  const largest = Math.max(0, ...Array.from(sizes.values()));
+  if (largest > window.groupMax) return `a group of ${largest} is over the objective's ${window.groupMax}`;
+  if (largest < window.groupMax - 2) return `the largest group is ${largest}; the objective counts to ${window.groupMax}`;
+  return null;
+}
+
+/**
+ * Does the lesson's wording state a number at all? A range is only ever named with one ("up to 10", "within ten"),
+ * so a lesson with no number skips the range call. A cost guard, not a judgment: the call itself decides.
+ */
+const NUMBER_WORD = /\d|\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty)\b/i;
 
 /** Hard cap on bins by grade band (mirrors the maxCategories clamp at the end). */
 function gradeBinCap(gradeBand: 'K' | '1'): number {
@@ -209,6 +256,15 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Use a balanced mix of single-criterion and neither-criterion distractors.',
       );
       break;
+    case 'say-rule':
+      promptLines.push(
+        tier === 'easy'
+          ? 'Make each group\'s rule plain to see (very different values between groups), and give the second attribute values that vary inside a group.'
+          : tier === 'hard'
+            ? 'Make the groups\' rules subtler, and let the second attribute be shared by MOST (not all) of one group\'s cards, so the child must check every card.'
+            : 'Use clear group rules, and give the second attribute values that vary inside a group.',
+      );
+      break;
     case 'tally-record':
       promptLines.push(
         tier === 'easy'
@@ -235,8 +291,9 @@ function resolveProblemShape(
   tier: SupportTier,
   gradeBand: 'K' | '1',
   namedCategories: string[] = [],
+  window: ObjectWindow = gradeObjectWindow(gradeBand),
 ): ProblemShape {
-  const win = gradeObjectWindow(gradeBand);
+  const win = window;
   const binCap = gradeBinCap(gradeBand);
   // Object count ramps within the grade window: easy = low end, hard = high end (capped).
   let objectCount =
@@ -251,6 +308,12 @@ function resolveProblemShape(
   // level. The grade bin cap is a default for open objectives and does not clamp a named
   // set either: the set is the task.
   let categoryCount = Math.min(baseBins, binCap);
+  // say-rule needs 3+ cards in a group: "why do these go together" over two cards is one comparison, and a misplaced
+  // card has to leave at least two behind to explain. Fewer groups, not more cards past the band.
+  if (pinnedType === 'say-rule') {
+    categoryCount = Math.max(2, Math.min(categoryCount, Math.floor(win.max / 3)));
+    objectCount = Math.min(win.max, Math.max(objectCount, categoryCount * 3));
+  }
   if (namedCategories.length >= 2 && namedCategories.length <= binCap) {
     categoryCount = namedCategories.length;
     // A named set needs enough objects to fill every bin; hold the grade ceiling.
@@ -265,6 +328,10 @@ function resolveProblemShape(
     case 'sort-by-attribute':
     case 'tally-record':
     case 'sort-variety':
+    case 'say-rule':
+      if (win.groupMax) {
+        promptLines.push(`The objective counts up to ${win.groupMax} in a group: one group holds ${win.groupMax - 2} to ${win.groupMax} objects and no group holds more than ${win.groupMax}.`);
+      }
       promptLines.push(
         namedCategories.length >= 2
           ? `Use about ${objectCount} objects across EXACTLY the ${categoryCount} groups the objective names — at least one object in every one of them.`
@@ -310,9 +377,10 @@ function buildTierPromptSection(
   tier: SupportTier,
   gradeBand: 'K' | '1',
   namedCategories: string[] = [],
+  window: ObjectWindow = gradeObjectWindow(gradeBand),
 ): string {
   const scaffold = resolveSupportStructure(pinnedType, tier);
-  const shape = resolveProblemShape(pinnedType, tier, gradeBand, namedCategories);
+  const shape = resolveProblemShape(pinnedType, tier, gradeBand, namedCategories, window);
   const lines = [...scaffold.promptLines, ...shape.promptLines];
   return `\n## WITHIN-MODE SUPPORT TIER (scaffolding level + problem STRUCTURE — NOT raw magnitude beyond the grade cap)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
 }
@@ -509,10 +577,11 @@ const twoAttributesSchema: Schema = {
 // Helpers
 // ============================================================================
 
-function gradeGuidance(gradeBand: 'K' | '1'): string {
+function gradeGuidance(gradeBand: 'K' | '1', window: ObjectWindow = gradeObjectWindow(gradeBand)): string {
+  const objects = `${window.min}-${window.max} objects${window.groupMax ? ` (up to ${window.groupMax} in one group, as the objective counts)` : ''}`;
   return gradeBand === 'K'
-    ? 'Kindergarten: 4-6 objects, 2-3 groups, very familiar concrete objects (animals, fruits, toys), simple warm language.'
-    : 'Grade 1: 5-8 objects, 2-4 groups, introduce reasoning, connect to data concepts.';
+    ? `Kindergarten: ${objects}, 2-3 groups, very familiar concrete objects (animals, fruits, toys), simple warm language.`
+    : `Grade 1: ${objects}, 2-4 groups, introduce reasoning, connect to data concepts.`;
 }
 
 function resolveGradeBand(gradeLevel: string): 'K' | '1' {
@@ -806,7 +875,8 @@ function cardFaults(objects: { label: string; emoji?: string }[]): string[] {
  * Why this card gives its bin away, or null (SST-L1). A card whose picture IS a bin's
  * picture is matched by eye ("Sweet Apple" 🍎 beside the Food bin's 🍎). On a category or
  * type sort a card whose label contains a bin's word is matched by ear ("Fresh Water Drop"
- * into Water). Color, shape and size labels describe what the picture shows, so they stay.
+ * into Water). Color and shape labels describe what the picture shows, so they stay; a size
+ * label goes, because the card is drawn at its size and the word would answer for it (R14).
  */
 export function binLeak(
   obj: { label: string; emoji?: string },
@@ -816,7 +886,8 @@ export function binLeak(
   const picture = normalizePicture(obj.emoji ?? '');
   const sameAs = categories.find(k => k.bucketEmoji && picture && normalizePicture(k.bucketEmoji) === picture);
   if (sameAs) return `"${obj.label}" shows the ${sameAs.label} bin's picture ${obj.emoji}`;
-  if (sortAttr !== 'category' && sortAttr !== 'type') return null;
+  // A size sort draws each card at its size (contract R14), so "Big Ball" would say by ear what the picture shows.
+  if (sortAttr !== 'category' && sortAttr !== 'type' && sortAttr !== 'size') return null;
   // A compound counts: "Waterfall" says Water, "Seafood" says Food. Only for bin words of 4+ letters,
   // so a short word ("hot") is matched whole and never inside another word.
   const words = labelNouns(obj.label);
@@ -850,17 +921,27 @@ function sortChallengeFault(
   ch: SortingStationChallenge,
   named: string[],
   gradeBand: 'K' | '1',
+  window: ObjectWindow = gradeObjectWindow(gradeBand),
 ): string | null {
   if (!coversNamedCategories(ch, named)) {
     const labels = (ch.categories ?? []).map(k => k.label.toLowerCase()).join('/');
     return `bins [${labels}] miss a group the objective names`;
   }
+  // The band floor, not the objective's: the per-group check below is what holds the objective's count.
   const min = gradeObjectWindow(gradeBand).min;
   if (ch.objects.length < min) {
     return `${ch.objects.length} objects is under the ${gradeBand} floor of ${min}`;
   }
+  const groupFault = groupWindowFault(ch, window);
+  if (groupFault) return groupFault;
   const emptyBin = (ch.categories ?? []).find(k => !ch.objects.some(o => objectMatchesRuleLocal(o, k.rule)));
   if (emptyBin) return `bin "${emptyBin.label}" has no card left`;
+  // say-rule explains what a group's cards ALL share, so a one-card group has nothing to explain (a live K draw shipped
+  // 3+1 in every challenge, and the session had no ask at all).
+  if (ch.type === 'say-rule') {
+    const thin = (ch.categories ?? []).find(k => ch.objects.filter(o => objectMatchesRuleLocal(o, k.rule)).length < 2);
+    if (thin) return `group "${thin.label}" has fewer than 2 cards to explain`;
+  }
   const faults = cardFaults(ch.objects);
   if (faults.length > 0) {
     return faults.join('; ');
@@ -917,6 +998,19 @@ function deriveCategories(
   });
 }
 
+/**
+ * The sort axis, with a size sort filed under `size` (contract R14). A live K draw for "sort by size into big and
+ * small" put big/small under `category`, so no card was drawn to its size. When every card's value on the chosen axis
+ * is a size word the drawing knows, the values move to `size` (mutating `objects`) and the axis is `size`.
+ */
+function asSizeAxis(objects: SortingObject[], sortAttr: string): string {
+  if (sortAttr === 'size' || !objects.length) return sortAttr;
+  const values = objects.map(o => (o.attributes[sortAttr] ?? '').trim().toLowerCase());
+  if (!values.every(isSizeWord) || new Set(values).size < 2) return sortAttr;
+  objects.forEach((o, i) => { const { [sortAttr]: _moved, ...rest } = o.attributes; o.attributes = { ...rest, size: values[i] }; });
+  return 'size';
+}
+
 /** Build a lowercased value→emoji map from an LLM `categoryEmojis` array (best-effort). */
 function buildEmojiByValue(
   categoryEmojis?: { value?: string; emoji?: string }[],
@@ -938,10 +1032,11 @@ async function generateSortChallenges(
   intent: string | undefined,
   gradeLevel: string,
   gradeBand: 'K' | '1',
-  sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record',
+  sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record' | 'say-rule',
   count: number,
   tierSection: string,
   namedCategories: string[] = [],
+  window: ObjectWindow = gradeObjectWindow(gradeBand),
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const typeGuide = {
     'sort-by-one':
@@ -959,11 +1054,16 @@ async function generateSortChallenges(
       'Sort objects and tally the count of each group. ' +
       'Each challenge sorts by ONE attribute. Every object MUST match a group. ' +
       'Instruction should mention tallying or recording counts.',
+    'say-rule':
+      'The child sees the sort ALREADY DONE and says WHY each group goes together. sortingAttribute is the rule of the finished sort. ' +
+      'Give every object EXACTLY TWO attributes: the sortingAttribute, plus one other objective-relevant attribute whose values ' +
+      'VARY inside each group (so "they are all <second value>" is wrong for every group). Every group holds at least 3 objects. ' +
+      'No object label may contain ANY attribute value word (a red apple is "Apple", never "Red Apple"), because the child has to see the rule, not read it.',
   }[sortType];
 
   const prompt = `
 Create a sorting activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeBand)}
+${gradeGuidance(gradeBand, window)}
 ${buildSortingObjectiveSection(topic, intent)}
 ${buildNamedCategoriesSection(namedCategories)}
 TASK TYPE: ${sortType}
@@ -972,11 +1072,12 @@ ${tierSection}
 Generate exactly ${count} challenges. Each challenge needs:
 - A warm, encouraging instruction for young children
 - A sortingAttribute (one of: category, color, shape, size, type)
-- 4-8 objects with a label, emoji, and the attributes the TASK TYPE above asks for (that section is authoritative — where it asks for two sortable attributes per object, give two; otherwise give only the objective-relevant one)
+- ${window.min}-${window.max} objects${window.groupMax ? ` (one group holds ${window.groupMax - 2} to ${window.groupMax}, no group more than ${window.groupMax}; the same object may appear more than once, e.g. several apples)` : ''} with a label, emoji, and the attributes the TASK TYPE above asks for (that section is authoritative — where it asks for two sortable attributes per object, give two; otherwise give only the objective-relevant one)
 - Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
 - categoryEmojis: one entry per distinct sortingAttribute value (one per bin) giving a single emoji that stands for that WHOLE group, so a pre-reader can tell the bins apart. Pick a general symbol for the group, NEVER reuse an object's own emoji (e.g. 'need' → 🏠, 'want' → 🎁, 'living' → 🌱, 'non-living' → 🪨).
 - Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
 - No object label contains a group's name ("Puddle", not "Fresh Water Drop", in a Water group), and no object uses a group's emoji. Such cards are removed.
+- When sortingAttribute is size, use only the size words tiny, small, medium, big, large or huge: each card is DRAWN at its size, so the label never says it ("Ball", not "Big Ball"), and the same object may appear at two sizes (a big ball and a small ball).
 `;
 
   const draw = async (): Promise<{ title?: string; description?: string; challenges: SortingStationChallenge[] }> => {
@@ -991,8 +1092,8 @@ Generate exactly ${count} challenges. Each challenge needs:
 
     const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
       (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; categoryEmojis?: { value?: string; emoji?: string }[] }, i: number) => {
-        const sortAttr = ch.sortingAttribute || 'type';
         const objects = toLuminaObjects(ch.objects || [], i * 10);
+        const sortAttr = asSizeAxis(objects, ch.sortingAttribute || 'type');
         const emojiByValue = buildEmojiByValue(ch.categoryEmojis);
         const categories = deriveCategories(objects, sortAttr, emojiByValue);
 
@@ -1017,7 +1118,7 @@ Generate exactly ${count} challenges. Each challenge needs:
   // sample worth taking.
   const keep = (challenges: SortingStationChallenge[]): SortingStationChallenge[] =>
     challenges.map(dropBinLeaks).filter((ch) => {
-      const fault = sortChallengeFault(ch, namedCategories, gradeBand);
+      const fault = sortChallengeFault(ch, namedCategories, gradeBand, window);
       if (fault) console.log(`[SortingStation] ${sortType} REJECT ${ch.id} — ${fault}`);
       return !fault;
     });
@@ -1565,12 +1666,15 @@ type SubGenerator = (
   /** Groups the objective enumerates; [] when it leaves the grouping open. Only the
    *  sort family binds them — the other modes build their own structure. */
   namedCategories?: string[],
+  /** The objects-per-challenge window (the objective's per-group count, or the band default). Sort family only. */
+  window?: ObjectWindow,
 ) => Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }>;
 
 const GENERATOR_MAP: Record<string, SubGenerator> = {
-  'sort-by-one': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'sort-by-one', n, ts, nc),
-  'sort-by-attribute': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'sort-by-attribute', n, ts, nc),
-  'tally-record': (t, i, g, b, n, ts, nc) => generateSortChallenges(t, i, g, b, 'tally-record', n, ts, nc),
+  'sort-by-one': (t, i, g, b, n, ts, nc, w) => generateSortChallenges(t, i, g, b, 'sort-by-one', n, ts, nc, w),
+  'sort-by-attribute': (t, i, g, b, n, ts, nc, w) => generateSortChallenges(t, i, g, b, 'sort-by-attribute', n, ts, nc, w),
+  'tally-record': (t, i, g, b, n, ts, nc, w) => generateSortChallenges(t, i, g, b, 'tally-record', n, ts, nc, w),
+  'say-rule': (t, i, g, b, n, ts, nc, w) => generateSortChallenges(t, i, g, b, 'say-rule', n, ts, nc, w),
   'count-and-compare': generateCountCompareChallenges,
   'odd-one-out': generateOddOneOutChallenges,
   'two-attributes': generateTwoAttributesChallenges,
@@ -1585,7 +1689,7 @@ const GENERATOR_MAP: Record<string, SubGenerator> = {
  */
 /** The modes whose bins come from the objective rather than from their own structure —
  *  the only ones that consult the named-category set. */
-const SORT_FAMILY_TYPES: readonly string[] = ['sort-by-one', 'sort-by-attribute', 'tally-record'];
+const SORT_FAMILY_TYPES: readonly string[] = ['sort-by-one', 'sort-by-attribute', 'tally-record', 'say-rule'];
 
 const MIXED_TYPES: readonly string[] = [
   'sort-by-one',
@@ -1670,9 +1774,25 @@ export const generateSortingStation = async (
     );
   }
 
+  // The objective's per-group count (MEAS001-02-C: "count up to 10 objects per category"), read through the shared
+  // resolver; null keeps the band window. Sort family only: their bins are the objective's groups. A lesson whose words
+  // hold no number skips the call.
+  const lessonWords = [topic, intent, ctx.scope?.objectiveText].filter(Boolean).join(' ');
+  const groupRange = bindsNamedCategories && NUMBER_WORD.test(lessonWords)
+    ? await resolveObjectiveRange({
+        topic, intent, objectiveText: ctx.scope?.objectiveText, gradeLevel,
+        quantity: 'how many objects ONE sorted group holds (objects per category), not the number of groups',
+        bandDefault: { min: 1, max: 3 }, capacity: { min: 1, max: MAX_GROUP_OBJECTS }, logPrefix: 'SortingStation',
+      })
+    : null;
+  const objectWindow = objectWindowFor(gradeBand, groupRange);
+  if (objectWindow.groupMax) {
+    console.log(`[SortingStation] objective counts to ${objectWindow.groupMax} in a group → ${objectWindow.min}-${objectWindow.max} objects`);
+  }
+
   const tierSection =
     pinnedType && supportTier
-      ? buildTierPromptSection(pinnedType, supportTier, gradeBand, namedCategories)
+      ? buildTierPromptSection(pinnedType, supportTier, gradeBand, namedCategories, objectWindow)
       : '';
 
   // Determine how many challenges each sub-generator should produce.
@@ -1707,7 +1827,8 @@ export const generateSortingStation = async (
   const results = await Promise.all(
     allowedTypes
       .filter(t => GENERATOR_MAP[t])
-      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, gradeBand, challengesPerType, tierSection, namedCategories)),
+      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, gradeBand, challengesPerType, tierSection, namedCategories,
+        SORT_FAMILY_TYPES.includes(t) ? objectWindow : undefined)),
   );
 
   // Combine: flatten challenges, re-number IDs, pick first title
@@ -1788,7 +1909,7 @@ export const generateSortingStation = async (
     for (const ch of allChallenges) {
       const mode = ch.type as ChallengeType;
       const scaffold = resolveSupportStructure(mode, supportTier);
-      const shape = resolveProblemShape(mode, supportTier, gradeBand);
+      const shape = resolveProblemShape(mode, supportTier, gradeBand, [], objectWindow);
 
       // ── Worked-example model item (sort-family only; identity-safe by construction) ──
       // Pre-place ONE object NOT being asked about; the component excludes it from grading.
@@ -1845,6 +1966,22 @@ export const generateSortingStation = async (
       `(${pinnedType ? `single-mode ${pinnedType}` : 'blended'}) → showCounts=${resolvedShowCounts}, ` +
       `models=${allChallenges.filter(c => c.modelItemId).length}`,
     );
+  }
+
+  // ── say-rule: one card in the wrong group (PTRN001-02-G), placed in code ──
+  // Never at easy (the plain explain-the-rule ask first), and on every other challenge above it, so a session asks both
+  // "why do these go together" and "which one does not belong here, and why". The card comes from a group of 3+ so its
+  // own group still has 2 to explain, and it goes to a group it does not belong to.
+  if (supportTier && supportTier !== 'easy') {
+    allChallenges.filter(ch => ch.type === 'say-rule').forEach((ch, i) => {
+      if (i % 2 === 0 || !ch.sortingAttribute) return;
+      const cats = ch.categories ?? [];
+      const members = cats.map(k => ch.objects.filter(o => objectMatchesRuleLocal(o, k.rule)));
+      const from = members.findIndex(m => m.length >= 3);
+      const to = cats.findIndex((_, j) => j !== from);
+      if (from < 0 || to < 0) return;
+      ch.intruder = { objectId: members[from][members[from].length - 1].id, trayLabel: cats[to].label };
+    });
   }
 
   // ── KEEP-OR-DROP: every challenge must be ASKABLE OUT LOUD ────────────────

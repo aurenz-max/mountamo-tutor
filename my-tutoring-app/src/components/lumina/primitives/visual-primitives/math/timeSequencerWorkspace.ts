@@ -23,7 +23,12 @@ export type Period = typeof PERIODS[number];
 /** The lesson's items, in order. */
 export const timeItems = (d: Pick<TimeSequencerData, 'challenges'>): TimeSequencerChallenge[] => d.challenges ?? [];
 
-export const isOrdering = (c: Pick<TimeSequencerChallenge, 'type'>) => c.type === 'sequence-events' || c.type === 'clock-sequence';
+export const isOrdering = (c: Pick<TimeSequencerChallenge, 'type'>) =>
+  c.type === 'sequence-events' || c.type === 'clock-sequence' || c.type === 'duration-order';
+
+/** A missing-middle option's place: before the first card or after the last; the key's own place is the middle. */
+export const middlePlace = (c: TimeSequencerChallenge, id: string | null): 'before' | 'after' | undefined =>
+  id && id !== c.correctEvent ? c.optionPlaces?.[id] : undefined;
 
 /** The item's eval mode: the challenge type, except that sequence-events is sequence-3 or sequence-5 by its card count. */
 export function timeModeOf(c: Pick<TimeSequencerChallenge, 'type' | 'events'>): string {
@@ -55,6 +60,8 @@ const SHORTER = 'A shorter way of saying the same activity also counts.';
 
 const periodChoices = (c: TimeSequencerChallenge): readonly Period[] => c.periodChoices ?? PERIODS;
 const keyCard = (c: TimeSequencerChallenge) => c.options?.find(o => o.id === c.correctEvent);
+/** The cards the missing-middle question is about: the first and the last step. */
+const ends = (c: TimeSequencerChallenge) => [c.firstEvent?.label, c.lastEvent?.label].filter((l): l is string => !!l);
 const optionLabels = (c: TimeSequencerChallenge) => (c.options ?? []).map(o => o.label);
 const durationMenu = (c: TimeSequencerChallenge) => [c.eventA?.label ?? '', c.eventB?.label ?? '', 'about the same'];
 const scheduleChoices = (c: TimeSequencerChallenge) =>
@@ -65,7 +72,7 @@ const scheduleChoices = (c: TimeSequencerChallenge) =>
 export function timeAsk(c: TimeSequencerChallenge): string {
   const ask = c.instruction.trim();
   if (c.type === 'match-time-of-day') return `${ask} ${menuQuestion(periodChoices(c))}`;
-  if (c.type === 'before-after') return `${ask} ${menuQuestion(optionLabels(c))}`;
+  if (c.type === 'before-after' || c.type === 'missing-middle') return `${ask} ${menuQuestion(optionLabels(c))}`;
   if (c.type === 'duration-compare') return `${ask} ${menuQuestion(durationMenu(c))}`;
   return ask;
 }
@@ -86,6 +93,14 @@ export function timeKey(c: TimeSequencerChallenge): SpokenKey | null {
     const own = ownWord(key.label, [...others, ref, c.instruction]);
     return { answer: key.label, alsoAccept: own ? [own, `the ${own}`] : [], menu: optionLabels(c), acceptRule: SHORTER,
       signatureError: `Another card${others.length ? ` (${quoted(others)})` : ''}${ref ? `, or "${ref}" itself,` : ''} is wrong.` };
+  }
+  if (c.type === 'missing-middle') {
+    const key = keyCard(c);
+    if (!key) return null;
+    const others = optionLabels(c).filter(l => l !== key.label);
+    const own = ownWord(key.label, [...others, ...ends(c), c.instruction]);
+    return { answer: key.label, alsoAccept: own ? [own, `the ${own}`] : [], menu: optionLabels(c), acceptRule: SHORTER,
+      signatureError: `Another card${others.length ? ` (${quoted(others)})` : ''}, or the first or last card itself, is wrong.` };
   }
   if (c.type === 'duration-compare') {
     const a = c.eventA?.label, b = c.eventB?.label;
@@ -121,7 +136,7 @@ export function timeHarnessWords(c: TimeSequencerChallenge): { correct: string; 
   };
   if (c.type === 'duration-compare') return { correct: key.answer, plainWrong: other(durationMenu(c).slice(0, 2).reverse()) };
   return { correct: key.answer, plainWrong: other(c.type === 'match-time-of-day' ? periodChoices(c)
-    : c.type === 'before-after' ? optionLabels(c) : scheduleChoices(c)) };
+    : c.type === 'before-after' || c.type === 'missing-middle' ? optionLabels(c) : scheduleChoices(c)) };
 }
 
 /**
@@ -146,6 +161,19 @@ export function timeSpokenMisses(c: TimeSequencerChallenge): KnownMiss[] {
     return [{ id: 'other_event', pattern: `The answer is "${key.label}". The learner names another card`
       + `${others.length ? `: ${quoted(others)}` : ''}${ref ? ` (or "${ref}", the card the question is about)` : ''}.`,
     examples: [...others, ...(ref ? [ref] : [])] }];
+  }
+  if (c.type === 'missing-middle') {
+    const key = keyCard(c);
+    if (!key) return [];
+    const fact = `The answer is "${key.label}", the step between "${c.firstEvent?.label}" and "${c.lastEvent?.label}".`;
+    const at = (place: 'before' | 'after') => (c.options ?? []).filter(o => middlePlace(c, o.id) === place).map(o => o.label);
+    const before = at('before'), after = at('after');
+    return [
+      ...(before.length ? [{ id: 'before_first', pattern: `${fact} The learner's answer is ${quoted(before)}, a step that `
+        + 'comes before the first card.', examples: before }] : []),
+      ...(after.length ? [{ id: 'after_last', pattern: `${fact} The learner's answer is ${quoted(after)}, a step that comes `
+        + 'after the last card.', examples: after }] : []),
+    ];
   }
   if (c.type === 'duration-compare') {
     const a = c.eventA?.label, b = c.eventB?.label;
@@ -180,7 +208,7 @@ export interface TimeView {
   /** Card ids in the order the learner tapped them (sequence-events, clock-sequence). */
   order: readonly string[];
   period: string | null;
-  /** The before-after option card picked, by id. */
+  /** The before-after or missing-middle option card picked, by id. */
   picked: string | null;
   duration: 'A' | 'B' | 'same' | null;
   activity: string | null;
@@ -194,14 +222,16 @@ const labelOf = (cards: readonly EventCard[] | undefined, id: string | null) => 
 export function describeTimeWork(challenge: TimeSequencerChallenge, view: TimeView): string {
   switch (challenge.type) {
     case 'sequence-events':
-    case 'clock-sequence': {
+    case 'clock-sequence':
+    case 'duration-order': {
       if (!view.order.length) return 'No card placed yet';
       const left = (challenge.events?.length ?? 0) - view.order.length;
       return `Placed in order: ${view.order.map(id => labelOf(challenge.events, id)).join(', ')}`
         + (left > 0 ? `; ${left} card${left === 1 ? '' : 's'} not placed yet` : '');
     }
     case 'match-time-of-day': return view.period ? `Picked ${cap(view.period)}` : 'No time of day picked yet';
-    case 'before-after': return view.picked ? `Picked ${labelOf(challenge.options, view.picked)}` : 'No card picked yet';
+    case 'before-after':
+    case 'missing-middle': return view.picked ? `Picked ${labelOf(challenge.options, view.picked)}` : 'No card picked yet';
     case 'duration-compare':
       return view.duration === 'same' ? 'Chose: about the same'
         : view.duration ? `Chose ${(view.duration === 'A' ? challenge.eventA : challenge.eventB)?.label ?? view.duration} as taking longer`
@@ -223,6 +253,7 @@ export function timeSequencerMiss(challenge: TimeSequencerChallenge | null, view
   switch (challenge.type) {
     case 'sequence-events':
     case 'clock-sequence':
+    case 'duration-order':
       return orderMiss(view.order, challenge.correctOrder ?? []);
     case 'match-time-of-day': {
       const got = PERIODS.indexOf(view.period as Period), key = PERIODS.indexOf(challenge.correctPeriod as Period);
@@ -232,6 +263,10 @@ export function timeSequencerMiss(challenge: TimeSequencerChallenge | null, view
     }
     case 'before-after':
       return view.picked && view.picked !== challenge.correctEvent ? 'other_event' : undefined;
+    case 'missing-middle': {
+      const place = middlePlace(challenge, view.picked);
+      return place === 'before' ? 'before_first' : place === 'after' ? 'after_last' : undefined;
+    }
     case 'duration-compare': {
       const got = view.duration, key = challenge.correctAnswer;
       if (!got || got === key) return undefined;
@@ -270,6 +305,8 @@ function constraintsOf(c: TimeSequencerChallenge, preReader: boolean): string {
       + 'task: ask where the short hand points, and never say the hour.';
     case 'match-time-of-day': return `${BEFORE} the time of day the activity happens in. ${OWN_DAY}${k}`;
     case 'before-after': return `${BEFORE} which card is the answer. ${OWN_DAY}${k}`;
+    case 'missing-middle': return `${BEFORE} which card goes in the empty middle place. ${OWN_DAY}${k}`;
+    case 'duration-order': return `${BEFORE} the order, or which activity takes the shortest or the longest time. ${OWN_DAY}${k}`;
     case 'duration-compare': return `${BEFORE} which activity takes longer, or whether they take about the same time. ${OWN_DAY}${k}`;
     default: return `${BEFORE} what happens at the asked time. Helping the learner find the asked time in the table and `
       + 'read across is teaching; never read the activity in that row out.';
@@ -284,9 +321,16 @@ export function timeScene(challenge: TimeSequencerChallenge, view: TimeView, pre
     if (challenge.showClockFace) drawn.clockFaces = 'each card shows an analog clock face at a whole hour beside its picture; '
       + 'the hours are not listed here';
     if (challenge.prelabelFirstSlot && (challenge.correctOrder?.length ?? 0) > 1) drawn.startHere = 'the first card of the day starts already placed';
+    if (challenge.type === 'duration-order') drawn.askedOrder = 'from the activity that takes the shortest time to the one that takes the longest';
+  } else if (challenge.type === 'missing-middle') {
+    drawn.firstCard = challenge.firstEvent?.label ?? '';
+    drawn.middle = 'an empty place between the first and the last card';
+    drawn.lastCard = challenge.lastEvent?.label ?? '';
+    drawn.options = optionLabels(challenge).join(', ');
   } else if (challenge.type === 'match-time-of-day') {
     drawn.activity = challenge.event?.label ?? '';
     drawn.choices = periodChoices(challenge).map(cap).join(', ');
+    drawn.sunPictures = 'each choice shows a sky strip with the sun or moon where it is in that part of the day; the activity card has none';
   } else if (challenge.type === 'before-after') {
     drawn.referenceCard = challenge.referenceEvent?.label ?? '';
     drawn.relation = challenge.relation ?? '';

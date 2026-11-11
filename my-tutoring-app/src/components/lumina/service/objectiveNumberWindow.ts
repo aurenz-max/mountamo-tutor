@@ -127,3 +127,89 @@ Return the largest number any count in THIS lesson may reach.
     return null;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// resolveObjectiveRange — the same rule as above for any code-picked number
+// window, with a floor as well as a ceiling (math-k audit 2026-11-10, class
+// finding "K caps below the objective").
+//
+// Seven K generators fixed a band below what the objective names: tracer 0-9
+// for "write 0-20", bonds to 5 for "within 10", compare-numbers to 10 for
+// "compare 11-20", sorting 4-6 for "up to 10 per group". `resolveScopeRange`
+// cannot repair these: it clamps to the band and so can only narrow. This one
+// reads the lesson's own range, bounds it by the PRIMITIVE'S capacity, and
+// returns null when the lesson names no range, so the band default stands and
+// the no-scope path stays unchanged.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const objectiveRangeSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    hasExplicitScope: {
+      type: Type.BOOLEAN,
+      description:
+        "True ONLY if the topic/intent/objective names a specific number range or bound "
+        + "for this quantity ('write numbers 0-20', 'within 10', 'compare numbers 11 to 20', "
+        + "'up to 10 objects', 'count back from 10'). False when no range is stated.",
+    },
+    min: { type: Type.NUMBER, description: "Smallest value the lesson names. Whole number." },
+    max: { type: Type.NUMBER, description: "Largest value the lesson names. Whole number." },
+  },
+  required: ["hasExplicitScope", "min", "max"],
+};
+
+export interface ObjectiveRangeRequest {
+  topic: string;
+  intent?: string;
+  objectiveText?: string;
+  gradeLevel: string;
+  /** Plain-language name of what the range bounds, e.g. "the numerals the child traces". */
+  quantity: string;
+  /** The window the generator uses today when nothing is named. */
+  bandDefault: { min: number; max: number };
+  /** The PRIMITIVE'S capacity (what it can draw or score), not the grade band. */
+  capacity: { min: number; max: number };
+  logPrefix: string;
+}
+
+/** The objective's own {min,max} for a code-picked quantity, bounded by the
+ *  primitive's capacity. Null on failure, no stated range, or a range equal to
+ *  the band default — all three leave the caller on its default. */
+export async function resolveObjectiveRange(
+  req: ObjectiveRangeRequest,
+): Promise<{ min: number; max: number } | null> {
+  const { topic, intent, objectiveText, gradeLevel, quantity, bandDefault, capacity, logPrefix } = req;
+  if (!intent && !objectiveText && !topic) return null;
+  try {
+    const prompt = `A math activity picks ${quantity} in code. Infer the range THIS lesson names.
+
+TOPIC: "${topic}"
+${objectiveText ? `OBJECTIVE: "${objectiveText}"\n` : ''}${intent ? `INTENT: "${intent}"\n` : ''}GRADE: ${gradeLevel}
+
+- Read the topic/intent/objective for an explicit range or bound: "write numbers 0 to 20" → 0..20; "within 10" → 0..10; "compare numbers 11-20" → 11..20; "count back from 10" → 0..10; "up to 10 in a group" → 1..10.
+- If no range is stated for ${quantity}, set hasExplicitScope=false.
+- Values can run from ${capacity.min} to ${capacity.max}. Report what the lesson's words ask for, even above the usual ${gradeLevel} range: the objective is the authority on its own scope.`;
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: { temperature: 0, responseMimeType: 'application/json', responseSchema: objectiveRangeSchema },
+    });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text);
+    if (!parsed?.hasExplicitScope) return null;
+    let min = Math.round(Number(parsed?.min));
+    let max = Math.round(Number(parsed?.max));
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    if (min > max) [min, max] = [max, min];
+    min = Math.max(capacity.min, Math.min(min, capacity.max));
+    max = Math.max(capacity.min, Math.min(max, capacity.max));
+    // A window too small for a session of distinct items is no window.
+    if (max - min + 1 < MIN_NUMBER_WINDOW) return null;
+    if (min === bandDefault.min && max === bandDefault.max) return null;
+    console.log(`[${logPrefix}] objective range → ${min}-${max} (band ${bandDefault.min}-${bandDefault.max})`);
+    return { min, max };
+  } catch (e) {
+    console.warn(`[${logPrefix}] objective range resolution failed:`, e);
+    return null;
+  }
+}

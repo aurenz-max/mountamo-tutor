@@ -93,13 +93,14 @@ export function lengthHarnessWords(c: LengthLabChallenge): { correct: string; pl
 // ── The activity's check ─────────────────────────────────────────────────────
 
 export interface LengthView {
-  /** compare: 'longer' | 'shorter' | 'same'; indirect: an object name or 'same'; two_unit_compare: a unit. */
+  /** compare: 'longer' | 'shorter' | 'same'; indirect and measure_compare: an object name or 'same'; two_unit_compare: a unit. */
   answer: string | null;
   /** Tiles in the row now (tile_and_count, estimate_then_tile), or the count the learner checked. */
   tiles: number;
   /** estimate_then_tile: the guess made before measuring (never graded). */
   estimate: number | null;
-  /** two_unit_compare: how many of each unit the learner laid down, once each row is checked. */
+  /** two_unit_compare: how many of each unit the learner laid down, once each row is checked. measure_compare: how many
+   *  units the learner laid along the first object and along the second. */
   countA: number | null;
   countB: number | null;
   /** The unit being laid (unitA) and two_unit_compare's second unit, resolved against the lab's default unit. */
@@ -125,6 +126,9 @@ export function lengthLabMatches(c: LengthLabChallenge, view: LengthView): boole
     case 'compare': case 'indirect': return view.answer === c.correctAnswer;
     case 'tile_and_count': case 'estimate_then_tile': return view.tiles === expectedCount(c);
     case 'two_unit_compare': return view.answer === moreUnit(c, view);
+    // Each count equals that object's length, and the object named follows the counts.
+    case 'measure_compare': return view.countA === c.objectLength0 && view.countB === c.objectLength1
+      && view.answer === c.correctAnswer;
     case 'order': {
       const want = expectedOrder(c);
       return view.order.length === want.length && want.every((name, i) => name === view.order[i]);
@@ -156,6 +160,13 @@ export function describeLengthWork(c: LengthLabChallenge, view: LengthView): str
       const pick = view.answer ? `. Chose: needed more of the ${view.answer === view.unitA ? 'first' : 'second'} unit` : '';
       return a + b + pick;
     }
+    case 'measure_compare': {
+      const unit = unitName(view.unitA);
+      const a = view.countA === null ? `Measuring the ${c.objectName0}` : `Laid ${view.countA} ${unit} along the ${c.objectName0}`;
+      const b = view.countA === null ? '' : view.countB === null ? `, now measuring the ${c.objectName1}`
+        : `, then ${view.countB} ${unit} along the ${c.objectName1}`;
+      return a + b + (view.answer ? `. Chose: the ${view.answer}` : '');
+    }
     case 'order':
       return view.order.length ? `Placed shortest to longest: ${view.order.join(', ')}` : 'No object placed yet';
     default: return 'No work yet';
@@ -180,6 +191,9 @@ export function lengthMiss(c: LengthLabChallenge | null, view: LengthView): Leng
       return got < want ? 'short' : 'over';
     }
     case 'two_unit_compare': return view.answer ? 'chose_bigger_unit' : undefined;
+    case 'measure_compare':
+      if (!view.answer) return undefined;
+      return view.countA !== c.objectLength0 || view.countB !== c.objectLength1 ? 'miscounted' : 'picked_other';
     case 'order': {
       const want = expectedOrder(c), got = view.order;
       if (got.length !== want.length) return undefined;
@@ -206,6 +220,10 @@ function constraintsOf(c: LengthLabChallenge, view: LengthView): string {
     case 'order':
       return 'Before the learner checks, and after a wrong order, never say where an object goes or which is shortest or '
         + `longest. Teach comparing two objects at a time.${marks}`;
+    case 'measure_compare':
+      return 'Never say how many units reach the end of either object, or which object is longer or shorter. Teach laying '
+        + 'units end to end along each object, counting each once, then comparing the two counts: the one that took more '
+        + 'units is the longer one.' + (view.fitShown ? '' : ' The fit line is hidden: do not say whether the units fit.');
     case 'two_unit_compare':
       return 'Never say how many units reach the end or which unit was needed more. Teach laying units end to end, with no '
         + 'gaps or overlaps, from one end of the object to the other.';
@@ -236,6 +254,12 @@ export function lengthScene(c: LengthLabChallenge, view: LengthView): SceneOf {
   } else if (c.type === 'two_unit_compare') {
     drawn.object = `${c.objectName0}, drawn as one bar`;
     drawn.units = `first ${unitName(view.unitA)}, then ${unitName(view.unitB)} (drawn wider)`;
+  } else if (c.type === 'measure_compare') {
+    drawn.objects = `${c.objectName0}, then ${c.objectName1}, each drawn as one bar, shown one at a time`;
+    drawn.unit = unitName(view.unitA);
+    drawn.question = `which one is ${c.compareWord ?? 'longer'}`;
+    if (view.countA !== null && view.countB !== null) drawn.choices = `${c.objectName0} | ${c.objectName1}`;
+    drawn.fitCheck = view.fitShown ? 'shown: a line says not enough, too many, or a fit' : 'hidden';
   } else if (c.type === 'order') {
     drawn.objects = [c.objectName0, c.objectName1, c.objectName2].filter(Boolean).join(', ') + ', drawn as bars';
     drawn.unitMarks = ticks;

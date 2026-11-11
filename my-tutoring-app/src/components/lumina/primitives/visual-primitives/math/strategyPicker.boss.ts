@@ -7,18 +7,22 @@ import type { StrategyPickerChallenge, StrategyPickerData } from './StrategyPick
 import { bossAssignment, defineBoss } from '../../../components/live-activity/boss';
 import { validateChallengePool } from '../../../components/live-activity/adapters/adapterContract';
 import { strategyPickerAsk, strategyPickerHarnessInputs } from './strategyPickerWorkspace';
-import { STRATEGY_PICKER_LEVERS, practiceItem, practiceParent } from './strategyPickerLevers';
+import { STRATEGY_PICKER_LEVERS, practiceItem, practiceParent, strategyMisfits } from './strategyPickerLevers';
 import { strategyPickerCard, type StrategyPickerMiss } from './strategyPicker.card';
 
 const strings = (v: unknown): v is string[] => Array.isArray(v) && v.length > 0 && v.every(s => typeof s === 'string');
 
-/** Reject a challenge the picker cannot check: its answer must be reachable with the controls it draws. */
+/**
+ * Reject a challenge the picker cannot check: its answer must be reachable with the controls it draws, and every
+ * strategy it offers must fit its problem (`fits`: doubles only on equal addends, a ten frame only within ten).
+ */
 export const validateStrategyPickerData = (value: unknown): StrategyPickerData => validateChallengePool<StrategyPickerData>(value,
   c => {
     if (!c || typeof c.instruction !== 'string' || !c.instruction || !c.problem) return false;
     const { operand1, operand2, operation, result } = c.problem;
     if (typeof c.problem.equation !== 'string' || typeof result !== 'number'
       || result !== (operation === 'subtraction' ? operand1 - operand2 : operand1 + operand2)) return false;
+    if (strategyMisfits(c).length) return false;
     // The stepper runs 0..20.
     const reachable = result >= 0 && result <= 20;
     switch (c.type) {

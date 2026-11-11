@@ -12,6 +12,7 @@ import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { BarModelChallenge, BarModelEvalMode } from './BarModel';
 import type { BarModelMiss } from './barModel.card';
 import { makeGraphMiss } from './barModelBuild';
+import { collectVerdict, recordedCount } from './barModelCollect';
 
 export type { BarModelMiss, SpokenGraphMiss } from './barModel.card';
 
@@ -110,6 +111,10 @@ export interface BarModelView {
   selectedOption: number | null;
   selectedRow: number | null;
   chosenStep: number | null;
+  /** predict_then_collect: the row guessed before any answer came in (never graded). */
+  prediction?: number | null;
+  /** predict_then_collect: whether the learner says the guess got the most. */
+  verdict?: 'yes' | 'no' | null;
 }
 
 /** The learner's work in their own terms, never the key. */
@@ -121,6 +126,13 @@ export function describeGraphWork(c: BarModelChallenge, view: BarModelView): str
   }
   const rows = view.built.map(r => `${r.label} ${r.value}`).join(', ');
   if (c.evalMode === 'build_one_to_one') return `Stickers placed: ${rows}`;
+  if (c.evalMode === 'predict_then_collect') {
+    const guess = view.prediction == null ? null : c.values[view.prediction]?.label;
+    if (!guess) return 'No guess yet';
+    const total = c.sourceItems?.length ?? 0, done = recordedCount(view.built);
+    const said = view.verdict ? `. Said the guess ${view.verdict === 'yes' ? 'got' : 'did not get'} the most` : '';
+    return `Guessed ${guess} would get the most. Recorded ${done} of ${total} answers: ${rows}${said}`;
+  }
   if (c.evalMode === 'build_graph') return `Bars set to ${rows}; scale step ${view.chosenStep ?? 'not chosen'}`;
   if (c.evalMode === 'make_graph') return `Made a graph: ${rows}`;
   return 'Answers aloud';
@@ -171,6 +183,12 @@ export function barModelMiss(c: BarModelChallenge | null, view: BarModelView): B
     return values[row] === (most ? Math.min(...values) : Math.max(...values)) ? 'reversed' : 'other_row';
   }
   if (c.evalMode === 'build_one_to_one') return rowsMiss(c.expectedCounts ?? [], view.built.map(r => r.value));
+  if (c.evalMode === 'predict_then_collect') {
+    const built = view.built.map(r => r.value);
+    if (view.verdict == null) return undefined;
+    return rowsMiss(c.expectedCounts ?? [], built)
+      ?? (view.verdict !== collectVerdict(built, view.prediction ?? null) ? 'wrong_verdict' : undefined);
+  }
   if (c.evalMode === 'build_graph') {
     const want = c.expectedDataset ?? [];
     return rowsMiss(want.map(e => e.value), want.map(e => view.built.find(b => b.label === e.label)?.value ?? 0))
@@ -196,6 +214,9 @@ function itemConstraints(c: BarModelChallenge): string | undefined {
   if (c.evalMode === 'make_graph') parts.push('The graph starts empty, and many graphs fit the ask: never say how many '
     + 'pictures a bar needs or which bar to change.');
   if (c.evalMode === 'build_graph') parts.push('The scale step is part of the answer: never say which step to pick.');
+  if (c.evalMode === 'predict_then_collect') parts.push('The guess is never marked: never say whether it is likely. The '
+    + 'answers come in one at a time; never say which row an answer goes in, or which row has the most before the learner '
+    + 'says yes or no.');
   return parts.join(' ') || undefined;
 }
 
@@ -215,7 +236,13 @@ export function workspaceScene(c: BarModelChallenge, view: BarModelView): SceneO
     drawn.axis = step ? `numbered in steps of ${step} up to ${c.scale.max}` : `numbered only at 0 and ${c.scale.max} until a step is chosen`;
   }
   if (OPTION_MODES.has(c.evalMode) && c.options?.length) drawn.choices = c.options.join(', ');
-  if (c.sourceItems?.length) drawn.pile = c.evalMode === 'build_one_to_one' ? 'a pile of objects to record' : 'a group of objects to count';
+  if (c.sourceItems?.length && c.evalMode === 'predict_then_collect') {
+    const done = recordedCount(view.built), total = c.sourceItems.length;
+    drawn.answers = view.prediction == null ? 'hidden until the learner guesses'
+      : done < total ? 'shown one at a time; the next answer is drawn as one picture to record' : 'all recorded';
+    drawn.guess = view.prediction == null ? 'not made yet' : c.values[view.prediction]?.label ?? 'not made yet';
+    if (view.prediction != null && done >= total) drawn.question = 'did the guessed row get the most: Yes | No';
+  } else if (c.sourceItems?.length) drawn.pile = c.evalMode === 'build_one_to_one' ? 'a pile of objects to record' : 'a group of objects to count';
   if (c.evalMode === 'build_graph' && c.availableScaleSteps?.length) drawn.steps = c.availableScaleSteps.join(', ');
   return {
     objects: [],

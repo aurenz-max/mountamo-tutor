@@ -50,7 +50,36 @@
   Read-schedule answer buttons carry `aria-label` (the option-pictures lever adds an emoji to their text).
 - **Probe:** `timeSequencerLevers.test.ts`, `TimeSequencer.levers.workspace.test.tsx`; journey sweep J9/J12.
 
+### R5 — time of day names every part of the day, with its sun, and refuses a bad key · OBSERVED 2026-11-11
+- **Property:** match-time-of-day offers morning, afternoon, evening and night at every band, Kindergarten included
+  (TIME001-01-A). Code chooses each challenge's part of the day (`periodPlan`: all four before a repeat); a challenge is
+  kept only when its period is one of the four AND its typical time falls in that period (`keyTimeOfDay`,
+  `periodOfTime`), and the refused parts are asked for once more. An invalid period is never keyed as morning. Each
+  choice draws its own sky strip with the sun or moon at that part of the day (`PERIOD_DISPLAY.sun`); the activity card
+  draws none, and no label, instruction or hint may name a part of the day.
+- **Demanded by:** K TIME001-01-A (`qa/curriculum-coverage/math-k/REPORT.md`, Repairs).
+- **Probe:** `service/math/gemini-time-sequencer.keys.test.ts`; payload `time-sequencer.time-of-day-evening.json`.
+
+### R6 — duration-order's key is the minutes, checked twice · OBSERVED 2026-11-11
+- **Property:** three activities ordered shortest to longest (MEAS001-07-C). The model gives each activity's minutes and
+  its own shortest-to-longest order; code keys `correctOrder` from the minutes and refuses a challenge whose minutes are
+  missing, not each at least `DURATION_GAP` (3) times the one before, or disagree with the stated order, or whose label
+  prints a duration. The boss refuses an order that does not rise in minutes. Minutes are never drawn or published; no
+  sky strip or clock time is drawn on its cards. Tap-only board, no key to the tutor.
+- **Probe:** `gemini-time-sequencer.keys.test.ts`, `timeSequencerLevers.test.ts`; payload `time-sequencer.duration-order.json`.
+
+### R7 — missing-middle is built from a five-step routine · OBSERVED 2026-11-11
+- **Property:** the first and last cards are steps 2 and 4 of a routine the model writes in order; the key is step 3 and
+  the other two choices are steps 1 and 5, recorded as before the first card and after the last (`optionPlaces`, misses
+  `before_first` / `after_last`). The empty middle place looks the same whatever the answer; instruction is code copy.
+  A SAY_OR_SHOW item, keyed like before-after (`timeKey`).
+- **Probe:** `gemini-time-sequencer.keys.test.ts`, `TimeSequencer.spoken.workspace.test.tsx`; payload `time-sequencer.missing-middle.json`.
+
 ## Changelog
+
+- 2026-11-11: R5-R7 added (K math coverage repairs and modes). R3's list of one-choice modes gains missing-middle and its
+  list of orders gains duration-order; R4's lever set gains `middle_model` / `two_middle_cards` and `duration_ladder` /
+  `far_apart_durations`. R1, R2 unchanged.
 
 - 2026-10-13: R3 re-based (VB-1). "Every challenge answered on the screen, no key to the tutor" protected no unearned credit for the one-choice modes; their answer is one sayable choice. time-of-day, before-after, duration-compare and read-schedule are now spoken items that also take the tap (`TeachingItem.acceptsGesture`); the orders stay tap-only with no key. JEV verdict probe 27/27, false credit 0 (one expectedAnswer wording revision for duration-compare).
 - 2026-10-19: R3 re-based on the boss (`timeSequencer.card.ts` + `.boss.ts`, spokenBoss). The scripted path, the catalog `tutoring` block and guidance prose, the hand Pip and its pose are gone; the guidance's never-say rules moved to scene `constraints`; the one-choice keys became `SpokenKey`s, the picture choices asked with their whole menu. R1, R2, R4 unchanged.

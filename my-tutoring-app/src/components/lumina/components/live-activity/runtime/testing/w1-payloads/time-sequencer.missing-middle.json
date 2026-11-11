@@ -1,0 +1,202 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (ts-mm.json)",
+ "primitiveId": "time-sequencer",
+ "evalMode": "missing-middle",
+ "data": {
+  "title": "Morning School Routines",
+  "description": "Put the school morning routine cards in the right order!",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "missing-middle",
+    "instruction": "Something is missing in the middle. Which one goes there?",
+    "hint": "Do the first card, then think what you do next. Does it come before the last card?",
+    "firstEvent": {
+     "id": "first",
+     "label": "Brush teeth",
+     "emoji": "🦷"
+    },
+    "lastEvent": {
+     "id": "last",
+     "label": "Put on shoes",
+     "emoji": "🏃"
+    },
+    "options": [
+     {
+      "id": "o3",
+      "label": "Ride the bus",
+      "emoji": "🚌"
+     },
+     {
+      "id": "o1",
+      "label": "Wake up",
+      "emoji": "🌅"
+     },
+     {
+      "id": "o2",
+      "label": "Eat breakfast",
+      "emoji": "🍳"
+     }
+    ],
+    "correctEvent": "o2",
+    "optionPlaces": {
+     "o1": "before",
+     "o3": "after"
+    }
+   },
+   {
+    "id": "c2",
+    "type": "missing-middle",
+    "instruction": "Something is missing in the middle. Which one goes there?",
+    "hint": "What do you grab before heading out the door?",
+    "firstEvent": {
+     "id": "first",
+     "label": "Comb hair",
+     "emoji": "🧹"
+    },
+    "lastEvent": {
+     "id": "last",
+     "label": "Open door",
+     "emoji": "🏃"
+    },
+    "options": [
+     {
+      "id": "o3",
+      "label": "Walk to school",
+      "emoji": "📚"
+     },
+     {
+      "id": "o2",
+      "label": "Pack backpack",
+      "emoji": "🎒"
+     },
+     {
+      "id": "o1",
+      "label": "Get dressed",
+      "emoji": "☀️"
+     }
+    ],
+    "correctEvent": "o2",
+    "optionPlaces": {
+     "o1": "before",
+     "o3": "after"
+    }
+   },
+   {
+    "id": "c3",
+    "type": "missing-middle",
+    "instruction": "Something is missing in the middle. Which one goes there?",
+    "hint": "What happens at the breakfast table?",
+    "firstEvent": {
+     "id": "first",
+     "label": "Pour milk",
+     "emoji": "🥤"
+    },
+    "lastEvent": {
+     "id": "last",
+     "label": "Wipe face",
+     "emoji": "🛁"
+    },
+    "options": [
+     {
+      "id": "o2",
+      "label": "Eat fruit",
+      "emoji": "🍎"
+     },
+     {
+      "id": "o1",
+      "label": "Sit down",
+      "emoji": "🍽️"
+     },
+     {
+      "id": "o3",
+      "label": "Wash hands",
+      "emoji": "🧼"
+     }
+    ],
+    "correctEvent": "o2",
+    "optionPlaces": {
+     "o1": "before",
+     "o3": "after"
+    }
+   },
+   {
+    "id": "c4",
+    "type": "missing-middle",
+    "instruction": "Something is missing in the middle. Which one goes there?",
+    "hint": "What do you do right before leaving the house?",
+    "firstEvent": {
+     "id": "first",
+     "label": "Tie shoes",
+     "emoji": "👟"
+    },
+    "lastEvent": {
+     "id": "last",
+     "label": "Put on hat",
+     "emoji": "🧢"
+    },
+    "options": [
+     {
+      "id": "o1",
+      "label": "Put on socks",
+      "emoji": "🧦"
+     },
+     {
+      "id": "o3",
+      "label": "Step outside",
+      "emoji": "🌳"
+     },
+     {
+      "id": "o2",
+      "label": "Grab jacket",
+      "emoji": "🧥"
+     }
+    ],
+    "correctEvent": "o2",
+    "optionPlaces": {
+     "o1": "before",
+     "o3": "after"
+    }
+   },
+   {
+    "id": "c5",
+    "type": "missing-middle",
+    "instruction": "Something is missing in the middle. Which one goes there?",
+    "hint": "How do you get ready to learn at school?",
+    "firstEvent": {
+     "id": "first",
+     "label": "Hang coat",
+     "emoji": "🧥"
+    },
+    "lastEvent": {
+     "id": "last",
+     "label": "Open pencils",
+     "emoji": "✏️"
+    },
+    "options": [
+     {
+      "id": "o3",
+      "label": "Draw a picture",
+      "emoji": "🎨"
+     },
+     {
+      "id": "o1",
+      "label": "Enter classroom",
+      "emoji": "🚪"
+     },
+     {
+      "id": "o2",
+      "label": "Sit at desk",
+      "emoji": "🪑"
+     }
+    ],
+    "correctEvent": "o2",
+    "optionPlaces": {
+     "o1": "before",
+     "o3": "after"
+    }
+   }
+  ]
+ }
+}

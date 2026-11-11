@@ -11,8 +11,10 @@ import { spokenBoss } from '../../../components/live-activity/boss';
 import { lengthLabCard, type LengthMiss } from './lengthLab.card';
 import { LENGTH_LEVERS, simplerLength } from './lengthLabLevers';
 import { lengthAsk, lengthHarnessWords, lengthItems, lengthKey, lengthSpokenMisses } from './lengthLabWorkspace';
+import { measureCompareAnswer } from './lengthLabMeasureCompare';
 
-const CHALLENGE_TYPES = ['compare', 'tile_and_count', 'order', 'indirect', 'estimate_then_tile', 'two_unit_compare'];
+const CHALLENGE_TYPES = ['compare', 'tile_and_count', 'order', 'indirect', 'estimate_then_tile', 'two_unit_compare',
+  'measure_compare'];
 const len = (n: unknown) => Number.isInteger(n) && (n as number) > 0;
 
 /** Reject a length lesson whose challenges cannot be attempted. */
@@ -32,6 +34,8 @@ export function validateLengthLabData(value: unknown): LengthLabData {
       : c.type === 'estimate_then_tile' ? (c.estimateOptions ?? []).includes(c.correctUnitCount || c.objectLength0)
       : c.type === 'two_unit_compare' ? len(c.correctUnitCount) && len(c.correctUnitCountB)
         && c.correctUnitCount !== c.correctUnitCountB && (c.unitType || d.unitType) !== (c.unitTypeB || d.unitType)
+      : c.type === 'measure_compare' ? !!c.objectName1 && c.objectName1 !== c.objectName0 && len(c.objectLength1)
+        && c.objectLength0 !== c.objectLength1 && c.correctAnswer === measureCompareAnswer(c)
       : c.type === 'order' ? !!c.objectName1 && !!c.objectName2 && order.length === 3
         && order.every(n => names.includes(n)) && new Set(order).size === 3
       : !!c.objectName1 && !!c.clue0 && !!c.clue1 && [c.objectName0, c.objectName1, 'same'].includes(c.correctAnswer);
@@ -76,6 +80,13 @@ export const lengthLabBoss = spokenBoss<LengthLabData, LengthLabChallenge, Lengt
         const more = (c.correctUnitCount ?? 0) > (c.correctUnitCountB ?? 0) ? a : b;
         return [...lay(a, c.correctUnitCount ?? 0), check, ...lay(b, c.correctUnitCountB ?? 0), check,
           choose(right ? more : more === a ? b : a)];
+      }
+      // measure_compare: both objects measured in turn (each row has its own Done), then the object the ask names; a
+      // wrong one names the other object.
+      if (c.type === 'measure_compare') {
+        const u = unitLabel(c.unitType, d), done: DriverInput = choose('Done');
+        return [...lay(u, c.objectLength0), done, ...lay(u, c.objectLength1), done,
+          choose(right ? c.correctAnswer : c.correctAnswer === c.objectName0 ? c.objectName1 : c.objectName0)];
       }
       const names = String(c.correctOrderCsv ?? '').split(',').map(s => s.trim());
       return [...(right ? names : [...names].reverse()).map(choose), check];

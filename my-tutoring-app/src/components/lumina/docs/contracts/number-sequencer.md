@@ -30,7 +30,8 @@ record is `qa/topic-traces/g1-count-forward-to-120-2026-08-01.md`.
 
 - Explicit `config.gradeBand` wins, then canonical `ctx.grade` (`K` → `K`, numeric
   grades → the primitive's top rung `1`), then the legacy grade-prose fallback.
-- K remains capped at 20 and cannot emit decade-fill.
+- K defaults to 1-20 (1-100 when the objective names 100) and cannot emit decade-fill. A K objective that names
+  its own window widens or narrows it (R13); explicit `config.numberRange` still wins.
 
 ### R3 — Scope-conditioned Grade-1 ceiling · REQUIRED by published consumer
 
@@ -126,6 +127,18 @@ draws — every window distinct, blanks covering at least three slots.
 - **Evidence:** `numberSequencerSpokenLevers.test.ts` 15, `NumberSequencerSpoken.levers.workspace.test.tsx` 3, sweep J1-J9 (J9 mutation-checked).
 - **Probe:** those two test files; `journeySweep -t number-sequencer`.
 
+### R13 — K reads the objective's window; a count-back lesson counts back to 0 · OBSERVED (2026-11-11)
+- **Property:** with no `config.numberRange`, a K render reads the objective's own window through
+  `resolveObjectiveRange` (capacity 0-120, band default 1-20); null keeps the default. A K lesson that names counting
+  back (`lessonNamesCountingBack`: count back, backward, count down) drops the default floor to 0, tells the model
+  to count backward, and code guarantees two backward count-from runs where count-from is allowed: one that ends on
+  the window's floor and one that starts at its top (`countBackRun`). Values are clamped into the window, not to
+  at least 1, and the key gate accepts 0. A lesson that names no counting back is unchanged (forward only).
+- **Demanded by:** math-k COUNT001-02-H ("count backwards from 10 to 0"), OPS001-03-A ("forward and backward within 5").
+- **Compatibility:** R1 holds (runs are added only where count-from is in the pin); R3 is Grade 1 and untouched;
+  R4/R6 hold (the range derivation and key gate run after); R7 holds (the run length is the tier's count).
+- **Probe:** `gemini-number-sequencer.count-back.test.ts`; live `/eval-test` count_from on a count-back objective.
+
 ## Conflict resolved by 14h
 
 The prior catalog/generator ceiling (Grade 1 ≤100) was valid for generic practice
@@ -139,6 +152,10 @@ The catalog must advertise Grade-1 support through 120 when scope requires it,
 while retaining the generic ≤100 default and the five existing mode identities.
 
 ## Changelog
+
+- 2026-11-11 — R13 added; R2 amended (K's 20 is the default, not a cap); the key gate admits 0. Compatible: a K
+  lesson that names neither a window nor counting back gets the 1-20 forward session it got before; the K path
+  now makes one flash-lite window call when `config.numberRange` is absent. Occasion: math-k audit caps.
 
 - 2026-10-26 — **onto its boss (COMPATIBLE; boss migration wave 4).** `numberSequencer.card.ts` + `numberSequencer.boss.ts` on the spoken preset: five `SPOKEN` modes (the key is a `SpokenKey`: the number in digits or words, with the same signature miss per mode) and `order_cards` `TAP_ONE` (the train checks the order). The two lever modules are one lever set (`NUMBER_SEQUENCER_LEVERS`); `model_train` now gets the shared tier rule. The scripted drill (`useJudgedScriptRunner`), `numberSequencerScript.ts`, `NumberSequencerTeaching.tsx`, the DI_PORTS row and the catalog `tutoring` block are deleted; an unbound mount shows the "needs the tutor" card. All six eval modes kept.
 

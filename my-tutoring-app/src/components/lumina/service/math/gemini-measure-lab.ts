@@ -23,6 +23,7 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from '../generation/generationContext';
+import { fillLevelKeyOk } from '../../primitives/visual-primitives/math/measureLabWorkspace';
 import type {
   ContainerShape,
   MeasureContainer,
@@ -39,11 +40,12 @@ const COUNT_BY_TYPE: Record<MeasureLabChallengeType, number> = {
   capacity_predict: 4,
   pour_count: 4,
   order_capacity: 4,
+  fill_level: 4,
 };
 const MAX_INSTANCE_COUNT = 6;
 
 const VALID_TYPES: MeasureLabChallengeType[] = [
-  'balance_predict', 'capacity_predict', 'pour_count', 'order_capacity',
+  'balance_predict', 'capacity_predict', 'pour_count', 'order_capacity', 'fill_level',
 ];
 
 // ---------------------------------------------------------------------------
@@ -120,9 +122,10 @@ function vocabularySchema(): Schema {
   return { type: Type.OBJECT, properties: props, required };
 }
 
-async function fetchVocabulary(topic: string, gradeContext: string, intent: string): Promise<Vocabulary> {
+async function fetchVocabulary(topic: string, gradeContext: string, intent: string, task?: string): Promise<Vocabulary> {
   const prompt = `Write the WORDS for a Kindergarten measuring bench (K.MD.A.1, K.MD.A.2).
-The child weighs objects on a pan balance and fills containers by pouring.
+The child weighs objects on a pan balance and fills containers by pouring.${task ? `
+THIS LESSON: ${task} The title is about that.` : ''}
 
 TOPIC: ${topic}
 AUDIENCE: ${gradeContext}
@@ -320,7 +323,55 @@ function buildOrderCapacity(v: Vocabulary, i: number): MeasureLabChallenge {
   };
 }
 
-const BUILDER: Record<MeasureLabChallengeType, (v: Vocabulary, i: number) => MeasureLabChallenge> = {
+type Tier = 'easy' | 'medium' | 'hard';
+
+/** fill_level: how far apart the two levels are, in eighths of the glass, by tier. Identical containers, so the level is
+ *  the only evidence; the gap is how hard it is to see. */
+const FILL_GAP: Record<Tier, number> = { easy: 5, medium: 3, hard: 2 };
+const FILL_CAPACITY = 8;
+
+/**
+ * fill_level (MEAS001-08-A, MEAS001-08-B) — look at the water drawn inside and say. Even items are one container, empty
+ * or full; odd items are two IDENTICAL containers with different amounts, asked "more" and "less" in turn. Code sets
+ * every level and every key. Three tells are defeated: which of empty and full is the answer alternates from a random
+ * start; which side holds more alternates by item; and the ask word alternates, so "tap the higher one" fails half the
+ * time. No label, badge or default selection marks a container.
+ */
+function buildFillLevel(v: Vocabulary, i: number, tier: Tier | null, flip: boolean): MeasureLabChallenge {
+  // One container name per item, in turn, so a session does not ask about the same glass twice.
+  const noun = v.containers[i % v.containers.length].replace(/\s*\d+$/, '');
+  const shape = SHAPES[i % SHAPES.length];
+  if (i % 2 === 0) {
+    const full = (Math.floor(i / 2) % 2 === 0) !== flip;
+    const container: MeasureContainer = { id: `cnt-${i}`, name: noun, shape, capacity: FILL_CAPACITY, filled: full ? FILL_CAPACITY : 0 };
+    return {
+      id: `ml-${i + 1}`, type: 'fill_level', fillAsk: 'empty_full',
+      prompt: `Look at the ${noun}. Is it empty or full?`,
+      hint: 'Look inside. Is there any water in it? Does the water reach the top?',
+      container, unitName: v.unitName, unitEmoji: v.unitEmoji, expectedChoice: full ? 'full' : 'empty',
+    };
+  }
+  const k = Math.floor(i / 2);
+  const ask: 'more' | 'less' = k % 2 === 0 ? 'more' : 'less';
+  const gap = FILL_GAP[tier ?? 'medium'];
+  const low = randInt(1, FILL_CAPACITY - 1 - gap);
+  const high = low + gap;
+  // The answer's side alternates by item from a random start; the fuller side follows from the ask word.
+  const answerLeft = (k % 2 === 0) !== flip;
+  const leftHigh = ask === 'more' ? answerLeft : !answerLeft;
+  const left: MeasureContainer = { id: `jar-${i}-l`, name: `left ${noun}`, shape, capacity: FILL_CAPACITY, filled: leftHigh ? high : low };
+  const right: MeasureContainer = { id: `jar-${i}-r`, name: `right ${noun}`, shape, capacity: FILL_CAPACITY, filled: leftHigh ? low : high };
+  const more = leftHigh ? left : right, less = leftHigh ? right : left;
+  return {
+    id: `ml-${i + 1}`, type: 'fill_level', fillAsk: ask,
+    prompt: `These two ${noun}s are the same. Which one has ${ask} water in it?`,
+    hint: 'Look at how high the water comes up in each one.',
+    containers: [left, right], unitName: v.unitName, unitEmoji: v.unitEmoji,
+    expectedChoice: ask === 'more' ? more.id : less.id,
+  };
+}
+
+const BUILDER: Record<Exclude<MeasureLabChallengeType, 'fill_level'>, (v: Vocabulary, i: number) => MeasureLabChallenge> = {
   balance_predict: buildBalance,
   capacity_predict: buildCapacityPredict,
   pour_count: buildPourCount,
@@ -336,6 +387,8 @@ function canonKey(ch: MeasureLabChallenge): string {
       return `c|${ch.containerA?.name}|${ch.containerB?.name}|${ch.containerA?.capacity}|${ch.containerB?.capacity}`;
     case 'pour_count':
       return `p|${ch.container?.name}|${ch.expectedCount}`;
+    case 'fill_level':
+      return `f|${ch.fillAsk}|${ch.container?.filled ?? ''}|${(ch.containers ?? []).map((c) => c.filled).join(',')}|${ch.expectedChoice}`;
     case 'order_capacity':
     default:
       return `o|${(ch.containers ?? []).map((c) => c.filled).join(',')}`;
@@ -362,6 +415,8 @@ function isRenderable(ch: MeasureLabChallenge): boolean {
         && ch.expectedCount === ch.container.capacity
         && Array.isArray(ch.options)
         && ch.options.includes(ch.expectedCount);
+    case 'fill_level':
+      return fillLevelKeyOk(ch);
     case 'order_capacity': {
       const cs = ch.containers ?? [];
       if (cs.length < 3) return false;
@@ -398,10 +453,18 @@ export const generateMeasureLab = async (ctx: GenerationContext): Promise<Measur
   );
 
   const intent = config.intent || topic;
-  const vocabulary = await fetchVocabulary(topic, gradeContext, intent);
+  // fill_level never weighs or pours: the title must say what the child does (a 'Weighing Table' came back, 11-11).
+  const vocabulary = await fetchVocabulary(topic, gradeContext, intent, challengeType === 'fill_level'
+    ? 'The child looks at water drawn inside containers and says empty or full, or which has more or less.' : undefined);
+
+  const tierWord = config.difficulty?.toLowerCase().trim();
+  const fillTier: Tier | null = tierWord === 'easy' || tierWord === 'medium' || tierWord === 'hard' ? tierWord : null;
+  const flip = Math.random() < 0.5;
 
   // Build with dedup: the model's vocabulary is small, so two draws can collide.
-  const build = BUILDER[challengeType];
+  const build = challengeType === 'fill_level'
+    ? (v: Vocabulary, i: number) => buildFillLevel(v, i, fillTier, flip)
+    : BUILDER[challengeType];
   const challenges: MeasureLabChallenge[] = [];
   const seen = new Set<string>();
   let rejected = 0;

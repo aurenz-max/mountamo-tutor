@@ -82,6 +82,11 @@
 - **Fallback:** when both generation attempts fail, the session is `instanceCount` code-built cards of the pinned mode, not one card (R6).
 - **Probe:** `service/itemSpace/compareNumbers.test.ts`, `service/math/comparisonBuilderTargets.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component comparison-builder`; oracle numeral ceiling 100 at grade 1.
 
+### R11 — at K the numeral range is the lesson's, 1-10 only as the default · OBSERVED (NEW 2026-11-11)
+- **Property:** compare-numbers and order at `gradeBand==='K'` read their window through the shared `resolveObjectiveRange` (`service/objectiveNumberWindow.ts`), bounded by what the primitive draws (1-100), not by the band. A lesson that names no range gets null and keeps 1-10 byte for byte; a K lesson that names "11-20" gets pairs and sets inside 11-20. An untiered compare-numbers card the model wrote outside a named window is re-picked in code from the `compare-numbers` space inside it (clamping 3 vs 5 into 11-20 gave 11 vs 11), and the prompt is told the window. Grade 1 keeps `resolveScopeRange` with the 100 ceiling (R10).
+- **Demanded by:** K `COUNT001-03-G` "compare two numbers between 11-20" (math-k audit 2026-11-10: every teen pair became 10 vs 10).
+- **Probe:** `service/math/gemini-comparison-builder.objectiveRange.test.ts` (resolver mocked: 11-20 untiered/easy/hard, no scope stays 1-10, order both ways); eval-test `compare_numbers` at K on a COUNT001-03-G objective.
+
 ## Conflicts
 
 _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
@@ -102,6 +107,8 @@ _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
 - **evalModes:** faithful (compare_groups/one_more_less/compare_numbers/order with betas). No change.
 
 ## Changelog
+
+- 2026-11-11 — R11 added (math-k audit, K caps class finding). R7 amended: the K 1-10 numeral band is the default for compare-numbers and order, not a ceiling, when the lesson names a range; groups and one-more-one-less keep it. Assessed **COMPATIBLE**: R4 keys recomputed from the shipped pair, R5 tier axis unchanged (the tier still never widens magnitude; only the lesson's words do), R8 group pool and R10 grade-1 path untouched, R1-R3 K presentation and asks unchanged.
 
 - 2026-10-19 — boss slice (`comparisonBuilder.card.ts` + `.boss.ts`, spokenBoss): compare_groups, one_more_less and compare_numbers are `SAY_OR_SHOW`, order a `board` the activity checks; an order and a one-more-and-one-less pair have no key and play through `show`. The key is a `SpokenKey` (menu keys on the comparison asks, the number on a single one more / one less); the ask is built in code by band. Scripted path, `useLuminaAI` cues, the K Read-me button and DISAMBIGUATE beat, the tool-lab runtime hook, hand Pip and the catalog `tutoring` block deleted. R2 and R3 re-based onto the boss (above); R9 amended: easy no longer starts with `model_match` drawn, the support fact has the tutor pull it before the try. Assessed **COMPATIBLE**: R1 K tap surface, R4 keys, R5 tier aids, R6 submission, R7-R8 and R10 unchanged; the reader-fit assertions moved onto bound mounts (`__tests__/ComparisonBuilder.reader-fit.test.tsx`).
 - 2026-10-13 — spoken answers beside the tap (ROLLOUT.md VB-1): compare_groups, compare_numbers and a single one-more / one-less are spoken items with `acceptsGesture`; `expectedAnswer` names the relation or number and JEV credits only from the tutor's feedback against it. Order and a one-more-and-one-less pair stay tap-only with no key. Scene facts still state no answer. Assessed **COMPATIBLE**: no requirement pinned gesture-only; R1 tap surface, R4 keys and R9 levers unchanged. Probe `tutor-verdict-probe.mjs --compare` 30/30, false credit 0.

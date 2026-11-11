@@ -1,0 +1,206 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (pb-create.json)",
+ "primitiveId": "pattern-builder",
+ "evalMode": "create",
+ "data": {
+  "title": "My Pattern Maker",
+  "description": "Build your very own fun patterns all by yourself!",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [],
+   "hidden": [
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ]
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple"
+   ],
+   "type": "colors"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "create",
+    "instruction": "Make your own A B pattern (two things taking turns). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "orange"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    },
+    "createShape": "AB"
+   },
+   {
+    "id": "c2",
+    "type": "create",
+    "instruction": "Make your own A B B pattern (one thing, then two the same). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "pink"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "red",
+      "blue",
+      "red",
+      "red",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue"
+     ]
+    },
+    "createShape": "ABB"
+   },
+   {
+    "id": "c3",
+    "type": "create",
+    "instruction": "Make your own A A B pattern (two the same, then one different). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "purple"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "blue",
+      "green",
+      "red",
+      "blue",
+      "green"
+     ],
+     "core": [
+      "red",
+      "blue",
+      "green"
+     ]
+    },
+    "createShape": "AAB"
+   },
+   {
+    "id": "c4",
+    "type": "create",
+    "instruction": "Make your own A B C pattern (three different things in a row). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "red",
+     "blue",
+     "green",
+     "yellow",
+     "orange"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "red",
+      "red",
+      "blue",
+      "blue",
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ],
+     "core": [
+      "red",
+      "red",
+      "blue",
+      "blue"
+     ]
+    },
+    "createShape": "ABC"
+   },
+   {
+    "id": "c5",
+    "type": "create",
+    "instruction": "Make your own A A B B pattern (two the same, then two of another). Use any tokens, and repeat it at least two times.",
+    "answer": [],
+    "hint": "Make your first part, then make the same part again.",
+    "narration": "Make a pattern of your own.",
+    "availableTokens": [
+     "circle",
+     "square",
+     "triangle",
+     "star",
+     "heart",
+     "diamond"
+    ],
+    "sequence": {
+     "given": [],
+     "hidden": [
+      "circle",
+      "square",
+      "triangle",
+      "circle",
+      "square",
+      "triangle"
+     ],
+     "core": [
+      "circle",
+      "square",
+      "triangle"
+     ]
+    },
+    "createShape": "AABB"
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": false,
+   "audioMode": false
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

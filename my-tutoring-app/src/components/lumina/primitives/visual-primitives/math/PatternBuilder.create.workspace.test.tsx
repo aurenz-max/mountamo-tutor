@@ -14,7 +14,7 @@ import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
-import { createInstruction, makesShape, patternBuilderMiss, shapeOf, type PatternBuilderView } from './patternBuilderWorkspace';
+import { createInstruction, makesShape, patternBuilderMiss, ruleChoices, ruleKeyIndex, shapeOf, type PatternBuilderView } from './patternBuilderWorkspace';
 import { createShapesFor } from '../../../service/math/gemini-pattern-builder';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -51,9 +51,27 @@ describe('the shape judge', () => {
     expect(patternBuilderMiss(data, c, view(['red', 'blue', 'blue', 'blue', 'red', 'red']))).toBe('no_repeat');
     expect(patternBuilderMiss(data, c, view(['red', 'blue', 'blue', 'red', 'blue', 'blue']))).toBeUndefined();
   });
-  it('the generator asks the simplest shapes first and stays two-token at K-1', () => {
-    expect(createShapesFor(5, 'K-1')).toEqual(['AB', 'ABB', 'AAB', 'ABB', 'AAB']);
+  it('the generator asks the simplest shapes first, ABC and AABB at K-1 too (K PTRN001-01-G)', () => {
+    expect(createShapesFor(5, 'K-1')).toEqual(['AB', 'ABB', 'AAB', 'ABC', 'AABB']);
     expect(createShapesFor(5, '2-3')).toEqual(['AB', 'ABB', 'AAB', 'ABC', 'AABB']);
+  });
+  it('the rule turn: three starts of the learner\'s own row, one the part that repeats; a wrong pick is named', () => {
+    for (const shape of ['AB', 'ABB', 'AAB', 'ABC', 'AABB']) {
+      const c = make(`c-${shape}`, shape);
+      const part = shape.split('').map(l => ['red', 'blue', 'yellow'][l.charCodeAt(0) - 65]);
+      const row = [...part, ...part];
+      const choices = ruleChoices(c, row);
+      expect(choices.map(p => p.length).sort()).toEqual([shape.length - 1, shape.length, shape.length + 1]);
+      for (const p of choices) expect(row.slice(0, p.length)).toEqual(p);
+      const key = ruleKeyIndex(c, row);
+      expect(choices[key]).toEqual(part);
+      const short = choices.findIndex(p => p.length < shape.length), long = choices.findIndex(p => p.length > shape.length);
+      expect(patternBuilderMiss(data, c, { ...view(row), rule: choices[short] })).toBe('rule_short');
+      expect(patternBuilderMiss(data, c, { ...view(row), rule: choices[long] })).toBe('rule_long');
+      expect(patternBuilderMiss(data, c, { ...view(row), rule: choices[key] })).toBeUndefined();
+    }
+    // No turn on a row that does not make the shape.
+    expect(ruleChoices(make('c', 'ABB'), ['red', 'blue', 'red', 'blue'])).toEqual([]);
   });
 });
 
@@ -78,7 +96,24 @@ it('an empty row, the shape on screen, "I\'m done!" commits, Try again keeps the
   expect(row(h)).toBe(0);
   tap(h, ['yellow', 'red', 'red', 'yellow', 'red', 'red']);
   expect(String(demand(h).workHistory)).toMatch(/tokensInRow 0 → 6 → 0 → 6|tokensInRow 6 → 0 → 6/);
+  // The row makes the shape: "I'm done!" opens the rule turn and commits nothing; the palette is gone.
   h.press("I'm done!");
+  expect(h.state().task!.workspace!.attempts).toHaveLength(1);
+  expect(h.view.container.querySelector('[data-rule-turn]')).not.toBeNull();
+  expect(h.view.container.querySelector('[data-pip-object="token-0"]')).toBeNull();
+  const made = ['yellow', 'red', 'red', 'yellow', 'red', 'red'];
+  const c = make('c1', 'ABB');
+  expect(String(demand(h).ruleTurn)).toContain('yellow, red, red');
+  // A wrong pick is the checked gesture, named; Try again keeps the row and goes back to building.
+  const wrong = ruleChoices(c, made).findIndex(p => p.length > 3);
+  h.touch(`rule-${wrong}`);
+  expect(last(h)).toMatchObject({ correct: false, miss: 'rule_long' });
+  h.dispatch('retry');
+  expect(row(h)).toBe(6);
+  expect(h.view.container.querySelector('[data-rule-turn]')).toBeNull();
+  h.settle(2000);
+  h.press("I'm done!");
+  h.touch(`rule-${ruleKeyIndex(c, made)}`);
   expect(last(h)).toMatchObject({ correct: true });
   h.close();
 });

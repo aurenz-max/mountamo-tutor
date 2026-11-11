@@ -11,6 +11,12 @@
  *   count_group    the answer is HOW MANY are in a group      number_word_to_20
  *   compare        the answer is WHICH GROUP has more         short_spoken_word
  *   both_criteria  the answer is YES or NO                    yes_no
+ *   name_rule      the answer is a GROUP'S RULE (all red)     short_spoken_word, or a tapped chip
+ *   misfit         the answer is the card in the WRONG group  short_spoken_word, or a tapped card
+ *
+ * say-rule (name_rule, misfit) is the one mode that also takes a tap: its answer is one word the child may say or
+ * tap (USER 10-13, voice beside the tap), and the activity checks the tap (`sortingStationTapCheck`). Every other
+ * kind is said only.
  *
  * A drag-to-bin with a Check button was a costume: a child who cannot categorise can drag until it goes green. The
  * trays and the cards stay, as the page a teacher lays on the table; the action was the costume, never the paper.
@@ -38,7 +44,8 @@ export type SortingStationMode =
   | 'odd-one-out'
   | 'count-and-compare'
   | 'two-attributes'
-  | 'tally-record';
+  | 'tally-record'
+  | 'say-rule';
 
 export type SortingStationTier = 'easy' | 'medium' | 'hard';
 
@@ -54,7 +61,11 @@ export type SortingItemKind =
   | 'odd_one'
   | 'count_group'
   | 'compare'
-  | 'both_criteria';
+  | 'both_criteria'
+  /** say-rule: a finished sort is on screen; the child says why one group's cards go together (its rule). */
+  | 'name_rule'
+  /** say-rule: one card sits in the wrong group of a finished sort; the child names it. */
+  | 'misfit';
 
 // ── The item ────────────────────────────────────────────────────────────────
 
@@ -102,6 +113,17 @@ export interface SortingStationItem extends TeachingItem {
   /** The sorting axis in force, for the stage caption and the context channel.
    *  Never an answer except on `pick_rule`, where it IS the answer. */
   ruleName?: string;
+  /** Other answers that are equally right, computed in code from the cards: on `pick_rule` every other way the cards
+   *  split into groups (the child's own valid rule), on `name_rule` every other value that makes exactly this group. */
+  alsoAccept?: string[];
+  /** Draw each card at its size (`sizeScales`): only where size is a way the item lets the child sort or explain, so
+   *  the drawing never becomes a cue to a rule the item does not ask about (and never singles out the answer axis
+   *  on a pick-the-rule ask, where it is drawn whenever size is one of the offered ways). */
+  drawSizes?: boolean;
+  /** say-rule: which tray of the finished sort the ask points at (0-based, in tray order). */
+  trayIndex?: number;
+  /** name_rule: the other groups' rules, the distractors that are another group's rule (the rest are partial). */
+  otherGroups?: string[];
   /** A practice item a simplify lever opened (`sortingStationLevers.ts`): the page it draws, in place of its
    *  challenge's. */
   practiceChallenge?: SortingChallengeLike;
@@ -125,6 +147,8 @@ export const responseClassFor = (kind: SortingItemKind): ResponseClassId => {
     case 'pick_rule':
     case 'odd_one':
     case 'compare':
+    case 'name_rule':
+    case 'misfit':
     default:
       return 'short_spoken_word';
   }
@@ -381,6 +405,9 @@ export interface SortingChallengeLike {
    * exactly the kind `showCounts` was.
    */
   modelItemId?: string;
+  /** say-rule only: one card drawn in the wrong tray of the finished sort, for the child to find (PTRN001-02-G).
+   *  Code places it (the generator's orchestrator); its true group is still read from its attributes. */
+  intruder?: { objectId: string; trayLabel: string };
   /** Support-tier stamps, all optional — absent means the full-help render. */
   showBucketEmojis?: boolean;
   namesSortCriterion?: boolean;
@@ -421,6 +448,152 @@ const objectsOf = (ch: SortingChallengeLike) =>
  */
 const askableObjectsOf = (ch: SortingChallengeLike) =>
   objectsOf(ch).filter((o) => !ch.modelItemId || o.id !== ch.modelItemId);
+
+type PageObject = ReturnType<typeof objectsOf>[number];
+const valueOf = (o: { attributes?: Record<string, string> }, axis: string) => sanitize(o.attributes?.[axis]).toLowerCase();
+const capitalize = (v: string) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : v);
+
+// ── Real size (K math audit CV1) ──────────────────────────────────────────────
+
+/**
+ * Size words, in order. A size sort used to draw every card at the same emoji size, so "big or small?" tested what
+ * the child knows about elephants rather than what they see. Only these words are drawn: a size value outside the
+ * table ("tall", "long") is a different dimension, and guessing a scale for it would draw something untrue.
+ */
+const SIZE_RANK: Record<string, number> = {
+  tiny: 0, little: 1, small: 1, medium: 2, middle: 2, 'medium-sized': 2, big: 3, large: 3, huge: 4, giant: 4,
+};
+
+/** Is this a size the drawing knows? The generator files a sort whose values are all size words under `size`. */
+export const isSizeWord = (value: string): boolean => SIZE_RANK[value.trim().toLowerCase()] !== undefined;
+
+/**
+ * Card id → drawn scale (0.5 smallest .. 1 largest), read from the cards' own `size` values, or null when the page
+ * cannot be drawn to size: some card has no size, a size word outside the table, or every card is one size. Equal
+ * size words draw equal; the scale says only the ORDER the data states, never a magnitude it does not.
+ */
+export function sizeScales(objects: readonly { id: string; attributes?: Record<string, string> }[]): Map<string, number> | null {
+  const ranks = objects.map((o) => SIZE_RANK[valueOf(o, 'size')]);
+  if (!objects.length || ranks.some((r) => r === undefined)) return null;
+  const distinct = Array.from(new Set(ranks as number[])).sort((a, b) => a - b);
+  if (distinct.length < 2) return null;
+  return new Map(objects.map((o, i) => [o.id, 0.5 + 0.5 * (distinct.indexOf(ranks[i] as number) / (distinct.length - 1))]));
+}
+
+// ── Rules a set of cards really has (code checks a rule, never the model) ────
+
+/** The tray cap a rule may split into: Kindergarten 3, Grade 1 4 (contract R8). */
+const binCapFor = (isPreReader: boolean) => (isPreReader ? 3 : 4);
+
+/**
+ * Every attribute the cards can honestly be sorted by: each card has a value for it, and the values make 2..binCap
+ * groups. Any such attribute partitions the set consistently (every card lands in exactly one group by one rule), so
+ * a child who picks it has picked a real sorting rule, whichever one the generator planned (PTRN001-02-E).
+ */
+export function validSortAxes(objects: readonly { attributes?: Record<string, string> }[], binCap = 4): string[] {
+  const keys = Array.from(new Set(objects.flatMap((o) => Object.keys(o.attributes ?? {}))));
+  return keys.filter((axis) => {
+    const values = objects.map((o) => valueOf(o, axis));
+    if (values.some((v) => !v)) return false;
+    const groups = new Set(values).size;
+    return groups >= 2 && groups <= binCap;
+  });
+}
+
+/**
+ * The rules that make exactly this group out of the page: every (attribute, value) whose cards are this group's
+ * cards and no others. Empty when no single attribute makes it, which is an inconsistent sort: the group mixes rules,
+ * or leaves out a card the rule takes in. This is the check behind crediting a child's own sort and the key of a
+ * say-the-rule ask.
+ */
+export function rulesOfGroup(
+  page: readonly { id: string; attributes?: Record<string, string> }[],
+  groupIds: readonly string[],
+): { axis: string; value: string }[] {
+  const ids = new Set(groupIds);
+  const members = page.filter((o) => ids.has(o.id));
+  if (!members.length || members.length !== ids.size || members.length === page.length) return [];
+  const axes = Array.from(new Set(members.flatMap((o) => Object.keys(o.attributes ?? {}))));
+  return axes.flatMap((axis) => {
+    const value = valueOf(members[0], axis);
+    if (!value || members.some((o) => valueOf(o, axis) !== value)) return [];
+    const holders = page.filter((o) => valueOf(o, axis) === value);
+    return holders.length === members.length ? [{ axis, value }] : [];
+  });
+}
+
+/** Does every group of a proposed sort follow one rule, the same attribute for every group? The rule, or null. */
+export function ruleOfSort(
+  page: readonly { id: string; attributes?: Record<string, string> }[],
+  groups: readonly (readonly string[])[],
+): string | null {
+  const placed = groups.flat();
+  if (groups.length < 2 || new Set(placed).size !== placed.length || placed.length !== page.length) return null;
+  const perGroup = groups.map((g) => new Set(rulesOfGroup(page, g).map((r) => r.axis)));
+  const shared = Array.from(perGroup[0]).filter((axis) => perGroup.every((s) => s.has(axis)));
+  return shared[0] ?? null;
+}
+
+/**
+ * The challenge re-sorted by another attribute: its trays are that attribute's values, derived from the cards as the
+ * generator derives them. Same challenge (and so the same card ids) when the attribute is already its rule.
+ */
+export function challengeSortedBy<C extends SortingChallengeLike>(ch: C, axis: string): C {
+  if (!axis || axis === ch.sortingAttribute) return ch;
+  const values = Array.from(new Set((ch.objects ?? []).map((o) => valueOf(o, axis)).filter(Boolean)));
+  return { ...ch, sortingAttribute: axis,
+    categories: values.map((v) => ({ label: capitalize(v), rule: { [axis]: v } })) };
+}
+
+/**
+ * Which valid attribute a child's words name, or null. The axis word ("colour", "kind"), its spoken form, or the
+ * values of exactly one axis ("the red ones and the yellow ones") count; words naming two axes name none.
+ */
+export function axisNamedIn(text: string, ch: SortingChallengeLike, isPreReader = false): string | null {
+  const words = new Set(normalizeForEar(text).split(' ').filter(Boolean));
+  const axes = validSortAxes(ch.objects ?? [], binCapFor(isPreReader));
+  const SYNONYM: Record<string, string[]> = { color: ['color', 'colour', 'colors', 'colours'], category: ['kind', 'kinds', 'category'],
+    type: ['type', 'types', 'kind', 'kinds'], size: ['size', 'sizes', 'big', 'small'], shape: ['shape', 'shapes'] };
+  const byWord = axes.filter((a) => [a, spokenAxisName(a), ...(SYNONYM[a] ?? [])].some((w) => words.has(w.toLowerCase())));
+  if (byWord.length === 1) return byWord[0];
+  const byValue = axes.filter((a) => (ch.objects ?? []).some((o) => {
+    const v = valueOf(o, a);
+    return !!v && v.split(' ').every((w) => words.has(w));
+  }));
+  return byValue.length === 1 ? byValue[0] : null;
+}
+
+// ── say-rule: the finished sort on screen ─────────────────────────────────────
+
+export interface SayRuleTray { label: string; members: PageObject[] }
+
+/**
+ * The trays of a say-rule challenge as drawn: every card in the tray its rule puts it in, except the intruder, which
+ * is drawn in its wrong tray until `intruderMoved` (once the child has found it, it goes home).
+ */
+export function sayRuleTrays(ch: SortingChallengeLike, intruderMoved = false): SayRuleTray[] {
+  const rule = sanitize(ch.sortingAttribute);
+  const page = objectsOf(ch);
+  const trays = categoriesOf(ch).map((c) => ({ label: c.label, members: page.filter((o) => valueOf(o, rule) === c.label.toLowerCase()) }));
+  const intruder = ch.intruder && page.find((o) => o.id === ch.intruder!.objectId);
+  if (!intruder || intruderMoved) return trays;
+  const home = trays.find((t) => t.members.includes(intruder));
+  const away = trays.find((t) => t.label.toLowerCase() === ch.intruder!.trayLabel.toLowerCase());
+  if (!home || !away || home === away) return trays;
+  return trays.map((t) => t === home ? { ...t, members: t.members.filter((o) => o !== intruder) }
+    : t === away ? { ...t, members: [...t.members, intruder] } : t);
+}
+
+const POSITION = ['first', 'second', 'third', 'fourth'];
+/** How the ask points at a tray: its place in the row, never its name (on say-rule the name is the answer). */
+export const trayPosition = (index: number) => `${POSITION[index] ?? 'last'} group`;
+
+/** A stable order for a tap menu, so the answer is not always the first chip. */
+const stableShuffle = (values: string[], seed: string): string[] => {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return values.map((v, i) => ({ v, k: (h ^ ((i + 1) * 2654435761)) >>> 0 })).sort((a, b) => a.k - b.k).map((x) => x.v);
+};
 
 /**
  * Every judged item one challenge can ask, or `[]` when it can ask none.
@@ -489,9 +662,14 @@ export const itemsFromChallenge = (
       // reading six labels aloud every round is the recitation the 2026-08-13
       // rulings struck. The oracle is therefore FLAT on this kind.
       namesChoices: false,
+      // Every card is looked at together, so a size the data states is something the child may compare.
+      ...(sizeScales(pageObjects) ? { drawSizes: true } : {}),
       ...(ruleName ? { ruleName } : {}),
     }];
   }
+
+  // ── say-rule: a finished sort; say why a group goes together, or find the card in the wrong group ──
+  if (ch.type === 'say-rule') return sayRuleItems(ch, base, objects, pageObjects, ruleName);
 
   // ── count-and-compare / tally-record: a count per group, then the compare ─
   if (ch.type === 'count-and-compare' || ch.type === 'tally-record') {
@@ -531,6 +709,7 @@ export const itemsFromChallenge = (
       namesChoices: false,
       // ⭐ The badge that used to print this number is off for this item.
       hidesCounts: true,
+      ...(ruleName === 'size' && sizeScales(pageObjects) ? { drawSizes: true } : {}),
       ...(ruleName ? { ruleName } : {}),
     }));
 
@@ -570,6 +749,7 @@ export const itemsFromChallenge = (
             choiceEmojis: [a.emoji, b.emoji, ''],
             namesChoices: true,
             hidesCounts: true,
+            ...(ruleName === 'size' && sizeScales(pageObjects) ? { drawSizes: true } : {}),
             ...(ruleName ? { ruleName } : {}),
           });
         }
@@ -613,6 +793,7 @@ export const itemsFromChallenge = (
       choiceEmojis: [],
       namesChoices: false,
       criteria: { primary, secondary },
+      ...(secondaryAttr === 'size' && sizeScales(pageObjects) ? { drawSizes: true } : {}),
       ...(ruleName ? { ruleName } : {}),
     }));
   }
@@ -624,29 +805,88 @@ export const itemsFromChallenge = (
   if (!optionsEarSeparable(cats.map((c) => c.label))) return [];
   if (!ruleName) return [];
 
-  const labels = cats.map((c) => c.label);
-  const labelSet = new Set(labels.map((l) => l.toLowerCase()));
-  const placed = objects
-    .map((o) => ({
-      ...o,
-      group: labels.find(
-        (l) => l.toLowerCase() === sanitize(o.attributes[ruleName]).toLowerCase(),
-      ) ?? '',
-    }))
-    // An object that IS a group label turns the ask into a riddle; an object
-    // with no home cannot be judged at all.
-    .filter((o) => !!o.group && !labelSet.has(o.label.toLowerCase()))
-    // With no spoken menu, a card whose name holds its own group ("Red Apple" sorted by colour) says the answer.
-    .filter((o) => namesChoices || !containsPhrase(o.label, o.group));
+  const placed = placeForSort(objects, cats, ruleName, namesChoices);
   if (placed.length < 2) return [];
 
-  const kept = capCoveringEveryGroup(placed, (o) => o.group, labels, MAX_ITEMS_PER_CHALLENGE);
+  const kept = capCoveringEveryGroup(placed, (o) => o.group, cats.map((c) => c.label), MAX_ITEMS_PER_CHALLENGE);
   // One answer repeated every round is a sort the child can pass without
   // sorting — the same defect a one-option menu is.
   if (new Set(kept.map((o) => o.group)).size < 2) return [];
 
+  const sortItems = sortItemsFor(ch, kept, cats, ruleName, base, pageObjects);
+
+  // `sort-by-attribute`'s identity is the METACOGNITIVE choice — the click era
+  // made the student pick an axis from text buttons, which is the exact reading
+  // demand that floored it to Grade 1+. Spoken, it is one short word, so the
+  // choice survives and the floor's reason does not. It leads the challenge.
+  //
+  // REPAIR (K math audit, PTRN001-02-E): any rule the cards really split on is the child's to choose. The answer is
+  // still the generator's rule, but every other VALID way (`validSortAxes`, computed from the cards) is accepted the
+  // same, and the sorts that follow re-key to the chosen rule (`followRule`). `other_rule` is now only a way these
+  // cards do NOT split by: an attribute some card lacks, or one every card shares.
+  if (ch.type === 'sort-by-attribute') {
+    const axisKeys = Array.from(
+      new Set(objects.flatMap((o) => Object.keys(o.attributes))),
+    );
+    const valid = new Set(validSortAxes(pageObjects, binCapFor(isPreReader)));
+    // The child hears and says the SPOKEN form; the key stays on `ruleName`.
+    const axes = axisKeys.map(spokenAxisName).filter(isSayableLabel);
+    const spokenRule = spokenAxisName(ruleName);
+    const alsoAccept = axisKeys.filter((k) => k !== ruleName && valid.has(k)).map(spokenAxisName)
+      .filter((a) => axes.includes(a));
+    if (
+      axes.length >= 2
+      && axes.includes(spokenRule)
+      && valid.has(ruleName)
+      && new Set(axes.map((a) => a.toLowerCase())).size === axes.length
+      && optionsEarSeparable(axes)
+    ) {
+      const sizeOffered = valid.has('size') && !!sizeScales(pageObjects);
+      sortItems.unshift({
+        ...base,
+        id: `${ch.id}::rule`,
+        kind: 'pick_rule' as const,
+        action: 'pick_rule',
+        responseClass: responseClassFor('pick_rule'),
+        stimulus: `${objects.length} pictures`,
+        answer: spokenRule,
+        ...(alsoAccept.length ? { alsoAccept } : {}),
+        choices: axes,
+        choiceEmojis: axes.map(() => ''),
+        namesChoices: true,
+        ...(sizeOffered ? { drawSizes: true } : {}),
+        ruleName,
+      });
+    }
+  }
+
+  return sortItems.slice(0, MAX_ITEMS_PER_CHALLENGE);
+};
+
+type SortBase = Omit<SortingStationItem, 'id' | 'kind' | 'action' | 'responseClass' | 'stimulus' | 'answer' | 'choices' | 'choiceEmojis'>;
+
+/** The cards a sort may ask about, each with its group under `ruleName`. Drops what cannot be asked honestly. */
+function placeForSort(objects: PageObject[], cats: ReturnType<typeof categoriesOf>, ruleName: string, namesChoices: boolean) {
+  const labels = cats.map((c) => c.label);
+  const labelSet = new Set(labels.map((l) => l.toLowerCase()));
+  return objects
+    .map((o) => ({ ...o, group: labels.find((l) => l.toLowerCase() === valueOf(o, ruleName)) ?? '' }))
+    // An object that IS a group label turns the ask into a riddle; an object
+    // with no home cannot be judged at all.
+    .filter((o) => !!o.group && !labelSet.has(o.label.toLowerCase()))
+    // With no spoken menu, a card whose name holds its own group ("Red Apple" sorted by colour) says the answer. On a
+    // size sort it says it even with the menu: the size is drawn, so "Big Ball" would answer by ear what the
+    // picture is there to show.
+    .filter((o) => (namesChoices && ruleName !== 'size') || !containsPhrase(o.label, o.group));
+}
+
+/** One sort item per kept card. */
+function sortItemsFor(ch: SortingChallengeLike, kept: (PageObject & { group: string })[], cats: ReturnType<typeof categoriesOf>,
+  ruleName: string, base: SortBase, pageObjects: PageObject[]): SortingStationItem[] {
+  const labels = cats.map((c) => c.label);
   const emojis = cats.map((c) => c.emoji);
-  const sortItems: SortingStationItem[] = kept.map((o) => ({
+  const drawSizes = ruleName === 'size' && !!sizeScales(pageObjects);
+  return kept.map((o) => ({
     ...base,
     id: `${ch.id}::${o.id}`,
     kind: 'sort' as const,
@@ -657,44 +897,145 @@ export const itemsFromChallenge = (
     answer: o.group,
     choices: labels,
     choiceEmojis: emojis,
+    ...(drawSizes ? { drawSizes: true } : {}),
     ruleName,
   }));
+}
 
-  // `sort-by-attribute`'s identity is the METACOGNITIVE choice — the click era
-  // made the student pick an axis from text buttons, which is the exact reading
-  // demand that floored it to Grade 1+. Spoken, it is one short word, so the
-  // choice survives and the floor's reason does not. It leads the challenge.
-  if (ch.type === 'sort-by-attribute') {
-    const axisKeys = Array.from(
-      new Set(objects.flatMap((o) => Object.keys(o.attributes))),
-    );
-    // The child hears and says the SPOKEN form; the key stays on `ruleName`.
-    const axes = axisKeys.map(spokenAxisName).filter(isSayableLabel);
-    const spokenRule = spokenAxisName(ruleName);
-    if (
-      axes.length >= 2
-      && axes.includes(spokenRule)
-      && new Set(axes.map((a) => a.toLowerCase())).size === axes.length
-      && optionsEarSeparable(axes)
-    ) {
-      sortItems.unshift({
+/**
+ * The child chose `axis` on a pick-the-rule ask: the sorts that follow in the same challenge are re-keyed to it,
+ * card for card, so the session keeps its item ids and length (the workspace session is built from them). The page is
+ * the same cards; only the trays change. Unchanged when the axis is the planned rule, is not a valid rule for these
+ * cards, or would leave a sort the child can pass without sorting (one group among the asked cards).
+ */
+export function followRule(
+  items: readonly SortingStationItem[],
+  ch: SortingChallengeLike,
+  axis: string,
+  opts: SortingBuildOptions = {},
+): SortingStationItem[] {
+  const isPreReader = !!opts.isPreReader;
+  if (!axis || axis === ch.sortingAttribute || !validSortAxes(ch.objects ?? [], binCapFor(isPreReader)).includes(axis)) return [...items];
+  const resorted = challengeSortedBy(ch, axis);
+  const cats = categoriesOf(resorted).filter((c) => isSayableLabel(c.label));
+  if (cats.length < 2 || !optionsEarSeparable(cats.map((c) => c.label))) return [...items];
+  const mine = items.filter((i) => i.challengeId === ch.id && i.kind === 'sort');
+  if (!mine.length) return [...items];
+  const namesChoices = mine[0].namesChoices;
+  const askedIds = new Set(mine.map((i) => i.id.slice(`${ch.id}::`.length)));
+  const page = objectsOf(resorted);
+  const placed = placeForSort(page.filter((o) => askedIds.has(o.id)), cats, axis, namesChoices);
+  if (placed.length !== mine.length || new Set(placed.map((o) => o.group)).size < 2) {
+    // eslint-disable-next-line no-console
+    console.info(`[sorting-station] ${ch.id}: the cards asked cannot all be re-sorted by ${axis}; the planned rule stays.`);
+    return [...items];
+  }
+  const { id: _i, kind: _k, action: _a, responseClass: _r, stimulus: _s, stimulusEmoji: _e, answer: _an, choices: _c,
+    choiceEmojis: _ce, drawSizes: _d, ruleName: _rn, ...base } = mine[0];
+  const rebuilt = new Map(sortItemsFor(resorted, placed, cats, axis, base, page).map((i) => [i.id, i]));
+  return items.map((i) => rebuilt.get(i.id) ?? i);
+}
+
+/** say-rule's items: see the header of `itemsFromChallenge`'s branch. */
+function sayRuleItems(ch: SortingChallengeLike, base: SortBase, askable: PageObject[], page: PageObject[],
+  ruleName: string | undefined): SortingStationItem[] {
+  if (!ruleName) return [];
+  const cats = categoriesOf(ch).filter((c) => isSayableLabel(c.label));
+  if (cats.length < 2 || cats.length !== (ch.categories ?? []).length) return [];
+  if (!optionsEarSeparable(cats.map((c) => c.label))) return [];
+  const trueTrays = sayRuleTrays(ch, true);
+  const drawn = sayRuleTrays(ch, false);
+  // A tray with fewer than two cards has no "all of them" to explain.
+  if (trueTrays.some((t) => t.members.length < 2)) return [];
+  const askableIds = new Set(askable.map((o) => o.id));
+  const sizesDrawn = !!sizeScales(page);
+  const items: SortingStationItem[] = [];
+
+  // PTRN001-02-G: the card in the wrong group comes first, then why the group's own cards go together.
+  const intruder = ch.intruder && page.find((o) => o.id === ch.intruder!.objectId);
+  const holds = (t: SayRuleTray | undefined, id: string) => !!t?.members.some((o) => o.id === id);
+  const awayIndex = intruder ? drawn.findIndex((t, i) => holds(t, intruder.id) && !holds(trueTrays[i], intruder.id)) : -1;
+  if (intruder && awayIndex >= 0) {
+    const cards = drawn[awayIndex].members;
+    if (cards.length >= 3 && cards.every((o) => askableIds.has(o.id)) && optionsEarSeparable(cards.map((o) => o.label))) {
+      items.push({
         ...base,
-        id: `${ch.id}::rule`,
-        kind: 'pick_rule' as const,
-        action: 'pick_rule',
-        responseClass: responseClassFor('pick_rule'),
-        stimulus: `${objects.length} pictures`,
-        answer: spokenRule,
-        choices: axes,
-        choiceEmojis: axes.map(() => ''),
-        namesChoices: true,
+        id: `${ch.id}::misfit`,
+        kind: 'misfit' as const,
+        action: 'misfit',
+        responseClass: responseClassFor('misfit'),
+        stimulus: trayPosition(awayIndex),
+        answer: intruder.label,
+        choices: cards.map((o) => o.label),
+        choiceEmojis: cards.map((o) => o.emoji),
+        // The cards are pictures on the screen; the ask never recites them (odd_one's ruling).
+        namesChoices: false,
+        trayIndex: awayIndex,
+        ...(sizesDrawn ? { drawSizes: true } : {}),
         ruleName,
       });
     }
   }
 
-  return sortItems.slice(0, MAX_ITEMS_PER_CHALLENGE);
-};
+  // ONE group is explained per challenge. Asking every tray in turn with one menu lets the last ask be answered by
+  // elimination ("first group: Need" makes the second "Want"), so the asked tray rotates across challenges instead:
+  // the misplaced card's tray when there is one, else the challenge's place in the session.
+  const ordinal = Math.max(0, (parseInt(ch.id.replace(/\D+/g, ''), 10) || 1) - 1);
+  const order = [awayIndex >= 0 ? awayIndex : ordinal % trueTrays.length];
+  for (const index of order) {
+    const tray = trueTrays[index];
+    const credited = rulesOfGroup(page, tray.members.map((o) => o.id));
+    const own = credited.find((r) => r.axis === ruleName);
+    if (!own) continue;
+    const answer = cats[index].label;
+    const others = credited.filter((r) => r !== own).map((r) => capitalize(r.value)).filter(isSayableLabel);
+    const creditedWords = new Set([answer, ...others].map((w) => w.toLowerCase()));
+    // A card whose own name says the rule ("Red Apple" in the red group) answers by reading or by ear.
+    if (tray.members.some((o) => Array.from(creditedWords).some((w) => containsPhrase(o.label, w)))) continue;
+    // Real wrong rules, never a value every card here has: the other groups' rules, and what only SOME cards here are.
+    const otherTrays = cats.filter((_, i) => i !== index).map((c) => c.label);
+    const partial = Array.from(new Set(tray.members.flatMap((o) => Object.entries(o.attributes)
+      .filter(([axis, v]) => axis !== ruleName && !!sanitize(v)
+        && tray.members.some((m) => valueOf(m, axis) !== sanitize(v).toLowerCase()))
+      .map(([, v]) => capitalize(sanitize(v).toLowerCase())))));
+    const distractors = [otherTrays[0], partial[0], partial[1], otherTrays[1]]
+      .filter((d): d is string => !!d && isSayableLabel(d) && !creditedWords.has(d.toLowerCase()))
+      .filter((d, i, all) => all.findIndex((x) => x.toLowerCase() === d.toLowerCase()) === i)
+      .slice(0, 2);
+    if (!distractors.length) continue;
+    const choices = stableShuffle([answer, ...distractors], `${ch.id}:${index}`);
+    if (!optionsEarSeparable(choices)) continue;
+    items.push({
+      ...base,
+      id: `${ch.id}::rule-${index}`,
+      kind: 'name_rule' as const,
+      action: 'name_rule',
+      responseClass: responseClassFor('name_rule'),
+      stimulus: trayPosition(index),
+      answer,
+      ...(others.length ? { alsoAccept: others } : {}),
+      choices,
+      choiceEmojis: choices.map(() => ''),
+      trayIndex: index,
+      otherGroups: distractors.filter((d) => otherTrays.includes(d)),
+      ...((ruleName === 'size' || choices.some((c) => SIZE_RANK[c.toLowerCase()] !== undefined)) && sizesDrawn ? { drawSizes: true } : {}),
+      ruleName,
+    });
+  }
+  // Only the kept explanations: a misfit with no explanation after it is half of PTRN001-02-G.
+  if (items[0]?.kind === 'misfit' && items[1]?.trayIndex !== items[0].trayIndex) items.shift();
+  return items.slice(0, MAX_ITEMS_PER_CHALLENGE);
+}
+
+/**
+ * The activity's own check of a tap, on the kinds that take one (say-rule's choice chips and its cards). Null on
+ * every other kind: those are said, and the tutor judges them.
+ */
+export function sortingStationTapCheck(item: SortingStationItem): (response: string) => boolean | null {
+  const accepted = new Set([item.answer, ...(item.alsoAccept ?? [])].map((w) => w.trim().toLowerCase()));
+  return (response) => (item.kind === 'name_rule' || item.kind === 'misfit'
+    ? accepted.has(response.trim().toLowerCase()) : null);
+}
 
 /**
  * The session, capped. `MAX_ITEMS_PER_SESSION` is a LENGTH bound, not a gate —
@@ -750,6 +1091,8 @@ export const choicesPhrase = (item: SortingStationItem): string => {
       return `${listPhrase(item.choices)}?`;
     case 'compare':
       return `${listPhrase(item.choices)}?`;
+    case 'name_rule':
+      return item.namesChoices ? `${listPhrase(item.choices)}?` : '';
     default:
       return '';
   }
@@ -771,6 +1114,10 @@ const questionFor = (item: SortingStationItem): string => {
       return `Which group has more?`;
     case 'both_criteria':
       return `Is it a ${item.criteria?.primary}, and is it ${item.criteria?.secondary}?`;
+    case 'name_rule':
+      return 'Why do these go together?';
+    case 'misfit':
+      return 'One card in it does not belong there. Which one?';
     default:
       return '';
   }
@@ -793,6 +1140,12 @@ export const askFor = (item: SortingStationItem): string => {
       return `Your turn. ${questionFor(item)} ${choicesPhrase(item)}`;
     case 'both_criteria':
       return `Your turn. Listen: ${item.stimulus}. ${questionFor(item)}`;
+    // The tray is pointed at by its place and its ring, never its name: on say-rule the name is the answer.
+    case 'name_rule':
+      return `Your turn. Look at the ${item.stimulus}, the one with the ring. ${questionFor(item)}`
+        + (item.namesChoices ? ` ${choicesPhrase(item)}` : '');
+    case 'misfit':
+      return `Your turn. Look at the ${item.stimulus}, the one with the ring. ${questionFor(item)}`;
     default:
       return '';
   }
@@ -811,9 +1164,19 @@ export function sortingStationKey(item: SortingStationItem): SpokenKey {
         acceptRule: `The group with or without its little words ("the ${item.answer}", "it is a ${item.answer}") is the same answer.`,
         signatureError: `Saying "${item.stimulus}" back names the thing being sorted, not a group.` };
     case 'pick_rule':
-      return { answer: item.answer, alsoAccept: [], ...menu,
-        acceptRule: `"By ${item.answer}" or "their ${item.answer}" is the same answer.`,
+      // Every way these cards really split is the child's to choose (`validSortAxes`); the sort follows it.
+      return { answer: item.answer, alsoAccept: item.alsoAccept ?? [], ...menu,
+        acceptRule: `"By ${item.answer}" or "their ${item.answer}" is the same answer${item.alsoAccept?.length
+          ? `, and so is any of ${orList(item.alsoAccept)}: each is a real way to sort these cards, and the child may choose it` : ''}.`,
         signatureError: 'Describing one card is not a way to sort them all.' };
+    case 'name_rule':
+      return { answer: item.answer, alsoAccept: item.alsoAccept ?? [], ...menu,
+        acceptRule: `"They are all ${item.answer}", "because they are all ${item.answer}" or "the ${item.answer} ones" is the same answer.`,
+        signatureError: 'Naming one card, or a thing only some of these cards are, does not say why they all go together.' };
+    case 'misfit':
+      return { answer: item.answer, alsoAccept: [],
+        acceptRule: 'Any clear way of naming that card ("the …", "that one, the …"), or a close everyday word for the same picture, counts.',
+        signatureError: 'Saying the group is fine, or naming a card that belongs there, chooses no card.' };
     case 'odd_one':
       return { answer: item.answer, alsoAccept: [],
         acceptRule: 'Any clear way of naming that card ("the …", "that one, the …"), or a close everyday word for the same picture, counts.',
@@ -847,7 +1210,7 @@ export const sortingStationGiven = (item: SortingStationItem): string[] =>
 
 /** What a wrong spoken answer at the station shows. */
 export type SpokenSortingMiss = OffByMiss | 'said_object' | 'other_group' | 'other_rule' | 'belonging_card' | 'said_all_belong'
-  | 'said_same' | 'bare_more' | 'opposite_verdict' | 'one_criterion_only';
+  | 'said_same' | 'bare_more' | 'opposite_verdict' | 'one_criterion_only' | 'other_group_rule' | 'partial_rule' | 'said_card';
 
 const list = (words: readonly string[], joiner: 'or' | 'and') => words.length < 2 ? words.join('')
   : `${words.slice(0, -1).join(', ')} ${joiner} ${words.at(-1)}`;
@@ -868,9 +1231,33 @@ export function sortingStationSpokenMisses(item: SortingStationItem): KnownMiss[
         ...(others.length ? [{ id: 'other_group', pattern: `${fact} The learner's answer is ${orList(others)}, another group.`, examples: others.slice(0, 2) }] : []),
       ];
     }
-    case 'pick_rule':
-      return others.length ? [{ id: 'other_rule', pattern: `The ways to sort are ${andList(item.choices)}, and these cards are sorted by ${item.answer}. `
-        + `The learner's answer is ${orList(others)}, another way.`, examples: others.slice(0, 2) }] : [];
+    case 'pick_rule': {
+      // A miss is only a way these cards do not split by; every valid way is credited.
+      const valid = new Set([item.answer, ...(item.alsoAccept ?? [])].map(w => w.toLowerCase()));
+      const invalid = item.choices.filter(c => !valid.has(c.toLowerCase()));
+      return invalid.length ? [{ id: 'other_rule', pattern: `These cards can be sorted by ${orList([item.answer, ...(item.alsoAccept ?? [])])}. `
+        + `The learner's answer is ${orList(invalid)}, a way these cards do not split into groups.`, examples: invalid.slice(0, 2) }] : [];
+    }
+    case 'name_rule': {
+      const fact = `In the ${item.stimulus} with the ring, the cards go together because they are all ${item.answer}.`;
+      const groups = item.otherGroups ?? [];
+      const partial = item.choices.filter(c => c.toLowerCase() !== item.answer.toLowerCase() && !groups.includes(c));
+      return [
+        ...(groups.length ? [{ id: 'other_group_rule', pattern: `${fact} The learner's answer is ${orList(groups)}, the rule of another group.`,
+          examples: groups.slice(0, 2) }] : []),
+        { id: 'partial_rule', pattern: `${fact} The learner names something only some of these cards are${partial.length ? ` (such as ${orList(partial)})` : ''}, `
+          + 'or something the cards in the other groups are too.', examples: partial.length ? partial.slice(0, 2) : ['some of them'] },
+        { id: 'said_card', pattern: `${fact} The learner names one card instead of what they all are.`, examples: ['the apple'] },
+      ];
+    }
+    case 'misfit': {
+      const fact = `The cards in the ${item.stimulus} with the ring are ${andList(item.choices)}; ${item.answer} does not belong there.`;
+      return [
+        ...(others.length ? [{ id: 'belonging_card', pattern: `${fact} The learner's answer is ${orList(others)}, a card that belongs there.`,
+          examples: others.slice(0, 2) }] : []),
+        { id: 'said_all_belong', pattern: `${fact} The learner says they all belong and names no card.`, examples: ['they all go there'] },
+      ];
+    }
     case 'odd_one': {
       const fact = `The cards are ${andList(item.choices)}; ${item.answer} is the one that does not belong.`;
       return [
@@ -920,8 +1307,10 @@ export function workspaceScene(item: SortingStationItem): SceneOf {
       // The card or group the ask is about; on odd_one, a description of the whole set.
       about: item.stimulus,
       ...(item.choices.length ? { options: item.choices.join(', ') } : {}),
-      // On pick_rule the sorting rule is the answer.
-      ...(item.ruleName && item.kind !== 'pick_rule' ? { sortingBy: item.ruleName } : {}),
+      // On pick_rule and name_rule the sorting rule is the answer.
+      ...(item.ruleName && item.kind !== 'pick_rule' && item.kind !== 'name_rule' ? { sortingBy: item.ruleName } : {}),
+      ...(item.drawSizes ? { cardsDrawn: 'at their sizes' } : {}),
+      ...(item.kind === 'name_rule' || item.kind === 'misfit' ? { trayLabels: 'hidden', respond: 'say it, or tap it on screen' } : {}),
       ...(item.hidesCounts ? { countsShown: 'no' } : {}),
     },
   };
@@ -942,6 +1331,11 @@ export const sortingStationHarnessAnswers = (item: SortingStationItem): { correc
       return { correct: item.answer, plainWrong: item.answer === 'yes' ? 'no' : 'yes' };
     case 'compare':
       return { correct: item.answer, plainWrong: other ?? 'the same' };
+    case 'pick_rule': {
+      // Another valid way is credited, so the plainly wrong answer is a way these cards do not split by.
+      const valid = new Set([item.answer, ...(item.alsoAccept ?? [])].map(w => w.toLowerCase()));
+      return { correct: item.answer, plainWrong: item.choices.find(c => !valid.has(c.toLowerCase())) ?? 'the first one' };
+    }
     default:
       return { correct: item.answer, plainWrong: other ?? 'something else' };
   }

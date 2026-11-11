@@ -14,11 +14,13 @@ import { defineCard, OFF_BY, SPOKEN, SPOKEN_AUDIO, TAP_ONE } from '../../../comp
  * - a row tapped: `reversed` (the other extreme), `other_row`; match_to_bar: the tapped row's count, off-by;
  * - a sticker chart or built graph: `rows_swapped`, `several_rows_off`, one row off-by; `wrong_step`;
  * - a made graph: `reversed`, `tied`, `other_row`, `not_same`, `left_empty`, off-by on "N more";
+ * - predict then collect: the record as a sticker chart's (`rows_swapped`, `several_rows_off`, off-by), then
+ *   `wrong_verdict` (the chart is right, the yes or no about the guess is not);
  * - spoken: `reversed_comparison`, `same_for_different`, `rows_not_graphs`, `no_comparison`.
  */
 export type BarModelMiss = 'picked_icon_count' | 'another_row' | 'one_step_off' | 'one_short' | 'one_over' | 'short_by_more'
   | 'over_by_more' | 'reversed' | 'other_row' | 'rows_swapped' | 'several_rows_off' | 'wrong_step'
-  | 'tied' | 'not_same' | 'left_empty';
+  | 'tied' | 'not_same' | 'left_empty' | 'wrong_verdict';
 /** What a wrong spoken comparison shows (handoff 20 Part B). */
 export type SpokenGraphMiss = 'reversed_comparison' | 'same_for_different' | 'rows_not_graphs' | 'no_comparison';
 
@@ -33,6 +35,7 @@ export const BAR_MODEL_MISSES = {
   compare_bars: ['reversed'],
   match_to_bar: OFF_BY,
   build_one_to_one: ROWS,
+  predict_then_collect: [...ROWS, 'wrong_verdict'],
   make_graph: ['reversed', 'tied', 'other_row', 'not_same', 'left_empty', ...OFF_BY],
   say_what_it_shows: ['reversed_comparison', 'same_for_different', 'no_comparison'],
   compare_two_graphs: ['reversed_comparison', 'same_for_different', 'rows_not_graphs', 'no_comparison'],
@@ -55,6 +58,9 @@ export const barModelCard = defineCard<BarModelMiss | SpokenGraphMiss>({
     match_to_bar: { ...TAP_ONE, misses: BAR_MODEL_MISSES.match_to_bar },
     build_one_to_one: { ...board, moves: 'taps a row to add a sticker (Take one off removes one), then presses Check my chart',
       misses: BAR_MODEL_MISSES.build_one_to_one },
+    predict_then_collect: { ...board,
+      moves: 'guesses a row, records each answer in its row, then taps Yes or No',
+      misses: BAR_MODEL_MISSES.predict_then_collect },
     make_graph: { ...board, moves: 'taps a column to add a picture (a tap on a picture takes it out), then presses I\'m done',
       misses: BAR_MODEL_MISSES.make_graph },
     say_what_it_shows: { ...SPOKEN, misses: BAR_MODEL_MISSES.say_what_it_shows },

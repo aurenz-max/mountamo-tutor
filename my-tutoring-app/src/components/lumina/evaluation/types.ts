@@ -855,6 +855,7 @@ export interface BarModelMetrics extends BasePrimitiveMetrics {
   // The practiced mode, or mixed for sessions containing distinct tasks.
   evalMode:
     | 'build_one_to_one'
+    | 'predict_then_collect'
     | 'read_one_to_one'
     | 'match_to_bar'
     | 'say_what_it_shows'
@@ -2877,7 +2878,7 @@ export interface CountingBoardMetrics extends BasePrimitiveMetrics {
 export interface MeasureLabMetrics extends BasePrimitiveMetrics {
   type: 'measure-lab';
   /** The measuring task this session practiced. */
-  challengeType: 'balance_predict' | 'capacity_predict' | 'pour_count' | 'order_capacity';
+  challengeType: 'balance_predict' | 'capacity_predict' | 'pour_count' | 'order_capacity' | 'fill_level';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

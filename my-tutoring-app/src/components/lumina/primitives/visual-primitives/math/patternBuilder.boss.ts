@@ -7,7 +7,7 @@ import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuild
 import { bossAssignment, defineBoss } from '../../../components/live-activity/boss';
 import { validateChallengePool } from '../../../components/live-activity/adapters/adapterContract';
 import {
-  CREATE_SHAPES, activeSequence, paletteFor, patternBuilderHarnessInputs, tokensNeeded, translationOf,
+  CREATE_SHAPES, activeSequence, gapKey, gapSpokenMisses, paletteFor, patternBuilderHarnessInputs, tokensNeeded, translationOf,
 } from './patternBuilderWorkspace';
 import { PATTERN_LEVERS, practiceItem, practiceParent } from './patternBuilderLevers';
 import { patternBuilderCard, type PatternBuilderMiss } from './patternBuilder.card';
@@ -30,6 +30,15 @@ export const validatePatternBuilderData = (value: unknown): PatternBuilderData =
       case 'identify_core': return seq.core.length > 0 && seq.given.some((_, i) => seq.core.every((t, k) =>
         seq.given[i + k]?.toLowerCase() === t.toLowerCase()));
       case 'translate': { const row = translationOf(data, c); return !!row && row.length > 0 && inPalette(palette, row); }
+      // The model row must be tappable from the palette.
+      case 'copy': return seq.given.length >= 2 && inPalette(palette, seq.given);
+      // One gap strictly inside the row, keyed by the row's own token there, with another token on the palette to pick.
+      case 'fill_gap': {
+        const gap = c.gapIndex ?? -1, key = seq.hidden[0];
+        return Number.isInteger(gap) && gap > 0 && gap < seq.given.length - 1 && seq.hidden.length === 1
+          && seq.given[gap]?.toLowerCase() === key?.toLowerCase() && inPalette(palette, seq.hidden)
+          && palette.some(t => t.toLowerCase() !== key.toLowerCase());
+      }
       // An asked shape must be a known one and the palette must hold enough different tokens to make it.
       case 'create': return (!c.createShape || (CREATE_SHAPES as readonly string[]).includes(c.createShape))
         && new Set(palette.map(t => t.toLowerCase())).size >= Math.max(2, c.createShape ? tokensNeeded(c.createShape) : 2);
@@ -43,8 +52,10 @@ export const patternBuilderBoss = defineBoss<PatternBuilderData, PatternBuilderC
   validate: validatePatternBuilderData,
   items: d => d.challenges,
   ask: c => c.instruction,
-  // A gesture the builder checks: no key reaches the tutor.
-  assignment: c => bossAssignment(c.id, c.instruction, null),
+  // A gesture the builder checks: no key reaches the tutor. fill_gap's one token may also be said: its key, and the
+  // tap is still checked by the builder.
+  assignment: c => bossAssignment(c.id, c.instruction, gapKey(c), gapSpokenMisses(c), c.type === 'fill_gap'),
+  spoken: { key: gapKey },
   levers: PATTERN_LEVERS,
   drive: {
     component: 'primitives/visual-primitives/math/PatternBuilder.tsx',

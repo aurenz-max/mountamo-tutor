@@ -1,5 +1,5 @@
 import { Type, Schema } from "@google/genai";
-import { TimeSequencerData, TimeSequencerChallenge } from "../../primitives/visual-primitives/math/TimeSequencer";
+import type { EventCard, TimeSequencerData, TimeSequencerChallenge } from "../../primitives/visual-primitives/math/TimeSequencer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -34,7 +34,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   "match-time-of-day": {
     promptDoc:
       `"match-time-of-day": Match an activity to a time of day (morning, afternoon, evening, night). `
-      + `Show one event, student picks the correct time period.`,
+      + `Show one event, student picks the correct time period. The APP chooses which part of the day each challenge is `
+      + `for (evening included at every grade); each choice is drawn with its own sun picture.`,
     schemaDescription: "'match-time-of-day' (match event to morning/afternoon/evening/night)",
   },
   "before-after": {
@@ -42,6 +43,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"before-after": Identify what happens before or after a reference event. `
       + `Show a reference event and 3-4 options. Student picks the event that comes before or after.`,
     schemaDescription: "'before-after' (what comes before/after)",
+  },
+  "missing-middle": {
+    promptDoc:
+      `"missing-middle": A familiar routine of five steps in order; the app shows the second and fourth steps with an `
+      + `empty place between them, and the student picks the third step from three cards (the step itself, the step `
+      + `before the first card and the step after the last card).`,
+    schemaDescription: "'missing-middle' (pick the missing middle step)",
+  },
+  "duration-order": {
+    promptDoc:
+      `"duration-order": Three familiar activities the student puts in order from the one that takes the shortest `
+      + `time to the one that takes the longest. Give each activity about how many minutes it takes; the app orders `
+      + `them from those minutes and drops a challenge whose times are not far apart.`,
+    schemaDescription: "'duration-order' (order three activities by how long they take)",
   },
   "duration-compare": {
     promptDoc:
@@ -192,6 +207,10 @@ function strategyFor(chType: string, withAnchors: boolean, withSky: boolean): st
       return 'Walk through your routine in order, then find the event that comes right before or after.';
     case 'duration-compare':
       return 'Picture doing each activity and count how long it takes — one is much quicker.';
+    case 'duration-order':
+      return 'Picture doing each one. Which is over the quickest? Which one takes a long, long time?';
+    case 'missing-middle':
+      return 'Do the first card in your head, then think what comes next, before the last card.';
     case 'read-schedule':
       return 'Find the time in the left column, then read across to the activity.';
     default:
@@ -312,6 +331,14 @@ const PRE_READER_COPY: Record<string, { instruction: string; hint: string }> = {
     instruction: 'Which one takes longer?',
     hint: 'Picture doing each one. Which one is over quickly?',
   },
+  'missing-middle': {
+    instruction: 'Something is missing in the middle. Which one goes there?',
+    hint: 'Do the first card, then think what you do next. Does it come before the last card?',
+  },
+  'duration-order': {
+    instruction: 'Put these in order, from the quickest to the one that takes the longest.',
+    hint: 'Picture doing each one. Which one is over the quickest?',
+  },
 };
 
 const PRE_READER_DESCRIPTION = 'Put the picture cards in order, from the start of the day to the end.';
@@ -374,6 +401,140 @@ const PRE_READER_PROMPT_SECTION =
 // ---------------------------------------------------------------------------
 
 const VALID_PERIODS = ["morning", "afternoon", "evening", "night"];
+type Period = "morning" | "afternoon" | "evening" | "night";
+
+/**
+ * The part of the day a clock time falls in, by code: morning 5:00-11:59, afternoon 12:00-4:59 PM, evening 5:00-7:59 PM,
+ * night 8:00 PM-4:59 AM. The model writes both a period and a typical time; a challenge is kept only when they agree, so
+ * an invalid or contradictory period is refused, never keyed as morning (TIME001-01-A).
+ */
+export function periodOfTime(typicalTime?: string): Period | undefined {
+  const f = dayFractionFor(typicalTime);
+  if (f === undefined) return undefined;
+  // Back to whole minutes: the day fraction is rounded to 3 places, so 5:00 PM reads as 16.99 hours.
+  const h = Math.round(f * 1440) / 60;
+  if (h >= 5 && h < 12) return "morning";
+  if (h >= 12 && h < 17) return "afternoon";
+  if (h >= 17 && h < 20) return "evening";
+  return "night";
+}
+
+/** The parts of the day a session's time-of-day challenges ask for, chosen in code: every part (evening too, at every
+ *  band) before any repeats, in a shuffled order. */
+export function periodPlan(count: number, rand: () => number = Math.random): Period[] {
+  const order = [...VALID_PERIODS] as Period[];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return Array.from({ length: count }, (_, i) => order[i % order.length]);
+}
+
+const PERIOD_WORDS = /\b(?:morning|afternoon|evening|night|nighttime|tonight|noon|midnight|sunrise|sunset|bedtime)\b/i;
+
+/**
+ * One time-of-day challenge from the model's flat output, or the reason it is refused: the period must be one of the
+ * four, the typical time must fall in that period, and the activity's label must not name a part of the day (that
+ * would print the answer on the card). An instruction or hint that names one is replaced with code copy.
+ */
+export function keyTimeOfDay(flat: Record<string, unknown>, i: number): TimeSequencerChallenge | string {
+  const period = typeof flat.correctPeriod === "string" ? flat.correctPeriod.toLowerCase().trim() : "";
+  if (!VALID_PERIODS.includes(period)) return `c${i + 1}(period "${period}" is not a part of the day)`;
+  const time = typeof flat.eventTime === "string" ? flat.eventTime : "";
+  const timed = periodOfTime(time);
+  if (timed !== period) return `c${i + 1}(${period} disagrees with its time "${time}"${timed ? `, a ${timed} time` : ""})`;
+  const label = typeof flat.eventLabel === "string" ? flat.eventLabel.trim() : "";
+  if (!label || PERIOD_WORDS.test(label)) return `c${i + 1}(label "${label}" names a part of the day)`;
+  const say = (text: unknown, fallback: string) =>
+    typeof text === "string" && text.trim() && !PERIOD_WORDS.test(text) ? text : fallback;
+  return {
+    id: `c${i + 1}`,
+    type: "match-time-of-day",
+    instruction: say(flat.instruction, "When does this happen?"),
+    hint: say(flat.hint, "Picture yourself doing it. Is the sun up high, going down, or is it dark?"),
+    event: { id: `evt${i + 1}`, label, emoji: (flat.eventEmoji as string) || "🌟", typicalTime: time },
+    correctPeriod: period as Period,
+  };
+}
+
+/** Labels that print a duration or a size of time on the card: the duration-order answer written down. */
+const DURATION_WORDS = /\d|\b(?:minutes?|hours?|seconds?|quick(?:ly)?|fast|long(?:er|est)?|short(?:er|est)?|slow(?:ly)?)\b/i;
+/** The fewest times longer each activity must take than the one before it, so the gaps are clear to a young child. */
+export const DURATION_GAP = 3;
+
+/**
+ * One duration-order challenge from the model's flat output, or the reason it is refused. The order key is world
+ * knowledge the model writes, so code checks it twice: every activity carries a positive number of minutes and each is
+ * at least `DURATION_GAP` times the one before when sorted, AND the model's own shortest-to-longest order agrees with
+ * those minutes. The key is then the minutes' order; no label may print a duration.
+ */
+export function keyDurationOrder(flat: Record<string, unknown>, i: number): TimeSequencerChallenge | string {
+  const events: EventCard[] = [];
+  for (let j = 0; j < 3; j++) {
+    const label = typeof flat[`activity${j}Label`] === "string" ? (flat[`activity${j}Label`] as string).trim() : "";
+    const minutes = Number(flat[`activity${j}Minutes`]);
+    if (!label) return `c${i + 1}(activity ${j} has no label)`;
+    if (DURATION_WORDS.test(label)) return `c${i + 1}(label "${label}" says how long it takes)`;
+    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 24 * 60) return `c${i + 1}("${label}" has no usable minutes)`;
+    events.push({ id: `e${j + 1}`, label, emoji: (flat[`activity${j}Emoji`] as string) || "🌟", minutes });
+  }
+  if (new Set(events.map((e) => e.label.toLowerCase())).size !== 3) return `c${i + 1}(two activities share a label)`;
+  const sorted = [...events].sort((a, b) => a.minutes! - b.minutes!);
+  for (let j = 1; j < sorted.length; j++) {
+    if (sorted[j].minutes! < sorted[j - 1].minutes! * DURATION_GAP) {
+      return `c${i + 1}("${sorted[j - 1].label}" ${sorted[j - 1].minutes} min and "${sorted[j].label}" ${sorted[j].minutes} min are too close)`;
+    }
+  }
+  const stated = (typeof flat.shortestToLongest === "string" ? flat.shortestToLongest : "")
+    .split(",").map((x) => Number(x.trim())).filter((n) => Number.isInteger(n) && n >= 0 && n < 3);
+  const fromMinutes = sorted.map((e) => events.indexOf(e));
+  if (stated.length !== 3 || stated.some((n, j) => n !== fromMinutes[j])) {
+    return `c${i + 1}(its stated order ${stated.join(",") || "(none)"} disagrees with its minutes ${fromMinutes.join(",")})`;
+  }
+  return {
+    id: `c${i + 1}`,
+    type: "duration-order",
+    instruction: PRE_READER_COPY["duration-order"].instruction,
+    hint: PRE_READER_COPY["duration-order"].hint,
+    events,
+    correctOrder: sorted.map((e) => e.id),
+  };
+}
+
+/**
+ * One missing-middle challenge from a five-step routine the model writes in order, or the reason it is refused. Code
+ * builds the item: steps 2 and 4 are the first and last cards, step 3 is the key, and steps 1 and 5 are the wrong
+ * choices (one before the first card, one after the last), shuffled. The instruction and hint are code copy, so no
+ * prose can name the middle step.
+ */
+export function keyMissingMiddle(flat: Record<string, unknown>, i: number, rand: () => number = Math.random): TimeSequencerChallenge | string {
+  const steps: EventCard[] = [];
+  for (let j = 0; j < 5; j++) {
+    const label = typeof flat[`step${j}Label`] === "string" ? (flat[`step${j}Label`] as string).trim() : "";
+    if (!label) return `c${i + 1}(step ${j + 1} has no label)`;
+    steps.push({ id: `s${j}`, label, emoji: (flat[`step${j}Emoji`] as string) || "🌟" });
+  }
+  if (new Set(steps.map((e) => e.label.toLowerCase())).size !== 5) return `c${i + 1}(two steps share a label)`;
+  const options = [
+    { ...steps[0], id: "o1" }, { ...steps[2], id: "o2" }, { ...steps[4], id: "o3" },
+  ];
+  for (let k = options.length - 1; k > 0; k--) {
+    const r = Math.floor(rand() * (k + 1));
+    [options[k], options[r]] = [options[r], options[k]];
+  }
+  const copy = PRE_READER_COPY["missing-middle"];
+  return {
+    id: `c${i + 1}`,
+    type: "missing-middle",
+    instruction: copy.instruction,
+    hint: copy.hint,
+    firstEvent: { ...steps[1], id: "first" },
+    lastEvent: { ...steps[3], id: "last" },
+    options,
+    correctEvent: "o2",
+    optionPlaces: { o1: "before", o3: "after" },
+  };
+}
 const VALID_ANSWERS = ["A", "B", "same"];
 
 const SCENARIO_THEMES = [
@@ -511,10 +672,71 @@ const matchTimeOfDaySchema: Schema = {
           hint: { type: Type.STRING, description: "Hint" },
           eventLabel: { type: Type.STRING, description: "Activity label" },
           eventEmoji: { type: Type.STRING, description: "Activity emoji" },
-          eventTime: { type: Type.STRING, description: "Typical clock time for the activity (e.g. '8:00 AM')" },
-          correctPeriod: { type: Type.STRING, description: "'morning', 'afternoon', 'evening', or 'night'" },
+          eventTime: { type: Type.STRING, description: "Typical clock time for the activity (e.g. '8:00 AM'); it must fall in correctPeriod" },
+          correctPeriod: { type: Type.STRING, enum: ["morning", "afternoon", "evening", "night"], description: "The part of the day this challenge was asked for" },
         },
-        required: ["id", "instruction", "hint", "eventLabel", "eventEmoji", "correctPeriod"],
+        required: ["id", "instruction", "hint", "eventLabel", "eventEmoji", "eventTime", "correctPeriod"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const missingMiddleSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          hint: { type: Type.STRING, description: "Hint" },
+          step0Label: { type: Type.STRING, description: "Step 1 of the routine (2-4 words)" },
+          step0Emoji: { type: Type.STRING, description: "Step 1 emoji" },
+          step1Label: { type: Type.STRING, description: "Step 2" },
+          step1Emoji: { type: Type.STRING, description: "Step 2 emoji" },
+          step2Label: { type: Type.STRING, description: "Step 3" },
+          step2Emoji: { type: Type.STRING, description: "Step 3 emoji" },
+          step3Label: { type: Type.STRING, description: "Step 4" },
+          step3Emoji: { type: Type.STRING, description: "Step 4 emoji" },
+          step4Label: { type: Type.STRING, description: "Step 5" },
+          step4Emoji: { type: Type.STRING, description: "Step 5 emoji" },
+        },
+        required: ["id", "hint", "step0Label", "step0Emoji", "step1Label", "step1Emoji", "step2Label", "step2Emoji",
+          "step3Label", "step3Emoji", "step4Label", "step4Emoji"],
+      },
+    },
+  },
+  required: ["title", "description", "challenges"],
+};
+
+const durationOrderSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Activity title" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    challenges: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "Unique ID" },
+          activity0Label: { type: Type.STRING, description: "Activity 1 (2-4 words, no time words)" },
+          activity0Emoji: { type: Type.STRING, description: "Activity 1 emoji" },
+          activity0Minutes: { type: Type.NUMBER, description: "About how many minutes activity 1 takes" },
+          activity1Label: { type: Type.STRING, description: "Activity 2" },
+          activity1Emoji: { type: Type.STRING, description: "Activity 2 emoji" },
+          activity1Minutes: { type: Type.NUMBER, description: "About how many minutes activity 2 takes" },
+          activity2Label: { type: Type.STRING, description: "Activity 3" },
+          activity2Emoji: { type: Type.STRING, description: "Activity 3 emoji" },
+          activity2Minutes: { type: Type.NUMBER, description: "About how many minutes activity 3 takes" },
+          shortestToLongest: { type: Type.STRING, description: "The activity numbers 0, 1, 2 from the shortest to the longest, comma-separated, e.g. '2,0,1'" },
+        },
+        required: ["id", "activity0Label", "activity0Emoji", "activity0Minutes", "activity1Label", "activity1Emoji",
+          "activity1Minutes", "activity2Label", "activity2Emoji", "activity2Minutes", "shortestToLongest"],
       },
     },
   },
@@ -716,46 +938,142 @@ async function generateMatchTimeOfDay(
   count: number,
   tierSection: string,
 ): Promise<SubResult> {
-  const theme = randomTheme();
-  const prompt = `
-Create ${count} "match-time-of-day" challenges for teaching "${topic}" to ${gradeLevel} students.
-Theme: ${theme}.
+  const plan = periodPlan(count);
+  const ask = async (periods: Period[]) => {
+    const prompt = `
+Create ${periods.length} "match-time-of-day" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${randomTheme()}.
 
-Each challenge: show ONE activity. Student picks whether it happens in morning, afternoon, evening, or night.
-- correctPeriod must be exactly one of: 'morning', 'afternoon', 'evening', 'night'.
-- For K: only use morning, afternoon, night (no evening).
-- Provide a realistic eventTime (e.g. "8:00 AM") that agrees with the correct period.
-- Use a variety of daily activities (eating, sleeping, school, play, etc.).
+Each challenge: show ONE activity. Student picks whether it happens in the morning, afternoon, evening, or night.
+The part of the day for each challenge is already chosen; write them in this order:
+${periods.map((p, i) => `- Challenge ${i + 1}: an activity a child usually does in the ${p.toUpperCase()}`).join("\n")}
+- correctPeriod is the part of the day the challenge was asked for.
+- eventTime is a realistic clock time for the activity INSIDE that part of the day: morning 5:00-11:59 AM, afternoon
+  12:00-4:59 PM, evening 5:00-7:59 PM (dinner, bath, sunset), night 8:00 PM or later (sleeping, stars).
+- The activity label, instruction and hint must NEVER name a part of the day (no "morning", "evening", "night",
+  "bedtime", "sunset"): the child works it out from the activity and the sky pictures on the choices.
+- Use a different activity for every challenge (eating, sleeping, school, play, chores).
 ${tierSection}
 ${SHARED_CONTEXT}
 `;
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: matchTimeOfDaySchema },
+    });
+    return result.text ? JSON.parse(result.text) : null;
+  };
 
+  const kept: TimeSequencerChallenge[] = [];
+  const refused: string[] = [];
+  let title = "", description = "";
+  let missing: Period[] = plan;
+  // One regeneration, for the parts of the day whose challenges were refused. Never a silent fallback to morning.
+  for (let attempt = 0; attempt < 2 && missing.length > 0; attempt++) {
+    const data = await ask(missing);
+    if (!title && data?.title) title = data.title;
+    if (!description && data?.description) description = data.description;
+    for (const flat of (data?.challenges ?? []) as Record<string, unknown>[]) {
+      const keyed = keyTimeOfDay(flat, kept.length + refused.length);
+      if (typeof keyed === "string") { refused.push(keyed); continue; }
+      if (kept.some((k) => k.event?.label.toLowerCase() === keyed.event?.label.toLowerCase())) continue;
+      kept.push(keyed);
+    }
+    const left = [...plan];
+    for (const k of kept) { const at = left.indexOf(k.correctPeriod as Period); if (at >= 0) left.splice(at, 1); }
+    missing = left;
+  }
+  // The session follows the plan: one kept challenge per planned part of the day, in the plan's order.
+  const pool = [...kept];
+  const challenges = plan.flatMap((p) => {
+    const at = pool.findIndex((k) => k.correctPeriod === p);
+    return at >= 0 ? pool.splice(at, 1) : [];
+  });
+  console.log(`[TimeSequencer] time-of-day plan [${plan.join(", ")}]: kept ${challenges.length}/${plan.length}`
+    + (refused.length ? `; refused ${refused.join(", ")}` : ""));
+  return { title, description, challenges };
+}
+
+async function generateMissingMiddle(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+  tierSection: string,
+): Promise<SubResult> {
+  const prompt = `
+Create ${count} "missing-middle" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${randomTheme()}.
+
+Each challenge is ONE familiar routine of exactly five steps, written in the order they happen (step0 first, step4 last).
+The app shows step1 and step3 with an empty place between them, and the child picks step2 from three cards: step0, step2
+and step4. So:
+- Every step must need the one before it, so the order is the only sensible one (plant a seed, water it, it sprouts,
+  it grows tall, it flowers; wake up, brush teeth, eat breakfast, put on shoes, ride the bus).
+- step0 must clearly come BEFORE step1, and step4 clearly AFTER step3, so neither could go in the middle.
+- Each label is 2-4 short words with a clear emoji. No two steps alike.
+- Use a different routine for every challenge.
+${tierSection}
+${SHARED_CONTEXT}
+`;
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: matchTimeOfDaySchema },
+    config: { responseMimeType: "application/json", responseSchema: missingMiddleSchema },
   });
-
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
-
-  const challenges: TimeSequencerChallenge[] = data.challenges.map((flat: Record<string, unknown>, i: number) => {
-    const period = typeof flat.correctPeriod === "string" ? flat.correctPeriod.toLowerCase() : "";
-    return {
-      id: `c${i + 1}`,
-      type: "match-time-of-day" as const,
-      instruction: (flat.instruction as string) || "When does this happen?",
-      hint: (flat.hint as string) || "Think about when you do this activity!",
-      event: {
-        id: `evt${i + 1}`,
-        label: (flat.eventLabel as string) || "Activity",
-        emoji: (flat.eventEmoji as string) || "🌟",
-        typicalTime: typeof flat.eventTime === "string" && flat.eventTime ? flat.eventTime : undefined,
-      },
-      correctPeriod: (VALID_PERIODS.includes(period) ? period : "morning") as TimeSequencerChallenge["correctPeriod"],
-    };
+  const refused: string[] = [];
+  const challenges = (data.challenges as Record<string, unknown>[]).flatMap((flat, i) => {
+    const keyed = keyMissingMiddle(flat, i);
+    if (typeof keyed === "string") { refused.push(keyed); return []; }
+    // The model's hint is kept only when it names none of the three choices.
+    const hint = typeof flat.hint === "string" ? flat.hint.trim() : "";
+    if (hint && !keyed.options!.some((o) => hint.toLowerCase().includes(o.label.toLowerCase()))) keyed.hint = hint;
+    return [keyed];
   });
+  if (refused.length) console.log(`[TimeSequencer] missing-middle refused ${refused.join(", ")}`);
+  return { title: data.title || "", description: data.description || "", challenges };
+}
 
+async function generateDurationOrder(
+  topic: string,
+  gradeLevel: string,
+  count: number,
+  tierSection: string,
+): Promise<SubResult> {
+  // Ask for a few more than needed: code refuses any whose minutes are close together or disagree with the stated order.
+  const asked = count + 2;
+  const prompt = `
+Create ${asked} "duration-order" challenges for teaching "${topic}" to ${gradeLevel} students.
+Theme: ${randomTheme()}.
+
+Each challenge: three familiar activities the child puts in order from the one that takes the SHORTEST time to the one
+that takes the LONGEST.
+- Give each activity about how many minutes it takes for a young child (activity0Minutes ...).
+- The three must be FAR apart: each one takes at least three times as long as the shorter one, e.g. wash hands (1),
+  eat a snack (10), play at the park (60). Never two that take about the same time.
+- shortestToLongest lists the activity numbers 0, 1, 2 from shortest to longest, and must agree with the minutes.
+- Mix up which activity number is shortest; do not always list them shortest first.
+- Labels are 2-4 short words with no numbers and no time words (no "quick", "long", "minutes").
+- Use different activities in every challenge.
+${tierSection}
+${SHARED_CONTEXT}
+`;
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: durationOrderSchema },
+  });
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges?.length) return { title: "", description: "", challenges: [] };
+  const refused: string[] = [];
+  const challenges = (data.challenges as Record<string, unknown>[]).flatMap((flat, i) => {
+    const keyed = keyDurationOrder(flat, i);
+    if (typeof keyed === "string") { refused.push(keyed); return []; }
+    return [keyed];
+  }).slice(0, count);
+  console.log(`[TimeSequencer] duration-order kept ${challenges.length}/${data.challenges.length}`
+    + (refused.length ? `; refused ${refused.join(", ")}` : ""));
   return { title: data.title || "", description: data.description || "", challenges };
 }
 
@@ -977,6 +1295,8 @@ const GENERATOR_MAP: Record<string, SubGenerator> = {
   "clock-sequence": generateSequenceEvents,
   "match-time-of-day": generateMatchTimeOfDay,
   "before-after": generateBeforeAfter,
+  "missing-middle": generateMissingMiddle,
+  "duration-order": generateDurationOrder,
   "duration-compare": generateDurationCompare,
   "read-schedule": generateReadSchedule,
 };
@@ -1032,6 +1352,33 @@ const FALLBACKS: Record<string, TimeSequencerChallenge> = {
       { id: "e4", label: "Eat dinner", emoji: "🍽️" },
     ],
     correctEvent: "e2",
+  },
+  "missing-middle": {
+    id: "c1",
+    type: "missing-middle",
+    instruction: "Something is missing in the middle. Which one goes there?",
+    hint: "Do the first card, then think what you do next. Does it come before the last card?",
+    firstEvent: { id: "first", label: "Brush teeth", emoji: "🦷" },
+    lastEvent: { id: "last", label: "Put on shoes", emoji: "👟" },
+    options: [
+      { id: "o1", label: "Wake up", emoji: "🌅" },
+      { id: "o2", label: "Eat breakfast", emoji: "🍳" },
+      { id: "o3", label: "Ride the bus", emoji: "🚌" },
+    ],
+    correctEvent: "o2",
+    optionPlaces: { o1: "before", o3: "after" },
+  },
+  "duration-order": {
+    id: "c1",
+    type: "duration-order",
+    instruction: "Put these in order, from the quickest to the one that takes the longest.",
+    hint: "Picture doing each one. Which one is over the quickest?",
+    events: [
+      { id: "e1", label: "Play at the park", emoji: "🛝", minutes: 60 },
+      { id: "e2", label: "Wash your hands", emoji: "🧼", minutes: 1 },
+      { id: "e3", label: "Eat a snack", emoji: "🍎", minutes: 10 },
+    ],
+    correctOrder: ["e2", "e3", "e1"],
   },
   "duration-compare": {
     id: "c1",

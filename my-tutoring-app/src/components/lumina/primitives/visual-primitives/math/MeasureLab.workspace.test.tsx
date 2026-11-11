@@ -17,7 +17,8 @@ import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import type { MeasureLabChallenge } from './MeasureLab';
-import { EMPTY_VIEW, measureMiss } from './measureLabWorkspace';
+import { EMPTY_VIEW, measureAsk, measureMiss } from './measureLabWorkspace';
+import { measureLabBoss } from './measureLab.boss';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
@@ -32,6 +33,8 @@ const CHALLENGES: Record<string, MeasureLabChallenge> = {
     container: { id: 'pot', name: 'pot', shape: 'round', capacity: 5 }, expectedCount: 5, options: [4, 5, 6, 7] },
   order_capacity: { id: 'o', type: 'order_capacity', prompt: 'Put the jars in order. Start with the one that has the least.',
     containers: [jar('j1', 'jar 1', 7), jar('j2', 'jar 2', 1), jar('j3', 'jar 3', 4)], expectedOrder: ['j2', 'j3', 'j1'] },
+  fill_level: { id: 'f', type: 'fill_level', fillAsk: 'less', prompt: 'These two jugs are the same. Which one has less water in it?',
+    containers: [jar('fl', 'left jug', 6), jar('fr', 'right jug', 3)], expectedChoice: 'fr' },
 };
 /** The right taps for each item, through the real controls. */
 const RIGHT: Record<string, string[]> = {
@@ -39,6 +42,7 @@ const RIGHT: Record<string, string[]> = {
   capacity_predict: ['bowl', 'Pour cups into both'],
   pour_count: [...Array(5).fill('Pour one in'), '5'],
   order_capacity: ['jar 2', 'jar 3', 'jar 1'],
+  fill_level: ['right jug'],
 };
 
 const mount = (mode: string, challenges: MeasureLabChallenge[]) =>
@@ -51,8 +55,14 @@ it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no script
   const c = CHALLENGES[mode];
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(c.prompt);
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect(h.state().task!.task).toBe(measureAsk(c));
+  // fill_level is said or tapped (SAY_OR_SHOW): the tutor judges a spoken answer against its key. Every other mode
+  // is checked on the bench and publishes no key.
+  if (mode === 'fill_level') {
+    expect(h.state().task!.demand.response).toBe('speech');
+    expect(measureLabBoss.assignment(c).acceptsGesture).toBe(true);
+  }
+  else expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   // No weight, capacity, fill level, count or winner before the test: no number but the jars' own names.
   const facts = JSON.stringify(demand(h)).replace(/jar \d|\d identical/g, 'jar');
   expect(facts).not.toMatch(/\d|went down|one took/);
@@ -150,4 +160,26 @@ it('measureMiss names each type\'s signature error', () => {
   expect(measureMiss(CHALLENGES.order_capacity, { ...v, order: ['j3', 'j2', 'j1'] })).toBe('two_swapped');
   expect(measureMiss(CHALLENGES.order_capacity, { ...v, order: ['j3', 'j1', 'j2'] })).toBe('out_of_order');
   expect(measureMiss(CHALLENGES.order_capacity, { ...v, order: ['j2', 'j3', 'j1'] })).toBeUndefined();
+});
+
+it('fill_level: the fuller jug for less is picked_opposite and Try again clears it; empty or full takes the word', () => {
+  const h = mount('fill_level', [CHALLENGES.fill_level]);
+  expect(demand(h)).toMatchObject({ question: 'which one has less water', learnerWork: 'No choice yet' });
+  h.press('left jug');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'picked_opposite' });
+  h.press('right jug');
+  expect(h.state().task!.workspace!.attempts).toHaveLength(1);
+  h.dispatch('retry');
+  expect(demand(h)).toMatchObject({ learnerWork: 'No choice yet' });
+  h.close();
+  const ef: MeasureLabChallenge = { id: 'e', type: 'fill_level', fillAsk: 'empty_full', prompt: 'Look at the pot. Is it empty or full?',
+    container: jar('pot', 'pot', 0), expectedChoice: 'empty' };
+  const k = mount('fill_level', [ef]);
+  expect(JSON.stringify(demand(k))).not.toMatch(/\d/);
+  k.press('Full');
+  expect(k.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'mixed_empty_full' });
+  k.dispatch('retry');
+  k.press('Empty');
+  expect(k.state().task!.evidence.correctness).toBe('correct');
+  k.close();
 });

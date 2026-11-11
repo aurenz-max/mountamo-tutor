@@ -92,7 +92,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: barModelDeliveryEligible },
-    description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
+    description: 'K-5 categorical-data graph. K one-to-one data (K.MD.B.3): record a pile of objects onto a sticker chart one sticker per object, guess which choice a class survey will favour and then record the answers as they come in to check the guess, read a graph where one picture stands for one thing, match a group of objects to the row that shows that many, say which row has the most or the fewest, explain what a graph shows aloud, and compare two related surveys. K-1 also has a two-bar which-is-taller comparison. Grades 2-5: scaled bar graphs with step-2/5/10 axes (3.MD.B.3) and picture graphs where 1 icon = N items (2.MD.D.10). Single home for all bar/picture-graph instruction, from tally-and-sticker recording to scaled construction; not for histograms or numeric distributions.',
     constraints: 'Multi-instance: a session walks the student through 3-6 challenges in a pinned mode or an intent-resolved blend, each with its own graph. The manifest MUST NOT supply specific bar values, scales, or datasets — the generator builds every challenge from the eval mode + topic. K one-to-one modes (build_one_to_one, read_one_to_one, match_to_bar, most_least) show one picture per object with no axis to read, print no numbers on the graph, and keep every count within 1-10; each row carries its own emoji so a pre-reader can tell the rows apart. build_graph requires expectedDataset and expectedScaleStep — student picks the scale themselves.',
     affordances: { representation: 'pictorial', answers: ['tap', 'spoken'], role: 'apply', minutes: 5 },
     supportsEvaluation: true,
@@ -156,6 +156,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.0, scaffoldingMode: 2, challengeTypes: ['say_what_it_shows'],
         affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'] },
         description: 'Explain a true more, fewer, most, least, or equal comparison from a one-to-one graph in your own words. MEAS001-03-G.',
+      },
+      {
+        evalMode: 'predict_then_collect', label: 'Guess, Then Collect (K)',
+        beta: 2.1, scaffoldingMode: 2, challengeTypes: ['predict_then_collect'],
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'build'] },
+        description: 'Guess which choice will be most popular, record the class answers one at a time as they come in, then say '
+          + 'whether the guess got the most. MEAS001-03-F.',
       },
       {
         evalMode: 'compare_two_graphs', label: 'Compare Related Graphs (K)',
@@ -1662,7 +1669,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     observationDelivery: 'server',
     learningObservations: { eligible: countingBoardDeliveryEligible },
     description: 'Live tutor-judged Pre-K to Grade 1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks, judges the spoken number word, and helps after a miss; the board itself checks a handover, a build and a hand pick. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group — at K that group sits under a basket, so it must be counted on from rather than counted), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). It also covers the K counting-OUT family: give-me-N (hand back a named number of objects from a pile), same-number-after-they-move (count a set, watch it rearrange, say how many now — conservation), take-away (take some off and say how many are left), and add-more (put more on and say how many altogether). Builds one-to-one correspondence, cardinality principle, conservation, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
-    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects; count_all, subitize, and the counting-out family (give_me_n, recount_moved, take_away, add_more), plus count_on with the started group hidden under a basket. Grade 1: count to 30, count-on and group counting. In take_away and add_more the bound the objective names is the number the child ENDS on; the app splits the board and chooses how many change. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
+    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects; count_all, subitize, name_numeral (count 0-10 and tap the numeral, an empty board included), and the counting-out family (give_me_n, recount_moved, take_away, add_more), plus count_on with the started group hidden under a basket. give_me_n asks for 2-6 by default and reaches the teens when the objective names them; group counting by 2s, 5s or 10s at K when the objective names it (by 2s to 20). Grade 1: count to 30, count-on and group counting. In take_away and add_more the bound the objective names is the number the child ENDS on; the app splits the board and chooses how many change. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: [
       {
@@ -1702,13 +1709,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Open build: the scene starts EMPTY (a tree, a pond, the night sky) and the child makes a set of a named size by tapping objects in, then says done. Nothing is drawn to count; the child produces the set. K.CC.B.5.',
       },
       {
+        evalMode: 'name_numeral',
+        affordances: { representation: ['concrete', 'symbolic'], reader: 'none', answers: ['tap'] },
+        label: 'Count and Name the Numeral (Concrete to Symbol)',
+        beta: 1.7,
+        scaffoldingMode: 2,
+        challengeTypes: ['name_numeral'],
+        description: 'Count a set of 0-10 and tap the written numeral that tells how many; one board is empty and its numeral is 0. K.CC.A.3, K.CC.B.4a.',
+      },
+      {
         evalMode: 'recount_moved',
         affordances: { answers: ['spoken'] },
         label: 'Same After They Move (Concrete)',
         beta: 1.8,
         scaffoldingMode: 1,
         challengeTypes: ['recount_moved'],
-        description: 'Count a set, watch it rearrange, and say how many now — conservation. K.CC.B.4b.',
+        description: 'Count a set, watch it rearrange and come back bigger or smaller, and say how many now — conservation over arrangement and size. K.CC.B.4b.',
       },
       {
         evalMode: 'subitize',
@@ -1817,10 +1833,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'pattern-builder',
     description: 'Interactive pattern recognition, extension, and creation for K-3 algebraic thinking. Students build, extend, identify cores, translate, and create repeating patterns (AB, AAB, ABC), growing patterns (1,3,5,7), and number patterns. Supports color tokens, shape tokens, and numbers. Progressive phases: Copy → Identify → Create → Translate. Connects pattern skills to skip counting, multiplication foundations, and early algebra. ESSENTIAL for grades K-3 algebraic thinking, pattern recognition, and early algebra foundations.',
-    constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes (AB, AAB, ABB), including creation when the objective asks the child to make their own pattern. Grades 2-3: growing and number patterns, translation, and creation over number tokens.',
+    constraints: 'Best for grades K-3. K-1: repeating patterns with colors/shapes (AB, AAB, ABB, ABC), copying a model row, filling a gap inside a row, and creation (AB, ABB, AAB, ABC, AABB, then saying or picking the rule of the pattern made) when the objective asks the child to make their own pattern. Grades 2-3: growing and number patterns, translation, and creation over number tokens.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'build'], role: 'apply', minutes: 5 },
     supportsEvaluation: true,
     evalModes: [
+      {
+        evalMode: 'copy',
+        affordances: { answers: ['build'] },
+        label: 'Copy a Row (Tier 1)',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        discrimination: 1.8,
+        challengeTypes: ['copy'],
+        description: 'Rebuild a shown repeating row (AB first) token by token in an empty row below it; the check is the built row equal to the model, token for token. Kindergarten (K PTRN001-01-B). Code builds the rows from the lesson\'s tokens.',
+      },
       {
         evalMode: 'extend',
         affordances: { answers: ['build'] },
@@ -1829,6 +1855,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['extend'],
         description: 'Continue a given pattern.',
+      },
+      {
+        evalMode: 'fill_gap',
+        affordances: { answers: ['build', 'spoken'] },
+        label: 'Fill the Gap (Tier 2)',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        discrimination: 1.2,
+        challengeTypes: ['fill_gap'],
+        description: 'One token is missing from INSIDE a repeating row (AB first): the child places the token the pattern puts in the gap. Kindergarten (K PTRN001-01-E). Code builds the row, puts the gap after the first whole repeat and before the end at a varied place, and offers every token of the pattern plus a distractor in a shuffled order, so the gap is found only from the pattern.',
       },
       {
         evalMode: 'identify_core',
@@ -1855,7 +1891,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create'],
-        description: 'OPEN BUILD: make your own repeating pattern on an empty row in the shape the ask names (AB, ABB, AAB; ABC, AABB at grades 2-3) with any tokens, repeated at least twice, then "I\'m done!". Many rows pass; the builder checks the shape in code. Try again keeps the row.',
+        description: 'OPEN BUILD: make your own repeating pattern on an empty row in the shape the ask names (AB, ABB, AAB, ABC, AABB at every grade, K PTRN001-01-G) with any tokens, repeated at least twice, then "I\'m done!". When the row makes the shape, the rule turn: the child picks which part of their own row repeats from three choices (the part, one token short, one token over). Many rows pass; the builder checks the shape and the rule in code. Try again keeps the row.',
       },
       {
         evalMode: 'find_rule',
@@ -2080,10 +2116,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'measure-lab',
-    description: 'Kindergarten weight-and-capacity bench where the child tests the answer instead of being told it (K.MD.A.1, K.MD.A.2). A pan balance TIPS under the objects the child puts on it, and containers FILL as the child pours non-standard cups into them. Four tasks: predict which of two objects is heavier and then weigh them; predict which of two differently-shaped containers holds more and then fill both; fill one container with cups and say how many it took; and put three identical jars in order from least to most. Weights and capacities are never shown as numbers — the tip of the beam and the level in the glass are the only evidence. ESSENTIAL for Kindergarten measurement: heavier/lighter, holds more/holds less, measuring with non-standard units, and ordering by amount.',
+    description: 'Kindergarten weight-and-capacity bench where the child tests the answer instead of being told it (K.MD.A.1, K.MD.A.2). A pan balance TIPS under the objects the child puts on it, and containers FILL as the child pours non-standard cups into them. Five tasks: predict which of two objects is heavier and then weigh them; predict which of two differently-shaped containers holds more and then fill both; fill one container with cups and say how many it took; put three identical jars in order from least to most; and look at the water drawn inside to say empty or full, or which of two identical containers has more or less. Weights and capacities are never shown as numbers — the tip of the beam and the level in the glass are the only evidence. ESSENTIAL for Kindergarten measurement: heavier/lighter, holds more/holds less, measuring with non-standard units, and ordering by amount.',
     constraints: 'Best for Pre-K to Grade 1 and built for K. Multi-instance: a session walks 3-6 challenges of one task. The manifest MUST NOT supply objects, weights, capacities or counts — the generator picks the vocabulary and code owns every quantity. Counts of cups stay within 3-10 so a K child can count them. A prediction is always recorded before the test runs, and the score is the prediction, never the pouring. Not for standard units (grams, litres) or for reading a scale face — that is measurement-tools.',
-    affordances: { representation: 'concrete', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 6 },
+    affordances: { representation: 'concrete', reader: 'none', answers: ['tap', 'manipulate', 'spoken'], role: 'apply', minutes: 6 },
     evalModes: [
+      {
+        evalMode: 'fill_level',
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'spoken'] },
+        label: 'Empty, Full, More or Less (K)',
+        beta: 1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['fill_level'],
+        description: 'Look at the water drawn inside: say whether one container is empty or full, and which of two identical '
+          + 'containers has more or less. MEAS001-08-A, MEAS001-08-B.',
+      },
       {
         evalMode: 'balance_predict',
         affordances: { representation: 'concrete', reader: 'none', answers: ['tap'] },
@@ -2253,7 +2299,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     // The live wiring is the boss card (`numberSequencer.card.ts`); the behavior is `numberSequencer.boss.ts`.
     ...bossEntry(numberSequencerCard),
     description: 'Live tutor-judged number train practice. Children say missing numbers, continue a count one number at a time, and name the printed number that breaks a sequence. Card ordering remains hands-on arrangement, checked by the train. Six existing task identities for K-1 mathematics.',
-    constraints: 'Requires a microphone for spoken modes; order-cards remains hands-on arrangement. K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
+    constraints: 'Requires a microphone for spoken modes; order-cards remains hands-on arrangement. K: 1-20 range by default, widened to 1-100 when the objective explicitly names 100, or to the window the objective names; a K lesson that names counting back counts backward and down to 0. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Spot-error positions are chosen in code and never visually pre-marked. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all six.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken', 'tap'], role: 'apply', minutes: 5 },
     evalModes: NUMBER_SEQUENCER_EVAL_MODES,
     supportsEvaluation: true,
@@ -2495,8 +2541,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'sorting-station',
     ...bossEntry(sortingStationCard),
     misconceptionScope: 'primitive',
-    description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks ONE OBJECT AT A TIME and judges the spoken answer; the activity moves on once an answer is credited — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes). Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
-    constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap anywhere. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND: all seven modes are Kindergarten-routable. The five Grade-1 floors came down on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port left no printed text on the child\'s path, and the script already forces the groups to be NAMED ALOUD at every tier when the band is Kindergarten, so the five modes were floored against a surface that no longer exists. The K caps that DO bind are the object and bin counts stated above.',
+    description: 'Live tutor-judged sorting and classifying (DI modality) on picture cards and labelled trays. The Live tutor asks ONE OBJECT AT A TIME and judges the spoken answer; the activity moves on once an answer is credited — a challenge is no longer a screenful of objects committed at once, it is a sequence of single judged questions. Every answer is SPOKEN: the child says which group a thing belongs with (sort-by-one, sort-variety), says HOW the set should be sorted (sort-by-attribute), says which card does not belong (odd-one-out), says HOW MANY are in a group (count-and-compare, tally-record), says which group has more, and says YES or NO to whether one thing matches two criteria at once (two-attributes), and says WHY the cards of a finished sort go together, or which card is in the wrong group (say-rule). On sort-by-attribute any rule the cards really split on is the child\'s to choose, and the sort follows it. Covers objective-relevant semantic categories (needs/wants, roles, living/nonliving, kinds) and visible attributes when those attributes are the taught concept. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
+    constraints: 'Best for K-1. Requires a microphone: EVERY answer is spoken and judged by the Live tutor, and there is no Check button, no drag-to-bin, no attribute buttons, no number steppers and no odd-one-out tap. The one tap is say_rule\'s: the child may tap the rule (or the card in the wrong group) instead of saying it. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar and their names sayable in one or two words. Objects per challenge: 4-6 at Kindergarten, 5-8 at Grade 1, unless the objective names how many go in a group ("count up to 10 per category"): then one group holds up to that count, at most 10. On a size sort every card is drawn at its size. Bins: max 3 at Kindergarten, max 4 at Grade 1. Group counts run 1-20 so every spoken count is a single word, and a group that would be EMPTY is not asked (zero has no benched spoken form). A challenge whose tray labels cannot be told apart by ear, whose object IS one of the tray labels, or whose yes/no set has only one reachable verdict is discarded before the child ever sees it. BAND: all eight modes are Kindergarten-routable. The five Grade-1 floors came down on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port left no printed text on the child\'s path, and the script already forces the groups to be NAMED ALOUD at every tier when the band is Kindergarten, so the five modes were floored against a surface that no longer exists. The K cap that DOES bind is the bin count stated above.',
     // reader: 'none' — READY @ PRE for sort_one and odd_one_out after the --fix loop
     // (qa/reader-fit/sorting-station-PRE-2026-07-15.md), and READY @ PRE for the other five
     // on the post-port re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): the port only
@@ -2551,6 +2597,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // count badge is now hidden until the tutor affirms, which is an
         // answer-leak fix rather than a difficulty lever.
         description: 'SAY how many are in each group, then SAY which has more, fewer, or the same. Kindergarten-routable since the 2026-09-08 reader-fit re-audit; K.MD.3 asks for counts per category, so route here for count-and-compare and to comparison-builder for number comparison. Counts 1-20; an empty group is never asked.',
+      },
+      {
+        evalMode: 'say_rule',
+        label: 'Say the Rule (Tier 3)',
+        // β 3.5: the child produces the rule rather than placing cards by a given one (scaffolding 3, pictorial with
+        // reduced prompts). Mirrors backend problem_type_registry / discrimination_priors (pattern recognition, a 1.2).
+        beta: 3.5,
+        discrimination: 1.2,
+        scaffoldingMode: 3,
+        challengeTypes: ['say-rule'],
+        description: 'DESCRIBE THE RULE of a sort: the child looks at a FINISHED sort (groups unnamed) and SAYS why one group\'s cards go together ("they are all red", "because they are all animals"), or may tap the rule among real wrong rules. Above the easy tier it also finds the one card placed in the wrong group and says why the others go together. Route here for "describe the sorting rule", "explain a sort using because", and "find what does not belong in a sorted group and explain why". Kindergarten-routable: the groups are pictures, and at K the ask names the choices aloud.',
       },
       {
         evalMode: 'odd_one_out',
@@ -2842,7 +2899,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'strategy-picker',
-    description: 'An interactive strategy-comparison activity where students solve the SAME addition/subtraction equation using 2-3 different strategies (counting on, make-ten, doubles, tally marks, or drawing a circle per addend), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10. NOT a decomposition primitive: the "draw objects" strategy draws the addends of a FIXED equation to find one sum — it does not find all the ways to split a number into pairs. For "show different ways to break a number into pairs," use number-bond[decompose] instead.',
+    description: 'An interactive strategy-comparison activity where students solve the SAME addition/subtraction equation using 2-3 different strategies (counting on, make-ten, filling a ten frame counter by counter, doubles on equal addends, tally marks, or drawing a circle per addend), then compare and reflect on which approach they prefer. Builds mathematical flexibility and metacognitive awareness. Perfect for K-1 multi-strategy standards. ESSENTIAL for Kindergarten-Grade 1 addition and subtraction within 10. NOT a decomposition primitive: the "draw objects" strategy draws the addends of a FIXED equation to find one sum — it does not find all the ways to split a number into pairs. For "show different ways to break a number into pairs," use number-bond[decompose] instead.',
     constraints: 'Numbers within 5 (K) or 10 (Grade 1) BY DEFAULT — the band sets the default, the objective sets the scope: a K objective that says "within 10" or "making 10" gets 10. Ceiling 10 either way (the ten frame has ten cells). Requires 2+ strategies per problem. Compare phase is metacognitive—no wrong answers.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'manipulate'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
@@ -2938,7 +2995,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'length-lab',
     ...bossEntry(lengthLabCard),
-    description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. The units can be classroom objects (cubes, paper clips, bears, erasers) or the body a child already has (hands, fingers, feet) when the objective asks them to measure with their hands. Two more K tasks: GUESS how many units it will take before any unit appears and then measure to find out, and measure the SAME object with two different-sized units and say which one was needed more of. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
+    description: 'Interactive length measurement lab for Kindergarten. Students compare object lengths visually, tile non-standard units end-to-end to measure, arrange objects by length, and use indirect comparison via a reference. The units can be classroom objects (cubes, paper clips, bears, erasers) or the body a child already has (hands, fingers, feet) when the objective asks them to measure with their hands. Two more K tasks: GUESS how many units it will take before any unit appears and then measure to find out, measure the SAME object with two different-sized units and say which one was needed more of, and measure TWO objects with the same unit and compare them by the counts. Perfect for K.MD.1 and K.MD.2 standards. ESSENTIAL for Kindergarten measurement.',
     constraints: 'Objects limited to 1-12 unit lengths. In estimate_then_tile the guess is recorded and never marked wrong — the measuring is what is scored. In two_unit_compare the app picks both units and both counts so the object is a whole number of each, and the bigger unit is drawn wider so "fewer of them reach the end" is visible rather than asserted. K: compare, tile and order. G1 adds indirect (transitive reasoning through a reference object). `order` came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md): every object is drawn as a length bar and the picker chip carries the same colour, so the child matches a picture rather than reading a name. K.MD.2 asks for exactly this.',
     // reader: 'none' — BACKLOG direct-manipulation sibling audit (qa/reader-fit/BACKLOG.md,
     // "Systemic items" section) cleared length-lab: "TilingWorkspace derives from placedUnits =
@@ -2980,6 +3037,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['tile_and_count'],
         description: 'Tile non-standard units end-to-end along an object and count them.',
+      },
+      {
+        evalMode: 'measure_compare',
+        affordances: { representation: 'concrete', reader: 'none', answers: ['tap', 'manipulate'] },
+        label: 'Measure & Compare (K)',
+        beta: 2.8,
+        scaffoldingMode: 2,
+        challengeTypes: ['measure_compare'],
+        description: 'Measure two objects with the same unit, one at a time, then say which is longer or shorter by the two counts. '
+          + 'MEAS001-01-D, MEAS001-05-F.',
       },
       {
         evalMode: 'order',
@@ -3181,7 +3248,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'time-sequencer',
     ...bossEntry(timeSequencerCard),
     description: 'Event sequencer and time concepts for grades K-2. Students order daily events, match activities to time of day (morning/afternoon/night), reason about before/after relationships, compare durations, order activity cards that each carry an analog CLOCK FACE at a whole hour, and read simple schedules. Progressive difficulty from 3-event sequencing through clock-time schedule reading. Bridges to AnalogClock for formal time-telling. ESSENTIAL for K-2 time and daily routine concepts.',
-    constraints: 'Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching, before/after reasoning, duration comparison and clock-sequence. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier\'s perception anchor is a sun-position picture the generator derives from each event\'s typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task. clock-sequence is the ONE exception to the no-clock-at-K rule, and the exception is the objective: K TIME001-03-G asks the child to connect whole-hour times to daily activities in sequence, under the skill "Telling Time to the Hour". Its cards carry an analog FACE, which is a picture, never printed digits — and the generator DROPS any challenge whose times are not all whole hours inside one half of the day, because a 12-hour face cannot separate 8 in the morning from 8 at night.',
+    constraints: 'Best for grades K-2. K: 3- and 5-event sequences, time-of-day matching (morning, afternoon, evening and night), the missing middle step of a routine, before/after reasoning, duration comparison, ordering three activities by how long they take, and clock-sequence. Grades 1-2 add schedule reading. At Kindergarten NOTHING on screen prints a clock time: the easy tier\'s perception anchor is a sun-position picture the generator derives from each event\'s typicalTime, and instructions, hints and the tutor are all barred from naming a time or a clock. sequence-5, before-after and duration-compare came down to K on the 2026-09-08 reader-fit re-audit (qa/reader-fit/k-band-floor-2026-09-08.md); read-schedule stays Grade 1-2 because reading printed clock times off a schedule IS its task. clock-sequence is the ONE exception to the no-clock-at-K rule, and the exception is the objective: K TIME001-03-G asks the child to connect whole-hour times to daily activities in sequence, under the skill "Telling Time to the Hour". Its cards carry an analog FACE, which is a picture, never printed digits — and the generator DROPS any challenge whose times are not all whole hours inside one half of the day, because a 12-hour face cannot separate 8 in the morning from 8 at night.',
     // reader: 'none' — qa/reader-fit/how-it-works-PRE-2026-07-21.md names time-sequencer as the
     // recommended K routing destination for procedural/ordering content precisely because it is
     // "already K-2, picture-primary"; read-schedule is the one mode that requires reading printed
@@ -3208,7 +3275,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['match-time-of-day'],
-        description: 'Match events to morning/afternoon/night',
+        description: 'Match an activity to morning, afternoon, evening or night, at every grade including Kindergarten (TIME001-01-A). Each choice draws its own sky with the sun or moon where it is in that part of the day; the activity card has no sky. Code chooses the part of the day for each challenge and refuses one whose typical time falls in another part.',
       },
       {
         evalMode: 'sequence-5',
@@ -3217,6 +3284,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['sequence-events'],
         description: 'Order 5 daily events. Kindergarten and up (K PTRN001-03-F arranges 4-5 picture cards).',
+      },
+      {
+        evalMode: 'missing-middle',
+        affordances: { answers: ['tap', 'spoken'] },
+        label: 'Missing Middle Step (Scaffold 2)',
+        beta: 2.0,
+        scaffoldingMode: 2,
+        discrimination: 1.2,
+        challengeTypes: ['missing-middle'],
+        description: 'A familiar three-step routine with its middle step missing: the first and last picture cards are shown with an empty place between them, and the child picks (or says) the step that goes there from three cards, the others being a step before the first card and one after the last. Kindergarten and up (K PTRN001-03-E). Code builds the item from a five-step routine the model writes in order.',
       },
       {
         evalMode: 'before-after',
@@ -3248,6 +3325,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         // ordering a routine to reading a schedule — the same ordering gesture
         // sequence-5 uses (2.0), plus a clock face to read the order from.
         description: 'Order daily activity cards where each card shows an analog CLOCK FACE at the hour that activity happens — connect the whole-hour time to the activity and put the day in order. Kindergarten and up (K TIME001-03-G, skill "Telling Time to the Hour"). The face is a picture, not printed digits, so it carries no reading demand; the times are always whole hours inside one half of the day, and a challenge that breaks either rule is dropped rather than shown.',
+      },
+      {
+        evalMode: 'duration-order',
+        affordances: { answers: ['tap'] },
+        label: 'Order by How Long (Scaffold 3)',
+        beta: 3.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['duration-order'],
+        description: 'Put three familiar activity pictures in order from the one that takes the shortest time to the one that takes the longest. Kindergarten and up (K MEAS001-07-C). The model gives each activity about how many minutes it takes; code keys the order from those minutes and refuses a challenge whose minutes are not each at least three times the one before, or disagree with the model\'s stated order. No time is drawn.',
       },
       {
         evalMode: 'read-schedule',

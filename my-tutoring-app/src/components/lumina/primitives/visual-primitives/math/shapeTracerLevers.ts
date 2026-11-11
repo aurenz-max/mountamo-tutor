@@ -31,7 +31,7 @@
  */
 import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { ShapeTracerChallenge } from './ShapeTracer';
-import { DOT_MISSES, DRAW_MISSES } from './shapeTracer.card';
+import { CORNER_MISSES, DOT_MISSES, DRAW_MISSES } from './shapeTracer.card';
 import { tierGuides, type Point, type TracerGuides } from './shapeTracerWorkspace';
 
 export const OUTLINE_LEVER = 'dotted_outline';
@@ -172,19 +172,19 @@ const PRACTICE_THEN = 'Not graded; the full item comes back after it.';
 /** The levers, declared once (`bossLevers.ts`). None is offered on a practice item: the component declares nothing then. */
 export const SHAPE_TRACER_LEVERS = leverSet<ShapeTracerChallenge, ShapeWork>({
   modeOf: shapeModeOf,
-  missesOf: mode => (mode === 'connect_dots' ? DOT_MISSES : mode === 'draw_from_description' ? DRAW_MISSES : []),
+  missesOf: mode => (mode === 'connect_dots' ? DOT_MISSES : mode === 'draw_from_description' ? DRAW_MISSES : CORNER_MISSES),
   specs: [
-    { id: OUTLINE_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: [],
+    { id: OUTLINE_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: CORNER_MISSES,
       when: 'The learner cannot see where the sides of the shape go.',
       does: c => (c.type === 'trace' ? 'Draws the dashed outline of the whole shape through its corners, with arrows moving along it.'
         : 'Draws the dashed outline of the whole shape, through the open corners too.'),
       // On a trace the scene reports the outline itself (`dottedOutline`).
       fact: (_content, c) => (c.type === 'complete' ? 'A dashed outline of the whole shape runs through every corner, the open ones too.' : '') },
-    { id: NUMBERS_LEVER, type: 'marks', modes: ['trace'], carrier: 'both', answers: [],
+    { id: NUMBERS_LEVER, type: 'marks', modes: ['trace'], carrier: 'both', answers: CORNER_MISSES,
       when: 'The learner taps corners out of turn and loses the way round.',
       does: 'Writes a number on each corner, in the order to tap them.' },
     // Leak rule (`glowOffered`): never on connect-dots, where the next dot is the answer.
-    { id: GLOW_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: [],
+    { id: GLOW_LEVER, type: 'marks', modes: ['trace', 'complete'], answers: CORNER_MISSES,
       when: 'The learner does not know which corner comes next.',
       does: 'Puts a pulsing ring on the corner that comes next.' },
     { id: STRIP_LEVER, type: 'legend', modes: ['connect_dots'], carrier: 'both', answers: ['started_elsewhere', 'skipped_number'],
@@ -208,10 +208,10 @@ export const SHAPE_TRACER_LEVERS = leverSet<ShapeTracerChallenge, ShapeWork>({
       content: c => (c.requiredProperties?.allSidesEqual ? true : null),
       offer: (_c, work) => work.placed >= 2,
       fact: 'Under the grid, one bar per side of the learner\'s shape shows how long each side is.' },
-    { id: SIMPLER_LEVER, type: 'easier', modes: ['trace'], answers: [], when: WHEN_SIMPLER,
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['trace'], answers: CORNER_MISSES, when: WHEN_SIMPLER,
       does: `Opens an easier one first: a shape with fewer corners. ${PRACTICE_THEN}`,
       content: c => practiceItem(c) },
-    { id: SIMPLER_LEVER, type: 'easier', modes: ['complete'], answers: [], when: WHEN_SIMPLER,
+    { id: SIMPLER_LEVER, type: 'easier', modes: ['complete'], answers: CORNER_MISSES, when: WHEN_SIMPLER,
       does: `Opens an easier one first: another shape with one corner left to tap. ${PRACTICE_THEN}`,
       content: c => practiceItem(c) },
     { id: SIMPLER_LEVER, type: 'easier', modes: ['connect_dots'], answers: ['started_elsewhere', 'skipped_number'], when: WHEN_SIMPLER,

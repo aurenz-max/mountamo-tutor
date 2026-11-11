@@ -26,7 +26,7 @@ import {
 } from '../../../evaluation';
 import type { CountingBoardMetrics } from '../../../evaluation/types';
 import {
-  boardGroups, buildPlaceFor, countMiss, evalModeForKind, makesASet, numberWordFor, objectSingularFor, workspaceScene,
+  boardGroups, buildPlaceFor, countMiss, evalModeForKind, makesASet, numberWordFor, numeralOptions, objectSingularFor, workspaceScene,
   type CountingItem,
 } from './countingBoardDomain';
 import { CountingBuildScene, type BuiltSpot } from './CountingBuildScene';
@@ -52,7 +52,7 @@ export interface CountingBoardChallenge {
   id: string;
   type:
     | 'count_all' | 'subitize' | 'subitize_perceptual' | 'count_on' | 'group_count' | 'compare'
-    | 'give_me_n' | 'recount_moved' | 'take_away' | 'add_more' | 'build_n';
+    | 'give_me_n' | 'recount_moved' | 'take_away' | 'add_more' | 'build_n' | 'name_numeral';
   instruction: string;
   targetAnswer: number;
   count: number;
@@ -65,6 +65,8 @@ export interface CountingBoardChallenge {
   /** take_away / add_more: how many the child removes or puts on. Code-owned. */
   changeBy?: number | null;
   flashDuration?: number | null; // ms the objects stay visible in K subitize flash-then-hide
+  /** recount_moved: the objects are drawn bigger or smaller after the move (COUNT001-02-C). Code-owned. */
+  sizeChange?: 'bigger' | 'smaller' | null;
   hint: string;
   narration: string;
 }
@@ -119,6 +121,7 @@ const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
   count_all: { label: 'Count All', icon: '🔢' },
   subitize: { label: 'Subitize', icon: '⚡' },
   subitize_perceptual: { label: 'See & Show', icon: '✋' },
+  name_numeral: { label: 'Count & Name', icon: '🔢' },
   group_count: { label: 'Group Count', icon: '🎯' },
   count_on: { label: 'Count On', icon: '➕' },
   compare: { label: 'Compare', icon: '⚖️' },
@@ -155,7 +158,7 @@ const SUBITIZE_FLASH_MS = 1500;   // default; overridable per-challenge via flas
 // Position Generators
 // ============================================================================
 
-function generateScatteredPositions(count: number, seed: number = 42): Array<{ x: number; y: number }> {
+function generateScatteredPositions(count: number, seed: number = 42, size: number = OBJECT_SIZE): Array<{ x: number; y: number }> {
   const positions: Array<{ x: number; y: number }> = [];
   let s = seed;
   const rand = () => {
@@ -163,8 +166,8 @@ function generateScatteredPositions(count: number, seed: number = 42): Array<{ x
     return (s & 0x7fffffff) / 2147483647;
   };
 
-  const padX = OBJECT_PADDING + OBJECT_SIZE / 2;
-  const padY = OBJECT_PADDING + OBJECT_SIZE / 2;
+  const padX = OBJECT_PADDING + size / 2;
+  const padY = OBJECT_PADDING + size / 2;
   const maxX = WORKSPACE_WIDTH - padX;
   const maxY = WORKSPACE_HEIGHT - padY;
 
@@ -179,7 +182,7 @@ function generateScatteredPositions(count: number, seed: number = 42): Array<{ x
       for (const p of positions) {
         const dx = x - p.x;
         const dy = y - p.y;
-        if (Math.sqrt(dx * dx + dy * dy) < OBJECT_SIZE + 4) {
+        if (Math.sqrt(dx * dx + dy * dy) < size + 4) {
           tooClose = true;
           break;
         }
@@ -317,12 +320,12 @@ function generateCirclePositions(count: number): Array<{ x: number; y: number }>
   });
 }
 
-function generatePositions(count: number, arrangement: string, seed: number = 42): Array<{ x: number; y: number }> {
+function generatePositions(count: number, arrangement: string, seed: number = 42, size: number = OBJECT_SIZE): Array<{ x: number; y: number }> {
   switch (arrangement) {
     case 'line': return generateLinePositions(count);
     case 'circle': return generateCirclePositions(count);
     case 'scattered':
-    default: return generateScatteredPositions(count, seed);
+    default: return generateScatteredPositions(count, seed, size);
   }
 }
 
@@ -552,7 +555,8 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
     onCorrectionRetry: (sessionItem) => {
       // Try again on the easier ask keeps it: reset ITS board, not the full item's.
       const item = practiceRef.current ?? sessionItem;
-      if (item.kind === 'subitize_perceptual') {
+      if (item.kind === 'subitize_perceptual' || item.kind === 'name_numeral') {
+        // A numeral retry keeps the child's count on the board; only the card is picked again.
         setHandChoice(null);
         handChoiceRef.current = null;
       } else if (item.kind === 'subitize') {
@@ -653,9 +657,22 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
     return layoutGroups(sizes, cell);
   }, [challengeCount, challengeArrangement, challengeGroupSize, compareGroupsKey, rowsApart]);
 
+  // recount_moved (COUNT001-02-C): after the move every object is drawn bigger or smaller, so a child who reads
+  // the count off how much room the set takes says a different number. The same scale for every object, and the
+  // move line says nothing about it: the board shows no hint.
+  const objectScale = currentItem?.kind === 'recount_moved' && hasMoved && currentChallenge?.sizeChange
+    ? (currentChallenge.sizeChange === 'bigger' ? 1.3 : 0.65) : 1;
+  const drawnSize = OBJECT_SIZE * objectScale;
+
   const positions = useMemo(() =>
-    groupLayout?.positions ?? generatePositions(challengeCount, challengeArrangement, scatterSeed),
-    [groupLayout, challengeCount, challengeArrangement, scatterSeed]
+    groupLayout?.positions ?? generatePositions(challengeCount, challengeArrangement, scatterSeed, drawnSize),
+    [groupLayout, challengeCount, challengeArrangement, scatterSeed, drawnSize]
+  );
+
+  // name_numeral: the numeral cards, the answer among its neighbours in a seeded order (never a fixed slot).
+  const numeralCards = useMemo<number[]>(
+    () => (currentItem?.kind === 'name_numeral' ? numeralOptions(currentItem) : []),
+    [currentItem],
   );
 
   // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per
@@ -825,6 +842,18 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
     runner.commitGesture({ response: String(fingers), correct: fingers === item.target, miss: countMiss(item, fingers), cue: () => '' });
   }, [runner, evaluation.hasSubmitted]);
 
+  // -- The numeral pick (name_numeral): the tap on a card IS the commit --
+  const handleNumeralPick = useCallback((numeral: number) => {
+    const item = displayItemRef.current;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
+    if (!item || item.kind !== 'name_numeral') return;
+    if (runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setHandChoice(numeral);
+    handChoiceRef.current = numeral;
+    runner.commitGesture({ response: String(numeral), correct: numeral === item.target, miss: countMiss(item, numeral), cue: () => '' });
+  }, [runner, evaluation.hasSubmitted]);
+
   // ── The scene and the levers, republished after every render ──────────────
   useLayoutEffect(() => {
     const scene = currentItem ? workspaceScene(currentItem, { counted: currentItem.kind === 'build_n' ? new Set(built.map((_, i) => i)) : countedObjects, removed: removedObjects,
@@ -946,7 +975,7 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
             )}
           </div>
           <LuminaBadge accent="cyan" className="text-xs">
-            {kind === 'subitize_perceptual' ? 'Tap the hand' : kind === 'give_me_n' ? 'Choose and give' : kind === 'build_n' ? 'Build it' : 'Say it out loud'}
+            {kind === 'subitize_perceptual' ? 'Tap the hand' : kind === 'name_numeral' ? 'Tap the number' : kind === 'give_me_n' ? 'Choose and give' : kind === 'build_n' ? 'Build it' : 'Say it out loud'}
           </LuminaBadge>
         </div>
         {!isPreReader && description && (
@@ -1098,7 +1127,7 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
                       <circle
                         cx={pos.x}
                         cy={pos.y}
-                        r={OBJECT_SIZE / 2}
+                        r={drawnSize / 2}
                         fill={isCounted
                           ? (isPreCounted ? 'rgba(59,130,246,0.15)' : 'rgba(234,179,8,0.12)')
                           : 'rgba(255,255,255,0.04)'
@@ -1114,7 +1143,7 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
                         y={pos.y}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fontSize={OBJECT_SIZE * 0.6}
+                        fontSize={drawnSize * 0.6}
                         className="select-none pointer-events-none"
                         style={{ opacity: isPendingExtra ? 0.25 : isCounted ? 1 : 0.7 }}
                       >
@@ -1249,6 +1278,27 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
                 </div>
               </div>
             )}
+            {/* name_numeral: the numeral cards. No card is picked or marked until the child taps one. */}
+            {kind === 'name_numeral' && (
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-slate-300 text-sm">Which number tells how many?</span>
+                <div className="flex items-center justify-center gap-3" role="group" aria-label="Number cards">
+                  {numeralCards.map((numeral) => (
+                    <button
+                      key={numeral}
+                      type="button"
+                      aria-label={`Number ${numeral}`}
+                      data-pip-object={`numeral-${numeral}`}
+                      className={`h-20 w-16 rounded-lg border text-4xl font-bold flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(handChoice === numeral ? 'selected' : 'idle')}`}
+                      onClick={() => handleNumeralPick(numeral)}
+                      disabled={!runner.canAttempt}
+                    >
+                      {numeral}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             </PipWorkspace>
 
             {/* The move happened — the number has to be held, not re-counted. */}
@@ -1331,6 +1381,8 @@ const CountingBoardSurface = ({ data, className, runtimePlanItemId }: CountingBo
               <p className="text-center text-xs text-slate-500">
                 {kind === 'subitize_perceptual'
                   ? 'Look at the objects, then tap the matching hand.'
+                  : kind === 'name_numeral'
+                  ? 'Count the objects, then tap the number that tells how many.'
                   : kind === 'give_me_n'
                     ? 'Touch the ones you want to give, then hand them over.'
                     : kind === 'build_n'

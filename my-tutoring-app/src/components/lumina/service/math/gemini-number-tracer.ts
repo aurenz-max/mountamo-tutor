@@ -9,6 +9,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildScopePromptSection, type PedagogicalScope } from '../scopeContext';
+import { resolveObjectiveRange } from '../objectiveNumberWindow';
 import type { GenerationContext } from '../generation/generationContext';
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { eligibleNumberTracerTeaching, numberTracerSequenceTeaching, selectGapPositionContrast } from './numberTracerRemediation';
@@ -249,6 +250,41 @@ function buildInstruction(challenge: NumberTracerChallenge): string {
 }
 
 // ---------------------------------------------------------------------------
+// Numeral window: the band is the default, the objective's own range wins
+// ---------------------------------------------------------------------------
+
+/** What the canvas can draw and score: 0-9 are single paths, 10-20 compose two
+ *  (getDigitPaths). Not the grade band. */
+export const TRACER_CAPACITY = { min: 0, max: 20 } as const;
+
+export interface NumeralWindow {
+  min: number;
+  max: number;
+  /** True when the lesson named this range (math-k audit 2026-11-10: a K lesson
+   *  "write numerals 0-20", COUNT001-01-B, got 0-9). Code then owns the numerals. */
+  named: boolean;
+}
+
+export const bandNumeralWindow = (gradeBand: 'K' | '1'): NumeralWindow =>
+  ({ min: 0, max: gradeBand === 'K' ? 9 : 20, named: false });
+
+/** `count` numerals spread across [min, max]: one from each equal slice, ascending,
+ *  so the top of a named window (the two-digit numerals of 0-20) is always reached.
+ *  Distinct while the window has room. */
+export function spreadNumerals(
+  min: number, max: number, count: number, random: () => number = Math.random,
+): number[] {
+  const size = max - min + 1;
+  if (count <= 0 || size <= 0) return [];
+  return Array.from({ length: count }, (_, i) => {
+    if (count > size) return min + (i % size);
+    const lo = min + Math.floor((i * size) / count);
+    const hi = min + Math.floor(((i + 1) * size) / count) - 1;
+    return lo + Math.floor(random() * (hi - lo + 1));
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Handwriting sub-generator (trace / copy / write)
 // ---------------------------------------------------------------------------
 
@@ -290,6 +326,7 @@ async function generateHandwriting(
   scope: PedagogicalScope,
   evalConstraint: ReturnType<typeof resolveEvalModeConstraint>,
   tierSection: string,
+  window: NumeralWindow = bandNumeralWindow(gradeBand),
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
   // Constrain the schema enum + prompt docs to the requested handwriting type(s).
   const activeSchema = constrainChallengeTypeEnum(handwritingSchema, allowedTypes, HANDWRITING_DOCS);
@@ -300,6 +337,8 @@ async function generateHandwriting(
 
   // Pedagogical scope is resolved once at the registry boundary (ctx.scope).
   const scopeSection = buildScopePromptSection(scope);
+  // A named window: code picks every numeral before the call, so each hint is written for its own numeral.
+  const numerals = window.named ? spreadNumerals(window.min, window.max, challengeCount) : [];
 
   const prompt = `
 Create a number writing practice activity for teaching "${topic}" to ${gradeLevel} students.
@@ -311,10 +350,13 @@ CONTEXT:
 
 ${challengeTypeSection}
 ${tierSection}
-DIGIT RANGES (ceiling — the SCOPE above may narrow these):
+${window.named ? `NUMERALS (fixed by code — this lesson names ${window.min}-${window.max}; write exactly ${numerals.length} challenges, in this order):
+${numerals.map((n, i) => `- c${i + 1}: digit ${n}`).join('\n')}
+Write each hint about its own numeral.
+` : `DIGIT RANGES (ceiling — the SCOPE above may narrow these):
 - Kindergarten (gradeBand "K"): digits 0-9
 - Grade 1 (gradeBand "1"): digits 0-20
-
+`}
 CHALLENGE RULES:
 - For "trace": showArrows = true, showModel = false. Student follows a dotted path.
 - For "copy": showArrows = false, showModel = true. Student copies a visible model digit.
@@ -365,7 +407,7 @@ Return the complete number tracer configuration.
   }
 
   // ── Validation & defaults ──
-  const maxDigit = gradeBand === 'K' ? 9 : 20;
+  const maxDigit = window.max;
   const allowedSet = new Set(allowedTypes);
   const challenges = ((data.challenges as NumberTracerChallenge[]) || []).filter(
     (c) => allowedSet.has(c.type),
@@ -387,9 +429,19 @@ Return the complete number tracer configuration.
     // Clamp digit to grade ceiling.
     if (typeof challenge.digit !== 'number' || challenge.digit < 0) challenge.digit = 0;
     if (challenge.digit > maxDigit) challenge.digit = maxDigit;
-
-    challenge.instruction = buildInstruction(challenge);
   }
+
+  // A named window: code owns every numeral. A challenge the model wrote for another numeral
+  // keeps its type but loses its hint, which described the other numeral's strokes.
+  if (window.named) {
+    challenges.splice(numerals.length);
+    challenges.forEach((c, i) => {
+      if (c.digit !== numerals[i]) c.hint = 'Start at the top!';
+      c.digit = numerals[i];
+    });
+    console.log(`[NumberTracer] Objective numerals ${window.min}-${window.max}: [${numerals.join(', ')}]`);
+  }
+  for (const challenge of challenges) challenge.instruction = buildInstruction(challenge);
 
   // Fallback if no valid challenges.
   if (challenges.length === 0) {
@@ -398,7 +450,7 @@ Return the complete number tracer configuration.
     const fb: NumberTracerChallenge = {
       id: 'c1',
       type: fallbackType,
-      digit: 5,
+      digit: numerals[0] ?? Math.min(5, maxDigit),
       instruction: '',
       strokePaths: [],
       showModel: fallbackType === 'copy',
@@ -506,8 +558,15 @@ async function generateSequence(
   challengeCount: number,
   scope: PedagogicalScope,
   tierSection: string,
+  numeralWindow: NumeralWindow = bandNumeralWindow(gradeBand),
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
-  const maxDigit = gradeBand === 'K' ? 9 : 20;
+  const maxDigit = numeralWindow.max;
+  // A named window is the run's range; the window call below would only re-ask it.
+  if (numeralWindow.named) {
+    const challenges = buildSequenceChallenges(numeralWindow.min, numeralWindow.max, challengeCount, maxDigit);
+    console.log(`[NumberTracer] Sequence window [${numeralWindow.min}, ${numeralWindow.max}] from the objective, ${challenges.length} challenge(s).`);
+    return { title: 'Find the Missing Numbers', description: 'Work out the hidden number in each counting run, then write it.', challenges };
+  }
   // Pedagogical scope is resolved once at the registry boundary (ctx.scope).
   const scopeSection = buildScopePromptSection(scope);
 
@@ -570,6 +629,20 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
   const gradeBand = resolveGradeBand(config, gradeLevel, ctx.grade);
   const totalCount = (config?.challengeCount as number | undefined) ?? 5;
 
+  // ── Numeral window: K 0-9 is the DEFAULT, not a cap. A K lesson that names its range
+  // ("write numerals 0-20", COUNT001-01-B) gets it, up to what the canvas draws. Null (no
+  // range named) keeps the band; Grade 1 is unchanged. One resolver call serves both paths. ──
+  const objectiveRange = gradeBand === 'K'
+    ? await resolveObjectiveRange({
+      topic, intent: ctx.intent ?? config?.intent, objectiveText: scope?.objectiveText ?? config?.objectiveText,
+      gradeLevel, quantity: 'the numerals the child writes by hand',
+      bandDefault: { min: 0, max: 9 }, capacity: TRACER_CAPACITY, logPrefix: 'NumberTracer',
+    })
+    : null;
+  const numeralWindow: NumeralWindow = objectiveRange
+    ? { ...objectiveRange, named: true }
+    : bandNumeralWindow(gradeBand);
+
   // ── Within-mode support tier — normalized centrally, arrives as ctx.supportTier ──
   const supportTier = ctx.supportTier;
   // pinnedType is ONLY for the prompt tone (a curated blend has no single mode to describe).
@@ -599,10 +672,10 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
   const adaptationTask = adaptationTaskFor(ctx, topic, { mode: plannedMode(evalConstraint), tier: supportTier ?? undefined });
   const [handwriting, sequence, move] = await Promise.all([
     wantsHandwriting
-      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, scope, evalConstraint, tierSection)
+      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, scope, evalConstraint, tierSection, numeralWindow)
       : Promise.resolve(null),
     wantsSequence
-      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, scope, tierSection)
+      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, scope, tierSection, numeralWindow)
       : Promise.resolve(null),
     planAdaptation(ctx, { task: adaptationTask, capability: numberTracerSequenceTeaching, eligible: eligibleNumberTracerTeaching }),
   ]);

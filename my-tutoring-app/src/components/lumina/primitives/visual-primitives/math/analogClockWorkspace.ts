@@ -177,6 +177,8 @@ export interface ClockView {
   minuteNumbersShown: boolean;
   handLegendShown: boolean;
   digitalEchoShown: boolean;
+  /** K o'clock set_time: the minute hand stays on 12 and only the hour hand turns. */
+  minuteFixed?: boolean;
 }
 
 export const clockOptions = (c: ClockChallenge): string[] =>
@@ -328,7 +330,10 @@ export function clockScene(challenge: ClockChallenge, view: ClockView): SceneOf 
       drawn.clockFaces = `${clockOptions(challenge).length} small clock faces, each showing a whole hour; there is no big clock`;
       break;
     case 'set_time':
-      drawn.clock = 'a clock face whose hands the learner moves; it starts at 12:00';
+      drawn.clock = view.minuteFixed
+        ? 'a clock face whose long hand stays on the 12; the learner turns only the short hand'
+        : 'a clock face whose hands the learner moves';
+      drawn.clock += challenge.targetHour % 12 === 0 && challenge.targetMinute === 0 ? '; it starts at 6:00' : '; it starts at 12:00';
       drawn.digitalTime = view.digitalEchoShown ? 'shown under the clock as the hands move' : 'hidden';
       aids();
       break;

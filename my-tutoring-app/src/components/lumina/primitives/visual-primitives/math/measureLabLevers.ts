@@ -16,6 +16,10 @@
  * - order_capacity: `order_steps` (legend) three wordless bars growing left to right, the way "least first" runs; they
  *   name no jar. `level_lines` (marks) the same even lines across every jar. `far_levels` (easier) three identical
  *   jars far apart in water, only when two of the item's levels are close.
+ * - fill_level: `fill_words` (meaning) a fixed word picture outside the item: a model with no water tagged empty, a
+ *   model filled to the top tagged full, and a pair tagged more and less; it never draws the item's containers.
+ *   `level_lines` (marks) the same even lines across the item's containers. `far_fill` (easier) two identical
+ *   containers far apart in water, the same ask word, only on a more-or-less item whose levels are close.
  */
 import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { MeasureContainer, MeasureLabChallenge, MeasureLabChallengeType } from './MeasureLab';
@@ -30,6 +34,13 @@ export const SMALLER_POUR_LEVER = 'smaller_pour';
 export const ORDER_STEPS_LEVER = 'order_steps';
 export const LEVEL_LINES_LEVER = 'level_lines';
 export const FAR_LEVELS_LEVER = 'far_levels';
+export const FILL_WORDS_LEVER = 'fill_words';
+export const FAR_FILL_LEVER = 'far_fill';
+
+/** fill_words: the fixed model containers, as fractions full, with their words. Never read from the item. */
+export const FILL_WORDS: ReadonlyArray<{ fill: number; word: string }> = [
+  { fill: 0, word: 'empty' }, { fill: 1, word: 'full' }, { fill: 0.85, word: 'more' }, { fill: 0.25, word: 'less' },
+];
 
 export const PRACTICE_SUFFIX = '~smaller';
 export const isPractice = (c: Pick<MeasureLabChallenge, 'id'>) => c.id.endsWith(PRACTICE_SUFFIX);
@@ -179,6 +190,42 @@ export function farLevelsLeaks(parent: MeasureLabChallenge, p: MeasureLabChallen
     || (p.containers ?? []).some(j => parentNames.includes(lower(j.name)));
 }
 
+// ── fill_level ──────────────────────────────────────────────────────────────
+
+const FILL_NOUNS = ['glass', 'bottle', 'jar'];
+
+/** fill_level, more or less: two identical containers with water far apart (one and seven eighths), the same ask word,
+ *  the answer on the side the item's was not. Only when the item's two levels are under five apart. */
+export function farFill(c: MeasureLabChallenge): MeasureLabChallenge | null {
+  if (c.type !== 'fill_level' || isPractice(c) || c.fillAsk === 'empty_full') return null;
+  const jars = c.containers ?? [];
+  if (jars.length !== 2 || Math.abs((jars[0].filled ?? 0) - (jars[1].filled ?? 0)) >= 5) return null;
+  const used = jars.map(j => nounOf(j.name).replace(/^(left|right)\s+/, ''));
+  const noun = FILL_NOUNS.find(n => !used.includes(n));
+  if (!noun) return null;
+  const id = `${c.id}${PRACTICE_SUFFIX}`;
+  const itemAnswerLeft = c.expectedChoice === jars[0].id;
+  const answerLeft = !itemAnswerLeft;
+  const leftHigh = c.fillAsk === 'more' ? answerLeft : !answerLeft;
+  const shape = jars[0].shape;
+  const left: MeasureContainer = { id: `${id}-l`, name: `left ${noun}`, shape, capacity: 8, filled: leftHigh ? 7 : 1 };
+  const right: MeasureContainer = { id: `${id}-r`, name: `right ${noun}`, shape, capacity: 8, filled: leftHigh ? 1 : 7 };
+  return practiceOf(c, { prompt: `These two ${noun}s are the same. Which one has ${c.fillAsk} water in it?`,
+    containers: [left, right], expectedChoice: answerLeft ? left.id : right.id });
+}
+
+/** Leak rule for the fill practice: identical containers far apart, none of the item's names, the same ask, the key
+ *  agreeing with the levels. */
+export function farFillLeaks(parent: MeasureLabChallenge, p: MeasureLabChallenge): boolean {
+  const [a, b] = p.containers ?? [];
+  if (p.id === parent.id || p.type !== parent.type || p.fillAsk !== parent.fillAsk || !a || !b) return true;
+  const parentNames = (parent.containers ?? []).map(j => lower(j.name));
+  const high = (a.filled ?? 0) > (b.filled ?? 0) ? a : b, low = high === a ? b : a;
+  return a.shape !== b.shape || a.capacity !== b.capacity || Math.abs((a.filled ?? 0) - (b.filled ?? 0)) < 5
+    || parentNames.includes(lower(a.name)) || parentNames.includes(lower(b.name))
+    || p.expectedChoice !== (p.fillAsk === 'more' ? high.id : low.id);
+}
+
 // ── shared ──────────────────────────────────────────────────────────────────
 
 /** The easier item a simplify lever opens, in the item's own mode, or null. */
@@ -187,6 +234,7 @@ export function practiceItem(c: MeasureLabChallenge): MeasureLabChallenge | null
     case 'balance_predict': return farPair(c);
     case 'capacity_predict': return easyPair(c);
     case 'pour_count': return smallerPour(c);
+    case 'fill_level': return farFill(c);
     default: return farLevels(c);
   }
 }
@@ -259,6 +307,20 @@ export const MEASURE_LEVERS = leverSet<MeasureLabChallenge, null>({
       when: 'The learner mixes up two containers whose water is close.',
       does: 'Draws the same even lines across every container, so each water level can be read against them.',
       fact: 'The same even lines are drawn across every container.' },
+    { id: FILL_WORDS_LEVER, type: 'meaning', modes: ['fill_level'], answers: ['mixed_empty_full', 'picked_opposite'],
+      when: 'The learner mixes up empty and full, or more and less.',
+      does: 'Shows a word picture outside the item: a model with no water tagged empty, a model filled to the top tagged '
+        + 'full, and two models tagged more and less. Read the tags aloud; it draws none of the item\'s containers.',
+      fact: 'Beside the containers is a word picture outside the item: a model with no water tagged empty, a model filled '
+        + 'to the top tagged full, and two models tagged more and less.' },
+    { id: LEVEL_LINES_LEVER, type: 'marks', modes: ['fill_level'], answers: ['mixed_empty_full', 'picked_opposite'],
+      when: 'The learner cannot tell where the water comes up to.',
+      does: 'Draws the same even lines across every container, so each water level can be read against them and against the top.',
+      fact: 'The same even lines are drawn across every container.' },
+    { id: FAR_FILL_LEVER, type: 'easier', modes: ['fill_level'], answers: ['picked_opposite'],
+      when: 'These two water levels are too close to tell apart yet.',
+      does: `Opens an easier pair first: two of the same container with water far apart. ${PRACTICE_DOES}`,
+      content: c => farFill(c) },
     { id: FAR_LEVELS_LEVER, type: 'easier', modes: ['order_capacity'], answers: ['two_swapped', 'out_of_order'],
       when: 'These water levels are too close to order yet.',
       does: `Opens an easier set first: three of the same container with water far apart. ${PRACTICE_DOES}`,

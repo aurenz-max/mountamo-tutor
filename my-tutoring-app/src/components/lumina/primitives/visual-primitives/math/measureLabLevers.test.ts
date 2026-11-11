@@ -9,7 +9,7 @@ import type { ContainerShape, MeasureLabChallenge } from './MeasureLab';
 import {
   CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, EASY_PAIR_LEVER, FAR_LEVELS_LEVER, FAR_PAIR_LEVER, LEVEL_LINES_LEVER,
   MEASURE_LEVERS, ORDER_STEPS, ORDER_STEPS_LEVER, POURED_SHELF_LEVER, SMALLER_POUR_LEVER, easyPairLeaks, farLevelsLeaks,
-  farPairLeaks, practiceItem, practiceParent, shelfCups, smallerPourLeaks,
+  farFillLeaks, farPairLeaks, practiceItem, practiceParent, shelfCups, smallerPourLeaks,
 } from './measureLabLevers';
 import { EMPTY_VIEW, measureCorrect, measureMiss, type MeasureView } from './measureLabWorkspace';
 import balanceP from '../../../components/live-activity/runtime/testing/w1-payloads/measure-lab.balance_predict.json';
@@ -86,7 +86,7 @@ describe('easier items: same mode, solvable, never the learner\'s item', () => {
   });
   it('the leak rules refuse the learner\'s own item and an easier item that shares its names', () => {
     for (const c of [balances[0], capacities[0], pours[3], orders[1]]) {
-      const LEAK = { balance_predict: farPairLeaks, capacity_predict: easyPairLeaks, pour_count: smallerPourLeaks, order_capacity: farLevelsLeaks }[c.type];
+      const LEAK = { balance_predict: farPairLeaks, capacity_predict: easyPairLeaks, pour_count: smallerPourLeaks, order_capacity: farLevelsLeaks, fill_level: farFillLeaks }[c.type];
       expect(LEAK(c, c)).toBe(true);
       expect(LEAK(c, { ...practiceItem(c)!, id: c.id })).toBe(true);
     }

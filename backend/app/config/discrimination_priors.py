@@ -110,11 +110,17 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "spot_error": PATTERN_PATTERN_RECOGNITION,    # a=1.2
     },
     "pattern-builder": {
+        "copy":          PATTERN_DIRECT_MANIPULATION,     # a=1.8
         "extend":        PATTERN_DIRECT_MANIPULATION,     # a=1.8
+        "fill_gap":      PATTERN_PATTERN_RECOGNITION,     # a=1.2
         "identify_core": PATTERN_PATTERN_RECOGNITION,     # a=1.2
         "translate":     PATTERN_PATTERN_RECOGNITION,     # a=1.2
         "create":        PATTERN_CREATIVE_OPEN_ENDED,     # a=1.0
         "find_rule":     PATTERN_PATTERN_RECOGNITION,     # a=1.2
+    },
+    "time-sequencer": {
+        "missing-middle": PATTERN_PATTERN_RECOGNITION,    # a=1.2
+        "duration-order": PATTERN_PROCEDURAL_SEQUENCING,  # a=1.4
     },
     "function-machine": {
         "observe":       PATTERN_DIRECT_MANIPULATION,     # a=1.8
@@ -181,6 +187,7 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "sort_attribute": PATTERN_PROCEDURAL_SEQUENCING,
         "count_compare":  PATTERN_CONSTRUCTED_RESPONSE,
         "odd_one_out":    PATTERN_PATTERN_RECOGNITION,
+        "say_rule":       PATTERN_PATTERN_RECOGNITION,
         "two_attributes": PATTERN_PROCEDURAL_SEQUENCING,
         "tally_record":   PATTERN_PROCEDURAL_SEQUENCING,
     },

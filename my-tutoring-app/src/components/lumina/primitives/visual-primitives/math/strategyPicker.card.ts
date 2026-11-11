@@ -38,7 +38,8 @@ export const strategyPickerCard = defineCard<StrategyPickerMiss>({
   // guided, try_another, choose and match publish levers (`strategyPickerLevers.ts`); compare credits every choice, so
   // it has no miss and no lever.
   modes: {
-    guided: { ...STEPPER, misses: by('guided'), moves: `follows the named strategy with its picture and steps, then ${SET}` },
+    guided: { ...STEPPER, misses: by('guided'),
+      moves: `follows the named strategy with its picture and steps (on a ten frame, taps the boxes to put in each counter), then ${SET}` },
     match: { ...TAP_ONE, misses: by('match'),
       moves: 'reads the worked solution, taps the strategy it used, then presses Check Answer' },
     try_another: { ...STEPPER, misses: by('try_another'),
@@ -50,7 +51,7 @@ export const strategyPickerCard = defineCard<StrategyPickerMiss>({
   },
   words: {
     job: 'solve one addition or subtraction problem within ten with a strategy and its picture (counting on, counting '
-      + 'back, make ten, doubles, near doubles, tally marks or drawing objects), solve it again another way, pick their '
+      + 'back, make ten, filling a ten frame, doubles, near doubles, tally marks or drawing objects), solve it again another way, pick their '
       + 'own strategy, tell which strategy a worked solution used, or compare two strategies',
     answer: 'the number they set or the strategy they tap',
     question: 'the instruction, the problem, the strategy steps, the worked solution and the strategy names on screen',

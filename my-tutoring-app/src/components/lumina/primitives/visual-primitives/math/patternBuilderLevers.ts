@@ -12,10 +12,13 @@
  *   that spans them only, a hop between neighbours and no hop size written (`lineLeaks`).
  * - identify_core: the part IS the answer, so the help acts on a model outside the item: `core_model` (model) a row of
  *   pictures off the palette, its own repeating part boxed, of a different shape from the item's part (`coreModelLeaks`).
- * - translate: `place_marker` (marks) a marker under the next place of the original row and a tick under each place
- *   made, from the learner's own row; it never names a new token (`markerFact`).
- * - extend, identify_core, translate, find_rule: `simpler_row` (easier) a shorter or plainer row of the same mode in
- *   other tokens or with a different step (`practiceLeaks`). Never offered on an item already the plainest shape.
+ * - translate, copy: `place_marker` (marks) a marker under the next place of the original (or model) row and a tick
+ *   under each place made, from the learner's own row; it never names a new token (`markerFact`).
+ * - fill_gap: `repeat_groups` (layout) as on extend, the gap drawn as "?" in the groups (`groupsFact` reads the shown
+ *   row, never the gap's token).
+ * - extend, identify_core, translate, find_rule, copy, fill_gap: `simpler_row` (easier) a shorter or plainer row of the
+ *   same mode in other tokens or with a different step (`practiceLeaks`). Never offered on an item already the
+ *   plainest shape.
  *
  * When a model lever comes is the set's `support`, by the item's tier. Easy starts the other help shown
  * (`startsShown`): a starting position, not a pull.
@@ -24,7 +27,7 @@ import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
 import {
   PATTERN_MISSES_BY_MODE, activeMapping, activeSequence, createInstruction, paletteFor, repeatedPart, shapeLetters, shapeOf,
-  translationOf,
+  shownRow, translationOf,
 } from './patternBuilderWorkspace';
 
 export const MODEL_LEVER = 'shape_model';
@@ -135,14 +138,15 @@ export function coreModelFact(model: CoreModel): string {
 /** The length of the part the SHOWN row repeats (at least two different tokens), or null. Gaps go on the shown row
  *  only, so the blanks are never touched; never on identify_core, where the part is the answer. */
 export function repeatGroups(data: PatternSession, c: PatternBuilderChallenge): number | null {
-  if (c.type !== 'extend' && c.type !== 'find_rule') return null;
+  if (c.type !== 'extend' && c.type !== 'find_rule' && c.type !== 'fill_gap') return null;
   const given = activeSequence(data, c).given;
   const part = repeatedPart(given);
   return part && distinct(part).length >= 2 && part.length < given.length ? part.length : null;
 }
 
 export function groupsFact(data: PatternSession, c: PatternBuilderChallenge, k: number): string {
-  const given = activeSequence(data, c).given;
+  // The row as drawn: on fill_gap the gap stays "?".
+  const given = shownRow(data, c);
   const groups = Array.from({ length: Math.ceil(given.length / k) }, (_, i) => given.slice(i * k, i * k + k).join(', '));
   return `The shown row is drawn with a gap each time it starts over: ${groups.join(' | ')} (no gap or mark on the blanks)`;
 }
@@ -174,7 +178,7 @@ export function lineFact(line: NumberLineModel): string {
 
 /** Where the marker is: the next place of the original row to make, from how many tokens the learner has placed. */
 export const markerPlace = (data: PatternSession, c: PatternBuilderChallenge, placed: number) =>
-  c.type === 'translate' && placed < activeSequence(data, c).given.length ? placed : null;
+  (c.type === 'translate' || c.type === 'copy') && placed < activeSequence(data, c).given.length ? placed : null;
 
 /** Says only places and counts, never a token, so it ties no key entry to a place. */
 export function markerFact(data: PatternSession, c: PatternBuilderChallenge, placed: number): string {
@@ -191,6 +195,7 @@ const answerOf = (data: PatternSession, c: PatternBuilderChallenge): string[] =>
   const seq = activeSequence(data, c);
   if (c.type === 'identify_core') return seq.core;
   if (c.type === 'translate') return translationOf(data, c) ?? [];
+  if (c.type === 'copy') return seq.given;
   return seq.hidden;
 };
 
@@ -210,7 +215,9 @@ export function practiceLeaks(practice: PatternBuilderChallenge, c: PatternBuild
 const practiceOf = (c: PatternBuilderChallenge, fields: Partial<PatternBuilderChallenge>): PatternBuilderChallenge =>
   ({ ...c, id: `${c.id}${PRACTICE_SUFFIX}`, supportTier: undefined, hint: '', narration: '', ...fields });
 
-const INSTRUCTION: Record<'extend' | 'identify_core' | 'translate' | 'find_rule', string> = {
+const INSTRUCTION: Record<'extend' | 'identify_core' | 'translate' | 'find_rule' | 'copy' | 'fill_gap', string> = {
+  copy: 'Make the same pattern in the empty row, one token at a time.',
+  fill_gap: 'One token is missing from this pattern. Which token goes in the gap?',
   extend: 'Look at this pattern. What comes next? Fill the blank.',
   identify_core: 'Tap the smallest part that repeats in this pattern.',
   translate: 'Make the same pattern with the new tokens. Follow the key.',
@@ -237,6 +244,43 @@ function shorterRepeat(c: PatternBuilderChallenge, data: PatternSession): Patter
       answer: extend ? [a, b].slice(0, blanks) : [a, b],
       availableTokens: paletteFor(data, c),
     });
+    if (!practiceLeaks(practice, c, data)) return practice;
+  }
+  return null;
+}
+
+/** copy: A B A B in other tokens first. Null when the item is already an A B row of four or fewer. */
+function shorterCopy(c: PatternBuilderChallenge, data: PatternSession): PatternBuilderChallenge | null {
+  const seq = activeSequence(data, c);
+  const k = (repeatedPart(seq.given) ?? seq.given).length;
+  if (k <= 2 && seq.given.length <= 4) return null;
+  const palette = distinct(paletteFor(data, c));
+  const inRow = new Set(seq.given.map(lower));
+  const order = [...palette.filter(t => !inRow.has(lower(t))), ...palette.filter(t => inRow.has(lower(t)))];
+  for (const a of order) for (const b of order) {
+    if (lower(a) === lower(b)) continue;
+    const given = [a, b, a, b];
+    const practice = practiceOf(c, { instruction: INSTRUCTION.copy, sequence: { given, hidden: [], core: [a, b] },
+      answer: given, availableTokens: paletteFor(data, c) });
+    if (!practiceLeaks(practice, c, data)) return practice;
+  }
+  return null;
+}
+
+/** fill_gap: A B A B A B in other tokens first, the gap in the middle. Null when the item is already an A B row of six
+ *  or fewer. */
+function shorterGap(c: PatternBuilderChallenge, data: PatternSession): PatternBuilderChallenge | null {
+  const seq = activeSequence(data, c);
+  const k = (repeatedPart(seq.given) ?? seq.core).length;
+  if (k <= 2 && seq.given.length <= 6) return null;
+  const palette = distinct(paletteFor(data, c));
+  const inRow = new Set(seq.given.map(lower));
+  const order = [...palette.filter(t => !inRow.has(lower(t))), ...palette.filter(t => inRow.has(lower(t)))];
+  for (const a of order) for (const b of order) {
+    if (lower(a) === lower(b)) continue;
+    const given = [a, b, a, b, a, b];
+    const practice = practiceOf(c, { instruction: INSTRUCTION.fill_gap, sequence: { given, hidden: [b], core: [a, b] },
+      gapIndex: 3, answer: [b], availableTokens: paletteFor(data, c) });
     if (!practiceLeaks(practice, c, data)) return practice;
   }
   return null;
@@ -303,6 +347,8 @@ export function practiceItem(c: PatternBuilderChallenge, data: PatternSession): 
     case 'create': return abPractice(c);
     case 'translate': return shorterTranslate(c, data);
     case 'identify_core': return shorterRepeat(c, data);
+    case 'copy': return shorterCopy(c, data);
+    case 'fill_gap': return shorterGap(c, data);
     case 'extend':
     case 'find_rule': return numberLine(data, c) ? simplerRule(c, data) : shorterRepeat(c, data);
   }
@@ -334,7 +380,7 @@ export const PATTERN_LEVERS = leverSet<PatternBuilderChallenge, PatternLeverCont
   },
   specs: [
     // create
-    { id: MODEL_LEVER, type: 'model', modes: ['create'], answers: ['too_short', 'other_shape', 'no_repeat'],
+    { id: MODEL_LEVER, type: 'model', modes: ['create'], answers: ['too_short', 'other_shape', 'no_repeat', 'rule_short', 'rule_long'],
       when: c => `The learner's row is not a ${shapeOfItem(c)} part made twice, or they do not know how a ${shapeOfItem(c)} pattern goes.`,
       does: c => `Draws a model ${shapeOfItem(c)} pattern beside the row, two times, in pictures that are not on the palette. `
         + 'You may point to it and say the pictures; never turn it into the learner\'s tokens.',
@@ -346,7 +392,8 @@ export const PATTERN_LEVERS = leverSet<PatternBuilderChallenge, PatternLeverCont
         + `${shapeOfItem(c)} item comes back blank.`,
       content: c => abPractice(c) },
     // extend, find_rule
-    { id: GROUPS_LEVER, type: 'layout', modes: ['extend', 'find_rule'], answers: ROW_MISSES,
+    { id: GROUPS_LEVER, type: 'layout', modes: ['extend', 'find_rule', 'fill_gap'], answers: [...ROW_MISSES, 'copied_neighbour'],
+      answersOn: c => PATTERN_MISSES_BY_MODE[c.type],
       when: 'The learner fills the blanks with tokens that do not keep the pattern going, or cannot tell where it starts over.',
       does: 'Draws a gap in the shown row each time the pattern starts over; nothing on the blanks. You may point to the gaps '
         + 'and read the groups; never say a blank\'s token or point to its choice.',
@@ -375,16 +422,23 @@ export const PATTERN_LEVERS = leverSet<PatternBuilderChallenge, PatternLeverCont
     { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['identify_core'], answers: ['two_repeats', 'too_long', 'other_part'],
       when: SIMPLER_WHEN, does: `Opens an ungraded practice row of two tokens taking turns; ${BACK}`,
       content: (c, { session }) => practiceItem(c, session) },
-    // translate
-    { id: MARKER_LEVER, type: 'marks', modes: ['translate'],
+    // fill_gap
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['fill_gap'], answers: ['copied_neighbour', 'one_wrong'],
+      when: SIMPLER_WHEN, does: `Opens an ungraded practice row of two other tokens taking turns, with one gap; ${BACK}`,
+      content: (c, { session }) => practiceItem(c, session) },
+    // translate, copy
+    { id: MARKER_LEVER, type: 'marks', modes: ['translate', 'copy'],
       answers: ['blanks_left', 'extra_tokens', 'one_wrong', 'two_swapped', 'several_wrong'],
       when: 'The learner loses their place in the original row, leaves places out, or makes too many.',
       does: 'Puts a marker under the next place of the original row to make and a tick under each place made, following '
         + 'the learner\'s own row. You may point to the marked token and to the key; never say which new token goes there.',
-      content: (c, { session }) => activeMapping(session, c) ?? null,
+      content: (c, { session }) => (c.type === 'copy' ? activeSequence(session, c).given : activeMapping(session, c) ?? null),
       fact: (_mapping: unknown, c, { session, placed }) => markerFact(session, c, placed) },
     { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['translate'], answers: ['two_swapped', 'several_wrong'],
       when: SIMPLER_WHEN, does: `Opens an ungraded practice row: a shorter pattern of two tokens with their key; ${BACK}`,
+      content: (c, { session }) => practiceItem(c, session) },
+    { id: SIMPLER_LEVER, type: 'easier', carrier: 'shown', modes: ['copy'], answers: ['two_swapped', 'several_wrong'],
+      when: SIMPLER_WHEN, does: `Opens an ungraded practice row: a shorter model of two other tokens taking turns; ${BACK}`,
       content: (c, { session }) => practiceItem(c, session) },
   ],
 });

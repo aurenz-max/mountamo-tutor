@@ -19,7 +19,7 @@ import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-
 import { nextLever, observerLever } from '../../../components/live-activity/runtime/observerLever';
 import type { PatternBuilderChallenge, PatternBuilderData } from './PatternBuilder';
 import {
-  createInstruction, patternBuilderHarnessInputs, patternBuilderMatches, paletteFor, repeatKey, shapeOf, translationOf, CREATE_SHAPES,
+  createInstruction, patternBuilderHarnessInputs, patternBuilderMatches, paletteFor, repeatKey, ruleKeyIndex, shapeOf, translationOf, CREATE_SHAPES,
   type PatternBuilderView,
 } from './patternBuilderWorkspace';
 import {
@@ -42,6 +42,9 @@ const lesson = (challenges: PatternBuilderChallenge[], available = PALETTE): Pat
   patternType: 'repeating', gradeBand: 'K-1', sequence: { given: [], hidden: [], core: [], rule: null },
   tokens: { available, type: 'colors' }, challenges });
 const tap = (h: WorkspaceHarness, tokens: string[]) => { for (const t of tokens) h.touch(`token-${PALETTE.indexOf(t)}`); };
+/** A row that makes the shape opens the rule turn: pick the part of the row that repeats. */
+const pickRule = (h: WorkspaceHarness, id: string, shape: string, row: string[]) =>
+  h.touch(`rule-${ruleKeyIndex(make(id, shape), row)}`);
 const q = (h: WorkspaceHarness, sel: string) => h.view.container.querySelectorAll(sel);
 const levers = (h: WorkspaceHarness) => h.state().task!.workspace!.levers ?? [];
 const last = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts.at(-1);
@@ -93,6 +96,7 @@ it('a wrong row, then the model: drawn beside the build in the same commit, off 
   h.press('Start over');
   tap(h, ['yellow', 'red', 'red', 'yellow', 'red', 'red']);
   h.press("I'm done!");
+  pickRule(h, 'c1', 'ABB', ['yellow', 'red', 'red', 'yellow', 'red', 'red']);
   expect(last(h)).toMatchObject({ itemId: 'c1', correct: true, assisted: true, levers: [MODEL_LEVER] });
   h.close();
 });
@@ -115,6 +119,7 @@ it('the A B practice row is ungraded and keeps its row on Try again; the full it
   expect(q(h, '[data-created-token]')).toHaveLength(3);
   tap(h, ['blue']);
   h.press("I'm done!");
+  pickRule(h, 'c1~simpler', 'AB', ['red', 'blue', 'red', 'blue']);
   expect(last(h)).toMatchObject({ itemId: 'c1~simpler', correct: true });
   h.dispatch('advance');
   expect(h.state().task).toMatchObject({ itemId: 'c1' });
@@ -122,6 +127,7 @@ it('the A B practice row is ungraded and keeps its row on Try again; the full it
   expect(q(h, '[data-lever="shape-model"]')).toHaveLength(1);
   tap(h, ['blue', 'yellow', 'yellow', 'blue', 'yellow', 'yellow']);
   h.press("I'm done!");
+  pickRule(h, 'c1', 'ABB', ['blue', 'yellow', 'yellow', 'blue', 'yellow', 'yellow']);
   const attempts = h.state().task!.workspace!.attempts;
   expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
     ['c1', false, false], ['c1~simpler', false, true], ['c1~simpler', true, true], ['c1', true, false]]);

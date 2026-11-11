@@ -22,8 +22,8 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
-  activeMapping as mappingFor, activeSequence as sequenceFor, createdFacts, describePatternBuilderCheck, paletteFor,
-  patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, shapeLetters,
+  activeMapping as mappingFor, activeSequence as sequenceFor, createdFacts, describePatternBuilderCheck, makesShape, paletteFor,
+  patternBuilderMatches, patternBuilderMiss, patternBuilderScene, phaseFor, ruleChoices, shapeLetters,
   DONE_LABEL, START_OVER_LABEL, type PatternBuilderView, type PatternPhase,
 } from './patternBuilderWorkspace';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
@@ -43,7 +43,7 @@ import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 
 export interface PatternBuilderChallenge {
   id: string;
-  type: 'extend' | 'identify_core' | 'create' | 'translate' | 'find_rule';
+  type: 'extend' | 'identify_core' | 'create' | 'translate' | 'find_rule' | 'copy' | 'fill_gap';
   instruction: string;
   answer: string[] | string;
   hint: string;
@@ -68,6 +68,8 @@ export interface PatternBuilderChallenge {
   /** create (open build): the pattern shape the ask names ('AB', 'ABB', 'AAB', 'ABC', 'AABB'), chosen in code. The
    *  learner picks the tokens; the builder checks the shape repeats. Absent on older payloads (any repeat passes). */
   createShape?: string;
+  /** fill_gap: the place in `sequence.given` drawn as "?" (its token is `sequence.hidden[0]`), chosen in code. */
+  gapIndex?: number;
 }
 
 export interface PatternBuilderData {
@@ -115,14 +117,18 @@ export interface PatternBuilderData {
 // ============================================================================
 
 const PHASE_CONFIG: Record<PatternPhase, { label: string; description: string }> = {
+  rebuild: { label: 'Copy', description: 'Make the same pattern' },
   copy: { label: 'Extend', description: 'Continue the pattern' },
+  gap: { label: 'Fill the Gap', description: 'Find the missing token' },
   identify: { label: 'Identify', description: 'Find the repeating core' },
   create: { label: 'Create', description: 'Build your own pattern' },
   translate: { label: 'Translate', description: 'Same pattern, new look' },
 };
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  copy: { label: 'Copy the Pattern', icon: '🪞', accentColor: 'blue' },
   extend: { label: 'Extend the Pattern', icon: '🔗', accentColor: 'blue' },
+  fill_gap: { label: 'Fill the Gap', icon: '🧩', accentColor: 'purple' },
   identify_core: { label: 'Identify the Core', icon: '🔍', accentColor: 'purple' },
   create: { label: 'Create a Pattern', icon: '✨', accentColor: 'emerald' },
   translate: { label: 'Translate the Pattern', icon: '🔄', accentColor: 'cyan' },
@@ -220,6 +226,11 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below: fill_gap's token said aloud and credited by the observer, on a session item or a practice row. */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  /** The challenge a correct Check already recorded, so its `onSolved` records nothing twice. */
+  const checkedCorrect = useRef<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -230,6 +241,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: patternBuilderBoss.assignment!,
     onItemOpened: (_index, retry) => reopen.current(retry),
+    onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -252,7 +265,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   // State
   // -------------------------------------------------------------------------
 
-  // Extension answers (user-placed tokens for hidden positions)
+  // Extension answers (user-placed tokens for hidden positions; fill_gap: the one token in the gap)
   const [extensionAnswers, setExtensionAnswers] = useState<string[]>([]);
 
   // Core identification: which indices the student has selected as core
@@ -261,8 +274,15 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   // Create mode: user-built pattern
   const [createdPattern, setCreatedPattern] = useState<string[]>([]);
 
+  // Create mode's rule turn: opened once the row makes the asked shape; the part of the row picked as the one that repeats.
+  const [ruleStage, setRuleStage] = useState(false);
+  const [rulePick, setRulePick] = useState<number | null>(null);
+
   // Translation mode: user-built translated pattern
   const [translatedPattern, setTranslatedPattern] = useState<string[]>([]);
+
+  // Copy mode: the model row rebuilt below it
+  const [copiedPattern, setCopiedPattern] = useState<string[]>([]);
 
   // Feedback
   const [feedback, setFeedback] = useState('');
@@ -302,9 +322,12 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   }, [challenges]);
 
   // A fresh challenge, or the same one after Try again, starts clean, except an open build: its Try again keeps
-  // the learner's row and the verdict's words, to revise.
+  // the learner's row and the verdict's words, to revise, and goes back to building (the rule turn opens again at
+  // "I'm done!").
   const isOpenBuild = currentChallenge?.type === 'create' && !!currentChallenge.createShape;
   reopen.current = (retry) => {
+    setRuleStage(false);
+    setRulePick(null);
     if (retry && isOpenBuild) return;
     if (!retry) setPractice(null);
     setFeedback('');
@@ -313,6 +336,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     setSelectedCoreIndices(new Set());
     setCreatedPattern([]);
     setTranslatedPattern([]);
+    setCopiedPattern([]);
   };
 
   // -------------------------------------------------------------------------
@@ -339,6 +363,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
 
   /** Learner input is closed while a checked answer waits for Try again, and once the challenge is solved. */
   const learnerBlocked = () => !canAttempt || isCurrentChallengeComplete || hasSubmittedEvaluation || allChallengesComplete;
+  /** The build row is closed during the rule turn: the row being described is the one already made. */
+  const buildBlocked = () => learnerBlocked() || ruleStage;
 
   // -------------------------------------------------------------------------
   // Interaction Handlers
@@ -371,20 +397,20 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   };
 
   const handleAddCreatedToken = (token: string) => {
-    if (learnerBlocked()) return;
+    if (buildBlocked()) return;
     SoundManager.tap();
     setCreatedPattern(prev => [...prev, token]);
     clearFeedback();
   };
 
   const handleRemoveLastCreated = () => {
-    if (learnerBlocked()) return;
+    if (buildBlocked()) return;
     setCreatedPattern(prev => prev.slice(0, -1));
     clearFeedback();
   };
 
   const handleStartOver = () => {
-    if (learnerBlocked()) return;
+    if (buildBlocked()) return;
     setCreatedPattern([]);
     clearFeedback();
   };
@@ -402,24 +428,42 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     clearFeedback();
   };
 
+  const handleAddCopiedToken = (token: string) => {
+    if (learnerBlocked()) return;
+    SoundManager.tap();
+    setCopiedPattern(prev => [...prev, token]);
+    clearFeedback();
+  };
+
+  const handleRemoveLastCopied = () => {
+    if (learnerBlocked()) return;
+    setCopiedPattern(prev => prev.slice(0, -1));
+    clearFeedback();
+  };
+
   // -------------------------------------------------------------------------
   // Check: the builder's own verdict, committed to the workspace
   // -------------------------------------------------------------------------
   const view: PatternBuilderView = {
     extension: extensionAnswers, coreIndices: Array.from(selectedCoreIndices), created: createdPattern, translated: translatedPattern,
+    copied: copiedPattern, rule: null,
   };
+  /** create's rule turn: three parts of the learner's own row, one of them the part that repeats. */
+  const rules = isOpenBuild && currentChallenge ? ruleChoices(currentChallenge, createdPattern) : [];
 
   /** The message a check shows; never the answer before it is found. */
-  const checkFeedback = (correct: boolean): string => {
+  const checkFeedback = (correct: boolean, v: PatternBuilderView): string => {
     switch (currentChallenge?.type) {
       case 'extend': return correct ? 'Great job! You extended the pattern correctly!' : 'Not quite! Look at the pattern again. What repeats?';
       case 'identify_core': return correct ? 'You found the repeating core!'
         : 'That\'s not quite the repeating unit. Try selecting the smallest group that repeats.';
       case 'create': {
-        if (correct) return 'Wonderful! You made your own pattern!';
+        if (correct) return isOpenBuild ? 'Wonderful! You made your own pattern, and you found its rule!' : 'Wonderful! You made your own pattern!';
         // Never the tokens to use: the miss in words, and the asked shape (the task) again.
         const shape = currentChallenge.createShape ? shapeLetters(currentChallenge.createShape) : '';
-        const miss = patternBuilderMiss(data, currentChallenge, view);
+        const miss = patternBuilderMiss(data, currentChallenge, v);
+        if (miss === 'rule_short') return 'That part is too short to be the part that repeats. Look at your row again.';
+        if (miss === 'rule_long') return 'That part is longer than the part that repeats. Where does your row start over?';
         if (miss === 'too_short') return shape ? `Make your ${shape} part, then make it again.` : 'Add more tokens. A pattern needs to repeat at least twice!';
         if (miss === 'other_shape') return shape ? `That repeats, but it is not ${shape} yet. Look at your first part.` : 'Use at least two different tokens.';
         return 'I can\'t see the same part again. Look at your first part, then make it again.';
@@ -428,20 +472,23 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         : 'Not quite. Each token maps to a specific new token. Check the mapping!';
       case 'find_rule': return correct ? (challengeRule ? `Great thinking! The rule is: "${challengeRule}"` : 'You figured out the pattern!')
         : 'Think about what happens to each number to get the next one.';
+      case 'copy': return correct ? 'You made the same pattern!' : 'Not quite the same. Look at the top row one token at a time.';
+      case 'fill_gap': return correct ? 'Yes! That token fills the gap!' : 'Not quite. Say the pattern from the start, all the way to the gap.';
       default: return '';
     }
   };
 
-  const handleCheckAnswer = () => {
-    if (!currentChallenge || learnerBlocked()) return;
-    const correct = patternBuilderMatches(data, currentChallenge, view);
-    setFeedback(checkFeedback(correct));
+  /** One checked gesture: the builder's verdict on this work, committed with its named miss. */
+  const commit = (v: PatternBuilderView) => {
+    if (!currentChallenge) return;
+    const correct = patternBuilderMatches(data, currentChallenge, v);
+    setFeedback(checkFeedback(correct, v));
     setFeedbackType(correct ? 'success' : 'error');
     // An easier practice item is ungraded: its success records nothing for the session.
     if (correct && !practice) {
       if (currentChallenge.type === 'identify_core') setCoreIdentifiedCorrectly(true);
       if (currentChallenge.type === 'find_rule') setRuleArticulated(true);
-      if (currentChallenge.type === 'create') setPatternCreated(true);
+      if (currentChallenge.type === 'create') { setPatternCreated(true); if (v.rule) setRuleArticulated(true); }
       if (currentChallenge.type === 'translate') setTranslationCorrect(true);
       SoundManager.playCorrect();
       recordResult({
@@ -455,8 +502,46 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     } else {
       SoundManager.playIncorrect();
     }
-    progress.commitCheck(describePatternBuilderCheck(data, currentChallenge, view), correct,
-      patternBuilderMiss(data, currentChallenge, view));
+    if (correct) checkedCorrect.current = currentChallenge.id;
+    progress.commitCheck(describePatternBuilderCheck(data, currentChallenge, v), correct,
+      patternBuilderMiss(data, currentChallenge, v));
+  };
+
+  // fill_gap said aloud and credited (`onSolved` fires once per challenge, for a Check too): the result a correct Check
+  // records, and the token shown in the gap as a correct tap shows it. The shared lifecycle plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || checkedCorrect.current === solved.id || solved.type !== 'fill_gap') return;
+    recordResult({ challengeId: solved.id, correct: true, type: solved.type, attempts: currentAttempts + 1 });
+    setExtensionAnswers(solved.sequence?.hidden.slice(0, 1) ?? []);
+    setFeedback("Yes, that's right!");
+    setFeedbackType('success');
+  };
+  // Said aloud on a fill_gap practice row: shown there, recorded nowhere. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || practice?.type !== 'fill_gap') return;
+    setExtensionAnswers(practice.sequence?.hidden.slice(0, 1) ?? []);
+    setFeedback("Yes, that's right!");
+    setFeedbackType('success');
+  };
+
+  const handleCheckAnswer = () => {
+    if (!currentChallenge || learnerBlocked() || ruleStage) return;
+    // An open build whose row makes the shape opens the rule turn; the pick there is the checked gesture.
+    if (isOpenBuild && makesShape(createdPattern, currentChallenge.createShape!)) {
+      SoundManager.select();
+      setRuleStage(true);
+      setFeedback('Your pattern repeats! Now, which part of it repeats?');
+      setFeedbackType('info');
+      return;
+    }
+    commit(view);
+  };
+
+  const handlePickRule = (index: number) => {
+    if (learnerBlocked() || !ruleStage || !rules[index]) return;
+    setRulePick(index);
+    commit({ ...view, rule: rules[index] });
   };
 
   // -------------------------------------------------------------------------
@@ -490,7 +575,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
 
   // The session item's levers (`PATTERN_LEVERS`); a help lever's picture is drawn beside or on the session item only
   // while it is pulled (or shown from the start on easy, `startsShown`), never on a practice item.
-  const leverCtx: PatternLeverContext = { session: data, placed: translatedPattern.length };
+  const placed = sessionChallenge?.type === 'copy' ? copiedPattern.length : translatedPattern.length;
+  const leverCtx: PatternLeverContext = { session: data, placed };
   const shownLevers = Array.from(new Set([...pulledLevers, ...startsShown(sessionChallenge)]));
   const itemLevers = PATTERN_LEVERS.declare(sessionChallenge, leverCtx, shownLevers);
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
@@ -499,11 +585,12 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const shownLine = sessionChallenge && helpOn(LINE_LEVER) ? numberLine(data, sessionChallenge) : null;
   const shownCoreModel = sessionChallenge && helpOn(CORE_MODEL_LEVER) ? coreModel(data, sessionChallenge) : null;
   const markerOn = !!sessionChallenge && helpOn(MARKER_LEVER);
-  const markerAt = markerOn && sessionChallenge ? markerPlace(data, sessionChallenge, translatedPattern.length) : null;
+  const markerAt = markerOn && sessionChallenge ? markerPlace(data, sessionChallenge, placed) : null;
 
   /** Every learner row back to empty: a practice item and the full item it stands in for share no work. */
   const clearWork = () => {
-    setExtensionAnswers([]); setSelectedCoreIndices(new Set()); setCreatedPattern([]); setTranslatedPattern([]); clearFeedback();
+    setExtensionAnswers([]); setSelectedCoreIndices(new Set()); setCreatedPattern([]); setTranslatedPattern([]);
+    setCopiedPattern([]); setRuleStage(false); setRulePick(null); clearFeedback();
   };
 
   // What the tutor and the observer are shown, republished every render. Derived from the challenge
@@ -521,6 +608,9 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     workspace.current = {
       ...published,
       facts: { ...published.facts, ...(isOpenBuild ? createdFacts(createdPattern) : {}),
+        // The rule turn's choices are parts of the learner's own row; which one repeats is the answer.
+        ...(ruleStage && rules.length ? { ruleTurn: 'The row makes the asked shape. The learner now picks which part of '
+          + 'their own row repeats (its rule), from these choices: ' + rules.map(r => r.join(', ')).join(' | ') } : {}),
         ...(practice ? { practice: PRACTICE_NOTE } : {}) },
       levers,
       pullLever: (id: string) => {
@@ -546,7 +636,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
   const rowSvgRef = useRef<SVGSVGElement | null>(null);
   const buildSeeing = useBuildWatcher({
     buildKey: `${currentChallenge?.id}:${createdPattern.join(',')}`,
-    enabled: isOpenBuild && createdPattern.length > 0 && !learnerBlocked(),
+    enabled: isOpenBuild && createdPattern.length > 0 && !learnerBlocked() && !ruleStage,
     svg: rowSvgRef,
     // The task without its shape words: the ask's "two", "pattern" and "repeat" are what the line may never say, and
     // a watcher handed them echoes them (a drive kept 2 of 5 lines).
@@ -641,6 +731,32 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
     );
   }, []);
 
+  /** A row's cell, with a dashed gap before it each time the row starts over (the help lever `repeat_groups`). */
+  const withGroupGap = (cell: React.ReactNode, i: number) => {
+    if (!groupLen || i === 0 || i % groupLen !== 0) return cell;
+    return (
+      <React.Fragment key={`gap-${i}`}>
+        <div data-lever="repeat-gap" aria-hidden className="mx-1.5 h-10 border-l-2 border-dashed border-amber-300/60" />
+        {cell}
+      </React.Fragment>
+    );
+  };
+
+  /** The place marker under a model or original row (the help lever `place_marker`), or the row's cells alone. */
+  const markedRow = (row: string[], key: string) => row.map((token, i) => !markerOn ? renderToken(token, i) : (
+    // A tick under each place made and a marker under the next, from the learner's own row; nothing on the build row
+    // or the palette.
+    <div key={`${key}-${i}`} className="flex flex-col items-center gap-0.5">
+      {renderToken(token, i, { isSelected: markerAt === i })}
+      <span className="h-4 text-xs leading-4" data-place={i < placed ? 'done' : markerAt === i ? 'next' : undefined}>
+        {i < placed ? <span className="text-emerald-400">✓</span>
+          : markerAt === i ? <span className="text-orange-300">▲</span> : null}
+      </span>
+    </div>
+  ));
+
+  const inRuleTurn = isOpenBuild && ruleStage && rules.length > 0;
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -701,8 +817,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the challenge as one region. */}
         {currentChallenge && !allChallengesComplete && <PipDock />}
         <PipWorkspace className="space-y-4">
-        {/* Pattern Display */}
-        {(currentPhase === 'copy' || currentPhase === 'identify') && (
+        {/* Pattern Display: extend (copy phase), fill the gap, identify */}
+        {(currentPhase === 'copy' || currentPhase === 'gap' || currentPhase === 'identify') && (
           <div className="space-y-3">
             {/* Given sequence + hidden slots */}
             <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -721,6 +837,16 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               )}
               <div data-pip-object="pattern" className="flex items-center gap-1.5 flex-wrap justify-center">
                 {activeSequence.given.map((token, i) => {
+                  // fill_gap: the gap is drawn as the same empty "?" slot as extend's blanks, whatever its token; the
+                  // placed token goes in it, and tapping it takes it back.
+                  if (currentPhase === 'gap' && i === currentChallenge?.gapIndex) {
+                    const answered = extensionAnswers[0];
+                    return withGroupGap(answered
+                      ? renderToken(answered, i, {
+                        onClick: !isCurrentChallengeComplete ? handleRemoveLastExtension : undefined, pipId: 'slot-0',
+                      })
+                      : renderToken('?', i, { isHidden: true, pipId: 'slot-0' }), i);
+                  }
                   const isCorePos = showCore && i < activeSequence.core.length;
                   const isIdentifyMode = currentPhase === 'identify';
                   const cell = renderToken(token, i, {
@@ -732,13 +858,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                     pipId: isIdentifyMode ? `seq-${i}` : undefined,
                   });
                   // The help lever `repeat_groups`: a gap on the shown row where it starts over, never on a blank.
-                  if (!groupLen || i === 0 || i % groupLen !== 0) return cell;
-                  return (
-                    <React.Fragment key={`gap-${i}`}>
-                      <div data-lever="repeat-gap" aria-hidden className="mx-1.5 h-10 border-l-2 border-dashed border-amber-300/60" />
-                      {cell}
-                    </React.Fragment>
-                  );
+                  return withGroupGap(cell, i);
                 })}
 
                 {/* Separator */}
@@ -789,6 +909,36 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
           </div>
         )}
 
+        {/* Copy Mode: the model row above, the learner's row below it */}
+        {currentPhase === 'rebuild' && (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-slate-400 text-xs text-center">Pattern:</p>
+              <div className="flex items-start justify-center gap-1.5 flex-wrap" data-pip-object="pattern"
+                data-lever={markerOn ? 'place-marker' : undefined}>
+                {markedRow(activeSequence.given, 'model')}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-slate-400 text-xs text-center">Your row:</p>
+              <div data-pip-object="build"
+                className="flex items-center justify-center gap-1.5 flex-wrap min-h-[60px] bg-slate-800/20 rounded-lg p-3 border border-white/5">
+                {copiedPattern.length === 0 ? (
+                  <p className="text-slate-500 text-sm">Tap tokens below to make the same pattern</p>
+                ) : (
+                  copiedPattern.map((token, i) =>
+                    renderToken(token, i, {
+                      onClick: !isCurrentChallengeComplete && i === copiedPattern.length - 1
+                        ? handleRemoveLastCopied
+                        : undefined,
+                    })
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create Mode */}
         {currentPhase === 'create' && (
           <div className="space-y-3">
@@ -820,7 +970,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 {createdPattern.length === 0
                   ? <p className="text-slate-500 text-sm">Tap tokens below to make your pattern</p>
                   : <CreatedRow ref={rowSvgRef} row={createdPattern}
-                    onTapLast={!learnerBlocked() ? handleRemoveLastCreated : undefined} />}
+                    onTapLast={!buildBlocked() ? handleRemoveLastCreated : undefined} />}
               </div>
             ) : (
             <div data-pip-object="build"
@@ -838,7 +988,30 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
               )}
             </div>
             )}
-            {isOpenBuild && (
+            {/* The rule turn: three parts of the learner's own row, each its row's start; the one that repeats is the
+                rule. The choices look alike and none is marked; the pick is the checked gesture. */}
+            {inRuleTurn && (
+              <div className="space-y-2" data-rule-turn>
+                <p className="text-center text-sm text-slate-300">Which part repeats in your pattern? Tap it, or say it.</p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {rules.map((part, i) => (
+                    <div
+                      key={i}
+                      role="button"
+                      tabIndex={0}
+                      data-pip-object={`rule-${i}`}
+                      aria-label={part.join(', ')}
+                      onClick={() => handlePickRule(i)}
+                      className={`flex cursor-pointer gap-1 rounded-lg border-2 p-1.5 transition-all ${
+                        rulePick === i ? 'border-orange-400 bg-orange-500/10' : 'border-white/15 bg-slate-800/30 hover:border-white/30'}`}
+                    >
+                      {part.map((token, j) => renderToken(token, j, { size: 32 }))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {isOpenBuild && !inRuleTurn && (
               <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
                 {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
               </div>
@@ -855,17 +1028,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 Original ({translationTarget?.sourceType || 'source'}):
               </p>
               <div className="flex items-start justify-center gap-1.5 flex-wrap" data-lever={markerOn ? 'place-marker' : undefined}>
-                {activeSequence.given.map((token, i) => !markerOn ? renderToken(token, i) : (
-                  // The help lever `place_marker`: a tick under each place made and a marker under the next, from the
-                  // learner's own row; nothing on the build row or the palette.
-                  <div key={`src-${i}`} className="flex flex-col items-center gap-0.5">
-                    {renderToken(token, i, { isSelected: markerAt === i })}
-                    <span className="h-4 text-xs leading-4" data-place={i < translatedPattern.length ? 'done' : markerAt === i ? 'next' : undefined}>
-                      {i < translatedPattern.length ? <span className="text-emerald-400">✓</span>
-                        : markerAt === i ? <span className="text-orange-300">▲</span> : null}
-                    </span>
-                  </div>
-                ))}
+                {markedRow(activeSequence.given, 'src')}
               </div>
             </div>
 
@@ -914,8 +1077,8 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
           </div>
         )}
 
-        {/* Token Palette */}
-        {!allChallengesComplete && !isCurrentChallengeComplete && (
+        {/* Token Palette (none in the rule turn: the row is made) */}
+        {!allChallengesComplete && !isCurrentChallengeComplete && !inRuleTurn && (
           <div className="space-y-2">
             <p className="text-slate-500 text-xs text-center">Available tokens:</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -923,9 +1086,10 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
                 renderToken(token, i, {
                   pipId: `token-${i}`,
                   onClick: () => {
-                    if (currentPhase === 'copy') handleAddExtensionToken(token);
+                    if (currentPhase === 'copy' || currentPhase === 'gap') handleAddExtensionToken(token);
                     else if (currentPhase === 'create') handleAddCreatedToken(token);
                     else if (currentPhase === 'translate') handleAddTranslatedToken(token);
+                    else if (currentPhase === 'rebuild') handleAddCopiedToken(token);
                   },
                   size: 44,
                 })
@@ -949,7 +1113,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {/* Action Buttons: the runtime advances, so there is no Next here */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && isOpenBuild && (
+            {!isCurrentChallengeComplete && !allChallengesComplete && isOpenBuild && !inRuleTurn && (
               <>
                 {createdPattern.length > 0 && (
                   <LuminaButton tone="subtle" className="text-xs" disabled={learnerBlocked()} onClick={handleStartOver}>
@@ -964,15 +1128,16 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
             {!isCurrentChallengeComplete && !allChallengesComplete && !isOpenBuild && (
               <>
                 {/* Undo button */}
-                {(extensionAnswers.length > 0 || createdPattern.length > 0 || translatedPattern.length > 0) && (
+                {(extensionAnswers.length > 0 || createdPattern.length > 0 || translatedPattern.length > 0 || copiedPattern.length > 0) && (
                   <LuminaButton
                     tone="subtle"
                     className="text-xs"
                     disabled={learnerBlocked()}
                     onClick={() => {
-                      if (currentPhase === 'copy') handleRemoveLastExtension();
+                      if (currentPhase === 'copy' || currentPhase === 'gap') handleRemoveLastExtension();
                       else if (currentPhase === 'create') handleRemoveLastCreated();
                       else if (currentPhase === 'translate') handleRemoveLastTranslated();
+                      else if (currentPhase === 'rebuild') handleRemoveLastCopied();
                     }}
                   >
                     Undo

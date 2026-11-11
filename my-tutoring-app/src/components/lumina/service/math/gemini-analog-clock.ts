@@ -21,8 +21,46 @@ const SPACE_COUNT = 5;
  * tier (analogClockItemSpace.ts), or null: no tier, another mode, no space fits the lesson, or the band
  * cannot fill a session on the lesson's minute grid. The LLM only names the elapsed activities.
  */
+/**
+ * Whether the lesson keeps every time on the hour (math-k audit 2026-11-10: TIME001-03-C, -E, -F are
+ * o'clock objectives, and the K grid was half hours, so an o'clock lesson could show :30). One
+ * schema-constrained flash-lite call over the lesson's own words; false on no topic, failure, or any
+ * lesson that names half hours, quarters or minutes, which keeps the existing grid.
+ */
+export async function resolveWholeHours(lesson: { topic: string; intent?: string; objectiveText?: string; grade?: string }): Promise<boolean> {
+  const { topic, intent, objectiveText, grade } = lesson;
+  if (!topic && !intent && !objectiveText) return false;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: `An analog clock activity picks its times in code. Decide whether THIS lesson keeps every time on the hour.
+
+TOPIC: "${topic}"
+${objectiveText ? `OBJECTIVE: "${objectiveText}"\n` : ''}${intent ? `INTENT: "${intent}"\n` : ''}GRADE: ${grade ?? 'unknown'}
+
+- wholeHoursOnly = true ONLY when the lesson is about whole hours: "o'clock", "to the hour", "whole-hour times", "the hour hand points exactly to a number".
+- wholeHoursOnly = false when the lesson includes half hours, half past, quarter hours, five minutes or minutes, or names no limit on the times.`,
+      config: {
+        temperature: 0,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: { wholeHoursOnly: { type: Type.BOOLEAN, description: "True only when every time in the lesson is on the hour (o'clock)." } },
+          required: ["wholeHoursOnly"],
+        },
+      },
+    });
+    const whole = !!(result.text && JSON.parse(result.text)?.wholeHoursOnly === true);
+    if (whole) console.log('[AnalogClock] lesson names whole hours: every time is on the hour');
+    return whole;
+  } catch (err) {
+    console.warn('[AnalogClock] whole-hour resolution failed; keeping the grade grid', err);
+    return false;
+  }
+}
+
 async function clockFromItemSpace(opts: {
-  mode?: string; difficulty?: string; topic: string; intent?: string; grade?: string;
+  mode?: string; difficulty?: string; topic: string; intent?: string; grade?: string; wholeHours?: boolean;
 }): Promise<{ challenges: ClockChallenge[]; gradeBand: 'K' | '1-2' | '3-5' } | null> {
   const band = difficultyBand(opts.difficulty);
   const mode = opts.mode;
@@ -38,9 +76,14 @@ async function clockFromItemSpace(opts: {
     [spaceId],
   );
   if (space !== spaceId) return null;
-  const grid = clockGrid(opts.grade, `${opts.topic} ${opts.intent ?? ''}`);
+  // An o'clock lesson's grid is the whole hour. Its twelve times are too few for three tiers, so every
+  // tier picks from all of them (the tier still sets the reading aids).
+  const grid = opts.wholeHours ? 60 : clockGrid(opts.grade, `${opts.topic} ${opts.intent ?? ''}`);
   const log = (m: string) => console.log(`[AnalogClock] Item space ${space}: ${m}`);
-  const pick = tierPick(getItemSpace(space), log);
+  const pick = opts.wholeHours
+    ? (n: number, _lo: number, _hi: number, rand?: () => number, accept?: (it: any) => boolean) =>
+      getItemSpace(space).pick(n, -Infinity, Infinity, rand, accept)
+    : tierPick(getItemSpace(space), log);
   let challenges: ClockChallenge[];
   if (elapsed) {
     let activities: string[] = [];
@@ -316,9 +359,10 @@ function shuffleInPlace<T>(arr: T[]): T[] {
 }
 
 /** 3 plausible wrong "H:MM" times, distinct from the correct time and each other. */
-function buildTimeDistractors(targetHour: number, targetMinute: number, gradeBand: string): string[] {
+function buildTimeDistractors(targetHour: number, targetMinute: number, gradeBand: string, wholeHours = false): string[] {
   const correct = formatClockTime(targetHour, targetMinute);
-  const minutes = allowedMinutesFor(gradeBand);
+  // An o'clock lesson's wrong times are other whole hours: a 3:30 beside 3:00 tests a grid it never taught.
+  const minutes = wholeHours ? [0] : allowedMinutesFor(gradeBand);
   const hours = [targetHour, shiftHour(targetHour, 1), shiftHour(targetHour, -1), shiftHour(targetHour, 2), shiftHour(targetHour, -2)];
   const pool = new Set<string>();
   for (const h of hours) {
@@ -407,6 +451,7 @@ function synthesizeMCOptions(
     correctOptionIndex?: number;
   },
   gradeBand: string,
+  wholeHours = false,
 ): void {
   let correctStr: string;
   let distractors: string[];
@@ -427,7 +472,7 @@ function synthesizeMCOptions(
   } else {
     // read / match — the answer is the time shown on the dial
     correctStr = formatClockTime(ch.targetHour, ch.targetMinute);
-    distractors = buildTimeDistractors(ch.targetHour, ch.targetMinute, gradeBand);
+    distractors = buildTimeDistractors(ch.targetHour, ch.targetMinute, gradeBand, wholeHours);
   }
 
   const options = shuffleInPlace([correctStr, ...distractors]);
@@ -569,8 +614,18 @@ export const generateAnalogClock = async (
   }
 
   // ── Item-space path: with a tier, code picks the times (the tier also keeps its reading aids). ──
+  // ── Whole hours: an o'clock lesson keeps every time on the hour (read from the lesson, not a regex).
+  // Asked only where times are picked (read, set_time, match, elapsed, or a blend) and the lesson names
+  // no finer grid. ──
+  const lessonIntent = (config as { intent?: string })?.intent ?? ctx.intent;
+  const timeModes = !pinnedType || ['read', 'set_time', 'match', 'elapsed'].includes(pinnedType);
+  const wholeHours = timeModes && clockGrid(ctx.grade, `${topic} ${lessonIntent ?? ''}`) >= 30
+    ? await resolveWholeHours({ topic, intent: lessonIntent, objectiveText: ctx.scope?.objectiveText, grade: ctx.grade })
+    : false;
+
   const spaced = await clockFromItemSpace({
     mode: pinnedType, difficulty: config?.difficulty, topic, intent: (config as { intent?: string })?.intent, grade: ctx.grade,
+    wholeHours,
   });
   if (spaced) {
     const spacedData: AnalogClockData = {
@@ -601,7 +656,7 @@ CONTEXT:
 
 ${challengeTypeSection}
 ${tierSection}
-GRADE-LEVEL TIME GRANULARITY (CRITICAL):
+${wholeHours ? `WHOLE HOURS (overrides the granularity below): this lesson is about o'clock times. targetMinute (and startMinute) must be 0 in every challenge.\n` : ''}GRADE-LEVEL TIME GRANULARITY (CRITICAL):
 - Kindergarten (gradeBand "K"): ONLY use :00 (on the hour) and :30 (half-hour). targetMinute must be 0 or 30.
 - Grades 1-2 (gradeBand "1-2"): Use :00, :15, :30, :45 (quarter-hour intervals). targetMinute must be 0, 15, 30, or 45.
 - Grades 3-5 (gradeBand "3-5"): Use 5-minute intervals. targetMinute must be a multiple of 5 (0, 5, 10, 15, ..., 55).
@@ -715,6 +770,23 @@ Return the complete analog clock configuration.
     }];
   }
 
+  // ── Whole hours: every read, match, set_time and elapsed time on the hour, and code's wording, since
+  // the model's instruction or hint may name the minutes it chose. ──
+  if (wholeHours) {
+    for (const ch of data.challenges as Array<{ type: string; targetHour: number; targetMinute: number; startMinute?: number; instruction?: string; hint?: string }>) {
+      if (!['read', 'match', 'set_time', 'elapsed'].includes(ch.type)) continue;
+      ch.targetMinute = 0;
+      if (ch.type === 'elapsed') { ch.startMinute = 0; continue; }
+      if (ch.type === 'set_time') {
+        ch.instruction = `Set the clock to ${formatClockTime(ch.targetHour, 0)}.`;
+        ch.hint = 'The long hand points at the 12. Where does the short hand point?';
+      } else {
+        if (/\d/.test(ch.instruction ?? '')) ch.instruction = ch.type === 'match' ? 'Which digital time matches the clock?' : 'What time does the clock show?';
+        ch.hint = 'Look at the short hand first. Where is the long hand pointing?';
+      }
+    }
+  }
+
   // ── SESSION FLOOR for the K clock parts. A live atlas draw came back with a
   // single hand_name item (AC-7): one item is a demo, not practice, and with one
   // item the hand alternation below can only ever ask for the hour — the child
@@ -823,7 +895,7 @@ Return the complete analog clock configuration.
     correctOptionIndex?: number;
   }>) {
     if (ch.type === 'read' || ch.type === 'match' || ch.type === 'elapsed' || ch.type === 'hear_time') {
-      synthesizeMCOptions(ch, data.gradeBand);
+      synthesizeMCOptions(ch, data.gradeBand, wholeHours);
     }
   }
 

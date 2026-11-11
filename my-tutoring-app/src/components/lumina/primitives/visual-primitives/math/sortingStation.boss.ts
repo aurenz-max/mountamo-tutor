@@ -6,14 +6,14 @@
 import type { SortingStationData } from './SortingStation';
 import { spokenBoss } from '../../../components/live-activity/boss';
 import { sortingStationCard } from './sortingStation.card';
-import { SORTING_LEVERS, simplerFromParent } from './sortingStationLevers';
+import { catalogModeOf, SORTING_LEVERS, simplerFromParent } from './sortingStationLevers';
 import {
   askFor, itemsFromChallenges, sortingStationGiven, sortingStationHarnessAnswers, sortingStationKey, sortingStationSpokenMisses,
   type SortingChallengeLike, type SortingStationItem, type SortingStationMode, type SpokenSortingMiss,
 } from './sortingStationDomain';
 
 const CHALLENGE_TYPES: readonly SortingStationMode[] = ['sort-by-one', 'sort-by-attribute', 'count-and-compare',
-  'two-attributes', 'odd-one-out', 'tally-record', 'sort-variety'];
+  'two-attributes', 'odd-one-out', 'tally-record', 'sort-variety', 'say-rule'];
 
 /** The session's items, built from the generated challenges. */
 export const sortingStationItems = (d: SortingStationData): SortingStationItem[] =>
@@ -45,6 +45,8 @@ export const sortingStationBoss = spokenBoss<SortingStationData, SortingStationI
     given: sortingStationGiven,
     misses: sortingStationSpokenMisses,
     say: sortingStationHarnessAnswers,
+    // say_rule is SAY_OR_SHOW beside spoken modes, so the preset reads each item's mode.
+    modeOf: catalogModeOf,
   },
   drive: {
     component: 'primitives/visual-primitives/math/SortingStation.tsx',

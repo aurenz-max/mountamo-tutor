@@ -97,6 +97,10 @@ describe('sortingStationSpokenMisses', () => {
         } else if (item.kind === 'count_group') {
           expect(found).toEqual(OFF.filter(id => item.answerValue! > 1 || (id !== 'one_short' && id !== 'short_by_more'))
             .filter(id => item.answerValue! > 2 || id !== 'short_by_more'));
+        } else if (item.kind === 'pick_rule') {
+          // Every way the cards really split by is credited; other_rule exists only when a choice is not one.
+          const valid = new Set([item.answer, ...(item.alsoAccept ?? [])].map(w => w.toLowerCase()));
+          expect(found, item.id).toEqual(item.choices.some(c => !valid.has(c.toLowerCase())) ? ['other_rule'] : []);
         } else expect(found, item.id).toEqual(kinds[item.kind]);
         for (const m of sortingStationBoss.assignment(item).misses ?? []) {
           for (const e of m.examples ?? []) expect(e.toLowerCase(), `${item.id} ${m.id}`).not.toBe(item.answer.toLowerCase());

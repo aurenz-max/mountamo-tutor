@@ -5,7 +5,7 @@
   `measureLab.boss.ts` (bespoke) · **Domain:** `measureLabWorkspace.ts` · **Levers:** `measureLabLevers.ts` ·
   **Generator:** `service/math/gemini-measure-lab.ts` · **Oracle:** `service/qa/oracles/measure-lab.ts` ·
   **Catalog:** `service/manifest/catalog/math.ts` (`measure-lab`)
-- **Modes:** `balance_predict` · `capacity_predict` · `pour_count` · `order_capacity` (K.MD.A.1, K.MD.A.2)
+- **Modes:** `fill_level` · `balance_predict` · `capacity_predict` · `pour_count` · `order_capacity` (K.MD.A.1, K.MD.A.2, MEAS001-08)
 
 ## Requirements
 
@@ -45,6 +45,27 @@
   `level_lines` marks, the four practice items easier.
 - **Probe:** `measureLabLevers.test.ts`, `MeasureLab.levers.workspace.test.tsx`, journey sweep J9/J12.
 
+### R5 — fill_level: the drawn water is the only evidence, said or tapped · OBSERVED (NEW 2026-11-11)
+- **Property:** fill_level (MEAS001-08-A, MEAS001-08-B) is a look-and-say task: even items are one container, empty
+  (level 0) or full (level = capacity), with Empty and Full buttons; odd items are two IDENTICAL containers (same
+  shape and capacity, named `left <noun>` / `right <noun>`) with different amounts, asked "more" and "less" in turn.
+  Code sets every level and key (`buildFillLevel`); `fillLevelKey` re-derives the key from the levels and the boss
+  refuses one that disagrees. Tells defeated: which of empty and full is the answer alternates from a random start;
+  the answer's side alternates by item; the ask word alternates, so "tap the fuller one" fails half the time. No label,
+  badge or default selection marks a container; the scene states no level or amount. The tier sets the gap between
+  the two levels in eighths (easy 5, medium 3, hard 2). SAY_OR_SHOW (voice beside the tap, J14): the spoken ask names
+  both containers (`measureAsk`), the key is a menu (`measureKey`), misses `mixed_empty_full`, `picked_opposite`.
+  measure-lab is on the spoken preset since this change; every other mode keeps no key (R3). Levers: `fill_words`
+  (meaning, fixed model containers tagged empty, full, more, less), `level_lines` (marks), `far_fill` (simplify,
+  levels one and seven eighths apart, the same ask, only when the item's levels are under five apart).
+- **Note:** the K row asks the child to judge by looking, so the levels are drawn; reading them is the skill, not a
+  leak. The leaks guarded are labels, badges, default state, position and the ask word.
+- **Demanded by:** qa/curriculum-coverage/math-k/REPORT.md "Modes to add" (MEAS001-08-A, MEAS001-08-B).
+- **Evidence:** `measureLabFillLevel.test.ts` 2 (30 mocked generations: keys, tier gaps, alternation; check, miss,
+  scene, levers, practice); `MeasureLab.workspace.test.tsx` fill_level cases; sweep on
+  `w1-payloads/measure-lab.fill_level.json` (eval-test route generation 2026-11-11, medium).
+- **Probe:** `measureLabFillLevel.test.ts`; `journeySweep -t measure-lab.fill_level`.
+
 ## Gaps
 
 ### G1 — vocabulary does not fit the drawn shape · OPEN
@@ -61,6 +82,11 @@
   `/eval-fix`, then `/oracle-test` adds the check.
 
 ## Changelog
+
+- 2026-11-11 — R5 (`fill_level`, β 1.0). The boss moves to the spoken preset (`spokenBoss`, `SPOKEN_AUDIO`) so
+  fill_level can be said; R3 re-based: every other mode still publishes no key. The card's words were shortened to
+  keep the family guidance under OFFER_GUIDANCE_MAX. The vocabulary prompt names the fill task (a "Weighing Table"
+  title came back on a fill lesson). The oracle (`service/qa/oracles/measure-lab.ts`) does not cover fill_level yet.
 
 - 2026-10-20 — moved onto a boss (wave 3): `measureLab.card.ts` + `measureLab.boss.ts` replace
   `adapters/measureLabLive.ts` and the catalog guidance; one lever set; scripted path, legacy cues and hand-wired Pip

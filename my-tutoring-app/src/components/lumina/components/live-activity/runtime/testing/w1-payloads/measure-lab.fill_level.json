@@ -1,0 +1,102 @@
+{
+ "source": "eval-test route 2026-11-11 (measure-lab fill_level, medium)",
+ "primitiveId": "measure-lab",
+ "evalMode": "fill_level",
+ "data": {
+  "title": "The Weighing Table",
+  "description": "Find out what is heavy and light, empty and full!",
+  "challengeType": "fill_level",
+  "challenges": [
+   {
+    "id": "ml-1",
+    "type": "fill_level",
+    "fillAsk": "empty_full",
+    "prompt": "Look at the glass jar. Is it empty or full?",
+    "hint": "Look inside. Is there any water in it? Does the water reach the top?",
+    "container": {
+     "id": "cnt-0",
+     "name": "glass jar",
+     "shape": "tall",
+     "capacity": 8,
+     "filled": 8
+    },
+    "unitName": "scoops",
+    "unitEmoji": "🥄",
+    "expectedChoice": "full",
+    "supportTier": "medium"
+   },
+   {
+    "id": "ml-2",
+    "type": "fill_level",
+    "fillAsk": "more",
+    "prompt": "These two soup pots are the same. Which one has more water in it?",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-1-l",
+      "name": "left soup pot",
+      "shape": "wide",
+      "capacity": 8,
+      "filled": 7
+     },
+     {
+      "id": "jar-1-r",
+      "name": "right soup pot",
+      "shape": "wide",
+      "capacity": 8,
+      "filled": 4
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "🥄",
+    "expectedChoice": "jar-1-l",
+    "supportTier": "medium"
+   },
+   {
+    "id": "ml-3",
+    "type": "fill_level",
+    "fillAsk": "empty_full",
+    "prompt": "Look at the small cup. Is it empty or full?",
+    "hint": "Look inside. Is there any water in it? Does the water reach the top?",
+    "container": {
+     "id": "cnt-2",
+     "name": "small cup",
+     "shape": "round",
+     "capacity": 8,
+     "filled": 0
+    },
+    "unitName": "scoops",
+    "unitEmoji": "🥄",
+    "expectedChoice": "empty",
+    "supportTier": "medium"
+   },
+   {
+    "id": "ml-4",
+    "type": "fill_level",
+    "fillAsk": "less",
+    "prompt": "These two small cups are the same. Which one has less water in it?",
+    "hint": "Look at how high the water comes up in each one.",
+    "containers": [
+     {
+      "id": "jar-3-l",
+      "name": "left small cup",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 6
+     },
+     {
+      "id": "jar-3-r",
+      "name": "right small cup",
+      "shape": "tall",
+      "capacity": 8,
+      "filled": 3
+     }
+    ],
+    "unitName": "scoops",
+    "unitEmoji": "🥄",
+    "expectedChoice": "jar-3-r",
+    "supportTier": "medium"
+   }
+  ]
+ }
+}

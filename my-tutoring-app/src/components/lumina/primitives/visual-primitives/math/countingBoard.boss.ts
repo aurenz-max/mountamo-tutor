@@ -1,7 +1,7 @@
 /**
  * counting-board's boss, on the spoken preset (`components/live-activity/boss.ts`): eight modes are a spoken number
- * the tutor judges against the key; the hand match, the handover and the build have no key and the board checks
- * them, so they play through `show`. The card is `countingBoard.card.ts`; this file holds the content check, the
+ * the tutor judges against the key; the hand match, the numeral card, the handover and the build have no key and
+ * the board checks them, so they play through `show`. The card is `countingBoard.card.ts`; this file holds the content check, the
  * items, the ask and key, the levers and the harness play.
  */
 import type { CountingBoardData } from './CountingBoard';
@@ -66,6 +66,7 @@ export const countingBoardBoss = spokenBoss<CountingBoardData, CountingItem, Cou
       const placed = countingBoardHarnessAnswers(item).placed!;
       const n = right ? placed.correct : placed.wrong;
       if (item.kind === 'subitize_perceptual') return [{ type: 'touch', target: `hand-${n}` }];
+      if (item.kind === 'name_numeral') return [{ type: 'touch', target: `numeral-${n}` }];
       if (item.kind === 'give_me_n') return [...range(0, n).map(touch), { type: 'choose', label: 'Give them to me' }];
       throw new Error(`counting-board ${item.kind}: the driver has no input that puts objects into an open scene`);
     },

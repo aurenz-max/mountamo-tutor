@@ -8,7 +8,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { TimeSequencerChallenge } from './TimeSequencer';
 import {
-  DAY_ANCHORS_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, FAR_APART_LEVER, FAR_PAIR_LEVER, OPTION_PICTURES_LEVER,
+  DAY_ANCHORS_LEVER, DURATION_LADDER_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, FAR_APART_LEVER, FAR_DURATIONS_LEVER,
+  FAR_PAIR_LEVER, MIDDLE_MODEL_LEVER, OPTION_PICTURES_LEVER, TWO_MIDDLE_LEVER,
   RELATION_MODEL_LEVER, SHORT_SCHEDULE_LEVER, SKY_STRIP_LEVER, TIME_LEVERS, TWO_CARDS_LEVER, TWO_CHOICES_LEVER, clashes,
   itemLabels, practiceItem, practiceLeaks, practiceParent, tierPulled,
 } from './timeSequencerLevers';
@@ -19,7 +20,8 @@ const timeSequencerLevers = (c: TimeSequencerChallenge, pulled: readonly string[
   TIME_LEVERS.declare(c, null, [...pulled, ...tierPulled(c)]);
 const leverFacts = (c: TimeSequencerChallenge, pulled: readonly string[]) => TIME_LEVERS.onScreen(c, null, pulled);
 
-const MODES = ['sequence-3', 'time-of-day', 'sequence-5', 'before-after', 'duration-compare', 'clock-sequence', 'read-schedule'];
+const MODES = ['sequence-3', 'time-of-day', 'sequence-5', 'before-after', 'duration-compare', 'clock-sequence', 'read-schedule',
+  'missing-middle', 'duration-order'];
 const load = async (mode: string): Promise<{ data: { challenges: TimeSequencerChallenge[] } }> => {
   const p = await import(`../../../components/live-activity/runtime/testing/w1-payloads/time-sequencer.${mode}.json`);
   return p.default ?? p;
@@ -30,7 +32,7 @@ const ITEMS = async () => (await Promise.all(MODES.map(async m => (await load(m)
 function keyTexts(c: TimeSequencerChallenge): string[] {
   switch (c.type) {
     case 'match-time-of-day': return [c.correctPeriod!];
-    case 'before-after': return [c.options!.find(o => o.id === c.correctEvent)!.label];
+    case 'before-after': case 'missing-middle': return [c.options!.find(o => o.id === c.correctEvent)!.label];
     case 'duration-compare': return [c.eventA!.label, c.eventB!.label];
     case 'read-schedule': return [c.correctActivity!];
     default: return (c.events ?? []).map(e => e.label);
@@ -46,6 +48,13 @@ function solvable(c: TimeSequencerChallenge): boolean {
         && (c.type !== 'clock-sequence' || c.events!.every((e, i, all) => Number.isInteger(e.clockHour) && (i === 0 || e.clockHour! > all[i - 1].clockHour!)));
     case 'match-time-of-day': return !!c.periodChoices?.includes(c.correctPeriod!) && c.periodChoices.length === 2;
     case 'before-after': return c.options!.some(o => o.id === c.correctEvent) && c.options!.length === 2;
+    case 'missing-middle': return c.options!.some(o => o.id === c.correctEvent) && c.options!.length === 2
+      && c.options!.every(o => o.id === c.correctEvent || !!c.optionPlaces?.[o.id]);
+    case 'duration-order': {
+      const m = c.correctOrder!.map(id => c.events!.find(e => e.id === id)!.minutes!);
+      return JSON.stringify([...c.correctOrder!].sort()) === JSON.stringify(c.events!.map(e => e.id).sort())
+        && m.every((v, i) => i === 0 || v >= m[i - 1] * 3);
+    }
     case 'duration-compare': return c.correctAnswer === 'A' || c.correctAnswer === 'B';
     case 'read-schedule': return c.schedule!.find(r => r.time === c.targetTime)?.activity === c.correctActivity
       && c.activityOptions!.includes(c.correctActivity!) && new Set(c.schedule!.map(r => r.time)).size === c.schedule!.length;
@@ -114,6 +123,7 @@ describe('levers and their facts', () => {
       'clock-sequence': [FACE_NUMBERS_LEVER, FAR_APART_LEVER], 'time-of-day': [DAY_ANCHORS_LEVER, TWO_CHOICES_LEVER],
       'before-after': [RELATION_MODEL_LEVER, TWO_CARDS_LEVER], 'duration-compare': [DURATION_MODEL_LEVER, FAR_PAIR_LEVER],
       'read-schedule': [OPTION_PICTURES_LEVER, SHORT_SCHEDULE_LEVER],
+      'missing-middle': [MIDDLE_MODEL_LEVER, TWO_MIDDLE_LEVER], 'duration-order': [DURATION_LADDER_LEVER, FAR_DURATIONS_LEVER],
     };
     for (const [mode, c] of await ITEMS()) {
       expect(timeSequencerLevers(c, []).map(l => [l.id, l.kind]), `${mode} ${c.id}`)

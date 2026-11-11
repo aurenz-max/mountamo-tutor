@@ -34,6 +34,7 @@ import {
 } from "./barModelRemediation";
 import { GRAPH_MAX, makeGraphAsk, type GraphRule, type GraphRuleKind } from "../../primitives/visual-primitives/math/barModelBuild";
 import { resolveBarDataset, countsFor, makeOneRowSame, type BarDataset } from "./barModelDataset";
+import { collectArrivals, collectCounts } from "../../primitives/visual-primitives/math/barModelCollect";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -44,6 +45,7 @@ export type BarModelGraphStyle = 'bar' | 'scaled_bar' | 'picture';
 export type BarModelEvalMode =
   // K one-to-one data family (K.MD.B.3) — one icon per object, no scale to read.
   | 'build_one_to_one'
+  | 'predict_then_collect'
   | 'read_one_to_one'
   | 'match_to_bar'
   | 'say_what_it_shows'
@@ -145,6 +147,7 @@ const COUNT_BY_MODE: Record<BarModelEvalMode, number> = {
   say_what_it_shows: 4,
   compare_two_graphs: 4,
   build_one_to_one: 4,     // K — each build is a whole chart, so 4 is a full session
+  predict_then_collect: 3, // K — a guess, a survey of up to a dozen answers, and a verdict each
   read_one_to_one: 5,      // K — short reads, so more of them
   match_to_bar: 4,         // K
   most_least: 5,           // K — short taps, so more of them
@@ -263,6 +266,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   say_what_it_shows: { promptDoc: 'Explain what a one-to-one graph shows using a true comparison in your own words.', schemaDescription: "'say_what_it_shows' (K spoken explanation)" },
   compare_two_graphs: { promptDoc: 'Compare two related one-to-one data sets, explaining a similarity or difference aloud.', schemaDescription: "'compare_two_graphs' (K related surveys)" },
   build_one_to_one: { promptDoc: 'K record data — one sticker per object.', schemaDescription: "'build_one_to_one' (K)" },
+  predict_then_collect: { promptDoc: 'K predict which choice will be most popular, record the answers as they come in, then say whether the prediction held.', schemaDescription: "'predict_then_collect' (K)" },
   read_one_to_one: { promptDoc: 'K read a one-to-one picture graph.', schemaDescription: "'read_one_to_one' (K)" },
   match_to_bar: { promptDoc: 'K match a group of objects to the row that shows that many.', schemaDescription: "'match_to_bar' (K)" },
   most_least: { promptDoc: 'K which row has the most / the fewest.', schemaDescription: "'most_least' (K)" },
@@ -407,7 +411,8 @@ function resolveSupportStructure(mode: BarModelEvalMode, tier: SupportTier): Sup
               : 'HARD: hint only says "set each bar, then choose a scale that fits" — the student reasons out the step alone.',
         ],
       };
-    // The made graph prints no number at any tier; its aids are levers that start bare.
+    // The made graph and the survey chart print no number at any tier; their aids are levers that start bare.
+    case 'predict_then_collect':
     case 'make_graph':
       return { showBarValues: false, showTargetHighlight: false, promptLines: [] };
     case 'compare_bars':
@@ -934,6 +939,73 @@ ${kSettingLine(variant)}${tierSection}`;
       hint: safeKText(raw.hint, 'Touch one thing, then put one sticker in its row. Keep going until every one has a sticker.'),
       sourceItems,
       sourceScattered: interleave,
+      expectedCounts: counts,
+    },
+  };
+}
+
+// ===========================================================================
+// Sub-generator: predict_then_collect — guess, collect the answers, check the guess (MEAS001-03-F)
+// ===========================================================================
+
+/**
+ * Gemini writes the survey's words only: the question, the choices and one emoji each. Code draws the counts (one row
+ * ahead of the rest by the tier's lead, `collectCounts`) and the order the answers arrive in (`collectArrivals`), so
+ * the winner is not in anything the model wrote. The chart starts empty and the answers are never drawn as a pile.
+ */
+async function generatePredictCollect(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+  const slots = kCategorySlots(3);
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: "Warm K title for the class survey (e.g. 'Our Snack Vote')" },
+      description: { type: Type.STRING, description: 'One short line tying the survey to the topic' },
+      prompt: { type: Type.STRING, description: 'The survey question the class is asked, e.g. "Which snack do you like best?". One short question. Never say which choice is liked most.' },
+      hint: { type: Type.STRING, description: 'Gentle hint: look at each answer, then put one sticker in its row. Never says a number.' },
+      ...slots.props,
+    },
+    required: ['title', 'description', 'prompt', 'hint', ...slots.required],
+  };
+  const prompt = `Write the WORDS for a Kindergarten class survey (K.MD.B.3, collect and compare data).
+The child guesses which choice will be the most popular, then records the class's answers one at a time on a picture chart.
+
+TOPIC: ${topic}
+AUDIENCE: ${gradeContext}
+INTENT: ${intent}
+
+YOU CHOOSE NO NUMBERS and no winner. The app decides how many children pick each choice AFTER your answer.
+
+RULES:
+${K_AUDIENCE_RULES}
+- prompt: the question the class is asked, about a choice a five-year-old has an opinion on (a snack, a pet, a game).
+- THREE choices for that question, each one or two words, with one emoji each, all three different.
+${kSettingLine(variant)}`;
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: { responseMimeType: 'application/json', responseSchema: schema },
+  });
+  if (!response.text) throw new Error('No content generated (predict_then_collect)');
+  const raw = JSON.parse(response.text) as Record<string, unknown>;
+
+  const counts = collectCounts(tier);
+  const cats = extractCategories(raw, 3).slice(0, counts.length);
+  const arrivals = collectArrivals(counts);
+  return {
+    title: String(raw.title ?? 'Our Class Vote'),
+    description: String(raw.description ?? 'Guess first, then see what the class says.'),
+    challenge: {
+      id: 'bm-pending',
+      evalMode: 'predict_then_collect',
+      values: cats.map((c, i) => ({ label: c.label, value: 0, color: pickColor(i), emoji: c.emoji })),
+      graphStyle: 'picture',
+      // Every row two cells longer than the longest, so running out of room never ends the count.
+      scale: kScale(Math.max(...counts) + 2, cats[0].emoji),
+      prompt: safeKText(raw.prompt, 'Which one do you like best?'),
+      hint: safeKText(raw.hint, 'Look at each answer, then put one sticker in its row.'),
+      sourceItems: arrivals.map((i) => ({ emoji: cats[i].emoji, categoryIndex: i })),
+      sourceScattered: false,
       expectedCounts: counts,
     },
   };
@@ -1911,6 +1983,7 @@ function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: 
     case 'say_what_it_shows': return (topic, grade, intent, tier, variant, dataset) => generateGraphExplanation(topic, grade, intent, tier, variant, false, dataset);
     case 'compare_two_graphs': return (topic, grade, intent, tier, variant, dataset) => generateGraphExplanation(topic, grade, intent, tier, variant, true, dataset);
     case 'build_one_to_one':   return generateBuildOneToOne;
+    case 'predict_then_collect': return generatePredictCollect;
     case 'read_one_to_one':    return generateReadOneToOne;
     case 'most_least':         return generateMostLeast;
     case 'match_to_bar':       return generateMatchToBar;

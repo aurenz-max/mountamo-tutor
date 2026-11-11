@@ -5,6 +5,7 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { createNumberPool } from "./numberPoolService";
 import { resolveScopeRange } from "../scopeRangeResolver";
+import { resolveObjectiveRange } from "../objectiveNumberWindow";
 import { difficultyBand, tierPick } from "../itemSpace";
 import { COMPARE_NUMBERS, symbolOf, type CompareNumbersItem } from "../itemSpace/compareNumbers";
 import { fallbackSession, oneMoreLessInstruction, oneMoreLessTargets, orderSets } from "./comparisonBuilderTargets";
@@ -734,19 +735,34 @@ export const generateComparisonBuilder = async (
   // probe). Groups of objects keep the 10/20 band above. K stays within 10 (K.CC.7).
   const comparesNumbers = !pinnedType || pinnedType === 'compare-numbers';
   const numeralCeiling = resolvedBand === 'K' ? 10 : 100;
+  // K: 1-10 is the DEFAULT, not a cap (math-k audit 2026-11-10: "compare numbers 11-20", COUNT001-03-G,
+  // shipped every pair as 10 vs 10, because resolveScopeRange clamps to the band and can only narrow).
+  // A K lesson's numerals come from the shared resolveObjectiveRange, bounded by what the primitive
+  // draws (1-100); a lesson that names no range gets null and keeps 1-10. Grade 1 is unchanged.
+  const objectiveNumeralWindow = async (quantity: string): Promise<CountWindow> => {
+    const fallback = { min: 1, max: bandMax };
+    if (resolvedBand === 'K') {
+      return (await resolveObjectiveRange({
+        topic, intent, objectiveText: ctx.scope?.objectiveText, gradeLevel, quantity,
+        bandDefault: fallback, capacity: { min: 1, max: 100 }, logPrefix: 'ComparisonBuilder',
+      })) ?? fallback;
+    }
+    return (await resolveScopeRange(
+      { ...ctx.scope, topic, intent }, gradeLevel, quantity, { min: 1, max: numeralCeiling },
+    )) ?? fallback;
+  };
   const numeralWindow = comparesNumbers
-    ? (await resolveScopeRange(
-      { ...ctx.scope, topic, intent }, gradeLevel, 'the two numbers the student compares with <, > or =',
-      { min: 1, max: numeralCeiling },
-    )) ?? { min: 1, max: bandMax }
+    ? await objectiveNumeralWindow('the two numbers the student compares with <, > or =')
     : { min: 1, max: bandMax };
-  // order: the objective's range, up to 100 at grade 1 ("order numbers to 100" was clamped to 20).
+  // A window the lesson named (not the band default): the model is told it, and an untiered card
+  // whose pair falls outside it is re-picked in code below rather than clamped (3 vs 5 clamped into
+  // 11-20 is 11 vs 11).
+  const numeralWindowNamed = numeralWindow.min !== 1 || numeralWindow.max !== bandMax;
+  // order: the objective's range, up to 100 at grade 1 ("order numbers to 100" was clamped to 20);
+  // at K the same objective read as compare-numbers (1-10 default, a named range raises it).
   const ordersNumbers = !pinnedType || pinnedType === 'order';
   const orderWindow = ordersNumbers
-    ? (await resolveScopeRange(
-      { ...ctx.scope, topic, intent }, gradeLevel, 'the numbers the student puts in order',
-      { min: 1, max: numeralCeiling },
-    )) ?? { min: 1, max: bandMax }
+    ? await objectiveNumeralWindow('the numbers the student puts in order')
     : { min: 1, max: bandMax };
   if (countWindow.min > 1 || countWindow.max < bandMax) {
     console.log(
@@ -764,6 +780,11 @@ export const generateComparisonBuilder = async (
     ? buildCountPairPool(countWindow, countGap, instanceCount + 2, instanceCount)
     : [];
   const countPoolSection = buildCountPoolPromptSection(countPairs, countWindow);
+  const numeralWindowLine = numeralWindowNamed && (comparesNumbers || ordersNumbers)
+    ? `
+NUMBER RANGE (overrides the grade guidance below): every number in a compare-numbers or order`
+      + ` challenge MUST be between ${numeralWindow.min} and ${numeralWindow.max} inclusive (the objective says so).`
+    : '';
   const countWindowLine = countWindow.min > 1 || countWindow.max < bandMax
     ? `\nCOUNT RANGE (overrides the grade guidance below): every group count in this activity`
       + ` MUST be between ${countWindow.min} and ${countWindow.max} inclusive — the objective says so,`
@@ -781,7 +802,7 @@ THIS ACTIVITY'S SPECIFIC FOCUS: ${intent}
 Choose the numbers and group counts so the activity targets that focus (e.g. a focus on
 "teen numbers" → numbers in the 11-20 range; "numbers near each other" → close values).
 Stay within the grade band below — the grade is the CEILING and is never exceeded. Do NOT
-name or hint at any answer (more/less/=, the sorted order) in the instruction text.${countWindowLine}
+name or hint at any answer (more/less/=, the sorted order) in the instruction text.${countWindowLine}${numeralWindowLine}
 
 CONTEXT:
 - A comparison builder helps students learn to compare quantities and use inequality symbols (<, >, =)
@@ -912,6 +933,9 @@ Return the complete comparison builder configuration.
     data.challenges = data.challenges.slice(0, instanceCount);
   }
 
+  // compare-numbers cards the model wrote outside a lesson-named numeral window (re-picked below).
+  const outOfWindowNumberCards: ComparisonBuilderChallenge[] = [];
+
   // Ensure unique IDs
   const seenIds = new Set<string>();
   for (let i = 0; i < data.challenges.length; i++) {
@@ -954,6 +978,11 @@ Return the complete comparison builder configuration.
       case 'compare-numbers': {
         if (typeof challenge.leftNumber !== 'number') challenge.leftNumber = 3;
         if (typeof challenge.rightNumber !== 'number') challenge.rightNumber = 5;
+        if (numeralWindowNamed
+          && (Math.min(challenge.leftNumber, challenge.rightNumber) < numeralWindow.min
+            || Math.max(challenge.leftNumber, challenge.rightNumber) > numeralWindow.max)) {
+          outOfWindowNumberCards.push(challenge as ComparisonBuilderChallenge);
+        }
         challenge.leftNumber = Math.max(numeralWindow.min, Math.min(challenge.leftNumber, numeralWindow.max));
         challenge.rightNumber = Math.max(numeralWindow.min, Math.min(challenge.rightNumber, numeralWindow.max));
         if (challenge.leftNumber > challenge.rightNumber) {
@@ -1040,6 +1069,25 @@ Return the complete comparison builder configuration.
     } else {
       log(`window ${numeralWindow.min}-${numeralWindow.max} gave ${picks.length} of ${numberCards.length}; own path kept`);
     }
+  }
+
+  // ── compare-numbers outside a named window, untiered: code re-picks the pair ──
+  // Clamping the model's 3 vs 5 into an 11-20 window gives 11 vs 11. With no tier the item space
+  // above did not run, so these cards take a spread pair from the space inside the window.
+  const stillOutside = outOfWindowNumberCards.filter((c) => !c.itemSpace);
+  if (stillOutside.length) {
+    const inWindow = (it: CompareNumbersItem) => Math.min(it.left, it.right) >= numeralWindow.min
+      && Math.max(it.left, it.right) <= numeralWindow.max;
+    const picks = COMPARE_NUMBERS.pick(stillOutside.length, -Infinity, Infinity, Math.random, inWindow) as CompareNumbersItem[];
+    stillOutside.forEach((c, i) => {
+      const it = picks[i];
+      if (!it) return;
+      c.leftNumber = it.left;
+      c.rightNumber = it.right;
+      c.correctSymbol = symbolOf(it.left, it.right);
+      if (/\d/.test(c.instruction ?? '')) c.instruction = 'Which number is bigger?';
+    });
+    console.log(`[ComparisonBuilder] ${stillOutside.length} compare-numbers card(s) outside ${numeralWindow.min}-${numeralWindow.max} re-picked: ${picks.map((p) => `${p.left}v${p.right}`).join(' ')}`);
   }
 
   // ── order: code picks every set (comparisonBuilderTargets.orderSets) ──

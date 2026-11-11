@@ -54,8 +54,9 @@ const BY_MODE: Record<string, CountingBoardChallenge> = {
   take_away: ch('m', 'take_away', 6, { targetAnswer: 4, changeBy: 2 }),
   count_on: ch('m', 'count_on', 8, { startFrom: 5 }),
   compare: ch('m', 'compare', 7, { targetAnswer: 4, arrangement: 'groups', compareGroups: [3, 4] }),
+  name_numeral: ch('m', 'name_numeral', 3, { arrangement: 'scattered' }),
 };
-const BOARD_CHECKED = ['subitize_perceptual', 'give_me_n', 'build_n'];
+const BOARD_CHECKED = ['subitize_perceptual', 'give_me_n', 'build_n', 'name_numeral'];
 
 describe('every catalog mode', () => {
   it('has a board here', () => {
@@ -181,6 +182,23 @@ describe('the K counting-out family on the board', () => {
     h.close();
   });
 
+  it('recount_moved: after the move the same objects are drawn bigger or smaller, and nothing on screen says so', () => {
+    const sizes = (h: WorkspaceHarness) => Array.from(q(h, 'g[data-pip-object^="object-"] text'))
+      .map(el => Number(el.getAttribute('font-size')));
+    for (const [sizeChange, grew] of [['bigger', true], ['smaller', false]] as const) {
+      const h = mount('recount_moved', board('K', [ch('m1', 'recount_moved', 4, { sizeChange }), ch('m2', 'recount_moved', 5)]));
+      expect(sizes(h)).toEqual([24, 24, 24, 24]);
+      for (const i of [0, 1, 2, 3]) h.touch(`object-${i}`);
+      const after = sizes(h);
+      expect(after).toHaveLength(4);
+      expect(new Set(after).size).toBe(1);
+      expect(grew ? after[0] > 24 : after[0] < 24).toBe(true);
+      expect(text(h)).not.toMatch(/bigger|smaller|grew|shrank/i);
+      expect(h.state().task!.demand.objectSize).toBe(`${sizeChange} than before the move`);
+      h.close();
+    }
+  });
+
   it('count_on: K covers the started group under a basket; Grade 1 keeps it visible', () => {
     const k = mount('count_on', board('K', [BY_MODE.count_on]));
     expect(objects(k)).toHaveLength(3);
@@ -244,4 +262,30 @@ it('with no tutor, the board shows the shared "needs the tutor" card instead of 
   const view = render(<CountingBoard data={board('K', [BY_MODE.count])} />);
   expect(view.container.querySelector('[data-pip-object^="object-"]')).toBeNull();
   expect(view.container.textContent).toMatch(/tutor/i);
+});
+
+describe('name_numeral: count a set of 0-10 and tap its numeral (COUNT001-01-A)', () => {
+  const cards = (h: WorkspaceHarness) => Array.from(q(h, 'button[data-pip-object^="numeral-"]')) as HTMLButtonElement[];
+
+  it('an empty board is an item: nothing to count, four cards with 0 among them, none picked', () => {
+    const h = mount('name_numeral', board('K', [ch('z', 'name_numeral', 0), ch('t', 'name_numeral', 3)]));
+    expect(objects(h)).toHaveLength(0);
+    expect(cards(h).map(b => b.textContent)).toContain('0');
+    expect(cards(h)).toHaveLength(4);
+    expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+    h.touch('numeral-1');
+    expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'one_over' });
+    h.close();
+  });
+
+  it('a counted board: the objects are tap-countable and the right card is the commit', () => {
+    const h = mount('name_numeral', board('K', [ch('t', 'name_numeral', 3), ch('z', 'name_numeral', 0)]));
+    expect(objects(h)).toHaveLength(3);
+    h.touch('object-0');
+    expect(countBadges(h)).toHaveLength(1);
+    expect(h.state().task!.workspace!.attempts).toHaveLength(0);
+    h.touch('numeral-3');
+    expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true });
+    h.close();
+  });
 });

@@ -144,7 +144,8 @@ describe('the build gate drops items that cannot be asked, and never backfills',
     expect(chOf({ id: 'n', type: 'give_me_n', targetAnswer: 3, count: 8 })!.answerKind).toBe('gesture');
     expect(chOf({ id: 'b', type: 'build_n', targetAnswer: 6, count: 6 })!.answerKind).toBe('gesture');
     expect(ACTION_FOR_KIND.count_all).toBe(ACTION_FOR_KIND.group_count);
-    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(10);
+    expect(chOf({ id: 'z', type: 'name_numeral', targetAnswer: 0, count: 0 })!.answerKind).toBe('gesture');
+    expect(new Set(Object.values(ACTION_FOR_KIND)).size).toBe(11); // name_numeral is its own action
   });
   it('drops give_me_n with no spare pile, a take_away whose change is the answer, and arithmetic that does not close', () => {
     expect(chOf({ id: 'p', type: 'give_me_n', targetAnswer: 5, count: 5 })).toBeNull();

@@ -10,6 +10,10 @@
  * - `group_fives`: a gap after every fifth picture in each picture row. No number is written.
  * - `pile_row` (match_to_bar): the group to count drawn again as a row in the graph's columns. Not tappable, no number.
  * - `sort_pile` (build_one_to_one): the pile redrawn sorted, one line per kind in the rows' order.
+ * - `answers_so_far` (predict_then_collect): the answers already shown, redrawn sorted, one line per kind in the rows'
+ *   order, so each row can be checked against them. Never an answer still to come.
+ * - `mark_guess` (predict_then_collect): the amber mark around the row the learner guessed, once a guess is made.
+ *   The guess is the learner's own; the mark says nothing about whether it has the most.
  * - `word_model`: a model beside the graph in pictures the item does not use, its rows labelled with the comparison
  *   words. Never a row of the item.
  * - `pair_rows` (compare_two_graphs): each kind's two rows, one from each survey, drawn next to each other.
@@ -32,6 +36,8 @@ export const MARK_ROW = 'mark_row';
 export const GROUP_FIVES = 'group_fives';
 export const PILE_ROW = 'pile_row';
 export const SORT_PILE = 'sort_pile';
+export const ANSWERS_SO_FAR = 'answers_so_far';
+export const MARK_GUESS = 'mark_guess';
 export const WORD_MODEL = 'word_model';
 export const PAIR_ROWS = 'pair_rows';
 export const GUIDE_LINE = 'guide_line';
@@ -131,7 +137,7 @@ const practiceOf = (c: BarModelChallenge, fields: Partial<BarModelChallenge>): B
 function answerOf(c: BarModelChallenge): string {
   switch (c.evalMode) {
     case 'most_least': case 'compare_bars': case 'match_to_bar': return `row:${c.values[c.targetBarIndex ?? -1]?.label}`;
-    case 'build_one_to_one': return `counts:${(c.expectedCounts ?? []).join()}`;
+    case 'build_one_to_one': case 'predict_then_collect': return `counts:${(c.expectedCounts ?? []).join()}`;
     default: return `n:${c.expectedValue}`;
   }
 }
@@ -141,7 +147,7 @@ export function simplerLeaks(p: BarModelChallenge, c: BarModelChallenge): boolea
   if (p.id === c.id || p.evalMode !== c.evalMode) return true;
   if (answerOf(p) === answerOf(c)) return true;
   const rows = (x: BarModelChallenge) => x.values.map(v => `${v.label}=${v.value}`).join();
-  return c.evalMode !== 'build_one_to_one' && rows(p) === rows(c);
+  return c.evalMode !== 'build_one_to_one' && c.evalMode !== 'predict_then_collect' && rows(p) === rows(c);
 }
 
 const options = (want: number, step: number, floor = 0) => {
@@ -222,6 +228,28 @@ function simplerBuild(c: BarModelChallenge): BarModelChallenge | null {
     scale: c.scale ? { ...c.scale, max: Math.max(...counts) + 2 } : c.scale });
 }
 
+/** predict_then_collect: two kinds, one far ahead (a lead of three), fewer answers, counts other than the item's. The
+ *  answers come in alternating, the leader's extra ones last, so the order shows nothing early. */
+function simplerCollect(c: BarModelChallenge): BarModelChallenge | null {
+  const want = (c.expectedCounts ?? []).join();
+  const counts = [[4, 1], [1, 4], [5, 2]].find(p => p.join() !== want)!;
+  const values = c.values.slice(0, 2).map(v => ({ ...v, value: 0 }));
+  if (values.length < 2) return null;
+  const order: number[] = [];
+  for (let k = 0; k < Math.max(...counts); k++) for (const i of [0, 1]) if (k < counts[i]) order.push(i);
+  const sourceItems = order.map(i => ({ emoji: values[i].emoji ?? '⭐', categoryIndex: i }));
+  return practiceOf(c, { values, expectedCounts: counts, sourceItems, sourceScattered: false,
+    scale: c.scale ? { ...c.scale, max: Math.max(...counts) + 2 } : c.scale });
+}
+
+/** The answers already shown in a predict_then_collect survey, by row: the first `recorded` arrivals. */
+export function answersSoFar(c: BarModelChallenge, built: readonly { value: number }[]): number[] {
+  const recorded = built.reduce((s, r) => s + r.value, 0);
+  const counts = c.values.map(() => 0);
+  for (const item of (c.sourceItems ?? []).slice(0, recorded)) counts[item.categoryIndex] = (counts[item.categoryIndex] ?? 0) + 1;
+  return counts;
+}
+
 /** read_scale / scaled_bar_graph: the same rows on an axis that counts by a smaller step, a new number to read. */
 function simplerScale(c: BarModelChallenge): BarModelChallenge | null {
   const step = c.scale?.step ?? 1, t = c.targetBarIndex ?? -1;
@@ -272,6 +300,7 @@ export function simplerGraph(c: BarModelChallenge): BarModelChallenge | null {
       case 'compare_bars': return simplerCompare(c);
       case 'match_to_bar': return simplerMatch(c);
       case 'build_one_to_one': return simplerBuild(c);
+      case 'predict_then_collect': return simplerCollect(c);
       case 'read_scale': case 'scaled_bar_graph': return simplerScale(c);
       case 'picture_graph': return simplerPicture(c);
       case 'graph_word_problem': return simplerWordProblem(c);
@@ -284,7 +313,9 @@ export function simplerGraph(c: BarModelChallenge): BarModelChallenge | null {
 // ── the lever set ────────────────────────────────────────────────────────────
 
 /** What the levers read beyond the item: the bars as the learner has set them (build modes) or as drawn. */
-export interface BarLeverView { built: readonly { value: number }[] }
+export interface BarLeverView { built: readonly { value: number }[];
+  /** predict_then_collect: the row the learner guessed, once guessed. */
+  prediction?: number | null }
 
 /** The help a generator tier already draws (absent = on, as the component draws them): offered as pulled, not a pull. */
 export function tierPulled(c: BarModelChallenge | null): string[] {
@@ -340,6 +371,18 @@ export const BAR_LEVERS = leverSet<BarModelChallenge, BarLeverView>({
       when: 'The learner puts stickers in the wrong rows or loses count of a kind in the mixed pile.',
       does: 'Redraws the pile sorted: one line for each kind, in the same order as the rows. No number is written.',
       fact: 'The pile is sorted, one line per kind in the order of the rows; no number written.' },
+    { id: ANSWERS_SO_FAR, type: 'layout', modes: ['predict_then_collect'], answers: ROWS,
+      when: 'The learner records an answer in the wrong row, or loses track of which answers are already on the chart.',
+      does: 'Draws the answers already shown again, sorted: one line for each kind, in the same order as the rows. Never an '
+        + 'answer still to come, and nothing is numbered.',
+      // Worded without "no": the item's verdict is a Yes or No, and a fact must not newly carry it (J13).
+      fact: 'The answers already shown are drawn again sorted, one line per kind in the order of the rows; only answers already shown, nothing numbered.' },
+    { id: MARK_GUESS, type: 'marks', modes: ['predict_then_collect'], answers: ['wrong_verdict'],
+      offer: (_c, v) => v.prediction != null,
+      when: 'The learner says yes or no about the guess without comparing the guessed row with the others.',
+      does: 'Puts the amber mark around the row the learner guessed, so it can be compared with the other rows. It says '
+        + 'nothing about which row has the most; never say it.',
+      fact: 'The row the learner guessed has the amber mark.' },
     { id: PILE_ROW, type: 'layout', modes: ['match_to_bar'], answers: OFF,
       when: 'The learner picks a row with one too many or too few, or a row far off the group.',
       does: 'Draws the group to count again as a row of its own above the graph, one picture per column like the rows. '
@@ -388,6 +431,7 @@ export const BAR_LEVERS = leverSet<BarModelChallenge, BarLeverView>({
     easier(['compare_bars'], ['reversed'], 'Opens an easier graph with the two bars far apart.'),
     easier(['match_to_bar'], OFF, 'Opens an easier graph with three rows far apart and a smaller group, lined up.'),
     easier(['build_one_to_one'], ROWS, 'Opens an easier chart with two kinds and a sorted pile.'),
+    easier(['predict_then_collect'], [...ROWS, 'wrong_verdict'], 'Opens an easier survey with two kinds, one far ahead, and fewer answers.'),
     easier(SCALED, ['one_step_off', ...OFF], 'Opens an easier graph of the same rows on an axis that counts by a smaller step.'),
     easier(['picture_graph'], ['picked_icon_count', 'one_step_off', ...OFF], 'Opens an easier graph where one picture stands for 2.'),
     easier(['graph_word_problem'], ['another_row', 'one_step_off', ...OFF],

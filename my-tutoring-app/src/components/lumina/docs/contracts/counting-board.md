@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Pre-K — `subitize_perceptual` (flash 1–3, hand-image answer, no numerals) | catalog + generator + component | catalog evalMode β0.5; generator perceptual clamp `:556`; component hand picker `:1096` | ongoing |
 | K PRE — `count_all` (tap each object, answer = counted set) | catalog + oracle + topic-fidelity | catalog `count` evalMode; oracle `checkCountChallenge` note; `qa/topic-fidelity/counting-board-2026-06-27.md` | 2026-06-27 |
-| K PRE — `subitize` (recognize a quantity, type the numeral) | catalog + generator + component + reader-fit | catalog `subitize` evalMode β2.0; generator `subitize` `:68`; reader-fit BACKLOG item 13 | 2026-07-20 |
+| K PRE — `subitize` (recognize a quantity, say the number) | catalog + generator + component + reader-fit | catalog `subitize` evalMode β2.0; generator `subitize` `:68`; reader-fit BACKLOG item 13 | 2026-07-20 |
 | Grade 1 — `count_on` (start from a known group, count on to total) | catalog + generator + oracle | catalog `count_on` β2.5; generator "Grade 1 only" `:90`; oracle startFrom range check | ongoing |
 | Grade 1 — `group_count` (count by 2s/5s/10s) | catalog + generator | catalog `group` β2.0; generator group docs | ongoing |
 | Grade 1 — `compare` (which group has more; answer = larger group) | catalog + generator + oracle | catalog `compare` β2.5; oracle compare independence rule; generator `:104` | ongoing |
@@ -38,7 +38,7 @@
 - **Probe:** count_all eval-test PASS; tapping every object reaches Next; double-tap surfaces the "already counted" coaching without advancing.
 
 ### R4 — subitize @ K is flash-then-hide recognition, not tap-counting · REQUIRED
-- **Property:** at `gradeBand==='K'`, a `subitize` challenge briefly flashes the objects and then **hides** them before the numeric stepper answer surface is enabled; the hidden objects cannot be tapped/counted, and the child may re-flash. The answer remains the typed numeral checked against `targetAnswer` (task identity unchanged — this is a DISPLAY fork, not a manipulation swap; enacted tap-counting would be the sibling `count_all` skill). A `subitize` challenge at reader grades (Grade 1) keeps objects visible.
+- **Property:** at `gradeBand==='K'`, a `subitize` challenge briefly flashes the objects and then **hides** them before the spoken answer is accepted; the hidden objects cannot be tapped/counted, and the child may re-flash. The answer is the number said aloud, judged against `targetAnswer` (task identity unchanged — this is a DISPLAY fork, not a manipulation swap; enacted tap-counting would be the sibling `count_all` skill). A `subitize` challenge at reader grades (Grade 1) keeps objects visible.
 - **Demanded by:** reader-fit BACKLOG item 13; `subitize` task identity (instant perceptual recognition); direct-manipulation census 2026-07-16 (objects were fully visible + tap-countable, defeating the skill). Mirrors ten-frame R4.
 - **Evidence:** reader-fit census note (`CountingBoard.tsx:1120–1144`, judged `:547`); ten-frame `startSubitizeFlash` precedent; `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 2.
 - **Probe:** jsdom (fake timers) — at K the objects are absent before the answer phase, appear only during the flash window, then hide as the "How many … do you see?" stepper enables; taps during K subitize never change any counted state; `count_all` @ K keeps objects visible + tappable; Grade-1 subitize is unchanged.
@@ -127,6 +127,31 @@ The following records the 2026-09-17 implementation, not the current live contra
 - **Leak rules (code, `countingBoardSpokenLevers.test.ts`):** no scene fact carries a digit; the recount row fact is dropped once the set has moved; group tags stop at one group's size; the rows show no numeral; an easier board is the same kind, never the item's own answer, and avoids every session answer where one is free (the saved add_more session leaves none, so it falls back to avoiding the item's own).
 - **Credit:** a stuck-first help request now pulls `line_up` on count_all (handoff 21 ladder). The runtime test that pinned "help changes nothing" was updated to that rule. `CountingBoard.levers.workspace.test.tsx` covers the row, the easier board and its return, the rows, the group tags and the K re-look.
 
+### R17 — name_numeral: count a set of 0-10 and tap its numeral · OBSERVED (2026-11-11)
+- **Property:** a board of `count` objects (0-10; `targetAnswer === count`) and four numeral cards (`numeralOptions`):
+  the answer and its neighbours, in an order seeded by the item id, none picked until the child taps. The tap is the
+  commit; a wrong card names an off-by miss (`countMiss`). Code sets every count: distinct, inside the objective's
+  window within 0-10, one board EMPTY when 0 is in range (its numeral is 0). The objects stay tap-countable; a retry
+  keeps the count and clears the card. The ask names no number. The item gate admits target 0 for this kind only.
+- **Demanded by:** math-k COUNT001-01-A ("count and recognize numbers 0-10", including 0 for an empty set).
+- **Compatibility:** a new eval mode (fork by mode): R2's `targetAnswer === count` holds; no other kind admits 0.
+- **Probe:** `gemini-counting-board.k-window.test.ts`, `CountingBoard.workspace.test.tsx` name_numeral block.
+
+### R18 — the K windows come from the objective, and recount_moved changes size · OBSERVED (2026-11-11)
+- **Property:** give_me_n, group_count and name_numeral read the objective's window through `resolveObjectiveRange`
+  (capacity 0 to the band ceiling; null keeps each mode's default). give_me_n requests come from the window, upper
+  half first, and the pile grows to request + 2 or more within the scope ceiling (so "count out teens" asks for
+  teens); the 2-6 / pile-of-12 default stands otherwise. group_count counts by the step the lesson names (2, 5, 10;
+  explicit `config.groupSize` wins) with up to ten groups, reaching the window's top (by 2s to 20); otherwise 2-3
+  groups of 2-5. recount_moved carries `sizeChange` (bigger | smaller, half each way, shuffled): after the move every
+  object is drawn 1.3x or 0.65x and re-scattered at that size; the screen says nothing about the size, and the
+  tutor's scene fact `objectSize` names only that it is bigger or smaller than before.
+- **Demanded by:** math-k COUNT001-02-D (count out into the teens), COUNT001-02-F (count by 2s to 20),
+  COUNT001-02-C (the count does not change when objects are bigger or smaller).
+- **Compatibility:** R6 holds (the scope ceiling still caps every pile); R9's identities hold (pile > request;
+  recount `targetAnswer === count`, freeze after the move); R16's recount levers act before the move, at full size.
+- **Probe:** `gemini-counting-board.k-window.test.ts`, `CountingBoard.workspace.test.tsx` recount size case.
+
 ## Conflicts
 
 _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only the K `subitize` display lifecycle. R2/R3 keep `count_all` tap-to-count and the `count`↔`targetAnswer` identity; R5 keeps Pre-K perceptual untouched; the reader-grade branch of R4 preserves Grade-1 subitize. No generator schema or catalog change is justified — `count`/`targetAnswer` already carry everything the flash needs, and display timing is a component concern.
@@ -153,6 +178,10 @@ _None open._ Item 13 (R4) is **COMPATIBLE / fork-by-band+mode**. It changes only
 - **evalModes:** faithful. `subitize` remains "quickly recognize quantity without counting"; the K flash lifecycle enacts exactly that recognition. `subitize_perceptual` description already says "Flash 1-3 objects" (see G2 — the component owes that behavior at Pre-K).
 
 ## Changelog
+
+- 2026-11-11 — R17 (name_numeral, beta 1.7) and R18 (objective windows for give_me_n, group_count and name_numeral;
+  recount_moved size change) added. Fork by mode for R17; R18 is a config axis whose default is the old behavior
+  when the lesson names no window or step. Occasion: math-k audit caps and gaps.
 
 - 2026-10-19 — boss migration (`/add-live-tutor-tools`, wave 2 pilot). R14 re-based: the scripted standalone path is deleted, so R3/R4/R5/R8/R9/R10 are held on the bound workspace mount (the scripted-path suites `CountingBoard.di`, `.capture`, `__tests__/CountingBoard.reader-fit`, `__tests__/CountingBoard.counting-out` moved their still-true assertions into `CountingBoard.workspace.test.tsx`). R8: the submission comes from the workspace's scored session (`onFinished`), evalMode still the catalog mode (CNB-3). R15/R16: one lever set (`COUNTING_LEVERS`, `countingBoardSpokenLevers.ts` merged into `countingBoardLevers.ts`), same ids, answers, leak rules and starting positions; the simplify levers' carrier is the type default (`both`). Changed on purpose: a board-checked item (hand, handover, build) no longer sends `expectedAnswer` to the tutor; a spoken item's `expectedAnswer` is the key sentence, not the bare digit. The catalog `tutoring` block, the `DI_PORTS` row and `adapters/countingBoardLive.ts` are deleted; `countingBoardScript.ts` keeps its cue builders only for the generation probes. No other requirement changed.
 - 2026-10-09 — R15 amended: subitize_perceptual gains `pair_up` (help, shown), closing the J12 per-item gap (a hand one too many on a single object had no lever). Additive: the strip draws only after a wrong pick and a pull; picks, checks and misses unchanged. Verified: CountingBoard suites 263/263, sweep on the subitize_perceptual payload with its J12 baseline entry removed.

@@ -87,7 +87,12 @@ const KNOWN_TYPES = new Set([
   'add_more',
   // Open build: the scene starts empty and the child makes the set, so count == targetAnswer.
   'build_n',
+  // Count a set of 0-10 and tap its numeral; count == targetAnswer, and 0 (an empty board) is legal.
+  'name_numeral',
 ]);
+
+// The numeral cards name_numeral offers run 0-10.
+const NUMERAL_MAX = 10;
 
 // Fixed finger-count hand options in subitize_perceptual (CountingBoard.tsx:391, :1112).
 const PERCEPTUAL_MAX = 3;
@@ -259,6 +264,18 @@ export const countingBoardOracle: ContentOracle = {
               detail: `subitize_perceptual shows ${cnt} objects, but only 1/2/3-finger hands exist — the correct answer is unreachable`,
             });
           }
+        }
+
+        if (type === 'name_numeral' && cnt > NUMERAL_MAX) {
+          violations.push({
+            check: 'answer-key-desync',
+            where: id,
+            detail: `name_numeral shows ${cnt} objects, but the numeral cards run 0-${NUMERAL_MAX} — the correct card does not exist`,
+          });
+        }
+        // recount_moved: the after-move size is code-owned and only ever bigger or smaller (COUNT001-02-C).
+        if (type === 'recount_moved' && c.sizeChange != null && c.sizeChange !== 'bigger' && c.sizeChange !== 'smaller') {
+          violations.push({ check: 'schema', where: id, detail: `recount_moved sizeChange ${JSON.stringify(c.sizeChange)} is not bigger|smaller` });
         }
 
         // count_on: an explicit startFrom must leave something pre-counted AND

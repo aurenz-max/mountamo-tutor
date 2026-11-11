@@ -13,9 +13,15 @@
   the draw clue's properties under a structural tier all come from `placeShape` / `SHAPE_VERTICES` / `SHAPE_PROPS`,
   never from LLM coordinates.
 
-### R2 — only connect-dots and draw-from-description have a wrong check · OBSERVED
-- A trace or completion tap out of turn is refused on the dot (no attempt). A connect-dots dot out of order counts
-  as an attempt; Check Shape checks corner count, then equal sides when the clue asks for them.
+### R2 — every mode has a wrong check · OBSERVED (CHANGED 2026-11-11)
+- A trace or completion corner out of turn counts as an attempt with its named miss (`cornerTap`, `shapeTracerMiss`),
+  like a connect-dots dot out of order; the corners already tapped stay through Try again. A double tap on the corner
+  just tapped is not a miss. Check Shape checks corner count, then equal sides when the clue asks for them.
+- Consumer: GEOM001-02-D (K, finish a half-drawn shape) needs "a wrong corner is possible and recorded". The old
+  refusal (no attempt) made complete unscorable; no consumer depended on it, so R2 changed in place instead of forking.
+- The scored session reflects the misses: an item solved after a miss is not a first-try success
+  (`firstResponseScore`, score below 100).
+- **Probe:** `ShapeTracer.workspace.test.tsx` (trace, free trace, complete).
 
 ### R3 — the check asks only what the screen asks · OBSERVED (NEW 2026-10-09)
 - A trace with no order numbers and no next-dot glow (the hard tier) accepts any start corner and either direction
@@ -26,13 +32,14 @@
   connect-dots until every dot is joined.
 
 ### R4 — shared teaching workspace (W1, plain shape) · OBSERVED (NEW 2026-10-09)
-- `withWorkspaceController('shape-tracer', ...)`; a finished trace or completion, a connect-dots dot out of order and
-  Check Shape each call `commitCheck(describeShapeWork, correct, shapeTracerMiss)`. The task is the instruction plus
+- `withWorkspaceController('shape-tracer', ...)`; a finished trace or completion, a trace, completion or connect-dots tap
+  out of turn, and Check Shape each call `commitCheck(describeShapeWork, correct, shapeTracerMiss)`. The task is the instruction plus
   the drawing's clue, or a numbered trace's corner numbers; the tutor never gets the dot order or an unrevealed shape.
 - On the workspace path: no Next, no scripted `sendText`, `useLuminaAI` disabled, and taps/Undo/Check closed while
   the check waits for Try again (what Try again keeps: R5).
-- Misses: `started_elsewhere`, `skipped_number`, `went_back` (connect_dots); `too_few_sides`, `too_many_sides`,
-  `sides_unequal` (draw_from_description).
+- Misses: `started_elsewhere`, `skipped_corner`, `went_back` (trace, complete); `started_elsewhere`, `skipped_number`,
+  `went_back` (connect_dots); `too_few_sides`, `too_many_sides`, `sides_unequal` (draw_from_description). A corner miss
+  is described by its number only while the numbers are on screen.
 - **Probe:** `ShapeTracer.workspace.test.tsx`; journey sweep on `w1-payloads/shape-tracer.*.json`.
 
 ### R5 — levers never draw or say the answer · OBSERVED (NEW 2026-10-09)
@@ -50,3 +57,7 @@
 ## History
 - 2026-10-09 — derived at the W1 binding; R3 fixes found while saving payloads. R5 levers the same day.
 - 2026-10-20 — moved onto a boss (wave 3): card + bespoke `defineBoss` (`shapeTracer.boss.ts`, validate moved from the adapter, `current` rebuilds a practice item), levers as one lever set (outline, numbers, glow, fade and rings marks; number strip a legend; side bars a layout offered once two corners are placed instead of refused on pull; `fade_joined` now offered from the start, so a pull before any dot is joined turns dots into ticks as they are joined; simpler_item easier, one spec per mode), workspace-only export; the scripted path (`useLuminaAI` cues, tier reveal clauses, Next Challenge, scripted submit), the hand-wired Pip and its pose file and surface test, the adapter, and the catalog guidance/tutoring prose deleted; scene `constraints` and per-mode `howToAnswer` dropped for the card's `moves` (a free trace keeps its any-corner fact). R4's `withWorkspaceController` clause is now `withWorkspaceOnly`; R1-R5 otherwise unchanged.
+- 2026-11-11 — R2 changed for GEOM001-02-D (math-k audit): a trace or completion corner out of turn is a checked miss
+  (`started_elsewhere`, `skipped_corner`, `went_back`; card `CORNER_MISSES`), answered by the outline, numbers, glow and
+  simpler levers; a fully guided smallest item (a triangle, one open corner) has no lever left and is coached in words.
+  The journey's wrong input taps the second corner first (a free trace: back to the first after two).

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { StrategyPickerData, StrategyPickerChallenge, StrategyId } from "../../primitives/visual-primitives/math/StrategyPicker";
+import { fits, strategyMisfits } from "../../primitives/visual-primitives/math/strategyPickerLevers";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
@@ -15,19 +16,41 @@ import {
 // ============================================================================
 
 const VALID_STRATEGIES: StrategyId[] = [
-  'counting-on', 'counting-back', 'make-ten', 'doubles',
+  'counting-on', 'counting-back', 'make-ten', 'ten-frame', 'doubles',
   'near-doubles', 'tally-marks', 'draw-objects',
 ];
+
+/**
+ * The Kindergarten strategy set when the manifest names none: the strategies the K objective names (ten frames, tally
+ * marks, doubles) plus counting on and drawing objects, each one a K child carries out on screen. The ten frame starts
+ * empty and the child taps in each counter; doubles draws two equal groups and comes only on equal addends (`fits`).
+ * make-ten (break a number apart to fill ten) and near doubles stay Grade 1 strategies.
+ */
+export const K_DEFAULT_STRATEGIES: StrategyId[] = ['counting-on', 'ten-frame', 'doubles', 'tally-marks', 'draw-objects'];
+export const G1_DEFAULT_STRATEGIES: StrategyId[] = ['counting-on', 'counting-back', 'make-ten', 'doubles', 'tally-marks'];
 
 const STRATEGY_LABELS: Record<string, string> = {
   'counting-on': 'counting on (start from the bigger number and count up)',
   'counting-back': 'counting back (start from the bigger number and count down)',
   'make-ten': 'make-ten (decompose a number to fill a ten frame)',
+  "ten-frame": "ten frame (tap a box to put in a counter for each of the first number, then each of the second, top row first; then count the counters). The frame starts empty; the first number's counters are BLUE and the second number's are YELLOW: name only those colours",
   'doubles': 'doubles (use a known doubles fact)',
   'near-doubles': 'near-doubles (use a doubles fact and add 1)',
   'tally-marks': 'tally marks (draw tally marks for each number, then count all)',
   'draw-objects': 'drawing objects (draw circles for each number, then count all)',
 };
+
+/** At K a doubles fact is not yet known: the strategy is seeing the same number twice and counting the two equal
+ *  groups. The Grade 1 wording (a known fact) stays for every other band. */
+const K_STRATEGY_LABELS: Partial<Record<StrategyId, string>> = {
+  'doubles': 'doubles (both numbers are the same: make two equal groups and count them all)',
+};
+const K_STRATEGY_DESCRIPTIONS: Partial<Record<StrategyId, string>> = {
+  'doubles': 'Both numbers are the same: two equal groups.',
+};
+const isK = (band: string) => band === 'K';
+const labelFor = (strat: StrategyId, band: string) =>
+  (isK(band) ? K_STRATEGY_LABELS[strat] : undefined) ?? STRATEGY_LABELS[strat] ?? strat;
 
 /** Default number of distinct challenges to build when the eval mode pins to one type. */
 const TARGET_INSTANCE_COUNT = 4;
@@ -170,6 +193,7 @@ const STRATEGY_DESCRIPTIONS: Record<string, string> = {
   'counting-on': 'Start at the bigger number and count up.',
   'counting-back': 'Start at the bigger number and count down.',
   'make-ten': 'Break a number apart to fill a ten frame first.',
+  'ten-frame': 'Put a counter in a box for each, then count them all.',
   'doubles': 'Use a doubles fact you already know.',
   'near-doubles': 'Use a doubles fact, then adjust by one.',
   'tally-marks': 'Draw a tally mark for each, then count them all.',
@@ -194,19 +218,23 @@ interface StrategyConstraint {
   predicate?: (p: Problem) => boolean;
 }
 
+// The predicates are the one fit rule (`fits` in strategyPickerLevers.ts); `predicate` marks the strategies that
+// need a special problem, which pairing treats as not always pairable.
+const fitsAs = (strat: StrategyId) => (p: Problem) => fits(strat, { ...p, equation: '', result: 0 });
 const STRATEGY_CONSTRAINTS: Record<StrategyId, StrategyConstraint> = {
   'counting-on':   { operation: 'addition' },
   'counting-back': { operation: 'subtraction' },
-  'make-ten':      { operation: 'addition', predicate: p => p.operand1 + p.operand2 >= 8 && p.operand1 + p.operand2 <= 10 },
-  'doubles':       { operation: 'addition', predicate: p => p.operand1 === p.operand2 },
-  'near-doubles':  { operation: 'addition', predicate: p => Math.abs(p.operand1 - p.operand2) === 1 },
+  'make-ten':      { operation: 'addition', predicate: fitsAs('make-ten') },
+  'ten-frame':     { operation: 'addition', predicate: fitsAs('ten-frame') },
+  'doubles':       { operation: 'addition', predicate: fitsAs('doubles') },
+  'near-doubles':  { operation: 'addition', predicate: fitsAs('near-doubles') },
   'tally-marks':   { operation: 'addition' },
   'draw-objects':  { operation: 'addition' },
 };
 
 function strategyMatchesProblem(strat: StrategyId, p: Problem): boolean {
   const c = STRATEGY_CONSTRAINTS[strat];
-  if (!c) return true;
+  if (!c) return false;
   if (c.operation !== p.operation) return false;
   if (c.predicate && !c.predicate(p)) return false;
   return true;
@@ -292,9 +320,7 @@ async function generateSetup(
   const maxNumber = config?.maxNumber || resolvedMaxNumber || bandMaxNumber(gradeBand);
   const operations = config?.operations || (gradeBand === 'K' ? ['addition'] : ['addition', 'subtraction']);
   const strategies = config?.strategiesIntroduced ||
-    (gradeBand === 'K'
-      ? ['counting-on', 'tally-marks', 'draw-objects']
-      : ['counting-on', 'counting-back', 'make-ten', 'doubles', 'tally-marks']);
+    (gradeBand === 'K' ? K_DEFAULT_STRATEGIES : G1_DEFAULT_STRATEGIES);
 
   const prompt = `
 Create a setup for a strategy-picker math activity teaching "${topic}" to ${gradeLevel} students.
@@ -578,11 +604,12 @@ async function generateGuidedContent(
   p: Problem,
   strat: StrategyId,
   gradeLevel: string,
+  band = '1',
 ): Promise<{ instruction: string; strategySteps: string[] }> {
   const prompt = `
 Create a guided-strategy challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
-Strategy: ${strat} — ${STRATEGY_LABELS[strat] || strat}
+Strategy: ${strat} — ${labelFor(strat, band)}
 
 Write a warm instruction telling the student to solve using ${strat}.
 Write 2-4 step-by-step scaffold steps that guide the process WITHOUT revealing the answer.
@@ -611,11 +638,12 @@ async function generateTryAnotherContent(
   priorStrat: StrategyId,
   newStrat: StrategyId,
   gradeLevel: string,
+  band = '1',
 ): Promise<{ instruction: string; strategySteps: string[] }> {
   const prompt = `
 Create a try-another challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
-The student might have used ${priorStrat} before. Now they solve it using: ${newStrat} — ${STRATEGY_LABELS[newStrat] || newStrat}
+The student might have used ${priorStrat} before. Now they solve it using: ${newStrat} — ${labelFor(newStrat, band)}
 
 Write an encouraging instruction that frames this as a fresh angle on the problem
 (e.g., "Try this one with ${newStrat}!" or "Let's see what ${newStrat} feels like.").
@@ -694,14 +722,15 @@ async function generateMatchContent(
   p: Problem,
   strat: StrategyId,
   gradeLevel: string,
+  band = '1',
 ): Promise<{ instruction: string; workedSolution: string }> {
   const prompt = `
 Create a match-strategy challenge for ${gradeLevel} students.
 Problem: ${problemStr(p)} = ?
-The worked solution uses: ${strat} — ${STRATEGY_LABELS[strat] || strat}
+The worked solution uses: ${strat} — ${labelFor(strat, band)}
 
 Write a 2-3 sentence workedSolution describing how someone solved it using ${strat}.
-Do NOT name the strategy in the text — the student must figure it out.
+Do NOT name the strategy in the text, or use its words (for a ten frame never say "ten frame"; for doubles never say "double") — the student must figure it out.
 Example: "I started at 6 and counted up 3 hops on the number line: 7, 8, 9." (This is counting-on but doesn't say so.)
 `;
 
@@ -758,6 +787,7 @@ function fallbackMatchContent(p: Problem, strat: StrategyId) {
     'counting-on': `I started at ${p.operand1} and counted up ${p.operand2} more on my fingers. I landed on ${result}.`,
     'counting-back': `I started at ${p.operand1} and counted back ${p.operand2}. I landed on ${result}.`,
     'make-ten': `I split ${p.operand2} to fill up to 10 first, then added the rest to get ${result}.`,
+    'ten-frame': `I put ${p.operand1} counters in the boxes, filling the top row first, then ${p.operand2} more counters. I counted the full boxes and got ${result}.`,
     // Never the strategy's own name: the option labels are "Doubles", "Near Doubles", "Tally Marks".
     'doubles': `I noticed both numbers are the same, and I already knew that fact: ${result}.`,
     'near-doubles': `I thought of the fact with two ${Math.min(p.operand1, p.operand2)}s, which I already knew, then added 1 more to get ${result}.`,
@@ -795,7 +825,8 @@ const NEAR_NEIGHBORS: Record<string, StrategyId[]> = {
   'near-doubles': ['doubles'],
   'tally-marks': ['draw-objects'],
   'draw-objects': ['tally-marks'],
-  'make-ten': ['counting-on'],
+  'make-ten': ['counting-on', 'ten-frame'],
+  'ten-frame': ['make-ten', 'draw-objects'],
 };
 
 /**
@@ -876,7 +907,7 @@ async function buildGuidedChallenges(
   const pairs = selectStrategyProblemPairs(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
 
   const contents = await Promise.all(
-    pairs.map(({ p, strat }) => generateGuidedContent(p, strat, gradeLevel)),
+    pairs.map(({ p, strat }) => generateGuidedContent(p, strat, gradeLevel, setup.gradeBand)),
   );
 
   return pairs.map(({ p, strat }, i) => ({
@@ -899,7 +930,7 @@ async function buildTryAnotherChallenges(
   const triples = selectPairProblemTriples(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
 
   const contents = await Promise.all(
-    triples.map(({ p, stratA, stratB }) => generateTryAnotherContent(p, stratA, stratB, gradeLevel)),
+    triples.map(({ p, stratA, stratB }) => generateTryAnotherContent(p, stratA, stratB, gradeLevel, setup.gradeBand)),
   );
 
   return triples.map(({ p, stratB }, i) => ({
@@ -981,7 +1012,7 @@ async function buildMatchChallenges(
   const pairs = selectStrategyProblemPairs(count, setup.strategiesIntroduced, setup.maxNumber, setup.operations);
 
   const contents = await Promise.all(
-    pairs.map(({ p, strat }) => generateMatchContent(p, strat, gradeLevel)),
+    pairs.map(({ p, strat }) => generateMatchContent(p, strat, gradeLevel, setup.gradeBand)),
   );
 
   return pairs.map(({ p, strat }, i) => ({
@@ -1045,11 +1076,11 @@ async function buildMultiModeChallenges(
   const needMatch = allowedTypes.has('match-strategy');
 
   const [guided, tryAnother, compare, choose, match] = await Promise.all([
-    needGuided ? generateGuidedContent(sharedP, sharedTriple.stratA, gradeLevel) : Promise.resolve(fallbackGuidedContent(sharedP, sharedTriple.stratA)),
-    needTryAnother ? generateTryAnotherContent(sharedP, sharedTriple.stratA, sharedTriple.stratB, gradeLevel) : Promise.resolve(fallbackTryAnotherContent(sharedP, sharedTriple.stratB)),
+    needGuided ? generateGuidedContent(sharedP, sharedTriple.stratA, gradeLevel, setup.gradeBand) : Promise.resolve(fallbackGuidedContent(sharedP, sharedTriple.stratA)),
+    needTryAnother ? generateTryAnotherContent(sharedP, sharedTriple.stratA, sharedTriple.stratB, gradeLevel, setup.gradeBand) : Promise.resolve(fallbackTryAnotherContent(sharedP, sharedTriple.stratB)),
     needCompare ? generateCompareContent(sharedP, sharedTriple.stratA, sharedTriple.stratB, gradeLevel) : Promise.resolve(fallbackCompareContent(sharedTriple.stratA, sharedTriple.stratB)),
     needChoose ? generateChooseContent(chooseProblem, gradeLevel) : Promise.resolve({ instruction: 'Pick any strategy you like!' }),
-    needMatch ? generateMatchContent(matchP, matchStrategy, gradeLevel) : Promise.resolve(fallbackMatchContent(matchP, matchStrategy)),
+    needMatch ? generateMatchContent(matchP, matchStrategy, gradeLevel, setup.gradeBand) : Promise.resolve(fallbackMatchContent(matchP, matchStrategy)),
   ]);
 
   const chooseAvailable = setup.strategiesIntroduced.filter(s => strategyMatchesProblem(s, chooseProblem));
@@ -1100,6 +1131,27 @@ async function buildMultiModeChallenges(
   ];
 
   return allChallenges.filter(c => allowedTypes.has(c.type));
+}
+
+/**
+ * The fit gate over a built lesson. A choose menu keeps only the strategies that fit its problem; any other challenge
+ * offering a strategy that does not fit is dropped. Throws when nothing is left, so a lesson never ships a doubles
+ * picture on 3 + 5 or a ten frame past ten.
+ */
+export function enforceStrategyFit(challenges: StrategyPickerChallenge[]): StrategyPickerChallenge[] {
+  const kept: StrategyPickerChallenge[] = [];
+  for (const ch of challenges) {
+    if (ch.type === 'choose-your-strategy') {
+      const menu = (ch.availableStrategies ?? []).filter(s => fits(s, ch.problem));
+      if (menu.length) { kept.push({ ...ch, availableStrategies: menu }); continue; }
+    } else if (!strategyMisfits(ch).length) {
+      kept.push(ch);
+      continue;
+    }
+    console.warn(`[StrategyPicker] dropped ${ch.id} (${ch.type}): ${strategyMisfits(ch).join(', ') || 'empty menu'} does not fit ${ch.problem.equation}`);
+  }
+  if (!kept.length) throw new Error('StrategyPicker: no challenge offers a strategy that fits its problem.');
+  return kept;
 }
 
 // ============================================================================
@@ -1248,6 +1300,10 @@ export const generateStrategyPicker = async (
     challenges = await buildMultiModeChallenges(setup, gradeLevel, allowedTypes, distractorTightness);
   }
 
+  // ── The fit gate: every strategy a challenge offers must fit its problem (`fits`). A menu keeps the strategies
+  // that fit; any other challenge that offers a misfit is dropped, never shipped with a picture of another problem.
+  challenges = enforceStrategyFit(challenges);
+
   // ── Apply the support scaffold PER CHALLENGE at the END, gated only on the
   // tier being present (the global rule — a blended session must get it too).
   // Each challenge resolves its own scaffold from its OWN mode (ch.type). The
@@ -1277,7 +1333,7 @@ export const generateStrategyPicker = async (
         ch.strategyDescriptions = Object.fromEntries(
           optionPool
             .filter((s) => STRATEGY_DESCRIPTIONS[s])
-            .map((s) => [s, STRATEGY_DESCRIPTIONS[s]]),
+            .map((s) => [s, (isK(setup.gradeBand) ? K_STRATEGY_DESCRIPTIONS[s as StrategyId] : undefined) ?? STRATEGY_DESCRIPTIONS[s]]),
         );
       }
     }

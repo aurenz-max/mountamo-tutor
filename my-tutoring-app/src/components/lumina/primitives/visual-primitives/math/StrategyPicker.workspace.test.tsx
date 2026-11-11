@@ -138,3 +138,33 @@ it('the adapter refuses a challenge its controls cannot answer', () => {
   expect(() => LIVE_ADAPTERS['strategy-picker'].validate(picker([{ ...compare, comparisonQuestion: '' }]))).toThrow();
   expect(LIVE_ADAPTERS['strategy-picker'].validate(picker([choose]))).toBeTruthy();
 });
+
+it('ten frame (K): the frame starts empty; each tap puts in the next counter and the tutor sees the count; the number is still the check', () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const frame: StrategyPickerChallenge = { id: 'f1', type: 'guided-strategy', instruction: 'Solve it with a ten frame!', problem,
+    assignedStrategy: 'ten-frame', strategySteps: ['Put in 3 counters.', 'Put in 4 more.', 'Count them all.'] };
+  const h = mountWorkspace({ primitiveId: 'strategy-picker', evalMode: 'guided', data: { ...picker([frame]), gradeBand: 'K' } });
+  const demand = () => h.state().task!.demand as Record<string, unknown>;
+  const counters = () => h.view.container.querySelectorAll('[data-ten-frame-build] circle').length;
+  // Nothing on screen is the answer before the learner builds it.
+  expect(counters()).toBe(0);
+  expect(demand()).toMatchObject({ countersPlaced: 0 });
+  expect(String(demand().picture)).toMatch(/empty ten frame/);
+  // A tap on any empty box fills the next box in order.
+  h.touch('frame-box-9');
+  expect(counters()).toBe(1);
+  for (let i = 1; i < 8; i++) h.touch(`frame-box-${i}`);
+  expect(counters()).toBe(8);
+  // A tap on the last counter takes it out; a tap on an earlier one does nothing.
+  h.touch('frame-box-7'); h.touch('frame-box-2');
+  expect(counters()).toBe(7);
+  expect(demand()).toMatchObject({ countersPlaced: 7 });
+  // The frame is the learner's tool; the checked answer is the number they set.
+  perform(h, frame, true);
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  h.dispatch('retry');
+  expect(counters()).toBe(7); // Try again keeps the frame: only the number was rejected
+  perform(h, frame, false);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.close();
+});

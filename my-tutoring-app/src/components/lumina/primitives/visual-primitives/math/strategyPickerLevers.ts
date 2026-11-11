@@ -40,29 +40,54 @@ export function makeProblem(a: number, b: number, operation: Op): Problem {
 }
 const sameProblem = (p: Problem, q: Problem) => p.operation === q.operation && p.operand1 === q.operand1 && p.operand2 === q.operand2;
 
-/** The problems each strategy's picture can draw (the generator's STRATEGY_CONSTRAINTS). */
+/**
+ * The problems each strategy can be carried out on, and its picture draws truthfully. The one fit rule: the generator
+ * builds from it, the boss rejects a lesson that breaks it, the levers build practice from it.
+ * - doubles: the two addends are equal (two equal groups); near-equal addends (one apart) are near doubles, a double
+ *   and one more. Any other pair is neither: two equal groups of the smaller number would draw the wrong problem.
+ * - ten frame: both addends fit in the frame's ten boxes together. make ten: the sum is 8 to 10, so filling the frame
+ *   is the step.
+ */
 export function fits(s: StrategyId, p: Problem): boolean {
   const sum = p.operand1 + p.operand2;
   switch (s) {
     case 'counting-back': return p.operation === 'subtraction' && p.operand1 > p.operand2;
     case 'make-ten': return p.operation === 'addition' && sum >= 8 && sum <= 10;
+    case 'ten-frame': return p.operation === 'addition' && sum <= CAP;
     case 'doubles': return p.operation === 'addition' && p.operand1 === p.operand2;
     case 'near-doubles': return p.operation === 'addition' && Math.abs(p.operand1 - p.operand2) === 1;
     default: return p.operation === 'addition';
   }
 }
 
+/** Every strategy a challenge offers as a way to solve its problem: the named one, the menu, or the pair compared.
+ *  A match item's options are foils beside the one used, so only the one used counts. */
+export function offeredStrategies(c: StrategyPickerChallenge): string[] {
+  switch (c.type) {
+    case 'guided-strategy': case 'try-another': return c.assignedStrategy ? [c.assignedStrategy] : [];
+    case 'choose-your-strategy': return c.availableStrategies ?? [];
+    case 'compare': return c.strategies ?? [];
+    default: return c.correctStrategy ? [c.correctStrategy] : [];
+  }
+}
+
+/** The offered strategies that do not fit the challenge's problem (an unknown strategy never fits). Empty = it fits. */
+export const strategyMisfits = (c: StrategyPickerChallenge): string[] =>
+  offeredStrategies(c).filter(s => !(s in EXAMPLES) || !fits(s as StrategyId, c.problem));
+
 /** How much there is to count or move in a strategy's picture: hops, the part that crosses into ten, one group, or all. */
 function sizeOf(s: StrategyId, p: Problem): number {
   switch (s) {
     case 'counting-on': case 'counting-back': return p.operand2;
     case 'make-ten': case 'doubles': case 'near-doubles': return Math.min(p.operand1, p.operand2);
+    // ten-frame counts every counter it places: the default.
     default: return p.operand1 + p.operand2;
   }
 }
 /** The smallest picture each strategy draws: one hop, one counter to move, a double of one, two marks. */
 const FLOOR: Record<StrategyId, number> = {
-  'counting-on': 1, 'counting-back': 1, 'make-ten': 1, doubles: 1, 'near-doubles': 1, 'tally-marks': 2, 'draw-objects': 2,
+  'counting-on': 1, 'counting-back': 1, 'make-ten': 1, 'ten-frame': 2, doubles: 1, 'near-doubles': 1, 'tally-marks': 2,
+  'draw-objects': 2,
 };
 
 function candidates(cap: number, ops: readonly Op[]): Problem[] {
@@ -99,6 +124,7 @@ export function practiceSteps(s: StrategyId, p: Problem): string[] {
     case 'counting-on': return [`Start at ${a} on the number line.`, `Make ${b} hops forward, one at a time.`, 'The number you land on is the answer.'];
     case 'counting-back': return [`Start at ${a} on the number line.`, `Make ${b} hops back, one at a time.`, 'The number you land on is the answer.'];
     case 'make-ten': return [`The blue counters are ${a} and the yellow counters are ${b}.`, 'A full ten frame holds ten. Count the empty boxes.', 'Ten take away the empty boxes is how many counters there are.'];
+    case 'ten-frame': return [`Tap the boxes to put in ${a} counters.`, `Now put in ${b} more counters.`, 'Count all the counters in the frame.'];
     case 'doubles': return [`Both numbers are ${a}.`, 'Look at the two equal groups of dots.', 'Put the two groups together. How many?'];
     case 'near-doubles': return [`Find the double: two groups of ${small}.`, 'Then add the one extra dot.', 'How many in all?'];
     case 'tally-marks': return [`Draw ${a} tally marks.`, `Draw ${b} more.`, 'Count all the marks.'];
@@ -111,6 +137,7 @@ const EXAMPLES: Record<StrategyId, [number, number][]> = {
   'counting-on': [[5, 2], [6, 3], [4, 3], [3, 2], [2, 1]],
   'counting-back': [[7, 2], [8, 3], [6, 2], [5, 2], [4, 1]],
   'make-ten': [[8, 2], [9, 1], [7, 3], [6, 3]],
+  'ten-frame': [[3, 4], [5, 2], [2, 4], [4, 1]],
   doubles: [[3, 3], [4, 4], [2, 2], [1, 1]],
   'near-doubles': [[3, 4], [2, 3], [4, 5], [1, 2]],
   'tally-marks': [[3, 2], [4, 3], [2, 4], [2, 1]],
@@ -164,6 +191,7 @@ export function partsFact(s: StrategyId, p: Problem): string {
     case 'counting-on': case 'counting-back':
       return `On the number line: a ring on the start, ${a}, and each hop numbered in order above its arc, up to ${b} hops.`;
     case 'make-ten': return `Under the ten frame: the blue counters labelled ${a}, the yellow counters labelled ${b}, and the top row of five outlined.`;
+    case 'ten-frame': return `Under the ten frame the learner fills: a blue swatch labelled ${a} and a yellow swatch labelled ${b}, and the top row of five outlined.`;
     case 'doubles': return `Each of the two equal groups of dots labelled ${a}.`;
     case 'near-doubles': return `The two equal groups labelled ${Math.min(a, b)} each, and the extra dot labelled +1.`;
     case 'tally-marks': return `The first ${a} tally marks blue and the next ${b} yellow, each part labelled with its number.`;
@@ -186,6 +214,8 @@ function workedSolution(s: StrategyId, p: Problem): string {
     case 'counting-on': return `I started at ${a} and counted up ${b} more on my fingers. I landed on ${r}.`;
     case 'counting-back': return `I started at ${a} and counted back ${b}. I landed on ${r}.`;
     case 'make-ten': return `I moved some of ${b} over to fill up to 10 first, then added the rest to get ${r}.`;
+    // Never the strategy's own words: the option label is "Ten Frame".
+    case 'ten-frame': return `I put ${a} counters in the boxes, filling the top row first, then ${b} more counters. I counted the full boxes and got ${r}.`;
     case 'doubles': return `I noticed both numbers are the same, and I already knew that fact: ${r}.`;
     case 'near-doubles': return `I thought of the fact with two ${Math.min(a, b)}s, which I already knew, then added 1 more to get ${r}.`;
     case 'tally-marks': return `I drew ${a} little lines, then ${b} more lines. I counted all the lines and got ${r}.`;

@@ -83,6 +83,15 @@
 ### R8 — no time bar on a set mode; the bar has no day or night (NEW 2026-10-27)
 - set_time and set_time_ampm render no time bar: it reached the target without the hands. The bar elsewhere is a plain track: its sun and moon strip spread 24 hours over the 12-hour bar ("12 PM" sat at 6:00). Probe: workspace tests drag the dial (`dragMinute`) and assert no slider.
 
+### R9 — an o'clock lesson keeps every time on the hour (NEW 2026-11-11)
+- `resolveWholeHours` (one schema flash-lite call over topic, intent and objective) decides whether the lesson is about whole hours. Asked only for read, set_time, match, elapsed or a blend, and only when the lesson names no finer grid. True: the grid is 60 (`clockFromItemSpace` picks from the twelve o'clock times at every tier, since three tiers cannot split them; the tier still sets the reading aids); on the generated path every time and elapsed start is forced to :00, code rewrites the set_time instruction and any read/match instruction that names a number, and every wrong option is another whole hour. False or failure: the existing grid (K half hours) unchanged.
+- Demanded by K TIME001-03-C, -E, -F (math-k audit 2026-11-10). Probe: `service/math/gemini-analog-clock.wholeHours.test.ts`.
+
+### R10 — K o'clock set_time: the minute hand stays on 12 (NEW 2026-11-11)
+- `minuteHandFixed` (AnalogClock.tsx): on `set_time`, `gradeBand==='K'`, target minute 0, the drag turns the hour hand to the nearest number and the minute hand stays on 12; the scene says so. A K half hour, other bands and set_time_ampm drag the minute hand as before.
+- The hands open at 12:00, or at 6:00 when the target is 12:00 (`setStartHour`), on every set mode: the default position is never the answer. R3's "hands back at 12:00" is amended to this.
+- Demanded by K TIME001-03-E. Probe: `AnalogClock.workspace.test.tsx` "set_time at K on the hour".
+
 ## Gaps
 
 ### G1 — generated read/match hints name the hand positions · OPEN
@@ -104,3 +113,4 @@
 - 2026-10-19 — moved onto the boss framework (`analogClock.card.ts` + `analogClock.boss.ts`): R3 re-based
   (workspace only, runner Pip, guidance rules as scene constraints), R4 levers as one lever set, R5 key as a `SpokenKey`.
   hear_time is TAP_ONE; count_face and set_time are boards.
+- 2026-11-11 — R9 whole-hour window and R10 fixed minute hand at K (math-k audit). Assessed **COMPATIBLE**: R1 nothing new on screen before the check (set_time gives its target); R4 levers unchanged; R5 keys unchanged; R6 grid gains a 60-minute value the lesson selects, the default grids unchanged; R3 start position amended for a 12:00 target only.

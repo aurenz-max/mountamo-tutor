@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GenerationContext } from '../generation/generationContext';
 
+// The K objective window (resolveObjectiveRange) is its own flash-lite call; these cases name no other window.
+vi.mock('../objectiveNumberWindow', () => ({ resolveObjectiveRange: vi.fn(async () => null) }));
 vi.mock('../geminiClient', () => ({
   ai: { models: { generateContent: vi.fn() } },
 }));

@@ -20,6 +20,7 @@
 | Compare-groups-≤5 (count_compare) | census trace | `qa/topic-traces/k-compare-groups-to-5-2026-07-14.md` | 2026-07-14 |
 | Support-tier / structural-difficulty engine | git + generator | commit 1c3e774; `resolveProblemShape`/`resolveSupportStructure` | 2026-06-14 |
 | Eval-test / IRT calibration (6 modes) | EVAL_TRACKER | 6/6 pass row (2026-06-14); SS-1..SS-4 fix rows | 2026-06-14 |
+| K math CV1 sorting strand (21 subskills: MEAS001-01/02/08, PTRN001-02) | curriculum-lumina-audit | `qa/curriculum-coverage/math-k/REPORT.md` Converge CV1; `audit.json` families MD18, PS6, PS7 | 2026-11-11 |
 
 ## Requirements
 
@@ -72,6 +73,8 @@
 - **Evidence:** generator lines 112–118, 221–265, 1050; [[trust-intent-over-hardcoded-caps]] applies — these caps ARE band contracts, not arbitrary ceilings.
 - **Probe:** generate at K easy vs G1 hard ×2 — counts inside windows; structural levers (not magnitudes) differ.
 
+- **Amended 2026-11-11 (K math audit CV1, MEAS001-02-C), sort family only (sort-by-one, sort-by-attribute, tally-record, say-rule):** the band object window is the DEFAULT, not a cap. When the objective names how many go in ONE group ("count up to 10 objects per category"), the shared `resolveObjectiveRange` reads it (`objectWindowFor`; one group up to that count, at most 10; total up to count + 6), and `groupWindowFault` rejects a draw whose largest group misses it by more than 2 or exceeds it (redrawn once). A lesson whose words hold no number skips the call and keeps the band window. The bin cap is unmoved. count-and-compare is NOT on this path: `enforceCompareGap` trims its larger group to the tier gap.
+
 ### R9 — mode purity under pinned targetEvalMode · OBSERVED
 - **Property:** a pinned `config.targetEvalMode` yields ONLY that challenge type — per-mode sub-generators, never one omnibus prompt describing all types (the SS-1/SS-2 cross-contamination class).
 - **Demanded by:** eval-test / IRT calibration (β anchors are per-mode).
@@ -103,6 +106,22 @@
 - **Demanded by:** `/add-support-tiers`; the tutor/JEV `pull_lever` operation.
 - **Probe:** `sortingStationLevers.test.ts` (miss → lever over every saved payload item; leak rules; builders fire on every saved odd/compare item) + `SortingStation.levers.workspace.test.tsx`.
 
+### R14 — a size sort draws each card at its size · OBSERVED (added 2026-11-11)
+- **Property:** where size is a way the item asks the child to sort or explain (`item.drawSizes`: the rule is size; on `pick_rule` whenever size is an offered valid way, whichever is the answer; on `name_rule` when a chip is a size word; on odd-one-out whenever the page is size-rankable), every card is drawn at the scale its own `size` value states (`sizeScales`: tiny < small < medium < big < huge, 0.5..1, equal words equal). A sort by another rule over the same cards is drawn uniformly, so the drawing never cues a rule the item does not ask about. A size outside the table, a card without one, or one size for every card draws nothing. On a size sort a card whose name says its size is never asked, menu or not ("Big Ball"), and the generator drops it (`binLeak` now covers size). The generator files a sort whose values are all size words under `size` (a live K draw put big/small under `category`).
+- **Demanded by:** K math CV1 ("size sorts test what the child knows about the objects, not what they see"); acceptance: two cards of the same object that differ only in drawn size.
+- **Probe:** `sortingStationRules.test.ts` (real size), `SortingStation.rules.workspace.test.tsx` (64px vs 32px on the bound component); screenshot of a bound K size sort (2026-11-11, headless Chromium over the dev server's CSS).
+
+### R15 — the child's own valid rule is credited, and the sort follows it · OBSERVED (added 2026-11-11)
+- **Property:** on `sort_attribute`'s pick-the-rule ask, every attribute the cards really split on (`validSortAxes`: every card has a value, 2..binCap groups) is accepted (`alsoAccept`, computed in code); `other_rule` is only a way the cards do NOT split by. The credited words are matched to an axis in code (`axisNamedIn`) and the challenge's following sorts are re-keyed to it card for card (`followRule`, same item ids and session length; trays re-derived from the cards). `ruleOfSort` / `rulesOfGroup` are the code check of a sort: a sort whose groups no single attribute makes is no rule.
+- **Demanded by:** PTRN001-02-E ("choose and say a sorting rule of one's own, then sort every card by it").
+- **Probe:** `sortingStationRules.test.ts` (valid self-chosen rule credited, inconsistent sort not, follow keeps ids); `SortingStation.rules.workspace.test.tsx` (credited "kind" on a colour plan → next ask "Fruit, or Toy?").
+- **Relation to R1:** none. R1 holds the objective's rule ACROSS challenges; this follows a rule the child chose WITHIN the one challenge whose task is choosing it.
+
+### R16 — say_rule: the rule of a finished sort, by voice or tap · OBSERVED (added 2026-11-11)
+- **Property:** new eval mode `say_rule` (challenge type `say-rule`, β 3.5, a 1.2, SAY_OR_SHOW). A finished sort is drawn with trays that carry NO name, picture or colour (each is the rule); the ask points at the ringed tray by its place. `name_rule` keys the tray's rule (plus any other value that makes exactly that group, `rulesOfGroup`); its tap chips are only real wrong rules: another group's rule, or a value only SOME of the tray's cards have, never one every card shares. ONE tray per challenge, rotating, so no ask is answered by elimination. Above easy, every other challenge carries one card placed in the wrong tray (code places it from a 3+ group): `misfit` names it (tap the card), then `name_rule` explains that tray. A tray whose card names its rule ("Red Apple") drops its ask; a group of one card is a generator fault and is redrawn. The activity checks a tap (`sortingStationTapCheck`); the tutor judges speech.
+- **Demanded by:** PTRN001-02-B, -F, -G; USER 10-13 voice beside the tap.
+- **Probe:** `sortingStationRules.test.ts` (say_rule block); `SortingStation.rules.workspace.test.tsx` (wrong chip checked wrong, rule chip credited); saved payload `sorting-station.say_rule.json` in the journey sweep.
+
 ## Conflicts
 
 ### C1 — content variety vs R1 rule stability — RESOLVED 2026-07-14 (generator fix, no fork needed)
@@ -122,7 +141,8 @@ Attributes` (5/5 coherent, best 0.683); G1 cluster `MEAS001-05/06 Organizing/
 Interpreting Data` (4/5 coherent, best 0.673). Only the top match (single-attribute
 sort, 0.683) is fully served today — the other close matches are gaps:
 
-### G1 — explain the sort ("because…") · OPEN
+### G1 — explain the sort ("because…") · CLOSED-FORM LANDED 2026-11-11 (R16); open production still open
+- **2026-11-11:** `say_rule` serves the closed form: the key is the group's shared attribute, computed from the cards, and "because they are all X" is accepted. Free-form justification beyond the shared attribute is still the open-set production this entry describes.
 - **2026-08-18 note:** the port did NOT close this. Spoken justification is open-set production (`open_set_word`), which is BLOCKED in `judgedScriptContract.ts` — so this needs a judge capability, not a medium. Recorded so the next reader does not mistake the spoken port for having answered it.
 - **Near-consumer:** K `PTRN001-02` "Explain complex sorting rules using 'because'" (probe 0.668).
 - **Shortfall:** no production/justification mode — the student places objects but never articulates the rule. At K this must be SPOKEN (a pre-reader can't type a reason).
@@ -142,7 +162,8 @@ sort, 0.683) is fully served today — the other close matches are gaps:
 - **Follow-ups:** (a) ⚠️ **UNBLOCKED 2026-08-18** — the DI port makes every `sort_variety` rule VOICED by construction, so the reading demand this follow-up names is gone; what is left is the re-audit. (a, original text) K voiced-rule variant (unfloor via reader-fit re-audit, mirroring G2 — NOT a simple floor removal); (b) extend the R1 exemption to the `/topic-fidelity` automated probe.
 - **Relation to R-series:** pre-detected CONFLICT with R1 — resolved by fork rung 1. R1's guard untouched; exemption recorded in R1.
 
-### G4 — student-created categories · OPEN
+### G4 — student-created categories · PARTIAL 2026-11-11 (R15)
+- **2026-11-11:** the child now chooses the rule on `sort_attribute` and the sort follows it (R15). Naming bins before seeing the objects is still open.
 - **Near-consumer:** K `PTRN001-02` "Create and label sorting categories before given objects" (probe 0.636).
 - **Shortfall:** categories are always generator-given; there is no "you decide the bins" mode.
 - **Path:** eval-mode split (production modality); at K, category "labeling" would be spoken or emoji-picked. Larger lift — sequence after G1/G3 which build the mode plumbing it needs.
@@ -187,3 +208,4 @@ sort, 0.683) is fully served today — the other close matches are gaps:
   `typecheck:lumina` 0. Not verified: any browser run.
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). The scripted runtime registration keeps its mode as `scriptedEvalMode` until that path is deleted. Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-10-08 — `/add-support-tiers` (class sweep): in-item levers on all seven modes, R13 added. Additive: no item, ask, judge input or K presentation changed; the scripted path gets no levers. Report: `qa/eval-reports/sorting-station-levers-2026-10-08.md`.
+- 2026-11-11 — **K math audit CV1 (`/eval-fix` + `/add-eval-modes`).** R8 amended (the objective's per-group count lifts the K window, sort family only); R14 real size, R15 the child's own rule, R16 `say_rule` added. R1-R7, R9-R13 unchanged: `sort_attribute`'s re-keying stays inside the one challenge whose task is choosing a rule; levers (R13) gain `focus_group` and `group_row` for say_rule, and `odd_model` also serves its misfit. Two content faults found by live draws and closed in code: say-rule draws of 3+1 cards (redrawn), and a big/small sort filed under `category` (moved to `size`). Evidence: own suites incl. 3 new files (rules 18, workspace 4, generator window 5), sorting-station contract + journey sweep 41/41, wiring checks for all 8 modes, 6 eval-test generations, a headless-Chromium screenshot of the bound K size sort and say-rule screens. Not verified: a Live session (agents do not run them).

@@ -42,6 +42,7 @@ export type StrategyId =
   | 'counting-on'
   | 'counting-back'
   | 'make-ten'
+  | 'ten-frame'
   | 'doubles'
   | 'near-doubles'
   | 'tally-marks'
@@ -132,6 +133,7 @@ const STRATEGY_INFO: Record<StrategyId, { label: string; icon: string; color: st
   'counting-on':   { label: 'Counting On',   icon: '➡️', color: 'blue' },
   'counting-back': { label: 'Counting Back', icon: '⬅️', color: 'indigo' },
   'make-ten':      { label: 'Make Ten',      icon: '🔟', color: 'emerald' },
+  'ten-frame':     { label: 'Ten Frame',     icon: '🔲', color: 'teal' },
   'doubles':       { label: 'Doubles',       icon: '🪞', color: 'purple' },
   'near-doubles':  { label: 'Near Doubles',  icon: '🔢', color: 'pink' },
   'tally-marks':   { label: 'Tally Marks',   icon: '📊', color: 'amber' },
@@ -272,6 +274,64 @@ function TenFrameViz({ operand1, operand2, parts }: { operand1: number; operand2
     </svg>
   );
 }
+
+/**
+ * The ten frame the learner fills (the `ten-frame` strategy on a problem to solve). It starts empty, so nothing on it
+ * is the answer until the learner puts the counters in: a tap on any empty box puts the next counter in, top row first,
+ * blue for the first number and then yellow; a tap on the last counter takes it out. The learner counts what they built.
+ */
+function TenFrameBuild({ operand1, operand2, placed, onPlace, onRemove, disabled, parts }: {
+  operand1: number; operand2: number; placed: number;
+  onPlace: () => void; onRemove: () => void; disabled: boolean; parts?: boolean;
+}) {
+  const cellW = 36;
+  const cellH = 36;
+  const gap = 3;
+  const cols = 5;
+  const rows = 2;
+  const frameW = cols * (cellW + gap) - gap;
+  const startX = (SVG_W - frameW) / 2;
+  const startY = 20;
+
+  return (
+    <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="max-w-full h-auto" data-ten-frame-build>
+      {Array.from({ length: rows * cols }, (_, i) => {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const x = startX + col * (cellW + gap);
+        const y = startY + row * (cellH + gap);
+        const filled = i < placed;
+        const isFirstGroup = i < operand1;
+        const isLast = i === placed - 1;
+        const tappable = !disabled && (!filled || isLast);
+        return (
+          <g key={i} data-pip-object={`frame-box-${i}`} role="button" aria-label={`Ten frame box ${i + 1}`}
+            className={tappable ? 'cursor-pointer' : undefined}
+            onClick={() => { if (disabled) return; if (!filled) onPlace(); else if (isLast) onRemove(); }}>
+            <rect
+              x={x} y={y} width={cellW} height={cellH} rx={4}
+              fill={filled ? (isFirstGroup ? 'rgba(59,130,246,0.3)' : 'rgba(234,179,8,0.3)') : 'rgba(255,255,255,0.05)'}
+              stroke={filled ? (isFirstGroup ? 'rgba(59,130,246,0.6)' : 'rgba(234,179,8,0.6)') : 'rgba(255,255,255,0.25)'}
+              strokeWidth={1.5}
+            />
+            {filled && (
+              <circle cx={x + cellW / 2} cy={y + cellH / 2} r={12} fill={isFirstGroup ? FIRST_COLOR : SECOND_COLOR} />
+            )}
+          </g>
+        );
+      })}
+      {/* The help lever `two_parts`: the top row of five outlined, and each colour's number */}
+      {parts && (
+        <rect data-lever="two-parts" data-five-row x={startX - 4} y={startY - 4} width={frameW + 8} height={cellH + 8} rx={6}
+          fill="none" stroke="#fbbf24" strokeWidth={2} strokeDasharray="6 3" pointerEvents="none" />
+      )}
+      {parts && <PartsLegend first={operand1} second={operand2} y={startY + rows * (cellH + gap) + 24} />}
+    </svg>
+  );
+}
+
+/** The counters the learner has put in a ten frame they fill, and the taps that change them. */
+interface FrameBuild { placed: number; onPlace: () => void; onRemove: () => void; disabled: boolean }
 
 function DoublesViz({ operand1, operand2, isNearDoubles, parts }: {
   operand1: number; operand2: number; isNearDoubles: boolean; parts?: boolean;
@@ -432,12 +492,14 @@ function DrawObjectsViz({ total, split }: { total: number; split?: number }) {
   );
 }
 
-function StrategyVisualization({ strategy, problem, hopsRevealed, parts }: {
+function StrategyVisualization({ strategy, problem, hopsRevealed, parts, build }: {
   strategy: StrategyId;
   problem: StrategyPickerChallenge['problem'];
   hopsRevealed: number;
   /** The help lever `two_parts` is pulled: mark the picture's parts (`partsMarks`). */
   parts?: boolean;
+  /** A problem to solve: the ten frame is the learner's to fill. Absent (compare, exemplars), it is drawn full. */
+  build?: FrameBuild;
 }) {
   const split = parts ? problem.operand1 : undefined;
   switch (strategy) {
@@ -447,6 +509,10 @@ function StrategyVisualization({ strategy, problem, hopsRevealed, parts }: {
         operation={problem.operation} hopsRevealed={hopsRevealed} parts={parts} />;
     case 'make-ten':
       return <TenFrameViz operand1={problem.operand1} operand2={problem.operand2} parts={parts} />;
+    case 'ten-frame':
+      return build
+        ? <TenFrameBuild operand1={problem.operand1} operand2={problem.operand2} parts={parts} {...build} />
+        : <TenFrameViz operand1={problem.operand1} operand2={problem.operand2} parts={parts} />;
     case 'doubles':
       return <DoublesViz operand1={problem.operand1} operand2={problem.operand2} isNearDoubles={false} parts={parts} />;
     case 'near-doubles':
@@ -614,6 +680,9 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [strategiesUsed, setStrategiesUsed] = useState<Set<string>>(new Set());
+  // The counters the learner put in a ten frame they fill, kept by challenge: Try again keeps them (only the number
+  // is rejected), a fresh item or the full item back after practice starts empty.
+  const [framePlaced, setFramePlaced] = useState<{ challengeId: string; n: number } | null>(null);
 
   // In-item levers (`strategyPickerLevers.ts`), keyed by the session item they were pulled on, and the easier
   // practice item a simplify lever puts in place of the session item until the observer returns to it.
@@ -623,11 +692,12 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
   const currentChallenge = practice ?? sessionChallenge;
   const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
   const chosenStrategy = chosen && chosen.challengeId === currentChallenge?.id ? chosen.strategy : null;
+  const placedNow = framePlaced && framePlaced.challengeId === currentChallenge?.id ? framePlaced.n : 0;
 
   // A fresh challenge, or the same one after Try again, starts with no number or pick. A practice item stays through
   // its own Try again; a fresh item, or the full item back after it, drops it.
   reopen.current = (retry) => {
-    if (!retry) setPractice(null);
+    if (!retry) { setPractice(null); setFramePlaced(null); }
     setAnswerInput('');
     setMatchSelection(null);
     setCompareAnswer(null);
@@ -776,7 +846,8 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
 
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const scene = strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier }, strategiesIntroduced);
+    const scene = strategyPickerScene(currentChallenge, { chosen: chosenStrategy, supportTier, framePlaced: placedNow },
+      strategiesIntroduced);
     const levers = practice ? [] : STRATEGY_PICKER_LEVERS.declare(sessionChallenge, leverCtx, shownLevers);
     const published = leverScene(scene, {
       support: practice ? '' : STRATEGY_PICKER_LEVERS.support(sessionChallenge, leverCtx),
@@ -801,7 +872,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
         return true as const;
       },
       // Back to the full item, blank: the practice work is not the learner's work on it.
-      endPractice: () => { setPractice(null); setChosen(null); reopen.current(true); },
+      endPractice: () => { setPractice(null); setChosen(null); setFramePlaced(null); reopen.current(true); },
     };
   });
 
@@ -815,6 +886,20 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
 
   const activeStrategy = currentChallenge?.assignedStrategy ?? chosenStrategy;
   const blocked = learnerBlocked();
+  const frameBuild: FrameBuild | undefined = currentChallenge ? {
+    placed: placedNow,
+    disabled: blocked,
+    onPlace: () => {
+      if (learnerBlocked() || placedNow >= 10) return;
+      SoundManager.tap();
+      setFramePlaced({ challengeId: currentChallenge.id, n: placedNow + 1 });
+    },
+    onRemove: () => {
+      if (learnerBlocked() || placedNow <= 0) return;
+      SoundManager.tick();
+      setFramePlaced({ challengeId: currentChallenge.id, n: placedNow - 1 });
+    },
+  } : undefined;
 
   // -------------------------------------------------------------------------
   // Render
@@ -926,6 +1011,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
                   problem={currentChallenge.problem}
                   hopsRevealed={hopsRevealed}
                   parts={partsOn}
+                  build={frameBuild}
                 />
               </div>
             )}

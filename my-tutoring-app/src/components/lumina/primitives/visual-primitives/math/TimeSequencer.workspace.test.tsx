@@ -38,6 +38,13 @@ const CHALLENGES: Record<string, TimeSequencerChallenge> = {
     eventB: ev('b', 'A school day'), correctAnswer: 'B' },
   'clock-sequence': { id: 'c', type: 'clock-sequence', instruction: 'Look at the clocks and put the morning in order.',
     events: DAY.slice(0, 3), correctOrder: ['w', 'b', 's'], showClockFace: true },
+  'missing-middle': { id: 'm', type: 'missing-middle', instruction: 'Something is missing in the middle. Which one goes there?',
+    firstEvent: ev('f', 'Brush teeth'), lastEvent: ev('l', 'Put on shoes'),
+    options: [ev('o1', 'Wake up'), ev('o2', 'Eat breakfast'), ev('o3', 'Ride the bus')], correctEvent: 'o2',
+    optionPlaces: { o1: 'before', o3: 'after' } },
+  'duration-order': { id: 'do', type: 'duration-order', instruction: 'Put these in order, from the quickest to the longest.',
+    events: [ev('p', 'Play at the park', { minutes: 60 }), ev('h', 'Wash your hands', { minutes: 1 }), ev('n', 'Eat a snack', { minutes: 10 })],
+    correctOrder: ['h', 'n', 'p'] },
   'read-schedule': { id: 'r', type: 'read-schedule', instruction: 'What happens at 10:00?', targetTime: '10:00',
     schedule: [{ time: '8:00', activity: 'Reading', emoji: '📖' }, { time: '10:00', activity: 'Math', emoji: '➕' },
       { time: '12:00', activity: 'Lunch', emoji: '🥪' }], activityOptions: ['Reading', 'Math', 'Lunch', 'Recess'], correctActivity: 'Math' },
@@ -49,7 +56,7 @@ const data = (challenges: TimeSequencerChallenge[], gradeBand: TimeSequencerData
 /** The buttons a learner taps for a right or a wrong answer (each mode's signature error), then Check. */
 function taps(c: TimeSequencerChallenge, wrong: boolean): string[] {
   const labelOf = (cards: { id: string; label: string }[], id: string) => cards.find(e => e.id === id)!.label;
-  if (c.type === 'sequence-events' || c.type === 'clock-sequence') {
+  if (c.type === 'sequence-events' || c.type === 'clock-sequence' || c.type === 'duration-order') {
     const order = c.correctOrder!;
     // The start-here card is already placed (and placed again after Try again): tapping it would take it out.
     const rest = c.prelabelFirstSlot && order.length > 1 ? order.slice(1) : order;
@@ -60,7 +67,7 @@ function taps(c: TimeSequencerChallenge, wrong: boolean): string[] {
     const p = wrong ? periods[(periods.indexOf(c.correctPeriod!) + 1) % 4] : c.correctPeriod!;
     return [p.charAt(0).toUpperCase() + p.slice(1)];
   }
-  if (c.type === 'before-after') return [labelOf(c.options!, wrong ? c.options!.find(e => e.id !== c.correctEvent)!.id : c.correctEvent!)];
+  if (c.type === 'before-after' || c.type === 'missing-middle') return [labelOf(c.options!, wrong ? c.options!.find(e => e.id !== c.correctEvent)!.id : c.correctEvent!)];
   if (c.type === 'duration-compare') {
     const pick = !wrong ? c.correctAnswer : c.correctAnswer === 'A' ? 'B' : 'A';
     return [pick === 'same' ? 'About the Same' : (pick === 'A' ? c.eventA! : c.eventB!).label];
@@ -94,7 +101,7 @@ it.each(Object.keys(CHALLENGES))('%s: a checked tap that publishes no key; a wro
       expect(task.demand.response).toBe('speech');
     }
     const published = JSON.stringify(task);
-    expect(published).not.toMatch(/correctOrder|correctPeriod|correctEvent|correctAnswer|correctActivity|clockHour/);
+    expect(published).not.toMatch(/correctOrder|correctPeriod|correctEvent|correctAnswer|correctActivity|clockHour|minutes|optionPlaces/);
     // Cards are listed alphabetically, not in the day's order.
     if (c.events) expect(task.demand).toMatchObject({ cards: c.events.map(e => e.label).sort().join(', ') });
     expect(seam.legacyAI).not.toHaveBeenCalled();

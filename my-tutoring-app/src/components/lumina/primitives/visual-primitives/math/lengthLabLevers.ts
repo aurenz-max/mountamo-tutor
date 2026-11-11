@@ -14,6 +14,9 @@
  *   as long, same unit, its own guesses.
  * - two_unit_compare: `unit_model` (help) a plain grey bar outside the item measured once with small squares and once
  *   with big squares; `shorter_object` (simplify) a shorter plain object measured with another pair of units.
+ * - measure_compare: `object_outline` (help) on each measurement; `count_rows` (help) the learner's two rows of units
+ *   redrawn one under the other from one start line, so the row with more units sticks out farther (no number);
+ *   `shorter_object` (simplify) two plain objects far apart in length, measured with the same unit.
  * - order: `order_steps` (help) three wordless bars under the slots growing the way the slots run; `end_lines`;
  *   `unit_marks` (where hidden); `far_three` (simplify) three plain objects far apart, when two of the item's are close.
  * - indirect: `chain_model` (help) three plain bars outside the item lined up at one start, with the two "shorter than"
@@ -37,6 +40,7 @@ export const UNIT_MODEL_LEVER = 'unit_model';
 export const ORDER_STEPS_LEVER = 'order_steps';
 export const FAR_THREE_LEVER = 'far_three';
 export const CHAIN_MODEL_LEVER = 'chain_model';
+export const COUNT_ROWS_LEVER = 'count_rows';
 
 const SIMPLER = '~simpler';
 export const isPracticeLength = (c: Pick<LengthLabChallenge, 'id'>) => c.id.endsWith(SIMPLER);
@@ -120,6 +124,24 @@ export function shorterObject(c: LengthLabChallenge, sessionUnit = 'cubes'): Len
       estimateOptions: c.type === 'estimate_then_tile' ? [start, start + 1, start + 2, start + 3] : undefined,
     };
   }
+  if (c.type === 'measure_compare') {
+    // Two plain objects far apart (a gap of four), lengths the item does not use (three disjoint pairs, so one always
+    // fits), the ask kept, the longer one second.
+    const used = [c.objectLength0, c.objectLength1];
+    const pair = [[2, 6], [3, 7], [4, 8]].find(p => !p.some(n => used.includes(n)));
+    if (!pair) return null;
+    const [short, long] = pair;
+    const word = c.compareWord ?? 'longer';
+    const unit = (c.unitType || sessionUnit).replace('_', ' ');
+    const blue = `blue ${noun}`, green = `green ${noun}`;
+    return {
+      ...c, id: `${c.id}${SIMPLER}`,
+      instruction: `Measure the ${blue} and the ${green} with ${unit}. Which one is ${word}?`,
+      objectName0: blue, objectLength0: short, objectColor0: '#4A90D9', correctUnitCount: short,
+      objectName1: green, objectLength1: long, objectColor1: '#81C784', correctUnitCountB: long,
+      correctAnswer: word === 'longer' ? green : blue,
+    };
+  }
   if (c.type === 'two_unit_compare') {
     if (c.objectLength0 <= 4) return null;
     const used = [c.unitType || sessionUnit, c.unitTypeB || sessionUnit];
@@ -149,12 +171,19 @@ export function simplerLength(c: LengthLabChallenge, sessionUnit = 'cubes'): Len
 export function simplerLeaks(parent: LengthLabChallenge, simpler: LengthLabChallenge, sessionUnit = 'cubes'): boolean {
   if (simpler.id === parent.id || simpler.type !== parent.type) return true;
   const names = itemNames(parent);
-  const newNames = [simpler.objectName0, ...(parent.type === 'compare' || parent.type === 'order' ? [simpler.objectName1] : []),
+  const newNames = [simpler.objectName0,
+    ...(parent.type === 'compare' || parent.type === 'order' || parent.type === 'measure_compare' ? [simpler.objectName1] : []),
     ...(parent.type === 'order' ? [simpler.objectName2] : [])].filter((n): n is string => !!n).map(n => n.toLowerCase());
   if (newNames.some(n => names.includes(n))) return true;
   if (parent.type === 'tile_and_count' || parent.type === 'estimate_then_tile') {
     const pc = parent.correctUnitCount || parent.objectLength0, sc = simpler.correctUnitCount || simpler.objectLength0;
     if (sc >= pc || !(simpler.estimateOptions ?? [sc]).includes(sc)) return true;
+  }
+  if (parent.type === 'measure_compare') {
+    const used = [parent.objectLength0, parent.objectLength1];
+    if ([simpler.objectLength0, simpler.objectLength1].some(n => used.includes(n))) return true;
+    if (Math.abs(simpler.objectLength0 - simpler.objectLength1) < 3) return true;
+    if (simpler.compareWord !== parent.compareWord) return true;
   }
   if (parent.type === 'two_unit_compare') {
     const used = [parent.unitType || sessionUnit, parent.unitTypeB || sessionUnit];
@@ -171,7 +200,9 @@ export function simplerLeaks(parent: LengthLabChallenge, simpler: LengthLabChall
 // ── The lever set ────────────────────────────────────────────────────────────
 
 /** What the screen holds that the levers read: the session's unit marks and unit, and whether a guess is made. */
-export interface LengthLeverContext { ticksShown: boolean; sessionUnit?: string; guessed?: boolean }
+export interface LengthLeverContext { ticksShown: boolean; sessionUnit?: string; guessed?: boolean;
+  /** measure_compare: both objects have been measured, so the learner's two rows exist. */
+  measuredBoth?: boolean }
 
 const EASIER_DOES = 'It is not graded; the full item comes back after it.';
 const END_LINES = { id: END_LINES_LEVER, type: 'marks' as const,
@@ -214,6 +245,21 @@ export const LENGTH_LEVERS = leverSet<LengthLabChallenge, LengthLeverContext>({
       when: 'These two objects are too close in length to compare yet.',
       does: `Opens an easier pair first: two plain objects far apart in length. ${EASIER_DOES}`,
       content: (c, ctx) => simplerLength(c, ctx.sessionUnit) },
+    { id: OUTLINE_LEVER, type: 'marks', modes: ['measure_compare'], answers: ['miscounted'],
+      when: "The learner stops short of an object's end, goes past it, or leaves gaps.",
+      does: "Draws a dashed outline of each object's length behind the learner's units, from its start to its end. No count is written.",
+      fact: "A dashed outline of the object's length, from its start to its end, sits behind the learner's units." },
+    { id: COUNT_ROWS_LEVER, type: 'layout', modes: ['measure_compare'], answers: ['picked_other', 'miscounted'],
+      // The rows are the learner's own units: nothing to draw before both objects are measured.
+      offer: (_c, ctx) => !!ctx.measuredBoth,
+      when: 'The learner measured both but names the object that does not fit the question.',
+      does: "Draws the learner's two rows of units again, one under the other from the same start line, each row beside "
+        + "its object's colour, so the row with more units sticks out farther. No number is written.",
+      fact: "The learner's two rows of units are drawn again one under the other from one start line, each beside its "
+        + "object's colour; no number written." },
+    { ...SHORTER, modes: ['measure_compare'], answers: ['picked_other', 'miscounted'],
+      when: 'These two objects are too close in length to compare by counting yet.',
+      does: `Opens an easier pair first: two plain objects far apart in length, measured with the same unit. ${EASIER_DOES}` },
     { id: OUTLINE_LEVER, type: 'marks', modes: ['tile_and_count', 'estimate_then_tile'], answers: 'all',
       when: 'The learner stops short of the end, goes past it, or leaves gaps.',
       does: 'Draws a dashed outline of the object\'s length behind the learner\'s units, from its start to its end. No count is written.',

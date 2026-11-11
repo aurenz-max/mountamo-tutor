@@ -1,0 +1,226 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (pb-gap.json)",
+ "primitiveId": "pattern-builder",
+ "evalMode": "fill_gap",
+ "data": {
+  "title": "Color Pattern Fun",
+  "description": "Help find the missing part of the color pattern by looking closely at what comes next!",
+  "patternType": "repeating",
+  "sequence": {
+   "given": [
+    "red",
+    "blue",
+    "red",
+    "blue",
+    "red",
+    "blue"
+   ],
+   "hidden": [
+    "blue"
+   ],
+   "core": [
+    "red",
+    "blue"
+   ]
+  },
+  "tokens": {
+   "available": [
+    "red",
+    "blue",
+    "green",
+    "yellow"
+   ],
+   "type": "colors"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "fill_gap",
+    "instruction": "One token is missing from this pattern. Which token goes in the gap?",
+    "answer": [
+     "blue"
+    ],
+    "hint": "Say the pattern from the start. What do you say when you get to the gap?",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "red",
+      "blue",
+      "red",
+      "blue",
+      "red",
+      "blue"
+     ],
+     "hidden": [
+      "blue"
+     ],
+     "core": [
+      "red",
+      "blue"
+     ]
+    },
+    "gapIndex": 3,
+    "availableTokens": [
+     "blue",
+     "green",
+     "red"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "fill_gap",
+    "instruction": "One token is missing from this pattern. Which token goes in the gap?",
+    "answer": [
+     "green"
+    ],
+    "hint": "Say the pattern from the start. What do you say when you get to the gap?",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "green",
+      "yellow",
+      "green",
+      "yellow",
+      "green",
+      "yellow"
+     ],
+     "hidden": [
+      "green"
+     ],
+     "core": [
+      "green",
+      "yellow"
+     ]
+    },
+    "gapIndex": 2,
+    "availableTokens": [
+     "green",
+     "yellow",
+     "purple"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "fill_gap",
+    "instruction": "One token is missing from this pattern. Which token goes in the gap?",
+    "answer": [
+     "purple"
+    ],
+    "hint": "Say the pattern from the start. What do you say when you get to the gap?",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "purple",
+      "orange",
+      "orange",
+      "purple",
+      "orange",
+      "orange",
+      "purple",
+      "orange",
+      "orange"
+     ],
+     "hidden": [
+      "purple"
+     ],
+     "core": [
+      "purple",
+      "orange",
+      "orange"
+     ]
+    },
+    "gapIndex": 6,
+    "availableTokens": [
+     "purple",
+     "orange",
+     "pink"
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "fill_gap",
+    "instruction": "One token is missing from this pattern. Which token goes in the gap?",
+    "answer": [
+     "red"
+    ],
+    "hint": "Say the pattern from the start. What do you say when you get to the gap?",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "pink",
+      "pink",
+      "red",
+      "pink",
+      "pink",
+      "red",
+      "pink",
+      "pink",
+      "red"
+     ],
+     "hidden": [
+      "red"
+     ],
+     "core": [
+      "pink",
+      "pink",
+      "red"
+     ]
+    },
+    "gapIndex": 5,
+    "availableTokens": [
+     "pink",
+     "red",
+     "blue"
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "fill_gap",
+    "instruction": "One token is missing from this pattern. Which token goes in the gap?",
+    "answer": [
+     "blue"
+    ],
+    "hint": "Say the pattern from the start. What do you say when you get to the gap?",
+    "narration": "",
+    "sequence": {
+     "given": [
+      "blue",
+      "green",
+      "yellow",
+      "blue",
+      "green",
+      "yellow",
+      "blue",
+      "green",
+      "yellow"
+     ],
+     "hidden": [
+      "blue"
+     ],
+     "core": [
+      "blue",
+      "green",
+      "yellow"
+     ]
+    },
+    "gapIndex": 3,
+    "availableTokens": [
+     "purple",
+     "yellow",
+     "green",
+     "blue"
+    ]
+   }
+  ],
+  "showOptions": {
+   "showCore": true,
+   "showStepNumbers": false,
+   "showRule": false,
+   "audioMode": true
+  },
+  "gradeBand": "K-1",
+  "translationTarget": {
+   "enabled": false
+  }
+ }
+}

@@ -45,10 +45,13 @@ describe('number train items and keys', () => {
     expect(sequencerKey(item)!.signatureError).toContain('(3) is not the answer');
     expect(item.actionContract.instruction).toBe('Listen to this count: 1, 2, 8, 4, 5. Which number does not belong? Say that number.');
   });
+  it('accepts zero: a K count-back ends on it (COUNT001-02-H)', () => {
+    expect(sequencerChallengeValid({ ...sequencerFixtures[1], sequence: [null, 1], correctAnswers: [0], rangeMin: 0, rangeMax: 1 })).toBe(true);
+  });
   it('rejects invalid keys, out-of-range speech, ambiguous lines and already-solved arrangements', () => {
     for (const bad of [
       { ...sequencerFixtures[0], correctAnswers: [9, 10] },
-      { ...sequencerFixtures[1], sequence: [null, 1], correctAnswers: [0], rangeMin: 0, rangeMax: 1 },
+      { ...sequencerFixtures[1], sequence: [null, 0], correctAnswers: [-1], rangeMin: -1, rangeMax: 0 },
       { ...sequencerFixtures[2], correctAnswers: [4] },
       { ...sequencerFixtures[3], sequence: [1, 2, 3, 4] },
       { ...sequencerFixtures[4], correctAnswers: [12, 19] },

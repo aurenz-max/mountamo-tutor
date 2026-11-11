@@ -1,5 +1,5 @@
 import { Type, Schema } from "@google/genai";
-import { PatternBuilderData } from "../../primitives/visual-primitives/math/PatternBuilder";
+import type { PatternBuilderChallenge, PatternBuilderData } from "../../primitives/visual-primitives/math/PatternBuilder";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -17,7 +17,7 @@ import { createInstruction, repeatKey, tokensNeeded, type CreateShape } from '..
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'extend' | 'identify_core' | 'translate' | 'create' | 'find_rule';
+type ChallengeType = 'extend' | 'identify_core' | 'translate' | 'create' | 'find_rule' | 'copy' | 'fill_gap';
 
 const DEFAULT_INSTANCE_COUNT = 6; // tier fallback (extend is largest mode; longer active time than fast-tap → capped at 6)
 const MAX_INSTANCE_COUNT = 8;
@@ -28,6 +28,8 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   translate: 5,
   create: 5,
   find_rule: 5,
+  copy: 5,
+  fill_gap: 5,
 };
 
 function resolveCount(mode: ChallengeType | undefined): number {
@@ -142,10 +144,75 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
 // create (open build): the asked shape is CODE-OWNED
 // ---------------------------------------------------------------------------
 
-/** The shapes a session's create items ask for, in order: K-1 the three two-token shapes, grades 2-3 all five. */
-export function createShapesFor(count: number, gradeBand: 'K-1' | '2-3'): CreateShape[] {
-  const ladder: CreateShape[] = gradeBand === 'K-1' ? ['AB', 'ABB', 'AAB'] : ['AB', 'ABB', 'AAB', 'ABC', 'AABB'];
+/** The shapes a session's create items ask for, in order, simplest first: all five at every band. K PTRN001-01-G asks
+ *  the child to create a pattern of several elements, so ABC and AABB are Kindergarten shapes too (the band once
+ *  stopped at the two-token shapes). */
+export function createShapesFor(count: number, _gradeBand: 'K-1' | '2-3'): CreateShape[] {
+  const ladder: CreateShape[] = ['AB', 'ABB', 'AAB', 'ABC', 'AABB'];
   return Array.from({ length: count }, (_, i) => ladder[i < ladder.length ? i : 1 + ((i - ladder.length) % (ladder.length - 1))]);
+}
+
+// ---------------------------------------------------------------------------
+// copy / fill_gap: the rows are CODE-OWNED
+// ---------------------------------------------------------------------------
+
+/** The shapes a session's copy and fill_gap rows take, in order: A B first (the K objectives name AB patterns), then
+ *  the three-part shapes. */
+export function rowShapesFor(count: number): CreateShape[] {
+  const ladder: CreateShape[] = ['AB', 'AB', 'ABB', 'AAB', 'ABC'];
+  return Array.from({ length: count }, (_, i) => ladder[i % ladder.length]);
+}
+
+const shuffle = <T,>(xs: readonly T[], rand: () => number): T[] => {
+  const out = [...xs];
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
+};
+
+/** The lesson's drawable tokens: every non-number token the model used, in first-seen order, else a fallback set. */
+export function rowTokenPool(names: readonly unknown[], tokenType?: string): string[] {
+  const pool: string[] = [];
+  for (const t of names) {
+    if (typeof t !== 'string') continue;
+    const k = t.trim().toLowerCase();
+    if (k && k.length <= 14 && !/^-?\d/.test(k) && !pool.includes(k)) pool.push(k);
+  }
+  const fallback = CREATE_FALLBACK_TOKENS[tokenType ?? ''] ?? CREATE_FALLBACK_TOKENS.colors;
+  for (const t of fallback) if (pool.length < 4 && !pool.includes(t)) pool.push(t);
+  return pool;
+}
+
+/**
+ * One copy or fill_gap challenge, built entirely in code from a shape and the lesson's tokens (the `index`-th item
+ * starts at a different token, so the rows differ). copy: the shape twice (an A B row three times), rebuilt in full.
+ * fill_gap: the shape three times with one token missing, placed after the first whole repeat and before the last
+ * token (an end gap is extend), preferring a place whose neighbours are both other tokens, so copying the token beside
+ * the gap is never right. The palette is every token of the shape plus one distractor, shuffled, so neither its order
+ * nor its size says the answer. Null when the pool is too small.
+ */
+export function buildRowChallenge(type: 'copy' | 'fill_gap', shape: CreateShape, pool: readonly string[], index: number,
+  rand: () => number = Math.random): PatternBuilderChallenge | null {
+  const n = tokensNeeded(shape);
+  if (pool.length < n + 1) return null;
+  const start = (index * 2) % pool.length;
+  const toks = Array.from({ length: n + 1 }, (_, j) => pool[(start + j) % pool.length]);
+  const part = shape.split('').map((l) => toks[l.charCodeAt(0) - 65]);
+  const k = part.length;
+  const palette = shuffle(toks, rand);
+  if (type === 'copy') {
+    const given = Array.from({ length: k === 2 ? 3 : 2 }, () => part).flat();
+    return { id: `c${index + 1}`, type, instruction: 'Look at this pattern. Make the same pattern in the empty row, one token at a time.',
+      answer: given, hint: 'Look at the first token on top, then tap the same one. Then the next.', narration: '',
+      sequence: { given, hidden: [], core: part }, availableTokens: palette };
+  }
+  const given = Array.from({ length: 3 }, () => part).flat();
+  const places = Array.from({ length: given.length - 1 - k }, (_, j) => k + j);
+  const clean = places.filter((g) => given[g - 1] !== given[g] && given[g + 1] !== given[g]);
+  const choices = clean.length ? clean : places;
+  const gap = choices[Math.floor(rand() * choices.length)];
+  return { id: `c${index + 1}`, type, instruction: 'One token is missing from this pattern. Which token goes in the gap?',
+    answer: [given[gap]], hint: 'Say the pattern from the start. What do you say when you get to the gap?', narration: '',
+    sequence: { given, hidden: [given[gap]], core: part }, gapIndex: gap, availableTokens: palette };
 }
 
 const CREATE_FALLBACK_TOKENS: Record<string, string[]> = {
@@ -192,6 +259,20 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `every token one color OR one shape (never "yellow circles"). The app writes the instruction, hint and narration; `
       + `write only the title and description, and never name a shape or a token row in them.`,
     schemaDescription: "'create' (build original pattern)",
+  },
+  copy: {
+    promptDoc:
+      `"copy": The student rebuilds a shown repeating row (AB first) token by token in an empty row. The APP builds every `
+      + `row from this lesson's tokens; give each challenge a sequence.given of colors OR shapes that fit the topic (it `
+      + `sets the tokens), and write only the title and description.`,
+    schemaDescription: "'copy' (rebuild a model row)",
+  },
+  fill_gap: {
+    promptDoc:
+      `"fill_gap": One token is missing from INSIDE a repeating row (AB first); the student places the token that goes `
+      + `in the gap. The APP builds every row and gap from this lesson's tokens; give each challenge a sequence.given of `
+      + `colors OR shapes that fit the topic (it sets the tokens), and write only the title and description.`,
+    schemaDescription: "'fill_gap' (fill the gap inside a pattern)",
   },
   find_rule: {
     promptDoc:
@@ -285,7 +366,7 @@ function buildPatternBuilderSchema(count: number): Schema {
           },
           type: {
             type: Type.STRING,
-            description: "Challenge type: 'extend' (continue the pattern), 'identify_core' (find repeating unit), 'create' (build your own), 'translate' (same structure, different tokens), 'find_rule' (figure out the rule and continue the pattern)"
+            description: "Challenge type: 'extend' (continue the pattern), 'identify_core' (find repeating unit), 'create' (build your own), 'translate' (same structure, different tokens), 'find_rule' (figure out the rule and continue the pattern), 'copy' (rebuild a model row), 'fill_gap' (fill a gap inside a row)"
           },
           instruction: {
             type: Type.STRING,
@@ -633,7 +714,7 @@ Return the complete pattern builder configuration.
   }
 
   // Ensure challenges have valid types (safety net — schema enum handles eval mode case)
-  const validChallengeTypes = ['extend', 'identify_core', 'create', 'translate', 'find_rule'];
+  const validChallengeTypes = ['extend', 'identify_core', 'create', 'translate', 'find_rule', 'copy', 'fill_gap'];
   data.challenges = (data.challenges || []).filter(
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
@@ -792,6 +873,32 @@ Return the complete pattern builder configuration.
         hint: 'Make your first part, then make the same part again.', narration: 'Make a pattern of your own.' });
     });
     if (creates.length) console.log(`[PatternBuilder] create shapes: [${shapes.join(', ')}]`);
+  }
+
+  // ── copy / fill_gap: every row, gap, palette, key and line of copy is code-written from the lesson's tokens; the
+  // model only chose which tokens fit the topic. A model row could fail to repeat, and a model gap could sit at the end
+  // or be the only token of its kind on the palette. ──
+  {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chs = data.challenges as any[];
+    const rows = chs.filter((c) => c.type === 'copy' || c.type === 'fill_gap');
+    // A pinned copy or fill_gap session is all code: `count` rows whatever the model returned (or the fallback put in).
+    const rowMode = singleMode === 'copy' || singleMode === 'fill_gap' ? singleMode : null;
+    if (rows.length || rowMode) {
+      const pool = rowTokenPool([...chs.flatMap((c) => [...(c.sequence?.given ?? []), ...(c.availableTokens ?? [])]),
+        ...(data.tokens?.available ?? [])], data.tokens?.type);
+      const n = rowMode ? count : rows.length;
+      const shapes = rowShapesFor(n);
+      data.challenges = rowMode
+        ? shapes.map((shape, i) => buildRowChallenge(rowMode, shape, pool, i)).filter(Boolean)
+        : chs.flatMap((c) => {
+          const at = rows.indexOf(c);
+          if (at < 0) return [c];
+          const built = buildRowChallenge(c.type, shapes[at], pool, at);
+          return built ? [{ ...built, id: c.id || built.id }] : [];
+        });
+      console.log(`[PatternBuilder] code-built ${n} copy/fill_gap row(s): [${shapes.join(', ')}] from [${pool.join(', ')}]`);
+    }
   }
 
   // ── Apply the support tier deterministically (per challenge) ──

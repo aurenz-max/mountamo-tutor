@@ -1,8 +1,9 @@
 /**
  * counting-board's card: how each mode is wired to the live tutor, in the shape every card shares
  * (`components/live-activity/boss.ts`). The catalog reads it; the behavior is `countingBoard.boss.ts`.
- * Eight modes are one spoken number the tutor judges against the key. Three are answered on the board and checked
- * by it: a hand picked to match a small group, a set handed over from a pile, a set put into an empty scene.
+ * Eight modes are one spoken number the tutor judges against the key. Four are answered on the board and checked
+ * by it: a hand picked to match a small group, a set handed over from a pile, a set put into an empty scene, a
+ * numeral card tapped for a counted set.
  */
 import type { CountMiss, SpokenCountMiss } from './countingBoardDomain';
 import { defineCard, OFF_BY, SPOKEN, SPOKEN_AUDIO, TAP_ONE } from '../../../components/live-activity/boss';
@@ -17,6 +18,7 @@ export const COUNTING_MISSES = {
   give_me_n: ['one_short', 'one_over', 'gave_all', 'short_by_more', 'over_by_more'],
   build_n: OFF_BY,
   subitize_perceptual: OFF_BY,
+  name_numeral: OFF_BY,
   count: ['skipped_a_number', ...OFF_BY],
   recount_moved: OFF_BY,
   subitize: OFF_BY,
@@ -32,6 +34,9 @@ export const countingBoardCard = defineCard<CountingBoardMiss>({
   grades: ['Kindergarten', 'Grade 1'],
   modes: {
     subitize_perceptual: { ...TAP_ONE, misses: COUNTING_MISSES.subitize_perceptual },
+    // COUNT001-01-A: count a set of 0-10 (an empty board included) and tap the numeral; the board checks the card.
+    name_numeral: { ...TAP_ONE, moves: 'touches each object to count it, then taps the number card that tells how many',
+      misses: COUNTING_MISSES.name_numeral },
     // RP-2 pilot on real Live transcripts (spoken-miss/rp2-pilot-2026-09-29): 0/510 right-answer and 0/393
     // non-answer readings named wrong.
     count: { ...SPOKEN, misses: COUNTING_MISSES.count, missFromWords: true },
@@ -53,7 +58,8 @@ export const countingBoardCard = defineCard<CountingBoardMiss>({
   words: {
     job: 'count the objects on a board and say how many: all of them, after a quick look, counting on from a group '
       + 'already counted, in groups, in the bigger of two groups, after some are taken away or put on, or after they '
-      + 'move; or make a set of the size asked for; or tap the hand that matches a small group',
+      + 'move; or make a set of the size asked for; or tap the hand that matches a small group; or tap the numeral '
+      + 'that tells how many, zero for an empty board',
     answer: 'the count',
     question: 'the ask and how to use the board',
   },

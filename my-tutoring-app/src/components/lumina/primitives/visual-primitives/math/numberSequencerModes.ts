@@ -10,7 +10,7 @@ export interface SequencerPlanItem {
 const mode = defineDiMode<SequencerPlanItem>();
 const identities = [
   ['count_from', 'count-from', 'Count From', 1.5, 1,
-    'Continue counting aloud, one number at a time, from a given start. Provide startNumber, direction and correctAnswers; sequence is empty or contains only the start. K counts forward.'],
+    'Continue counting aloud, one number at a time, from a given start. Provide startNumber, direction and correctAnswers; sequence is empty or contains only the start. K counts forward unless the lesson names counting back (then backward, down to 0).'],
   ['before_after', 'before-after', 'Before and After', 2.5, 2,
     'Say the adjacent missing number. Provide a two-element sequence with one null and one correct answer.'],
   ['spot_error', 'spot-error', 'Spot the Error', 3.5, 3,

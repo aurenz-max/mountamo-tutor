@@ -23,7 +23,15 @@
 - **Evidence:** `LengthLab.spoken.workspace.test.tsx` 8; sweep J14 fixed on compare and indirect; `tutor-verdict-probe.mjs --length` 26/30, false credit 0 (`qa/tutor-reports/length-lab-tutor-verdict-2026-10-13.json`).
 - **Probe:** `LengthLab.spoken.workspace.test.tsx`; `node scripts/tutor-verdict-probe.mjs --length`.
 
+### R4 — measure_compare: each count is the object's length, and the choice follows the counts · OBSERVED (2026-11-11)
+- **Property:** a measure_compare item (MEAS001-01-D, MEAS001-05-F) measures two objects with one unit, one at a time; only the object being measured is drawn, so the comparison is read from the two counts. Code owns both lengths, the ask word and the key (`lengthLabMeasureCompare.ts`): the tier sets the gap (easy 3, medium 2, hard 1; lengths 2-9), which object is longer alternates by item and the ask ("longer" / "shorter") by two items, and `correctAnswer` re-derives from the lengths (`measureCompareAnswer`; the boss refuses a key that does not). The measuring rows give no verdict of their own (`quiet`: Done, not Check); the item's check needs both counts right and the named object (`miscounted`, `picked_other`). Board, gesture only, no key to the tutor; the scene names no length or count before the learner measures. Levers: `object_outline` (help), `count_rows` (help, the learner's two rows redrawn from one start line, offered once both are measured), `shorter_object` (simplify, two plain objects four apart, the same ask). The fit line is the easy tier's only (as on tile_and_count).
+- **Demanded by:** qa/curriculum-coverage/math-k/REPORT.md "Modes to add" (MEAS001-01-D, MEAS001-05-F).
+- **Evidence:** `lengthLabMeasureCompare.test.ts` 3; `LengthLab.workspace.test.tsx` measure_compare case (wrong names `picked_other`, Try again clears, right completes); sweep on `w1-payloads/length-lab.measure_compare.json` (eval-test route generation 2026-11-11, medium).
+- **Probe:** `lengthLabMeasureCompare.test.ts`; `journeySweep -t length-lab.measure_compare`.
+
 ## Changelog
+
+- 2026-11-11 — R4 (`measure_compare`, β 2.8). R1-R3 unchanged: the new mode is a board like tile_and_count.
 
 - 2026-10-09 — created with R1 (W1 plain-shape binding).
 - 2026-10-09 — R2 (levers, every mode).

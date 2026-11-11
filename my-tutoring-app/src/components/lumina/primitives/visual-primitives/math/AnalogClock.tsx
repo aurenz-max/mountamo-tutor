@@ -160,6 +160,18 @@ function snapMinute(minute: number, gradeBand: string): number {
   return Math.round(minute / interval) * interval % 60;
 }
 
+/**
+ * K o'clock set_time (TIME001-03-E): the minute hand stays on 12 and the child turns only the hour
+ * hand. Only on a whole-hour target at K; a K :30 item, every other band and set_time_ampm drag the
+ * minute hand as before.
+ */
+export const minuteHandFixed = (challenge: Pick<ClockChallenge, 'type' | 'targetMinute'> | null | undefined, gradeBand: string): boolean =>
+  challenge?.type === 'set_time' && gradeBand === 'K' && challenge.targetMinute === 0;
+
+/** Where a set mode opens the hands: 12:00, or 6:00 when 12:00 is the target, so the default is never the answer. */
+export const setStartHour = (challenge: Pick<ClockChallenge, 'targetHour' | 'targetMinute'>): number =>
+  challenge.targetHour % 12 === 0 && challenge.targetMinute === 0 ? 6 : 12;
+
 /** Get angle from center to pointer position */
 function getAngleFromCenter(
   centerX: number, centerY: number,
@@ -675,7 +687,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
       // Reset clock to 12:00 — student drags to target
       setPickedPeriod(null);
       partMisses.current = { hands: 0, period: 0 };
-      setDisplayHour(12);
+      setDisplayHour(setStartHour(currentChallenge));
       setDisplayMinute(0);
       prevMinuteRef.current = 0;
     } else if (currentChallenge.type === 'elapsed') {
@@ -756,6 +768,15 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
     const centerY = rect.top + rect.height / 2;
     const angle = getAngleFromCenter(centerX, centerY, e.clientX, e.clientY);
 
+    // K o'clock set_time: the drag turns the hour hand to the nearest number; the minute hand stays on 12.
+    if (minuteHandFixed(currentChallenge, gradeBand)) {
+      const hour = Math.round(angle / 30) % 12 || 12;
+      if (hour !== displayHour) SoundManager.tick();
+      setDisplayHour(hour);
+      setDisplayMinute(0);
+      return;
+    }
+
     // Map angle to minute (0-59)
     const rawMinute = Math.round(angle / 6);
     const snapped = snapMinute(rawMinute >= 60 ? 0 : rawMinute, gradeBand);
@@ -770,7 +791,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
     } else if (prevMin <= 15 && snapped >= 45) {
       setDisplayHour(h => (h <= 1 ? 12 : h - 1));
     }
-  }, [isDragging, gradeBand]);
+  }, [isDragging, gradeBand, currentChallenge, displayHour]);
 
   const handlePointerUp = useCallback(() => {
     setIsDragging(false);
@@ -998,6 +1019,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
   clockView.current = {
     selectedOption, pickedHand, pickedPeriod, countedNumerals, displayHour, displayMinute,
     minuteNumbersShown: showMinuteNumbers, handLegendShown: showHandLegend, digitalEchoShown: showDigitalEcho,
+    minuteFixed: minuteHandFixed(currentChallenge, gradeBand),
   };
 
   // What the tutor and the observer are shown, republished every render. No demonstration, no presentation; the
@@ -1122,7 +1144,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId }: AnalogClockP
               {isSetMode(currentChallenge?.type) && !isDragging && !isCurrentChallengeCorrect && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <span className="text-xs text-slate-500 bg-slate-900/70 px-2 py-1 rounded-full">
-                    Drag to set time
+                    {minuteHandFixed(currentChallenge, gradeBand) ? 'Turn the short hand' : 'Drag to set time'}
                   </span>
                 </div>
               )}

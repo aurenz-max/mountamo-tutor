@@ -12,7 +12,8 @@ import { timeSequencerCard, type TimeSequencerMiss } from './timeSequencer.card'
 import { TIME_LEVERS, practiceItem, practiceParent } from './timeSequencerLevers';
 import { PERIODS, timeAsk, timeHarnessWords, timeItems, timeKey, timeModeOf, timeSpokenMisses } from './timeSequencerWorkspace';
 
-const CHALLENGE_TYPES = ['sequence-events', 'clock-sequence', 'match-time-of-day', 'before-after', 'duration-compare', 'read-schedule'];
+const CHALLENGE_TYPES = ['sequence-events', 'clock-sequence', 'match-time-of-day', 'before-after', 'duration-compare', 'read-schedule',
+  'missing-middle', 'duration-order'];
 const card = (e: EventCard | undefined) => !!e && typeof e.id === 'string' && !!e.id && typeof e.label === 'string' && !!e.label.trim();
 /** Cards a learner tells apart by name: distinct ids and labels. */
 const cardsOk = (cards: EventCard[] | undefined, min: number) => Array.isArray(cards) && cards.length >= min && cards.every(card)
@@ -22,10 +23,24 @@ const cardsOk = (cards: EventCard[] | undefined, min: number) => Array.isArray(c
 function answerable(c: TimeSequencerChallenge): boolean {
   switch (c.type) {
     case 'sequence-events':
-    case 'clock-sequence': {
+    case 'clock-sequence':
+    case 'duration-order': {
       const ids = (c.events ?? []).map(e => e.id), order = c.correctOrder ?? [];
+      const byId = new Map((c.events ?? []).map(e => [e.id, e]));
       return cardsOk(c.events, 2) && order.length === ids.length && new Set(order).size === order.length && order.every(id => ids.includes(id))
-        && (c.type !== 'clock-sequence' || (c.events ?? []).every(e => Number.isInteger(e.clockHour)));
+        && (c.type !== 'clock-sequence' || (c.events ?? []).every(e => Number.isInteger(e.clockHour)))
+        // The order is the minutes each activity takes, shortest first, every one longer than the one before.
+        && (c.type !== 'duration-order' || order.every((id, i) => {
+          const m = byId.get(id)?.minutes;
+          return typeof m === 'number' && m > 0 && (i === 0 || m > (byId.get(order[i - 1])?.minutes ?? Infinity));
+        }));
+    }
+    case 'missing-middle': {
+      const ends = [c.firstEvent?.label.trim(), c.lastEvent?.label.trim()];
+      return card(c.firstEvent) && card(c.lastEvent) && cardsOk(c.options, 2) && (c.options ?? []).some(e => e.id === c.correctEvent)
+        && (c.options ?? []).every(e => !ends.includes(e.label.trim()))
+        // Every other option is a step before the first card or after the last one, so its miss can be named.
+        && (c.options ?? []).every(e => e.id === c.correctEvent || c.optionPlaces?.[e.id] === 'before' || c.optionPlaces?.[e.id] === 'after');
     }
     case 'match-time-of-day': return card(c.event) && (PERIODS as readonly string[]).includes(c.correctPeriod ?? '');
     case 'before-after':

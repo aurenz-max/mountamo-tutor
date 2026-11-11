@@ -1,0 +1,82 @@
+{
+ "source": "eval-test 2026-11-11 kindergarten (ts-tod.json)",
+ "primitiveId": "time-sequencer",
+ "evalMode": "time-of-day",
+ "data": {
+  "title": "Field Trip Day Routine",
+  "description": "Help organize our exciting field trip schedule by figuring out when each fun thing happens!",
+  "gradeBand": "K",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "match-time-of-day",
+    "instruction": "Pack your backpack and put on your shoes for the big trip!",
+    "hint": "Think about what you do right after you wake up.",
+    "event": {
+     "id": "evt1",
+     "label": "Pack backpack",
+     "emoji": "🎒",
+     "typicalTime": "7:30 AM",
+     "dayFraction": 0.313
+    },
+    "correctPeriod": "morning"
+   },
+   {
+    "id": "c2",
+    "type": "match-time-of-day",
+    "instruction": "Close your eyes and dream about the animals you saw today.",
+    "hint": "When is it time to put on your pajamas and rest?",
+    "event": {
+     "id": "evt2",
+     "label": "Fast asleep",
+     "emoji": "😴",
+     "typicalTime": "8:30 PM",
+     "dayFraction": 0.854
+    },
+    "correctPeriod": "night"
+   },
+   {
+    "id": "c3",
+    "type": "match-time-of-day",
+    "instruction": "Wash off all the dirt and playground fun in the tub.",
+    "hint": "This happens when the sky starts to turn orange after dinner.",
+    "event": {
+     "id": "evt3",
+     "label": "Splashy bath",
+     "emoji": "🛁",
+     "typicalTime": "6:30 PM",
+     "dayFraction": 0.771
+    },
+    "correctPeriod": "evening"
+   },
+   {
+    "id": "c4",
+    "type": "match-time-of-day",
+    "instruction": "Ride the big yellow bus back home with your friends.",
+    "hint": "Think about what happens when the sun is high up after lunchtime.",
+    "event": {
+     "id": "evt4",
+     "label": "Bus ride home",
+     "emoji": "🚌",
+     "typicalTime": "2:30 PM",
+     "dayFraction": 0.604
+    },
+    "correctPeriod": "afternoon"
+   },
+   {
+    "id": "c5",
+    "type": "match-time-of-day",
+    "instruction": "Eat a yummy breakfast to get energy for the journey.",
+    "hint": "What is the very first meal you eat after getting out of bed?",
+    "event": {
+     "id": "evt5",
+     "label": "Eat yummy eggs",
+     "emoji": "🍳",
+     "typicalTime": "7:00 AM",
+     "dayFraction": 0.292
+    },
+    "correctPeriod": "morning"
+   }
+  ]
+ }
+}

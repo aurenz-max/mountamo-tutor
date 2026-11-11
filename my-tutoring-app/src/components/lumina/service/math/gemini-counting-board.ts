@@ -20,6 +20,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { resolveObjectiveRange } from "../objectiveNumberWindow";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -38,7 +39,9 @@ type ChallengeType =
   | 'take_away'
   | 'add_more'
   // Open build (/add-eval-modes references/build-mode.md): make the set on an empty scene
-  | 'build_n';
+  | 'build_n'
+  // Count a set of 0-10 and tap its numeral, an empty board included (COUNT001-01-A)
+  | 'name_numeral';
 
 const DEFAULT_INSTANCE_COUNT = 7; // tier fallback (T1 — fast-tap K-1 counting)
 const MAX_INSTANCE_COUNT = 8;
@@ -48,6 +51,7 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
   // Each build is longer than a tap-count: fewer boards.
   build_n: 4,
   recount_moved: 5,
+  name_numeral: 6,
   take_away: 5,
   add_more: 5,
   count_all: 7,
@@ -91,10 +95,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   subitize: {
     promptDoc:
-      `"subitize": Objects are always visible. Student looks and quickly recognizes how many `
-      + `without counting one by one, then types their answer. `
-      + `Best for small counts (1-5 for K, up to 10 for Grade 1). `
-      + `Use encouraging language like "How many do you see right away?"`,
+      `"subitize": Student recognizes how many at a glance, without counting one by one, and SAYS the number out loud. `
+      + `At K (gradeBand "K") the app flashes the objects briefly and then hides them before the child answers; `
+      + `at Grade 1 the objects stay visible, but the board cannot be tapped. `
+      + `The instruction must ask the child to look and say how many ("Quick look! How many? Say it!"); `
+      + `never tell the child to type, tap, touch, point at or count the objects one by one. `
+      + `Best for small counts (1-5 for K, up to 10 for Grade 1).`,
     schemaDescription: "'subitize' (quick visual recognition)",
   },
   subitize_perceptual: {
@@ -118,13 +124,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"group_count": Objects in groups. Use arrangement 'groups' with groupSize of 2, 3, 4, or 5. `
       + `Use only 2-3 groups total (so count = groupSize × numGroups, e.g. 3 groups of 4 = 12). `
-      + `targetAnswer = count. Grade 1 only.`,
+      + `targetAnswer = count. Grade 1; at K when the lesson names counting by 2s, 5s or 10s (code sets the groups).`,
     schemaDescription: "'group_count' (count by groups)",
   },
   give_me_n: {
     promptDoc:
       `"give_me_n": A PILE of objects is on the board and the child hands back a smaller set. `
-      + `Set count to the size of the PILE (6-12 at K, or the topic bound if it is smaller). `
+      + `Set count to the size of the PILE (6-12 at K, bigger when the lesson counts out teens, or the topic bound if it is smaller). `
       + `The app decides how many are asked for AFTER you answer, so never state a quantity in the instruction. `
       + `K.CC.B.5 — counting out a named number from many.`,
     schemaDescription: "'give_me_n' (count out a set from a pile)",
@@ -136,6 +142,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `how many are asked for AFTER you answer, so never state a quantity in the instruction. `
       + `K.CC.B.5 — make a set of a named size (open build: the child produces the set, nothing is drawn to count).`,
     schemaDescription: "'build_n' (make a set of N on an empty scene)",
+  },
+  name_numeral: {
+    promptDoc:
+      `"name_numeral": The child counts the objects on the board and taps the written numeral that tells how many. `
+      + `The app sets every count (0-10, one board EMPTY so its numeral is 0) and the numeral cards after you answer, `
+      + `so never state a quantity in the instruction. K.CC.A.3 / K.CC.B.4a — match a counted set to its numeral.`,
+    schemaDescription: "'name_numeral' (count, then tap the numeral)",
   },
   recount_moved: {
     promptDoc:
@@ -227,6 +240,7 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
   switch (pinnedType) {
     case 'count_all':
     case 'count_on':
+    case 'name_numeral':
       promptLines.push(
         tier === 'easy'
           ? 'Arrange the objects in a neat line and keep the running tally and per-object number tags visible so the student can self-check one-to-one as they tap.'
@@ -548,8 +562,8 @@ export const generateCountingBoard = async (ctx: GenerationContext): Promise<Cou
   // times in five on a live atlas draw (CNB-1: 2, 2, 5, 2, 5). Code hands out
   // distinct requests, and the pile stays countable — a child cannot count out
   // five from a heap of twenty at a glance, whatever the model picked.
-  const givePileCap = Math.max(4, Math.min(scopeCeiling, 12));
-  const giveRequests = [2, 3, 4, 5, 6]
+  let givePileCap = Math.max(4, Math.min(scopeCeiling, 12));
+  let giveRequests = [2, 3, 4, 5, 6]
     .filter((n) => n + 2 <= givePileCap)
     .map((n) => ({ n, k: Math.random() }))
     .sort((a, b) => a.k - b.k)
@@ -562,6 +576,58 @@ export const generateCountingBoard = async (ctx: GenerationContext): Promise<Cou
     .sort((a, b) => a.k - b.k)
     .map(({ n }) => n);
   let buildIndex = 0;
+
+  // THE OBJECTIVE'S OWN WINDOW for the modes whose numbers code picks (math-k audit 2026-11-10): give_me_n
+  // asked for 2-6 from a pile of 12 whatever the lesson said, so "count out teens" (COUNT001-02-D) never reached
+  // a teen; group_count at K never counted by 2s to 20 (COUNT001-02-F); name_numeral reads a "0-5" lesson as 0-5.
+  // The window is read off the lesson, bounded by what the board can draw (capacity), and null keeps each mode's
+  // default. It runs beside the main call: these numbers are assigned after the model answers.
+  const RANGE_DEFAULTS: Partial<Record<ChallengeType, { min: number; max: number; quantity: string }>> = {
+    give_me_n: { min: 2, max: 6, quantity: 'how many objects the child counts out of a pile' },
+    group_count: { min: 4, max: 15, quantity: 'how many objects the child counts in groups' },
+    name_numeral: { min: 0, max: 10, quantity: 'how many objects the child counts and names with a numeral' },
+  };
+  const rangeModes = ((evalConstraint?.allowedTypes ?? Object.keys(RANGE_DEFAULTS)) as ChallengeType[])
+    .filter((t) => RANGE_DEFAULTS[t]);
+  const rangeLead = rangeModes[0] ? RANGE_DEFAULTS[rangeModes[0]]! : null;
+  const objectiveRangePromise: Promise<{ min: number; max: number } | null> = rangeLead
+    ? resolveObjectiveRange({
+        topic,
+        intent: config?.intent,
+        objectiveText: ctx.objective?.text,
+        gradeLevel,
+        quantity: rangeLead.quantity,
+        bandDefault: { min: rangeLead.min, max: rangeLead.max },
+        capacity: { min: 0, max: bandCeiling },
+        logPrefix: 'CountingBoard',
+      })
+    : Promise.resolve(null);
+
+  // The skip-count step a lesson names ("count by 2s", "groups of 5"). Explicit config.groupSize wins.
+  const skipStepIn = (text?: string): number | undefined => {
+    const m = (text ?? '').match(/\b(?:by|groups? of)\s+(2|5|10|twos|fives|tens)(?:'?s)?\b/i);
+    if (!m) return undefined;
+    const word = m[1].toLowerCase();
+    return word === 'twos' ? 2 : word === 'fives' ? 5 : word === 'tens' ? 10 : parseInt(word, 10);
+  };
+  const namedStep = [topic, config?.intent, ctx.objective?.text].map(skipStepIn).find((n) => n !== undefined);
+
+  /** Distinct values from a window, the upper half first (shuffled within each half), so a wide window such as
+   *  1-20 reaches its top rather than drawing small numbers again. */
+  const spreadDraw = (lo: number, hi: number): number[] => {
+    const values = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const shuffle = (xs: number[]) => xs.map((n) => ({ n, k: Math.random() })).sort((a, b) => a.k - b.k).map(({ n }) => n);
+    const upper = shuffle(values.filter((n) => n > mid));
+    const lower = shuffle(values.filter((n) => n <= mid));
+    const out: number[] = [];
+    while (upper.length || lower.length) {
+      if (upper.length) out.push(upper.shift()!);
+      if (lower.length) out.push(lower.shift()!);
+    }
+    return out;
+  };
+
   const countOnLines = countOnPairs
     .map((p, i) => `  - Challenge ${i + 1}: startFrom=${p.startFrom}, count=${p.total} (counts on ${p.extra} more)`)
     .join('\n');
@@ -656,7 +722,7 @@ Return the complete counting board configuration.
   // share their names with their challenge types, so the capability keys match.
   const adaptationMode = plannedMode(evalConstraint);
   const adaptationTask = adaptationTaskFor(ctx, topic, { mode: adaptationMode, tier: supportTier ?? undefined });
-  const [result, move] = await Promise.all([
+  const [result, move, objectiveRange] = await Promise.all([
     ai.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
@@ -666,7 +732,44 @@ Return the complete counting board configuration.
       },
     }),
     planAdaptation<string>(ctx, { task: adaptationTask, capability: countingBoardTeachingFor(adaptationMode), eligible: eligibleCountingBoardTeaching }),
+    objectiveRangePromise,
   ]);
+
+  // give_me_n: with a named window the requests come from it and the pile grows to hold them (within the
+  // lesson's scope ceiling and the board's capacity); without one, the 2-6 / pile-of-12 default stands.
+  if (objectiveRange) {
+    givePileCap = Math.max(4, Math.min(scopeCeiling, Math.max(12, objectiveRange.max + 2)));
+    giveRequests = spreadDraw(Math.max(1, objectiveRange.min), Math.min(objectiveRange.max, givePileCap - 2));
+    if (giveRequests.length === 0) giveRequests = [2, 3, 4].filter((n) => n + 2 <= givePileCap);
+  }
+
+  // group_count: a named step (or config.groupSize) sets the group size, and the number of groups is drawn so the
+  // totals reach the window's top ("by 2s to 20" -> up to ten groups of two). Otherwise the 2-3 groups of 2-5 stand.
+  const groupStep = config?.groupSize ?? namedStep;
+  const groupTop = Math.min(scopeCeiling, objectiveRange?.max ?? scopeCeiling);
+  const groupCounts = groupStep && [2, 5, 10].includes(groupStep)
+    ? spreadDraw(2, Math.max(2, Math.min(10, Math.floor(groupTop / groupStep))))
+    : [];
+  let groupIndex = 0;
+
+  // name_numeral: distinct counts 0-10 (or the named window inside it), one of them an empty board when 0 is in
+  // range, in a shuffled order so the empty board is not always first or last.
+  const numeralLo = Math.max(0, objectiveRange?.min ?? 0);
+  const numeralHi = Math.min(10, Math.max(numeralLo + 2, objectiveRange?.max ?? 10));
+  const numeralCounts = (() => {
+    const pool = spreadDraw(numeralLo, numeralHi);
+    const picked = pool.slice(0, targetCount);
+    if (numeralLo === 0 && !picked.includes(0)) picked[picked.length - 1] = 0;
+    return picked.map((n) => ({ n, k: Math.random() })).sort((a, b) => a.k - b.k).map(({ n }) => n);
+  })();
+  let numeralIndex = 0;
+
+  // recount_moved (COUNT001-02-C): every board is drawn bigger or smaller after its move, half each way in a
+  // shuffled order, so the child cannot learn which way it goes and the size is never tied to the count.
+  const movedSizes: Array<'bigger' | 'smaller'> = Array.from({ length: targetCount }, (_, i) => (i % 2 === 0 ? 'bigger' as const : 'smaller' as const))
+    .map((v) => ({ v, k: Math.random() }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ v }) => v);
 
   const data = result.text ? JSON.parse(result.text) : null;
 
@@ -745,7 +848,7 @@ Return the complete counting board configuration.
   // Filter to valid challenge types (safety net — schema enum handles the eval mode case)
   const validChallengeTypes = [
     'count_all', 'subitize', 'subitize_perceptual', 'count_on', 'group_count', 'compare',
-    'give_me_n', 'recount_moved', 'take_away', 'add_more', 'build_n',
+    'give_me_n', 'recount_moved', 'take_away', 'add_more', 'build_n', 'name_numeral',
   ];
   const validArrangements = ['scattered', 'line', 'groups', 'circle'];
 
@@ -789,11 +892,17 @@ Return the complete counting board configuration.
     // give_me_n is the one mode whose ask STATES the target — "give me five
     // bears" is the task, not a leak (publicValuesFor says the same on the
     // spoken side).
-    if (challenge.type !== 'give_me_n' && challenge.type !== 'build_n' && leak.test(challenge.instruction ?? '')) {
+    // A subitize board cannot be tapped and its answer is spoken: an instruction that sends the
+    // child to type, tap or count one by one names an answer channel the board does not have.
+    const wrongChannel = challenge.type === 'subitize'
+      && /\b(type|typing|tap|tapping|touch|point|count (each|them|one)|one by one)\b/i.test(challenge.instruction ?? '');
+    if (wrongChannel
+      || (challenge.type !== 'give_me_n' && challenge.type !== 'build_n' && leak.test(challenge.instruction ?? ''))) {
       const fallbackAsk: Record<string, string> = {
         recount_moved: `Count the ${objectWordForBoard}. Then watch them move!`,
         take_away: 'Take some away. How many are left?',
         add_more: 'Put more on the board. How many altogether?',
+        name_numeral: `Count the ${objectWordForBoard}. Tap the number that tells how many.`,
         count_all: `Can you count all the ${objectWordForBoard}?`,
         subitize: 'How many do you see right away?',
         subitize_perceptual: 'How many do you see?',
@@ -846,6 +955,24 @@ Return the complete counting board configuration.
       const numGroups = Math.random() < 0.5 ? 2 : 3;
       challenge.groupSize = gs;
       challenge.count = gs * numGroups;
+      // The lesson named a step: count by it, as far as its window reaches.
+      if (groupCounts.length > 0 && groupStep) {
+        challenge.groupSize = groupStep;
+        challenge.count = groupStep * groupCounts[groupIndex % groupCounts.length];
+        groupIndex += 1;
+      }
+    }
+
+    // name_numeral: code owns the count, the answer and the ask. Zero is a real board here.
+    if (challenge.type === 'name_numeral') {
+      challenge.count = numeralCounts[numeralIndex % numeralCounts.length] ?? 0;
+      numeralIndex += 1;
+      challenge.targetAnswer = challenge.count;
+      challenge.instruction = `Count the ${objectWordForBoard}. Tap the number that tells how many.`;
+      // The model wrote these for a count code has since replaced ("count all ten" on a board of one, "this empty
+      // tank" on a board of seven), so code writes them: no number, no word for an empty board.
+      challenge.hint = 'Touch them as you count. If there are none, find the number for none.';
+      challenge.narration = `Count the ${objectWordForBoard}, then find the number that tells how many.`;
     }
 
     // compare: force 2 groups with different sizes so one is visibly "more"
@@ -859,8 +986,8 @@ Return the complete counting board configuration.
       compareIndex += 1;
     }
 
-    // Validate count
-    if (!challenge.count || challenge.count < 1) {
+    // Validate count (name_numeral's empty board is a count of 0 by design)
+    if (challenge.type !== 'name_numeral' && (!challenge.count || challenge.count < 1)) {
       challenge.count = 5;
     }
     if (data.gradeBand === 'K' && challenge.count > 20) {
@@ -920,6 +1047,7 @@ Return the complete counting board configuration.
         movedIndex += 1;
       }
       challenge.targetAnswer = challenge.count;
+      challenge.sizeChange = movedSizes[(movedIndex - 1 + movedSizes.length) % movedSizes.length];
       // A tidy start makes the move visible; the component scatters them after.
       challenge.arrangement = 'line';
       challenge.instruction = `Count the ${objectWordForBoard}. Then watch them move!`;
@@ -953,7 +1081,7 @@ Return the complete counting board configuration.
     }
 
     // Force targetAnswer = count (except compare, where targetAnswer = larger group)
-    if (['count_all', 'group_count', 'count_on', 'subitize', 'subitize_perceptual'].includes(challenge.type)) {
+    if (['count_all', 'group_count', 'count_on', 'subitize', 'subitize_perceptual', 'name_numeral'].includes(challenge.type)) {
       challenge.targetAnswer = challenge.count;
     }
 
@@ -968,7 +1096,7 @@ Return the complete counting board configuration.
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'count_all';
-    const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; compareGroups?: number[]; startFrom?: number; changeBy?: number }> = {
+    const fallbacks: Record<string, { type: string; count: number; arrangement: string; instruction: string; targetAnswer: number; hint: string; narration: string; groupSize?: number; compareGroups?: number[]; startFrom?: number; changeBy?: number; sizeChange?: 'bigger' | 'smaller' }> = {
       count_all: { type: 'count_all', count: 5, arrangement: 'scattered', instruction: `Can you count all the ${data.objects?.type || 'stars'}?`, targetAnswer: 5, hint: 'Touch each one as you count!', narration: "Let's count together! Touch each one as you count." },
       subitize: { type: 'subitize', count: 4, arrangement: 'scattered', instruction: 'How many do you see right away?', targetAnswer: 4, hint: 'Look at the whole group — how many?', narration: "Look carefully — how many do you see without counting?" },
       subitize_perceptual: { type: 'subitize_perceptual', count: 2, arrangement: 'scattered', instruction: 'How many do you see?', targetAnswer: 2, hint: 'Look quickly — how many?', narration: 'Look carefully. How many do you see?' },
@@ -976,7 +1104,8 @@ Return the complete counting board configuration.
       group_count: { type: 'group_count', count: 8, arrangement: 'groups', instruction: 'Count the groups! How many altogether?', targetAnswer: 8, hint: 'Count each group, then add them up!', narration: "Let's count by groups!", groupSize: 4 },
       give_me_n: { type: 'give_me_n', count: 8, arrangement: 'scattered', instruction: `Give me four ${data.objects?.type || 'stars'}.`, targetAnswer: 4, hint: 'Count out loud as you touch each one.', narration: 'Count them out one at a time.' },
       build_n: { type: 'build_n', count: 4, arrangement: 'scattered', instruction: `Put four ${data.objects?.type || 'stars'} ${buildPlaceFor(data.objects?.type || 'stars').place}.`, targetAnswer: 4, hint: 'Count each one as you put it in.', narration: 'Make a set of your own.' },
-      recount_moved: { type: 'recount_moved', count: 5, arrangement: 'line', instruction: `Count the ${data.objects?.type || 'stars'}. Then watch them move!`, targetAnswer: 5, hint: 'Moving them does not change how many.', narration: 'They moved — but how many are there now?' },
+      recount_moved: { type: 'recount_moved', count: 5, arrangement: 'line', instruction: `Count the ${data.objects?.type || 'stars'}. Then watch them move!`, targetAnswer: 5, hint: 'Moving them does not change how many.', narration: 'They moved — but how many are there now?', sizeChange: 'bigger' },
+      name_numeral: { type: 'name_numeral', count: 4, arrangement: 'scattered', instruction: `Count the ${data.objects?.type || 'stars'}. Tap the number that tells how many.`, targetAnswer: 4, hint: 'Touch each one as you count.', narration: 'Count them, then find the number.' },
       take_away: { type: 'take_away', count: 6, changeBy: 2, arrangement: 'scattered', instruction: `Take away two ${data.objects?.type || 'stars'}. How many are left?`, targetAnswer: 4, hint: 'Count only the ones still on the board.', narration: 'Take some away, then count what is left.' },
       add_more: { type: 'add_more', count: 4, changeBy: 2, arrangement: 'scattered', instruction: `Put two more ${data.objects?.type || 'stars'} on the board. How many altogether?`, targetAnswer: 6, hint: 'Count on from the ones already there.', narration: 'Put more on, then count them all.' },
       compare: { type: 'compare', count: 11, arrangement: 'groups', instruction: 'Which group has more?', targetAnswer: 7, hint: 'Count each group and compare!', narration: "Which side has more? Let's find out!", groupSize: 7, compareGroups: [4, 7] },
@@ -1059,7 +1188,7 @@ Return the complete counting board configuration.
     // and compare own 'groups' structurally, so the tier never overrides them.
     if (
       tierScaffold.arrangement &&
-      (pinnedType === 'count_all' || pinnedType === 'count_on' ||
+      (pinnedType === 'count_all' || pinnedType === 'count_on' || pinnedType === 'name_numeral' ||
         pinnedType === 'subitize' || pinnedType === 'subitize_perceptual')
     ) {
       // subitize_perceptual is clamped to scattered/groups upstream — only relax it

@@ -26,7 +26,7 @@ import { useWorkspaceProgressFor } from '../../../components/live-activity/runti
 import { leverScene } from '../../../components/live-activity/bossLevers';
 import {
   CANVAS_HEIGHT, CANVAS_WIDTH, checkShapeProperties, describeShapeWork, freeTrace, gridDots as generateGridDots,
-  nextTraceCorner, shapeTracerMiss, tierGuides, traceAccepts, workspaceScene, type ShapeTracerView,
+  cornerTap, nextTraceCorner, shapeTracerMiss, tierGuides, workspaceScene, type ShapeTracerView,
 } from './shapeTracerWorkspace';
 import {
   BARS_LEVER, FADE_LEVER, OUTLINE_LEVER, RINGS_LEVER, SHAPE_TRACER_LEVERS, STRIP_LEVER, cornerRings, guidesWith,
@@ -173,7 +173,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId }: ShapeTracerP
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [revealedShape, setRevealedShape] = useState('');
-  /** The last tap was refused (not the next corner, or a grid dot already used); the tutor is told. */
+  /** The last tap was refused without a check (a grid dot already used); the tutor is told. */
   const [refusedTap, setRefusedTap] = useState(false);
   // Levers (`shapeTracerLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
   // lever put on screen in its place.
@@ -323,18 +323,30 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId }: ShapeTracerP
     commitCheck.current(describeShapeWork(ch, work), true);
   }, []);
 
+  /**
+   * A trace or completion corner out of turn: the activity's checked wrong answer, counted as an attempt with its
+   * named miss (the same as a connect-dots dot out of order). The corners already tapped stay through Try again.
+   */
+  const missCorner = useCallback((ch: ShapeTracerChallenge, work: ShapeTracerView, idx: number, message: string) => {
+    SoundManager.invalid();
+    setFeedback(message);
+    setFeedbackType('error');
+    commitCheck.current(describeShapeWork(ch, work, idx), false,
+      shapeTracerMiss(ch, { tapped: work.tapped, points: [], wrongDot: idx }));
+  }, []);
+
   // ── Interaction Handlers ──────────────────────────────────────────
 
   const handleTraceTap = useCallback((vertexIndex: number) => {
     if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     const path = currentChallenge?.tracePath;
-    if (!path) return;
+    if (!path || !currentChallenge) return;
 
-    if (!traceAccepts(path.length, tappedIndices, vertexIndex, freeStart)) {
-      SoundManager.invalid();
-      setFeedback(freeStart ? 'Tap the corner right next to your last one!' : 'Try tapping the next dot in order!');
-      setFeedbackType('error');
-      setRefusedTap(true);
+    const tap = cornerTap(currentChallenge, tappedIndices, vertexIndex);
+    if (tap === 'repeat') return;
+    if (tap === 'wrong') {
+      missCorner(currentChallenge, view, vertexIndex,
+        freeStart ? 'Tap the corner right next to your last one!' : 'Try tapping the next dot in order!');
       return;
     }
 
@@ -355,18 +367,17 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId }: ShapeTracerP
       creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, freeStart, creditShape]);
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, freeStart, creditShape, missCorner]);
 
   const handleCompleteTap = useCallback((vertexIndex: number) => {
     if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     const remaining = currentChallenge?.remainingVertices;
-    if (!remaining) return;
+    if (!remaining || !currentChallenge) return;
 
-    if (vertexIndex !== tappedIndices.length) {
-      SoundManager.invalid();
-      setFeedback('Tap the next dot to add the next side!');
-      setFeedbackType('error');
-      setRefusedTap(true);
+    const tap = cornerTap(currentChallenge, tappedIndices, vertexIndex);
+    if (tap === 'repeat') return;
+    if (tap === 'wrong') {
+      missCorner(currentChallenge, view, vertexIndex, 'Tap the next dot to add the next side!');
       return;
     }
 
@@ -387,7 +398,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId }: ShapeTracerP
       creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, creditShape]);
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, creditShape, missCorner]);
 
   const handleGridDotClick = useCallback((dot: { x: number; y: number }) => {
     if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;

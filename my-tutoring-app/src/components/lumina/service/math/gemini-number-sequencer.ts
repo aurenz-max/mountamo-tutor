@@ -13,6 +13,7 @@ import {
   buildModeConstraintSection,
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
+import { resolveObjectiveRange } from "../objectiveNumberWindow";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -332,6 +333,37 @@ function kindergartenObjectiveNames100(...signals: Array<string | undefined>): b
   return signals.some((signal) => /\b(?:100|one[ -]hundred)\b/i.test(signal ?? ''));
 }
 
+/**
+ * The lesson names counting BACK ("count backwards from 10 to 0", "count forward and backward within 5",
+ * "count down"). At K the generator used to count forward only, so these objectives (COUNT001-02-H, OPS001-03-A)
+ * got a different skill. Exported for the window tests.
+ */
+export function lessonNamesCountingBack(...signals: Array<string | undefined>): boolean {
+  return signals.some((signal) =>
+    /\bcount(?:s|ing)?\s+(?:back|backwards?|down)\b|\bbackwards?\b|\bcount\s*down\b|\bcountdown\b/i.test(signal ?? ''));
+}
+
+/** Most continuation values one count-from challenge may ask for (the domain's key gate allows 6). */
+const MAX_COUNT_RUN = 6;
+
+/**
+ * A count-back run that ends exactly on `end`: start at `end + length`, say each number down to `end`.
+ * A run that ends on the window's floor is how "count back to 0" reaches 0.
+ */
+export function countBackRun(
+  end: number,
+  length: number,
+  id: string,
+): NumberSequencerChallenge {
+  const n = Math.max(1, Math.min(MAX_COUNT_RUN, length));
+  const start = end + n;
+  const answers = Array.from({ length: n }, (_, i) => start - 1 - i);
+  return {
+    id, type: 'count-from', instruction: `Count back from ${start}!`, sequence: [start], correctAnswers: answers,
+    rangeMin: end, rangeMax: start, startNumber: start, direction: 'backward',
+  };
+}
+
 // ---------------------------------------------------------------------------
 // order-cards presentation: the pool must actually be OUT of order
 // ---------------------------------------------------------------------------
@@ -610,8 +642,10 @@ function buildFallbackChallenge(
   type: ChallengeType,
   range: { min: number; max: number },
   ordinal = 0,
+  direction: 'forward' | 'backward' = 'forward',
 ): NumberSequencerChallenge {
-  const rangeLo = Math.max(1, Math.round(range.min));
+  // Zero is a legal floor: a K count-back lesson ends on 0 (COUNT001-02-H).
+  const rangeLo = Math.max(0, Math.round(range.min));
   const hi = Math.max(rangeLo + 1, Math.round(range.max));
   const maxWindowStart = Math.max(rangeLo, hi - 4);
   // Walk the range in 5s and WRAP: saturating at maxWindowStart made every ordinal
@@ -628,6 +662,7 @@ function buildFallbackChallenge(
 
   switch (type) {
     case 'count-from':
+      if (direction === 'backward') return countBackRun(lo, values.length - 1, id);
       return { id, type, instruction: `Count forward from ${lo}!`, sequence: [lo], correctAnswers: values.slice(1), rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
     case 'spot-error':
       return { id, type, instruction: 'Which printed number does not belong? Say that number.', sequence: values, correctAnswers: [], rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
@@ -779,24 +814,52 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
   // Structured numeric scope. Grade 1 pays for one tiny resolver call only when
   // the manifest did not already provide a range. Generic/no-bound lessons retain
   // the legacy 1-100 default; an explicit lesson bound may extend through 120.
+  // A K lesson that names counting back ("from 10 to 0", "forward and backward within 5") gets backward
+  // count-from runs, and its window floor drops to 0 so a countdown can end on zero (COUNT001-02-H, OPS001-03-A).
+  const kCountsBack = gradeBand === 'K' && lessonNamesCountingBack(
+    ctx.objective.text,
+    config?.objectiveText,
+    topic,
+    config?.intent,
+  );
+  // "Count forward AND backward" (OPS001-03-A) keeps both directions; a count-back-only lesson counts back.
+  const kCountsBothWays = kCountsBack && [ctx.objective.text, config?.objectiveText, topic, config?.intent]
+    .some((signal) => /\bforwards?\b|\bcount(?:s|ing)?\s+(?:on|up)\b/i.test(signal ?? ''));
   const defaultNumberRange = gradeBand === 'K'
-    ? { min: 1, max: kObjectiveTo100 ? 100 : 20 }
+    ? { min: kCountsBack ? 0 : 1, max: kObjectiveTo100 ? 100 : 20 }
     : { min: 1, max: 100 };
   const gradeCapabilityMax = gradeBand === 'K' ? (kObjectiveTo100 ? 100 : 20) : 120;
   let resolvedNumberRange = defaultNumberRange;
+  let rangeSource = 'grade-default';
   if (config?.numberRange) {
-    const min = Math.max(1, Math.round(config.numberRange.min));
+    const min = Math.max(0, Math.round(config.numberRange.min));
     const max = Math.min(gradeCapabilityMax, Math.round(config.numberRange.max));
     if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
       resolvedNumberRange = { min, max };
+      rangeSource = 'config';
     }
   } else if (gradeBand === '1') {
     const inferred = await resolveNumberSequencerRange(topic, ctx.objective.text, config?.intent);
-    if (inferred) resolvedNumberRange = inferred;
+    if (inferred) { resolvedNumberRange = inferred; rangeSource = 'topic-intent'; }
+  } else {
+    // K reads the objective's OWN window ("count back from 10 to 0" -> 0..10, "within 5" -> 0..5); the band
+    // default stands when the lesson names none. Capacity is what the train can draw and the key gate accepts
+    // (0-120), not the grade band.
+    const inferred = await resolveObjectiveRange({
+      topic,
+      intent: config?.intent,
+      objectiveText: config?.objectiveText ?? ctx.objective.text,
+      gradeLevel,
+      quantity: 'the numbers the child counts, orders or fills in',
+      bandDefault: defaultNumberRange,
+      capacity: { min: 0, max: 120 },
+      logPrefix: 'NumberSequencer',
+    });
+    if (inferred) { resolvedNumberRange = inferred; rangeSource = 'objective'; }
   }
   console.log(
     `[NumberSequencer] numeric window: ${resolvedNumberRange.min}-${resolvedNumberRange.max} `
-    + `(source=${config?.numberRange ? 'config' : resolvedNumberRange === defaultNumberRange ? 'grade-default' : 'topic-intent'})`,
+    + `(source=${rangeSource}${kCountsBack ? ', counts back' : ''})`,
   );
 
   // ── Within-mode support tier (config.difficulty) ──
@@ -818,6 +881,16 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
   // ── Pedagogical scope — binds output to the lesson objective (topic wins over grade band) ──
   const scope = resolvePedagogicalScope(topic, config, config?.intent);
   const scopeSection = buildScopePromptSection(scope);
+  const countBackSection = kCountsBack
+    ? `\n## COUNTING BACK (this lesson names it — overrides any forward-only line in this prompt)\n`
+      + (kCountsBothWays
+        ? `- The lesson counts BOTH ways: mix count-from challenges with direction "forward" and "backward". A backward `
+          + `run's correctAnswers go DOWN by one (start 7 -> 6, 5, 4).\n`
+        : `- Every count-from challenge uses direction "backward": startNumber is where the count starts and `
+          + `correctAnswers go DOWN by one (start 7 -> 6, 5, 4).\n`)
+      + `- At least one count-back run ends on ${resolvedNumberRange.min}.\n`
+      + `- The instruction names only the start ("Count back from 7!"), never the numbers the child says.\n`
+    : '';
 
   const prompt = `
 Create an educational number sequencing activity for teaching "${topic}" to ${gradeLevel} students.
@@ -830,15 +903,15 @@ CONTEXT:
 - Key skills: number sequence, before/after, counting on/back, number ordering, decade patterns
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${countBackSection}
 ${!evalResolution ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
-  * Numbers range from ${kObjectiveTo100 ? '1-100 because the objective explicitly names 100; include starts above 20' : '1-20'}
+  * Numbers range from ${resolvedNumberRange.min}-${resolvedNumberRange.max}${kObjectiveTo100 ? ' because the objective explicitly names 100; include starts above 20' : ''}
   * Simple sequences with 1 blank to fill
   * Before/after with small numbers (1-10 early, up to 20 later)
   * Order 3-4 cards with small numbers
-  * Count forward only (no backward for early K)
+  * ${kCountsBack ? 'Count BACKWARD — this lesson names counting back' : 'Count forward only (no backward for early K)'}
   * Warm, playful language ("What number is hiding?")
   * showDotArrays: true (helps with number recognition)
   * showNumberLine: true (visual support)
@@ -866,7 +939,7 @@ REQUIREMENTS:
 6. CRITICAL: For count-from, set startNumber and direction fields
 7. rangeMin and rangeMax should reflect the actual number range used in that challenge
 8. Use warm, encouraging instruction text appropriate for young children
-9. For gradeBand "K": do NOT include decade-fill challenges; ${kObjectiveTo100 ? 'the objective explicitly names 100, so use the 1-100 window and include starts above 20' : 'keep numbers 1-20'}
+9. For gradeBand "K": do NOT include decade-fill challenges; ${kObjectiveTo100 ? 'the objective explicitly names 100, so use the 1-100 window and include starts above 20' : `keep numbers ${resolvedNumberRange.min}-${resolvedNumberRange.max}`}
 10. For gradeBand "1": This render's resolved numeric window is ${resolvedNumberRange.min}-${resolvedNumberRange.max}. Default broad practice stays at or below 100; use 101-120 only when the AUTHORITATIVE scope explicitly requires it; never exceed 120. ${evalResolution?.allowedTypes.includes('decade-fill') ? 'Include decade-fill because the active eval-mode set allows it.' : evalResolution ? 'Do NOT introduce decade-fill or any other challenge type outside the active eval-mode set.' : 'In a genuinely mixed session, include at least one decade-fill challenge.'}
 11. Set gradeBand to "${gradeBand}"
 12. Set showNumberLine based on grade level guidance above
@@ -933,14 +1006,14 @@ Return the complete number sequencer configuration.
 
     // Validate range bounds
     const maxForGrade = resolvedNumberRange.max;
-    if (!challenge.rangeMin || challenge.rangeMin < 0) {
-      challenge.rangeMin = 1;
+    if (typeof challenge.rangeMin !== 'number' || challenge.rangeMin < 0) {
+      challenge.rangeMin = resolvedNumberRange.min;
     }
     if (!challenge.rangeMax || challenge.rangeMax > maxForGrade) {
       challenge.rangeMax = maxForGrade;
     }
     if (challenge.rangeMin > challenge.rangeMax) {
-      challenge.rangeMin = 1;
+      challenge.rangeMin = resolvedNumberRange.min;
     }
 
     // Validate Kindergarten constraints
@@ -949,12 +1022,15 @@ Return the complete number sequencer configuration.
       if (challenge.type === 'decade-fill') {
         challenge.type = 'fill-missing';
       }
-      // Keep the ordinary K cap at 20; an objective explicitly naming 100 widens it.
+      // Clamp into the resolved window: the band default (1-20, or 1-100 when the objective names 100) or the
+      // objective's own window, whose floor is 0 for a count-back lesson. A value clamped here breaks its
+      // run, and the key gate below drops it rather than ship a corrupted count.
+      const lo = resolvedNumberRange.min, hi = resolvedNumberRange.max;
       challenge.sequence = challenge.sequence.map((n: number | null) =>
-        n !== null ? Math.min(resolvedNumberRange.max, Math.max(1, n)) : null
+        n !== null ? Math.min(hi, Math.max(lo, n)) : null
       );
       challenge.correctAnswers = challenge.correctAnswers.map((n: number) =>
-        Math.min(resolvedNumberRange.max, Math.max(1, n))
+        Math.min(hi, Math.max(lo, n))
       );
     }
 
@@ -1165,6 +1241,77 @@ Return the complete number sequencer configuration.
     }
   }
 
+  // A count-from run longer than the key gate allows (6) is split, not dropped: the model writes "10 to 0" as one
+  // ten-number run, which the gate at the end would silently remove. Consecutive pieces keep every number: 10 -> 5,
+  // then 5 -> 0. A run that does not step by one stays as it is and the gate decides.
+  {
+    const split: NumberSequencerChallenge[] = [];
+    for (const c of data.challenges as NumberSequencerChallenge[]) {
+      const sign = c.direction === 'backward' ? -1 : 1;
+      const steps = c.type === 'count-from' && typeof c.startNumber === 'number' && c.correctAnswers.length > MAX_COUNT_RUN
+        && c.correctAnswers.every((n, i) => n === c.startNumber! + sign * (i + 1));
+      if (!steps) { split.push(c); continue; }
+      const pieceLength = Math.min(MAX_COUNT_RUN, Math.ceil(c.correctAnswers.length / Math.ceil(c.correctAnswers.length / MAX_COUNT_RUN)));
+      for (let from = 0, part = 1; from < c.correctAnswers.length; from += pieceLength, part++) {
+        const start = from === 0 ? c.startNumber! : c.correctAnswers[from - 1];
+        const answers = c.correctAnswers.slice(from, from + pieceLength);
+        split.push({ ...c, id: `${c.id}-${part}`, startNumber: start, sequence: [start], correctAnswers: answers,
+          instruction: `Count ${sign < 0 ? 'back' : 'on'} from ${start}!` });
+      }
+    }
+    data.challenges = split;
+  }
+
+  // COUNT001-02-H / OPS001-03-A: a K lesson that names counting back must count back, and down to the window's
+  // floor ("from 10 to 0" ends on 0). Code guarantees two runs whatever the model drew: one that ENDS on the
+  // floor and one that STARTS at the top. Each replaces a forward count-from from the end of the session, or is
+  // added when the session has none to replace. Only where count-from is allowed at all.
+  if (kCountsBack && (!evalResolution || evalResolution.allowedTypes.includes('count-from'))) {
+    const tierRun = supportTier ? resolveSupportStructure('count-from', supportTier).structuralCount : null;
+    const lo = resolvedNumberRange.min, hi = resolvedNumberRange.max;
+    const len = Math.min(MAX_COUNT_RUN, tierRun ?? 5, hi - lo);
+    const list = data.challenges as NumberSequencerChallenge[];
+    const isBack = (c: NumberSequencerChallenge) => c.type === 'count-from' && c.direction === 'backward';
+    const needed: NumberSequencerChallenge[] = [];
+    if (len >= 1 && !list.some((c) => isBack(c) && c.correctAnswers[c.correctAnswers.length - 1] === lo)) {
+      needed.push(countBackRun(lo, len, 'count-back-floor'));
+    }
+    if (len >= 1 && hi - len > lo && !list.some((c) => isBack(c) && c.startNumber === hi)) {
+      needed.push(countBackRun(hi - len, len, 'count-back-top'));
+    }
+    for (const run of needed) {
+      const forwardIndex = list.map((c, i) => ({ c, i }))
+        .filter(({ c }) => c.type === 'count-from' && c.direction !== 'backward')
+        .map(({ i }) => i)
+        .pop();
+      if (forwardIndex !== undefined) list[forwardIndex] = run;
+      else list.push(run);
+    }
+    // Both ways: if no forward run is left, one backward run that is not one of the two guaranteed ones is turned
+    // round over the same numbers (7 -> 4 becomes 4 -> 7); with none to turn, a short forward run is added.
+    if (kCountsBothWays && !list.some((c) => c.type === 'count-from' && c.direction !== 'backward')) {
+      const keep = new Set(needed.map((r) => r.id));
+      const at = list.findIndex((c) => isBack(c) && !keep.has(c.id)
+        && c.correctAnswers[c.correctAnswers.length - 1] !== lo && c.startNumber !== hi);
+      if (at >= 0) {
+        const c = list[at];
+        const from = c.correctAnswers[c.correctAnswers.length - 1];
+        const answers = Array.from({ length: c.correctAnswers.length }, (_, i) => from + i + 1);
+        list[at] = { ...c, id: `${c.id}-fwd`, direction: 'forward', startNumber: from, sequence: [from], correctAnswers: answers,
+          instruction: `Count on from ${from}!` };
+      } else if (hi - lo >= 2) {
+        const n = Math.min(MAX_COUNT_RUN, tierRun ?? 3, hi - lo);
+        const start = lo + Math.max(0, Math.floor((hi - lo - n) / 2));
+        list.push({ id: 'count-on-mid', type: 'count-from', instruction: `Count on from ${start}!`, sequence: [start],
+          correctAnswers: Array.from({ length: n }, (_, i) => start + i + 1), rangeMin: start, rangeMax: start + n,
+          startNumber: start, direction: 'forward' });
+      }
+    }
+    if (needed.length) {
+      console.log(`[NumberSequencer] count-back lesson → ensured runs ${needed.map((r) => `${r.startNumber}..${r.correctAnswers[r.correctAnswers.length - 1]}`).join(', ')}`);
+    }
+  }
+
   // ── Distinct-problem gate ──
   // One number window is one problem. K COUNT001-01-H served "1, _, 3, 4" two or
   // three times in a single session: flash-lite converges on a window as hard as it
@@ -1192,7 +1339,7 @@ Return the complete number sequencer configuration.
   const masteryFloor = Math.min(3, challengeCount);
   const topUpTarget = data.challenges.length < beforeDedupe ? challengeCount : masteryFloor;
   for (let ordinal = 0; data.challenges.length < topUpTarget && ordinal < 40; ordinal++) {
-    const candidate = buildFallbackChallenge(fallbackType, resolvedNumberRange, ordinal);
+    const candidate = buildFallbackChallenge(fallbackType, resolvedNumberRange, ordinal, kCountsBack ? 'backward' : 'forward');
     const signature = windowSignature(candidate);
     if (signatures.has(signature)) continue;
     signatures.add(signature);

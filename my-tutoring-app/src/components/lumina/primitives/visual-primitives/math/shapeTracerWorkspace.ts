@@ -9,7 +9,7 @@ import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { ShapeTracerChallenge } from './ShapeTracer';
 import type { ShapeTracerMiss } from './shapeTracer.card';
 
-export { DOT_MISSES, DRAW_MISSES, type ShapeTracerMiss } from './shapeTracer.card';
+export { CORNER_MISSES, DOT_MISSES, DRAW_MISSES, type ShapeTracerMiss } from './shapeTracer.card';
 
 export type Point = { x: number; y: number };
 
@@ -78,6 +78,16 @@ export function traceAccepts(n: number, tapped: readonly number[], idx: number, 
   return idx === (last + step + n) % n;
 }
 
+/**
+ * What a tap on corner `idx` does to a trace or a completion: `next` draws the side, `repeat` (the corner just tapped,
+ * a double tap) does nothing, and `wrong` is a corner out of turn, checked and counted as an attempt.
+ */
+export function cornerTap(c: ShapeTracerChallenge, tapped: readonly number[], idx: number): 'next' | 'repeat' | 'wrong' {
+  if (tapped.length && tapped[tapped.length - 1] === idx) return 'repeat';
+  if (c.type === 'trace') return traceAccepts(c.tracePath?.length ?? 0, tapped, idx, freeTrace(c)) ? 'next' : 'wrong';
+  return idx === tapped.length ? 'next' : 'wrong';
+}
+
 /** The corner a trace continues to (where the next-dot glow sits). */
 export function nextTraceCorner(n: number, tapped: readonly number[], free: boolean): number {
   if (!free || !tapped.length) return tapped.length;
@@ -106,7 +116,7 @@ export interface ShapeTracerView {
   tapped: readonly number[];
   /** Corners placed on the grid (draw-from-description). */
   points: readonly Point[];
-  /** The last tap was not the next one, so the activity did not draw it (trace, complete, draw). */
+  /** The last tap was refused without a check (draw-from-description: a grid dot already used). */
   refused: boolean;
   /** The shape is finished and credited. */
   complete: boolean;
@@ -119,19 +129,29 @@ export interface ShapeTracerView {
 const corners = (n: number) => `${n} corner${n === 1 ? '' : 's'}`;
 const labelOf = (c: ShapeTracerChallenge, i: number) => c.dots?.[i]?.label ?? String(i + 1);
 
-/** The learner's work in their own terms, never the key. `wrongDot`: the dot a wrong connect-dots tap landed on. */
+/**
+ * The learner's work in their own terms, never the key. `wrongDot`: the dot or corner a wrong tap landed on
+ * (connect-dots, trace, complete). A trace corner is named by its number only while the numbers are on screen.
+ */
 export function describeShapeWork(c: ShapeTracerChallenge, view: ShapeTracerView, wrongDot?: number): string {
   const refused = view.refused ? '; the last tap was not the next one, so it was not drawn' : '';
   switch (c.type) {
     case 'trace': {
       const n = c.tracePath?.length ?? 0;
       if (view.complete) return `Traced all ${corners(n)}; the shape is closed`;
-      return (view.tapped.length ? `Tapped ${view.tapped.length} of ${n} corners in turn` : 'No corner tapped yet') + refused;
+      const so = view.tapped.length ? `Tapped ${view.tapped.length} of ${n} corners in turn` : 'No corner tapped yet';
+      if (wrongDot !== undefined) {
+        const which = view.guides.orderNumbers ? `corner ${wrongDot + 1}` : 'a corner out of turn';
+        return `${view.tapped.length ? `${so}, then tapped` : 'Tapped'} ${which}`;
+      }
+      return so + refused;
     }
     case 'complete': {
       const n = c.remainingVertices?.length ?? 0;
       if (view.complete) return 'Finished the shape; it is closed';
-      return (view.tapped.length ? `Tapped ${view.tapped.length} of ${n} open corners in turn` : 'No open corner tapped yet') + refused;
+      const so = view.tapped.length ? `Tapped ${view.tapped.length} of ${n} open corners in turn` : 'No open corner tapped yet';
+      if (wrongDot !== undefined) return `${view.tapped.length ? `${so}, then tapped` : 'Tapped'} an open corner out of turn`;
+      return so + refused;
     }
     case 'draw-from-description':
       if (!view.points.length) return 'No corner placed yet' + refused;
@@ -149,6 +169,11 @@ export function describeShapeWork(c: ShapeTracerChallenge, view: ShapeTracerView
 export function shapeTracerMiss(c: ShapeTracerChallenge | null,
   work: { tapped: readonly number[]; points: readonly Point[]; wrongDot?: number }): ShapeTracerMiss | undefined {
   if (!c) return undefined;
+  if (c.type === 'trace' || c.type === 'complete') {
+    if (work.wrongDot === undefined || cornerTap(c, work.tapped, work.wrongDot) !== 'wrong') return undefined;
+    if (work.tapped.includes(work.wrongDot)) return 'went_back';
+    return work.tapped.length === 0 ? 'started_elsewhere' : 'skipped_corner';
+  }
   if (c.type === 'connect-dots') {
     const order = c.correctOrder ?? [];
     if (work.wrongDot === undefined || work.wrongDot === order[work.tapped.length]) return undefined;
