@@ -211,6 +211,14 @@ export function LiveRuntimeSurface({ runtime, children, active = true, learnerPr
   // The LAST event on the current item, so a fade — which announces nothing — clears
   // the panel rather than leaving a withdrawn aid on screen.
   const announce = state.assistance.filter(a => a.itemId === state.task?.itemId).at(-1)?.announce;
+  // A disabled button fires no click, so nothing downstream can log it: its state is recorded here.
+  const buttonShown = active && !!learnerProgress && !!progress && !artifact && state.status === 'active';
+  const buttonDisabled = !!learnerProgress?.disabled, buttonItem = state.task?.itemId;
+  useEffect(() => {
+    if (buttonShown) runtime.trace.record({ stage: 'learner_progress', status: buttonDisabled ? 'button_disabled' : 'button_enabled',
+      reason: buttonDisabled ? 'The tutor is speaking; the button ignores clicks until its audio ends.' : undefined,
+      input: { type: progress, itemId: buttonItem } });
+  }, [runtime, buttonShown, buttonDisabled, progress, buttonItem]);
   useEffect(() => {
     if (!active) return;
     // Two animation frames certify a paint opportunity separately from a state commit.

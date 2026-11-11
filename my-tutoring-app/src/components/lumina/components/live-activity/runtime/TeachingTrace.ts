@@ -1,7 +1,7 @@
 export interface TeachingTraceEntry {
   id: number;
   at: number;
-  stage: 'learner_response' | 'dialogue' | 'learner_intent' | 'item_scoring' | 'demonstration' | 'observer_lever' | 'spoken_miss';
+  stage: 'learner_response' | 'dialogue' | 'learner_intent' | 'item_scoring' | 'demonstration' | 'observer_lever' | 'spoken_miss' | 'learner_progress';
   status: string;
   reason?: string;
   input?: unknown;
@@ -18,5 +18,7 @@ export class TeachingTrace {
   record(entry: Omit<TeachingTraceEntry, 'id' | 'at'>) {
     this.entries = [...this.entries.slice(-49), structuredClone({ ...entry, id: ++this.sequence, at: Date.now() })];
     this.listeners.forEach(fn => fn());
+    // The inspector panel exists only in the sandbox; a lesson's Next and Try again are read from the console.
+    if (entry.stage === 'learner_progress') console.info(`[Lumina:next] ${entry.status}`, { reason: entry.reason, input: entry.input, result: entry.result });
   }
 }

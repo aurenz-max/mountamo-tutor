@@ -4,7 +4,7 @@ import { helpBeforeLastWrong, leverTrigger, type LeverEvent } from './observerLe
 import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
 import type { LearnerObservation } from './learnerIntentContract';
 import { itemScopeKey, warmObservationRoutes } from './observationContract';
-import { parseTutorCommand, POSE_TASK, type RuntimeSnapshot } from './contract';
+import { parseTutorCommand, POSE_TASK, type RuntimeSnapshot, type TransitionReceipt } from './contract';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
 import type { Demonstration } from '../demo/demoContract';
@@ -140,13 +140,22 @@ export class RuntimeTransport {
   /** Explicit learner recovery uses the same scoped capability and visible receipt. */
   async learnerProgress(type: 'advance' | 'retry') {
     const s = this.runtime.getSnapshot();
-    if (this.closed || !s.instanceId || !s.task || !s.affordances.some(a => a.controller === 'observer' && a.action.type === type)) return;
+    const input = { type, itemId: s.task?.itemId ?? null, phase: s.task?.phase ?? null, revision: s.revision, runtimeStatus: s.status };
+    const log = (status: string, reason?: string, result?: unknown) =>
+      this.runtime.trace.record({ stage: 'learner_progress', status, reason, input, result });
+    if (this.closed) return log('refused', 'The transport closed: the session is resuming or has ended.');
+    if (!s.instanceId || !s.task) return log('refused', 'No activity is mounted.');
+    if (!s.affordances.some(a => a.controller === 'observer' && a.action.type === type))
+      return log('refused', `The runtime offers no ${type} now.`, { blockedReason: s.blockedReason });
     this.dialogue.learnerStart();
+    let receipt: TransitionReceipt | undefined;
     const status = await this.dispatch({ sessionEpoch: s.sessionEpoch, instanceId: s.instanceId, itemId: s.task.itemId,
-      expectedRevision: s.revision, commandId: `learner:${crypto.randomUUID()}`, action: { type } }, true);
-    if (status !== 'visible' || this.closed) return;
+      expectedRevision: s.revision, commandId: `learner:${crypto.randomUUID()}`, action: { type } }, true, r => { receipt = r; });
     const next = this.runtime.getSnapshot();
-    if (next.status === 'active' && next.task?.phase === 'working') this.send({ type: 'text', scripted: false,
+    const tellsTutor = status === 'visible' && !this.closed && next.status === 'active' && next.task?.phase === 'working';
+    log(status ?? 'dropped', receipt?.reason, { itemId: next.task?.itemId ?? null, phase: next.task?.phase ?? null,
+      runtimeStatus: next.status, revision: next.revision, tutorToldNextTask: tellsTutor });
+    if (tellsTutor) this.send({ type: 'text', scripted: false,
       content: type === 'advance' ? `The learner opened the next task. It is on screen. ${POSE_TASK}`
         : 'The learner chose to try this task again.' });
   }
@@ -190,12 +199,13 @@ export class RuntimeTransport {
     this.afterTurn = { itemId, content: leverPulledMessage(declared, cause) };
     if (!this.releaseTurn) this.afterTurnFallback = setTimeout(() => this.sendAfterTurn(), AFTER_TURN_FALLBACK_MS);
   }
-  private async dispatch(input: unknown, observed = false): Promise<string | undefined> {
+  private async dispatch(input: unknown, observed = false, onReceipt?: (receipt: TransitionReceipt) => void): Promise<string | undefined> {
     const command = parseTutorCommand(input);
     if (this.closed || (command && this.pending.has(command.commandId))) return;
     const abort = new AbortController();
     if (command) this.pending.set(command.commandId, abort);
     const receipt = this.runtime.dispatch(input);
+    onReceipt?.(receipt);
     const rendered = receipt.status === 'committed'
       ? await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal }) : null;
     if (command) this.pending.delete(command.commandId);

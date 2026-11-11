@@ -142,7 +142,10 @@ function LessonWorkspaceBridge({ handler, progress }: {
         case 'session_resuming': case 'session_ended': case 'activity_session_closed': t?.close(); break;
       }
     };
-    progress.current = type => void transport.current?.learnerProgress(type);
+    progress.current = type => {
+      if (transport.current) void transport.current.learnerProgress(type);
+      else hostRef.current.runtime.trace.record({ stage: 'learner_progress', status: 'refused', reason: 'No transport: the Live session is not connected.', input: { type } });
+    };
     return () => { handler.current = () => {}; progress.current = () => {}; };
   }, [handler, progress]);
   useEffect(() => {
