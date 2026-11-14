@@ -147,6 +147,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
       <ExhibitProvider
         objectives={exhibit.introBriefing?.objectives || []}
         manifestItems={exhibit.manifest?.layout || []}
+        sections={exhibit.orderedComponents}
       >
         <LessonWorkspaceProvider key={sessionId} exhibit={exhibit}>
           <LessonAIBootstrap exhibit={exhibit} gradeLevel={gradeLevel} />

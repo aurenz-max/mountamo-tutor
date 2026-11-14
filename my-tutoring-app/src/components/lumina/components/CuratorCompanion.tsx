@@ -25,6 +25,11 @@
  * DOCKED (fallback): the bottom-right stack, used whenever perching would be
  * worse than a corner — no active card, viewport too narrow, session asleep.
  *
+ * The dock also holds the section tracker ("We are working on", part n of N,
+ * a rail of the lesson's sections), the mic bar (mic switch, what Pip is doing
+ * in words, a meter on the real mic level) and a settings sheet of switches —
+ * see CuratorDockParts.
+ *
  * The choice tray stays docked in BOTH placements. It is three big targets that
  * would otherwise cover the card the student is reading, and unlike speech it
  * is persistent — a menu, not an utterance.
@@ -56,7 +61,8 @@ import { PipCharacter, type PipCharacterProps, type PipMood } from './PipCharact
 import { usePipScene } from '../pip/PipSurfaceContext';
 import { PipSurfaceActor } from '../pip/PipSurfaceActor';
 import type { ComponentId, StudentPrompt, StudentPromptKind } from '../types';
-import { Mic, MicOff, Send, RefreshCw, Loader2, MessageSquare, X } from 'lucide-react';
+import { Mic, MicOff, Send, RefreshCw, Loader2, SlidersHorizontal, X } from 'lucide-react';
+import { DockSwitch, MicMeter, SectionTracker } from './CuratorDockParts';
 
 /** Human-facing name for the active primitive (registry title → title-cased id). */
 function friendlyPrimitiveName(type: string | null): string | null {
@@ -161,7 +167,7 @@ const MicLevelRing: React.FC = () => {
   const micLevel = useMicLevel();
   return (
     <motion.span
-      className="absolute inset-0 rounded-full bg-rose-400"
+      className="absolute inset-0 rounded-full bg-cyan-300"
       animate={{
         scale: 1 + Math.min(1, micLevel / 0.12) * 0.45,
         opacity: 0.18 + Math.min(1, micLevel / 0.12) * 0.45,
@@ -196,6 +202,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
   const reduced = useReducedMotion();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [text, setText] = useState('');
   const [reconnecting, setReconnecting] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
@@ -259,6 +266,14 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
           : studentTalking
             ? 'listening'
             : 'happy';
+
+  // The same state in words, beside the mic. Follows the mood order above.
+  const [stateLabel, stateTone] =
+    mood === 'speaking' ? ['Pip is talking', 'text-violet-300']
+    : mood === 'thinking' ? ['Pip is thinking', 'text-amber-300']
+    : !isListening ? ['Mic is off. Tap to talk.', 'text-slate-300']
+    : studentTalking ? ['I hear you', 'text-cyan-300']
+    : ['Mic is on. Just talk.', 'text-cyan-300'];
 
   // Most recent thing Pip said — shown big in the bubble + read aloud via audio.
   const lastAssistant = useMemo(() => {
@@ -445,6 +460,8 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
           <X className="h-3.5 w-3.5" />
         </button>
 
+        <SectionTracker activeId={activePrimitiveId} fallbackName={focusName} />
+
         {!perched && (!inScene || (sessionEnded && !isConnected)) && (
           <AnimatePresence mode="wait">
             <motion.div
@@ -504,67 +521,87 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
           </div>
         )}
 
-        {/* Pip (only when it has nowhere to perch) + voice-first controls */}
-        <div className={`flex w-full items-end gap-2 ${perched ? 'justify-end' : 'justify-between'}`}>
-          {!perched && !inScene && <LivePipCharacter mood={mood} size={!isConnected ? 152 : 124} onPoke={handlePoke} />}
+        {/* Pip, only when it has nowhere to perch */}
+        {!perched && !inScene && (
+          <div className="flex w-full justify-start">
+            <LivePipCharacter mood={mood} size={!isConnected ? 152 : 124} onPoke={handlePoke} />
+          </div>
+        )}
 
-          {isConnected && (
-            <div className="flex flex-col items-center gap-1.5">
-              {/* Lesson-wide open mic; this control only pauses or resumes it. */}
-              <button
-                onClick={() => (isListening ? stopListening() : startListening())}
-                aria-label={isListening ? 'Pause the lesson microphone' : 'Resume the lesson microphone'}
-                className={`relative flex h-16 w-16 items-center justify-center rounded-full border-2 shadow-xl transition-all active:scale-95 ${
-                  isListening
-                    ? 'border-rose-300 bg-rose-500'
-                    : 'border-cyan-300/50 bg-gradient-to-br from-cyan-500 to-indigo-600 hover:scale-105'
-                }`}
-              >
-                {/* Level-reactive ring rather than a constant ping: it agrees with
-                    Pip's halo, so both surfaces answer "can it hear me?" the same way. */}
-                {isListening && <MicLevelRing />}
-                {isListening
-                  ? <Mic className="relative h-7 w-7 text-white" />
-                  : <MicOff className="relative h-7 w-7 text-white" />}
-              </button>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                {isListening ? 'Open mic' : 'Mic paused'}
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Settings sheet: labelled switches. Opens above the mic bar. */}
+        {isConnected && showSettings && (
+          <div className="flex w-full flex-col gap-2 rounded-2xl border border-white/10 bg-slate-900/95 p-2 shadow-xl backdrop-blur-xl">
+            <DockSwitch
+              label="Microphone"
+              detail="Pip can hear you talk"
+              on={isListening}
+              onChange={(next) => (next ? startListening() : stopListening())}
+            />
+            <DockSwitch
+              label="Typing"
+              detail="Type to Pip instead of talking"
+              on={showAdvanced}
+              onChange={setShowAdvanced}
+            />
+          </div>
+        )}
 
-        {/* Advanced (older grades / accessibility): type + transcript, tucked away */}
+        {/* Mic bar: the lesson-wide open mic, what Pip is doing, and settings. */}
         {isConnected && (
-          <div className="w-full">
+          <div className="flex w-full items-center gap-3 rounded-3xl border border-white/10 bg-slate-900/90 p-2 shadow-xl backdrop-blur-xl">
             <button
-              onClick={() => setShowAdvanced((s) => !s)}
-              className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-slate-300"
+              onClick={() => (isListening ? stopListening() : startListening())}
+              aria-label={isListening ? 'Turn the microphone off' : 'Turn the microphone on'}
+              aria-pressed={isListening}
+              className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-95 ${
+                isListening
+                  ? 'border-cyan-200 bg-cyan-400 text-slate-950'
+                  : 'border-slate-500 bg-slate-800 text-slate-200 hover:scale-105'
+              }`}
             >
-              <MessageSquare className="h-3 w-3" />
-              {showAdvanced ? 'Hide typing' : 'Type instead'}
+              {/* Level-reactive ring rather than a constant ping: it agrees with
+                  Pip's halo, so both surfaces answer "can it hear me?" the same way. */}
+              {isListening && <MicLevelRing />}
+              {isListening ? <Mic className="relative h-6 w-6" /> : <MicOff className="relative h-6 w-6" />}
             </button>
-            {showAdvanced && (
-              <div className="mt-2 flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/90 p-2 backdrop-blur-md">
-                <input
-                  type="text"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
-                  placeholder="Ask Pip…"
-                  disabled={isAIResponding}
-                  className="flex-1 bg-transparent px-2 py-1 text-sm text-slate-100 placeholder-slate-500 focus:outline-none disabled:opacity-50"
-                />
-                <button
-                  onClick={handleSendText}
-                  disabled={!text.trim() || isAIResponding}
-                  className="rounded-xl bg-cyan-600/80 p-2 transition-colors hover:bg-cyan-600 disabled:opacity-40"
-                  aria-label="Send"
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </button>
-              </div>
-            )}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className={`truncate text-sm font-bold ${stateTone}`} aria-live="polite">{stateLabel}</span>
+              <MicMeter live={isListening} />
+            </div>
+            <button
+              onClick={() => setShowSettings((s) => !s)}
+              aria-label="Settings"
+              aria-expanded={showSettings}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 text-slate-200 transition-colors hover:bg-white/10 ${
+                showSettings ? 'bg-white/10' : ''
+              }`}
+            >
+              <SlidersHorizontal className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Typing (older grades / accessibility), turned on from the settings sheet */}
+        {isConnected && showAdvanced && (
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/90 p-2 backdrop-blur-md">
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
+              placeholder="Ask Pip…"
+              aria-label="Type to Pip"
+              disabled={isAIResponding}
+              className="flex-1 bg-transparent px-2 py-1 text-sm text-slate-100 placeholder-slate-400 focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendText}
+              disabled={!text.trim() || isAIResponding}
+              className="rounded-xl bg-cyan-600/80 p-2 transition-colors hover:bg-cyan-600 disabled:opacity-40"
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4 text-white" />
+            </button>
           </div>
         )}
       </div>
