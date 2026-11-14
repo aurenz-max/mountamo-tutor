@@ -58,6 +58,15 @@ const POSITIONS = [
   { id: 'last_sound_changed', name: 'LAST' },
 ] as const;
 
+/** The three misses that name WHERE a three-sound word was misread, in letter order. */
+export const POSITION_MISSES: readonly string[] = POSITIONS.map(p => p.id);
+export const POSITION_WORDS = ['first', 'middle', 'last'] as const;
+/** The letter (0, 1 or 2) a position miss names, or null for any other miss. */
+export const missedPosition = (miss?: string): number | null => {
+  const at = miss ? POSITION_MISSES.indexOf(miss) : -1;
+  return at < 0 ? null : at;
+};
+
 /** The real words that differ from `word` at letter `at` only, never a spelling of the same sound (c/k). */
 function neighbours(word: string, at: number, exclude: ReadonlySet<string>): string[] {
   return CVC_WORDS.filter(w => w.length === word.length && w !== word && !exclude.has(w)

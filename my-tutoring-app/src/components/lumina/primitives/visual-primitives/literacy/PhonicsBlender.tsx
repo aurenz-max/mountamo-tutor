@@ -52,6 +52,7 @@ import { blendScene, blendWords, soundRequest, type BlendWord, type Segmentation
 import { ARROW_LEVER, BLEND_LEVERS, DOTS_LEVER, NAME_MODEL_LEVER, SLIDE_LEVER, buildLevers, nameModelFor } from './phonicsBlenderLevers';
 import { phonicsBlenderBoss } from './phonicsBlender.boss';
 import { wordReadTally } from './readingRecord';
+import { LOOK_AGAIN_LEVER, lookAgainAt } from './lookAgainLever';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -154,7 +155,7 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const [activeSoundId, setActiveSoundId] = useState<string | null>(null);
   // In-item levers, keyed by the session word they were pulled on, and the easier practice word a simplify lever
   // put on screen in its place (ungraded; the full word comes back after it).
-  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[]; on: Record<string, string | undefined> }>({ item: '', pulled: [], on: {} });
   const [practice, setPractice] = useState<BlendWord | null>(null);
   /** Visual only: clears the tapped-letter highlight. Nothing here advances. */
   const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -238,6 +239,9 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   const currentIndex = runner.currentIndex;
   const pulledLevers = practice || leverState.item !== sessionWord?.id ? [] : leverState.pulled;
   const leverOn = (id: string) => pulledLevers.includes(id);
+  /** The miss each lever was pulled after: `look_again` rings the letter that miss named, and keeps it. */
+  const pulledOn = practice || leverState.item !== sessionWord?.id ? {} : leverState.on;
+  const ring = leverOn(LOOK_AGAIN_LEVER) && sessionWord ? lookAgainAt(sessionWord.phonemes.length, pulledOn[LOOK_AGAIN_LEVER]) : null;
   const nameModel = leverOn(NAME_MODEL_LEVER) ? nameModelFor(items) : null;
   // The workspace shows its finish without an evaluation provider (the live host has none).
   const showSummary = evaluation.hasSubmitted || !!runner.practiceSummary;
@@ -260,14 +264,14 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
   // on-screen facts; a practice word carries no levers.
   useLayoutEffect(() => {
     if (!currentWord || !sessionWord) return;
-    const levers = practice ? [] : BLEND_LEVERS.declare(sessionWord, leverCtx, pulledLevers);
+    const levers = practice ? [] : BLEND_LEVERS.declare(sessionWord, leverCtx, pulledLevers, runner.lastMiss);
     const scene: WorkspaceScene = blendScene(currentWord, practice ? 'full' : segmentation);
     workspace.current = {
       ...leverScene(practice
         ? { ...scene, facts: { ...scene.facts, practice: 'An easier practice word, ungraded. The full word comes back after it.' } }
         : scene, {
         support: practice ? '' : BLEND_LEVERS.support(sessionWord, leverCtx),
-        onScreen: practice ? '' : BLEND_LEVERS.onScreen(sessionWord, leverCtx, pulledLevers) }),
+        onScreen: practice ? '' : BLEND_LEVERS.onScreen(sessionWord, leverCtx, pulledLevers, pulledOn) }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -277,11 +281,11 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
         if (lever.kind === 'simplify') {
           const simpler = BLEND_LEVERS.simpler(sessionWord, leverCtx, id);
           if (!simpler || simpler.mode === 'build_blend') return 'There is no easier word for this item.';
-          setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
+          setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id], on: pulledOn });
           setPractice(simpler);
           return { practice: phonicsBlenderBoss.assignment(simpler) };
         }
-        setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id] });
+        setLeverState({ item: sessionWord.id, pulled: [...pulledLevers, id], on: { ...pulledOn, [id]: runner.lastMiss } });
         return true;
       },
       endPractice: () => setPractice(null),
@@ -323,7 +327,8 @@ function PhonicsBlenderSurface({ data, className, runtimePlanItemId }: PhonicsBl
           {shownSegmentation === 'full' && !slid && i > 0 && (
             <span className="text-slate-600 text-2xl" aria-hidden="true">·</span>
           )}
-          <div className="flex flex-col items-center">
+          <div data-lever={ring?.at === i ? 'look-again' : undefined}
+            className={`flex flex-col items-center rounded-2xl ${ring?.at === i ? 'ring-4 ring-cyan-300 ring-offset-4 ring-offset-slate-900' : ''}`}>
           <button
             type="button"
             onClick={() => handlePlaySound(phoneme.id)}

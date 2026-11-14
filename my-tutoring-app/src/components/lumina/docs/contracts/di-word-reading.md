@@ -53,6 +53,7 @@
 None open.
 
 ## Changelog
+- 2026-11-11: `look_again` added (lever bench LB-22, `literacy/lookAgainLever.ts`): after a decodable word read with one sound changed, a ring on that letter, its place only. R4 (marks and no text, nothing plays) and R6 (a sight item declares only `model_word`) hold. It is first in the set, so for a one-sound-off read it comes before `model_word`; offered only after such a miss, so the declared list before any miss is unchanged. Probe: `lookAgainLever.test.ts`, `DiWordReading.levers.workspace.test.tsx`.
 
 - 2026-10-18: moved onto the boss framework — `diWordReading.card.ts` + `diWordReading.boss.ts` (`spokenBoss`); `DiWordReadingTeaching.tsx` folded into `DiWordReading.tsx`; `adapters/diWordReadingLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: blend-then-word = accept rule; sounds with no word, a different word, letter names = signature error); levers are one `WORD_LEVERS` set (ids, order and words kept; `model_word` words its job per item via a `does` function). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 8 requirements, 0 conflicts.

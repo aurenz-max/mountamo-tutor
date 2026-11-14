@@ -104,12 +104,14 @@ export interface LeverSet<I, C> {
   /** The lever ids each mode can offer, in order (for the card and the tests). */
   idsFor: (mode: string) => string[];
   declare: (item: I | null, ctx: C, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
-  onScreen: (item: I | null, ctx: C, pulled: readonly string[]) => string;
+  /** `pulledOn`: the miss each pulled lever was pulled after, by lever id, for a lever whose content depends on the
+   *  miss (a ring on the letter that was misread). The component keeps it with its pulled list. */
+  onScreen: (item: I | null, ctx: C, pulled: readonly string[], pulledOn?: Readonly<Record<string, string | undefined>>) => string;
   simpler: (item: I, ctx: C, lever: string, lastMiss?: string) => I | null;
   /** The three bound to one lesson's context, in the shape `DiTeachingStage` takes. */
   bind: (ctx: C) => {
     declare: (item: I, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
-    onScreen: (item: I, pulled: readonly string[]) => string;
+    onScreen: (item: I, pulled: readonly string[], pulledOn?: Readonly<Record<string, string | undefined>>) => string;
     simpler: (item: I, lever: string, lastMiss?: string) => I | null;
     support: (item: I, lastMiss?: string) => string;
   };
@@ -185,11 +187,11 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
   };
 
   // A pulled lever's fact reads its content now, whatever `offer` says: what is on screen stays on screen.
-  const onScreen: LeverSet<I, C>['onScreen'] = (item, ctx, pulled) => {
+  const onScreen: LeverSet<I, C>['onScreen'] = (item, ctx, pulled, pulledOn) => {
     if (!item) return '';
     const mode = modeOf(item);
     return specs.filter(spec => pulled.includes(spec.id) && inMode(spec, mode) && spec.fact).flatMap(spec => {
-      const content = contentOf(spec, item, ctx);
+      const content = contentOf(spec, item, ctx, pulledOn?.[spec.id]);
       return content == null || content === false ? [] : [factOf(spec, content, item, ctx)];
     }).filter(Boolean).join(' ');
   };
@@ -204,7 +206,7 @@ export function leverSet<I, C>(def: LeverSetDef<I, C>): LeverSet<I, C> {
     idsFor: mode => specs.filter(spec => inMode(spec, mode)).map(spec => spec.id),
     bind: ctx => ({
       declare: (item, pulled, lastMiss) => declare(item, ctx, pulled, lastMiss),
-      onScreen: (item, pulled) => onScreen(item, ctx, pulled),
+      onScreen: (item, pulled, pulledOn) => onScreen(item, ctx, pulled, pulledOn),
       simpler: (item, lever, lastMiss) => simpler(item, ctx, lever, lastMiss),
       support: (item, lastMiss) => support(item, ctx, lastMiss),
     }),

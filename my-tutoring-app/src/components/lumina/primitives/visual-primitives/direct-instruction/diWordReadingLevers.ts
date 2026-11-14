@@ -11,6 +11,7 @@
  *   which the tutor blends ("sss-uuu-nnn, sun"). Sight: a different sight word, said whole. Never a session word,
  *   never sharing a letter with the item (so the blend says none of its sounds and it is never one letter off or a rime
  *   neighbour), never the item reversed, never a look-alike of a sight item either way round.
+ * - `look_again` (decodable, `lookAgainLever.ts`): after a word read with one sound changed, a ring on that letter.
  * - `blend_slide` (decodable): the printed letters slide together over an arrow. Nothing plays.
  * - `sound_dots` (decodable): a dot under each letter, one stop per sound for a finger.
  * - `tracking_arrow` (decodable): an arrow under the word, left to right.
@@ -23,6 +24,7 @@ import { leverSet } from '../../../components/live-activity/bossLevers';
 import { diWordReadingCard } from './diWordReading.card';
 import { PRACTICE_WORDS } from '../literacy/cvcSpellerLevers';
 import { SIGHT_LOOKALIKES } from '../literacy/spokenReadingMisses';
+import { lookAgainSpec } from '../literacy/lookAgainLever';
 import { buildWordReadingItems, type WordReadingItem } from './diWordReadingDomain';
 
 export const MODEL_WORD = 'model_word';
@@ -54,14 +56,27 @@ export function modelLeaks(model: string, item: WordReadingItem, items: readonly
     || lookAlike(model, w);
 }
 
-/** The model a word's `model_word` shows, or null. Deterministic: prefers a word sharing no letter with any session word. */
+/** A letter that is two sounds (x = /ks/): the model's blend is one sound per letter, so it never has one. */
+const ONE_SOUND_PER_LETTER = (word: string) => !/[xq]/.test(word);
+
+/**
+ * The model a word's `model_word` shows, or null. Deterministic per item, and a different model on each item of the
+ * session (2026-11-13: one model, fox, on every item read as the same script four times). Prefers a word sharing no
+ * letter with any session word.
+ */
 export function modelFor(item: WordReadingItem, items: readonly WordReadingItem[]): WordModel | null {
-  const clean = (word: string) => Number(items.some(i => sharesLetter(word, i.word)));
+  const dirty = (word: string) => items.some(i => sharesLetter(word, i.word));
+  const position = Math.max(0, items.findIndex(i => i.id === item.id));
+  const rotate = <T,>(pool: T[], wordOf: (t: T) => string) => {
+    const clean = pool.filter(t => !dirty(wordOf(t)));
+    const tier = clean.length ? clean : pool;
+    return tier.length ? tier[position % tier.length] : undefined;
+  };
   if (decodable(item)) {
-    const pick = PRACTICE_WORDS.filter(p => !modelLeaks(p.word, item, items)).sort((a, b) => clean(a.word) - clean(b.word))[0];
+    const pick = rotate(PRACTICE_WORDS.filter(p => ONE_SOUND_PER_LETTER(p.word) && !modelLeaks(p.word, item, items)), p => p.word);
     return pick ? { word: pick.word, emoji: pick.emoji, decodable: true } : null;
   }
-  const pick = SIGHT_POOL.filter(w => !modelLeaks(w, item, items)).sort((a, b) => clean(a) - clean(b))[0];
+  const pick = rotate(SIGHT_POOL.filter(w => !modelLeaks(w, item, items)), w => w);
   return pick ? { word: pick, decodable: false } : null;
 }
 
@@ -86,6 +101,9 @@ export const WORD_LEVERS = leverSet<WordReadingItem, WordLeverContext>({
   missesOf: mode => diWordReadingCard.modes[mode]?.misses ?? [],
   support: { tier: item => item.supportTier ?? 'easy', different: 'a different word', own: 'this word' },
   specs: [
+    // First: after a word read with one sound changed, the ring on that letter answers the miss itself; the model
+    // word (any miss) comes after it (`lookAgainLever.ts`). Offered only after such a miss.
+    lookAgainSpec<WordReadingItem, WordLeverContext>(DECODABLE_MODES, item => item.letters.length),
     { id: MODEL_WORD, type: 'model', answers: 'all',
       when: 'The learner spells the word, says sounds with no word, says a different word, or does not know how to start.',
       does: item => (decodable(item)

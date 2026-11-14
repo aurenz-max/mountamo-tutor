@@ -12,7 +12,7 @@ vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/c
 vi.mock('@/components/lumina/components/JudgedMicPanel', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).micPanelSeam());
 
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import type { DiWordReadingChallenge } from './diWordReadingDomain';
@@ -20,7 +20,7 @@ import type { DiWordReadingChallengeType } from './diWordReadingModes';
 
 beforeEach(() => { installRuntimeTimers();
   Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn().mockReturnValue({ matches: true }) }); });
-afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 const cvc = (w: string, type: DiWordReadingChallengeType, tier: 'easy' | 'medium' | 'hard', id: string): DiWordReadingChallenge =>
   ({ id, challengeType: type, word: w, wordType: 'cvc', graphemes: w.split(''), supportTier: tier });
@@ -78,5 +78,27 @@ it('a sight word has only the model; a print lever is refused and changes nothin
   h.dispatch('pull_lever', { lever: 'sound_dots' });
   h.dispatch('pull_lever', { lever: 'short_word' });
   expect(h.view.container.innerHTML).toBe(before);
+  h.close();
+});
+
+/** The spoken_miss observer names `miss` for every not-credited answer. */
+const nameMiss = (miss: string) => vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).endsWith('/api/lumina/observe-spoken-miss')
+  ? { ok: true, json: async () => ({ miss, reading: miss, p: 0.9, accepted: true, reason: 'named', ms: 0 }) }
+  : { ok: false, json: async () => ({}) }));
+const hear = async (h: WorkspaceHarness, text: string) => { h.say(text); await act(async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); }); };
+
+it('look_again: "pin" for pan rings the middle letter only and draws no text', async () => {
+  nameMiss('middle_sound_changed');
+  const h = mount('cvc_reading', cvc('pan', 'cvc_reading', 'medium', 'p1'));
+  expect((h.state().task!.workspace!.levers ?? []).map(l => l.id)).not.toContain('look_again');
+  await hear(h, 'pin'); h.feedback('incorrect', 'retry');
+  expect((h.state().task!.workspace!.levers ?? [])[0]).toMatchObject({ id: 'look_again', pulled: false });
+  expect(h.dispatch('pull_lever', {}).status).toBe('committed');
+  const ringed = q(h, '[data-lever="look_again"]');
+  expect(ringed.map(e => e.getAttribute('data-word-letter'))).toEqual(['1']);
+  expect(String(h.state().task!.demand.onScreen)).toContain('the middle letter');
+  expect(String(h.state().task!.demand.onScreen)).not.toMatch(/\bpan\b|\bpin\b/);
+  await hear(h, 'pan'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['look_again'] });
   h.close();
 });

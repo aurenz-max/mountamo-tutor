@@ -7,6 +7,8 @@
  * Spoken items (cvc, cvce_blend, digraph, advanced):
  * - `blend_slide` (layout): the letter cards slide together over an arrow; nothing is said. Not offered where the
  *   tier already joins the row.
+ * - `look_again` (marks, `lookAgainLever.ts`): after a word read with one sound changed, a ring on that letter. Its
+ *   place only; every tier.
  * - `sound_dots` (marks): a dot under each sound's letters (one dot for a digraph). Only where the hard tier joined the
  *   row: it re-segments it (user ruling 09-28).
  * - `tracking_arrow` (marks): an arrow under the row, pointing left to right.
@@ -26,6 +28,7 @@ import { asBuild, asWord, isBuild, type BlendBuild, type BlendItem, type BlendWo
 import { modelFor, patternFor, smallBankFor } from './letterBuild';
 import { PRACTICE_WORDS } from './cvcSpellerLevers';
 import { letterNameFor, spokenSoundFor } from './letterSoundLinkDomain';
+import { lookAgainSpec } from './lookAgainLever';
 
 export const SLIDE_LEVER = 'blend_slide';
 export const DOTS_LEVER = 'sound_dots';
@@ -113,6 +116,8 @@ export const BLEND_LEVERS = leverSet<PhonicsBlenderItem, BlendLeverContext>({
       when: 'The learner says the sounds but never the word.',
       does: 'Slides the letter cards close together over an arrow, so the sounds run into one word. Say nothing about the letters.',
       fact: 'The letter cards slid close together over an arrow. Say nothing about the letters: the learner reads them.' },
+    // First among the levers for a one-sound-off word, at every tier: it points at the letter that was misread.
+    lookAgainSpec<PhonicsBlenderItem, BlendLeverContext>(SPOKEN, item => (isBuild(item) ? 0 : item.phonemes.length)),
     { id: DOTS_LEVER, type: 'marks', modes: SPOKEN, answers: ['first_sound_changed', 'middle_sound_changed', 'last_sound_changed'],
       offer: (_item, ctx) => ctx.segmentation === 'none',
       when: 'The learner says a close but different word.',

@@ -10,12 +10,12 @@ vi.mock('@/components/lumina/evaluation', async () => (await import('@/component
 vi.mock('@/components/lumina/utils/SoundManager', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).soundSeam());
 
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { act, cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 
 beforeEach(() => { installRuntimeTimers(); });
-afterEach(() => { cleanup(); restoreRuntimeTimers(); });
+afterEach(() => { cleanup(); restoreRuntimeTimers(); vi.unstubAllGlobals(); });
 
 const word = (id: string, targetWord: string, emoji?: string) => ({ id, targetWord, emoji,
   phonemes: targetWord.split('').map((letters, i) => ({ id: `${id}-${i}`, sound: `/${letters}/`, letters })) });
@@ -69,5 +69,33 @@ it('short_word: an ungraded two-letter practice word, then the full word back; o
   const attempts = h.state().task!.workspace!.attempts;
   expect(attempts.map(a => [a.itemId, a.correct])).toEqual([['w1', false], ['w1~simpler', true], ['w1', true]]);
   expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['short_word'] });
+  h.close();
+});
+
+/** The spoken_miss observer names `miss` for every not-credited answer. */
+const nameMiss = (miss: string) => vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).endsWith('/api/lumina/observe-spoken-miss')
+  ? { ok: true, json: async () => ({ miss, reading: miss, p: 0.9, accepted: true, reason: 'named', ms: 0 }) }
+  : { ok: false, json: async () => ({}) }));
+const hear = async (h: WorkspaceHarness, text: string) => { h.say(text); await act(async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); }); };
+
+it('look_again: "cap" for cat rings the last letter only, says nothing, and the next try records it', async () => {
+  nameMiss('last_sound_changed');
+  const h = mountWorkspace({ primitiveId: 'phonics-blender', evalMode: 'cvc', data: data() });
+  expect(levers(h).map(([id]) => id)).not.toContain('look_again');
+  await hear(h, 'cap'); h.feedback('incorrect', 'retry');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'last_sound_changed' });
+  // Offered on the split row, where sound_dots is not; a pull that names no lever takes it (it answers this miss).
+  expect(levers(h)).toContainEqual(['look_again', false]);
+  const sent = seam.send.mock.calls.length;
+  expect(h.dispatch('pull_lever', {}).status).toBe('committed');
+  const ringed = q(h, '[data-lever="look-again"]');
+  expect(ringed).toHaveLength(1);
+  expect(ringed[0].textContent).toBe('t');
+  expect(seam.send.mock.calls.length).toBe(sent);
+  const fact = String(h.state().task!.demand.onScreen);
+  expect(fact).toContain('the last letter');
+  expect(fact).not.toMatch(/\bcat\b|\bcap\b|"t"/);
+  await hear(h, 'cat'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['look_again'] });
   h.close();
 });

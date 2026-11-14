@@ -68,6 +68,8 @@ export interface DiStageView {
   markReady: () => void;
   /** The levers on screen for this item: its tier's starting levers and any pulled since. None on a practice item. */
   pulled: readonly string[];
+  /** The miss each pulled lever was pulled after, by lever id (a ring on the letter that was misread). */
+  pulledOn: Readonly<Record<string, string | undefined>>;
   /** The stimulus is the easier practice item a simplify lever opened, not the session item. */
   practice: boolean;
   /** A gesture item's commit: the learner's work in words (never the key), the pack's own verdict, and its miss. */
@@ -85,7 +87,7 @@ export interface DiStageLevers<Item> {
    *  (di-worked-procedure's `fewer_columns` after `no_decrement`). */
   declare: (item: Item, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
   /** What the levers on screen show, as a scene fact. Never the item's answer. */
-  onScreen: (item: Item, pulled: readonly string[]) => string;
+  onScreen: (item: Item, pulled: readonly string[], pulledOn?: Readonly<Record<string, string | undefined>>) => string;
   /** When the model lever comes, by the item's tier (`leverSet` support). The scene never writes it. */
   support: (item: Item, lastMiss?: string) => string;
   /** Levers the item's tier starts with on screen. Not a pull, so never recorded. */
@@ -180,11 +182,12 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   const sessionItem = items[lesson.state.index];
   // Lever state is keyed by the session item, so a new item starts from its own tier. The practice item a
   // simplify lever opened stays through a retry and leaves only through `endPractice`.
-  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[]; on: Record<string, string | undefined> }>({ item: '', pulled: [], on: {} });
   const [practice, setPractice] = useState<{ for: string; item: Item } | null>(null);
   const practiceItem = practice && practice.for === sessionItem?.id ? practice.item : null;
   const pulled = !sessionItem || !levers ? [] : leverState.item === sessionItem.id ? leverState.pulled
     : [...(levers.starting?.(sessionItem) ?? [])];
+  const pulledOn = sessionItem && leverState.item === sessionItem.id ? leverState.on : {};
   const item = practiceItem ?? sessionItem;
   const committed = items.filter(candidate =>
     lesson.state.attempts.some(attempt => attempt.itemId === candidate.id && attempt.correct));
@@ -199,7 +202,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     const drawn = scene(item, { ready, pulled: practiceItem ? [] : pulled });
     const lastMiss = sessionItem ? lesson.state.attempts.filter(a => a.itemId === sessionItem.id).at(-1)?.miss : undefined;
     const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled, lastMiss) : [];
-    const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
+    const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled, pulledOn) : '';
     workspace.current = {
       ...leverScene(drawn, { support: levers?.support(item, practiceItem ? undefined : lastMiss) ?? '', onScreen }),
       demonstration: marks,
@@ -211,7 +214,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
           const lever = declared.find(l => l.id === id);
           if (practiceItem || !lever) return `No lever ${id} on this item.`;
           if (lever.pulled) return `${id} is already on screen.`;
-          const next = { item: sessionItem.id, pulled: [...pulled, id] };
+          const next = { item: sessionItem.id, pulled: [...pulled, id], on: { ...pulledOn, [id]: lastMiss } };
           if (lever.kind === 'simplify') {
             const easier = levers.simpler?.(sessionItem, id, lastMiss);
             if (!easier) return 'There is no easier one for this item.';
@@ -282,7 +285,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
       {trailNode && <div data-di-trail className="-mt-3 [&>*]:justify-start" style={{ zoom: 0.75 }}>{trailNode}</div>}
       <div ref={pip.ref('stimulus')} data-pip-object="stimulus">
         {stimulus(item, marks, { committed: committedIds, ready, markReady: () => setReadyIds(prev => new Set(prev).add(item.id)),
-          pulled: practiceItem ? [] : pulled, practice: !!practiceItem, canAttempt: lesson.canAttempt,
+          pulled: practiceItem ? [] : pulled, pulledOn: practiceItem ? {} : pulledOn, practice: !!practiceItem, canAttempt: lesson.canAttempt,
           commit: (response, correct, miss) => {
             checked.current = { itemId: lesson.currentItemId(), correct };
             lesson.submitGestureResponse(response, miss);

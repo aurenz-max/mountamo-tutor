@@ -111,3 +111,12 @@ describe('the lever set, and which lever answers which miss', () => {
       expect(set.has(miss), `${mode}: ${miss}`).toBe(true);
   });
 });
+
+describe('model_word varies across the session (2026-11-13: fox on every item)', () => {
+  it('gives each item of a short-a session its own model, none with a two-sound letter', () => {
+    const session = items(['sam', 'mat', 'ram', 'sat'], 'cvc_reading');
+    const models = session.map(i => modelFor(i, session)!.word);
+    expect(new Set(models).size).toBe(models.length);
+    for (const m of models) expect(m).not.toMatch(/[xq]/);
+  });
+});

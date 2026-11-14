@@ -6,6 +6,7 @@ import { useEvaluationContext } from '../../../evaluation';
 import { useWorkspaceSubmission } from '../../../evaluation/workspaceSubmission';
 import { useTeachingWorkspace, type TeachingAssignment, type TeachingWorkspace } from './useTeachingWorkspace';
 import { teachingEvaluation } from './teachingEvaluation';
+import { lastMiss } from './observerLever';
 import { useWorkspacePin } from './workspacePin';
 import { useRunnerPip } from '../../../pip/WorkspacePip';
 import type { TeachingSummary } from './TeachingSession';
@@ -83,6 +84,8 @@ export interface WorkspaceRun<Item extends WorkspaceRunItem> {
   /** A tap-to-hear request (`useTeachingWorkspace.requestHear`): silent and host-authored, never a learner turn. */
   requestHear: (text: string) => void;
   practiceSummary: TeachingSummary | null;
+  /** The miss the session item's latest wrong attempt showed, for a lever whose content depends on it. */
+  lastMiss?: string;
   teachingResult: TeachingEvaluationResult | null;
   start: () => Promise<void>;
   isAwaitingGesture: () => boolean;
@@ -193,7 +196,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
 
   useEffect(() => { if (solved) affirm(item, state.lastResponse?.response); }, [solved, item, affirm, state.lastResponse]);
 
-  // Built from the scored session, so `onFinished` (the submission) waits for the scoring pass.
+  // Built from the scored session (`scoreSession`: the verdicts that moved the lesson) once the session completes.
   const teachingResult = lesson.scored
     ? teachingEvaluation(items.map(i => ({ ...options.assignment(i), checkResponse: () => null })), state, lesson.scored, evalMode)
     : null;
@@ -220,6 +223,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     stage: state.phase === 'completed' ? 'done' : solved ? 'affirmed' : 'asking',
     currentSolved: solved, canAttempt: lesson.canAttempt, revealHeld: solved, practice: !!state.practice, practiceSolved, tutorSpeaking: lesson.tutorSpeaking,
     cuedItemId: item.id, summary: null, practiceSummary: lesson.summary, teachingResult,
+    lastMiss: lastMiss(state.attempts, item.id),
     start: async () => {}, isAwaitingGesture: lesson.isBlocked,
     armStillness: (commit, ms = DEFAULT_STILLNESS_MS) => {
       clearStillness();

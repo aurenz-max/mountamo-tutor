@@ -61,6 +61,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { wordReadTally } from '../literacy/readingRecord';
+import { LOOK_AGAIN_LEVER, lookAgainAt } from '../literacy/lookAgainLever';
 import { buildWordReadingItems, workspaceScene, type DiWordReadingChallenge, type DiWordReadingChallengeType,
   type WordReadingItem } from './diWordReadingDomain';
 import { BLEND_SLIDE, MODEL_WORD, SOUND_DOTS, TRACKING_ARROW, WORD_LEVERS, modelFor, type WordModel } from './diWordReadingLevers';
@@ -132,6 +133,8 @@ function WordCard({ item, marks, view, model }: { item: WordReadingItem; marks: 
     const timer = window.setTimeout(() => setJoined(true), 400);
     return () => window.clearTimeout(timer);
   }, [slide]);
+  // `look_again`: a ring on the letter the learner's word differed at, from the miss the lever was pulled after.
+  const ring = view.pulled.includes(LOOK_AGAIN_LEVER) ? lookAgainAt(item.letters.length, view.pulledOn[LOOK_AGAIN_LEVER]) : null;
   const dots = view.pulled.includes(SOUND_DOTS), arrow = view.pulled.includes(TRACKING_ARROW) || slide;
   return <div data-practice-item={view.practice || undefined} className="flex flex-wrap items-center justify-center gap-6">
     <div className="flex flex-col items-center gap-2">
@@ -142,9 +145,10 @@ function WordCard({ item, marks, view, model }: { item: WordReadingItem; marks: 
           marks.includes('word') ? 'outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}`}>
         {item.letters.length
           ? item.letters.map((letter, position) => (
-            <span key={position} data-word-letter={position}
+            <span key={position} data-word-letter={position} data-lever={ring?.at === position ? LOOK_AGAIN_LEVER : undefined}
               data-tutor-demonstration={marks.includes(`letter-${position}`)}
               className={`flex flex-col items-center rounded-lg transition-[margin] duration-700 ${slide && !joined ? 'mx-5' : 'mx-0'} ${
+                ring?.at === position ? 'ring-4 ring-cyan-300' : ''} ${
                 marks.includes(`letter-${position}`) ? 'outline outline-2 outline-dashed outline-offset-2 outline-purple-400' : ''}`}>
               {letter}
               {dots && <span data-lever={SOUND_DOTS} data-sound-dot={position} aria-hidden="true" className="mt-1 h-3 w-3 rounded-full bg-amber-300" />}
