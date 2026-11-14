@@ -1,0 +1,886 @@
+{
+ "id": "treasure-map",
+ "title": "Treasure Map",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child hears position clues (next to, between, around, through, across) and taps squares on a map to walk a route that follows every clue in order to the treasure, which shows understanding and following position words and prepositions in spoken directions."
+ },
+ "request": {
+  "topic": "Following position words to trace a route",
+  "grade": "kindergarten",
+  "objective": "Listen to position clues (next to, between, around, through, across) and trace a route on a map that follows every clue in order to the treasure. (LA004-05-F, LA004-05-H)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // A treasure map on a grid. The explorer stands on the start square. Tap a square next to the end of the path to\r\n  // walk there; tap a square already on the path to go back to it. The clues are spoken in the ask (next to, between,\r\n  // around, through, across) and drawn as numbered picture cards above the map; the map never marks which squares a\r\n  // clue means.\r\n  // params.rows, params.cols, params.start [r,c], params.treasure [r,c],\r\n  // params.landmarks [{ id, name, pic, cells: [[r,c]], ground: 'water' | 'hill' | null, picEach }] (a many-square landmark\r\n  // draws its picture once unless picEach),\r\n  // params.clues [{ rel: 'next'|'between'|'around'|'through'|'across', ref: [landmarkId, ...] }] (the key, for code only).\r\n  const R = Math.max(3, Math.min(5, Number(params.rows) || 5));\r\n  const C = Math.max(4, Math.min(8, Number(params.cols) || 8));\r\n  const start = Array.isArray(params.start) ? params.start : [2, 0];\r\n  const treasure = Array.isArray(params.treasure) ? params.treasure : [2, C - 1];\r\n  const lms = Array.isArray(params.landmarks) ? params.landmarks : [{ id: 'rock', name: 'big rock', pic: '🪨', cells: [[0, 3]] }];\r\n  const clues = Array.isArray(params.clues) ? params.clues : [{ rel: 'next', ref: ['rock'] }];\r\n  const CELL = 80, OX = (680 - C * CELL) / 2, OY = 92, W = 680, H = R * CELL + 108;\r\n\r\n  const key = (r, c) => r + ',' + c;\r\n  const lmAt = {};\r\n  lms.forEach(l => l.cells.forEach(([r, c]) => { lmAt[key(r, c)] = l; }));\r\n  const [path, setPath] = useState([start]);\r\n  const end = path[path.length - 1];\r\n  const onPath = (r, c) => path.findIndex(p => p[0] === r && p[1] === c);\r\n  const adj = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;\r\n\r\n  // Squares each clue means, computed from the landmarks.\r\n  const cellsOf = id => (lms.find(l => l.id === id) || { cells: [] }).cells;\r\n  const isIn = (cells, p) => cells.some(q => q[0] === p[0] && q[1] === p[1]);\r\n  const meets = (clue, p) => {\r\n    const a = cellsOf(clue.ref[0]);\r\n    if (clue.rel === 'through' || clue.rel === 'across') return isIn(a, p);\r\n    if (clue.rel === 'next' || clue.rel === 'around') return !isIn(a, p) && a.some(q => adj(q, p));\r\n    if (clue.rel === 'between') {\r\n      const b = cellsOf(clue.ref[1]);\r\n      return a.some(x => b.some(y => (x[0] === y[0] && p[0] === x[0] && (p[1] - x[1]) * (p[1] - y[1]) < 0) ||\r\n        (x[1] === y[1] && p[1] === x[1] && (p[0] - x[0]) * (p[0] - y[0]) < 0)));\r\n    }\r\n    return false;\r\n  };\r\n  let at = 0, cluesInOrder = true;\r\n  clues.forEach(cl => {\r\n    let k = -1;\r\n    for (let i = at; i < path.length; i++) if (meets(cl, path[i])) { k = i; break; }\r\n    if (k < 0) cluesInOrder = false; else at = k;\r\n  });\r\n  const wet = path.some(p => { const l = lmAt[key(p[0], p[1])]; return l && l.ground === 'water'; });\r\n  const avoided = clues.filter(c => c.rel === 'around').every(c => !path.some(p => isIn(cellsOf(c.ref[0]), p)));\r\n  const goalMet = path.length > 1 && end[0] === treasure[0] && end[1] === treasure[1] && cluesInOrder && !wet && avoided;\r\n\r\n  const describe = p => {\r\n    const here = lmAt[key(p[0], p[1])];\r\n    if (here) return 'on the ' + here.name;\r\n    const near = lms.filter(l => l.cells.some(q => adj(q, p))).map(l => l.name);\r\n    return near.length ? 'next to the ' + Array.from(new Set(near)).join(' and the ') : 'open grass';\r\n  };\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    lumina.scene({\r\n      map: lms.map(l => l.name),\r\n      steps: path.length - 1,\r\n      route: path.slice(1).map(describe),\r\n      explorerAtTreasure: end[0] === treasure[0] && end[1] === treasure[1],\r\n    });\r\n  }, [path, goalMet]);\r\n\r\n  const tap = (r, c) => {\r\n    const i = onPath(r, c);\r\n    if (i >= 0) { setPath(p => p.slice(0, i + 1)); return; }\r\n    if (adj(end, [r, c])) setPath(p => [...p, [r, c]]);\r\n  };\r\n  const cx = c => OX + c * CELL + CELL / 2, cy = r => OY + r * CELL + CELL / 2;\r\n  const fillOf = (r, c) => {\r\n    const l = lmAt[key(r, c)];\r\n    if (l && l.ground === 'water') return '#1d4ed8';\r\n    if (l && l.ground === 'hill') return '#78350f';\r\n    return (r + c) % 2 ? '#166534' : '#15803d';\r\n  };\r\n\r\n  // The clues as picture cards, in order, so a child who cannot read keeps them in view after the ask is spoken.\r\n  const picOf = id => (lms.find(l => l.id === id) || { pic: '?' }).pic;\r\n  const clueCard = (cl, i) => {\r\n    const w = 132, x = (W - clues.length * (w + 12) + 12) / 2 + i * (w + 12);\r\n    const t = (dx, s, fs) => <text x={x + dx} y={46} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={fs || 30}>{s}</text>;\r\n    let body;\r\n    if (cl.rel === 'next') body = [t(44, '🧒'), t(88, picOf(cl.ref[0]))];\r\n    else if (cl.rel === 'between') body = [t(30, picOf(cl.ref[0])), t(66, '🧒'), t(102, picOf(cl.ref[1]))];\r\n    else if (cl.rel === 'around') body = [t(66, picOf(cl.ref[0])), <path key=\"a\" d={`M ${x + 30} ${62} Q ${x + 66} ${-4} ${x + 104} ${62}`} fill=\"none\" stroke=\"#fde68a\" strokeWidth=\"3\" strokeDasharray=\"4 5\" />];\r\n    else body = [t(36, '🧒', 26), <line key=\"l\" x1={x + 54} y1={46} x2={x + 74} y2={46} stroke=\"#fde68a\" strokeWidth=\"3\" />, <path key=\"h\" d={`M ${x + 74} 40 L ${x + 82} 46 L ${x + 74} 52 Z`} fill=\"#fde68a\" />, t(102, picOf(cl.ref[0]))];\r\n    return <g key={i} id={'clue-' + i}>\r\n      <rect x={x} y={12} width={w} height={68} rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\r\n      <circle cx={x + 2} cy={14} r=\"13\" fill=\"#334155\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" />\r\n      <text x={x + 2} y={15} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"14\" fill=\"#e2e8f0\">{i + 1}</text>\r\n      {body}\r\n    </g>;\r\n  };\r\n\r\n  return (\r\n    <Panel>\r\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\r\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\r\n        {clues.map(clueCard)}\r\n        {Array.from({ length: R }, (_, r) => Array.from({ length: C }, (_, c) => (\r\n          <rect key={key(r, c)} id={`cell-${r}-${c}`} x={OX + c * CELL} y={OY + r * CELL} width={CELL} height={CELL}\r\n            fill={fillOf(r, c)} stroke=\"#0f172a\" strokeWidth=\"1.5\" style={{ cursor: 'pointer' }} onClick={() => tap(r, c)} />)))}\r\n        {lms.map(l => (l.picEach || l.cells.length === 1 ? l.cells : [l.cells[0]]).map(([r, c]) => (\r\n          <text key={l.id + r + c} x={cx(c)} y={cy(r) + 2} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"44\" pointerEvents=\"none\">{l.pic}</text>)))}\r\n        <text x={cx(treasure[1])} y={cy(treasure[0]) + 2} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"44\" pointerEvents=\"none\">💰</text>\r\n        <polyline points={path.map(p => cx(p[1]) + ',' + cy(p[0])).join(' ')} fill=\"none\" stroke=\"#fde68a\" strokeWidth=\"6\" strokeDasharray=\"2 12\" strokeLinecap=\"round\" pointerEvents=\"none\" />\r\n        {path.slice(1, -1).map((p, i) => <circle key={i} cx={cx(p[1])} cy={cy(p[0])} r=\"7\" fill=\"#fde68a\" pointerEvents=\"none\" />)}\r\n        <text x={cx(start[1])} y={cy(start[0]) + 30} textAnchor=\"middle\" fontSize=\"14\" fill=\"#fde68a\" pointerEvents=\"none\">start</text>\r\n        <text x={cx(end[1])} y={cy(end[0])} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"42\" pointerEvents=\"none\">🧒</text>\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "rows": 5,
+    "cols": 8,
+    "start": [
+     2,
+     0
+    ],
+    "treasure": [
+     2,
+     7
+    ],
+    "landmarks": [
+     {
+      "id": "rock",
+      "name": "big rock",
+      "pic": "🪨",
+      "cells": [
+       [
+        0,
+        4
+       ]
+      ]
+     },
+     {
+      "id": "bush",
+      "name": "bush",
+      "pic": "🌿",
+      "cells": [
+       [
+        4,
+        2
+       ]
+      ]
+     }
+    ],
+    "clues": [
+     {
+      "rel": "next",
+      "ref": [
+       "rock"
+      ]
+     }
+    ]
+   },
+   "ask": "Walk to the treasure. On the way, walk next to the big rock.",
+   "goal": "The path ends on the treasure and passes a square beside the rock (above it is off the map, so beside or below).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-4",
+     "shot": "by-the-rock"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-7"
+    }
+   ],
+   "scene": {
+    "map": [
+     "big rock",
+     "bush"
+    ],
+    "steps": 0,
+    "route": [],
+    "explorerAtTreasure": false
+   },
+   "proofScene": {
+    "map": [
+     "big rock",
+     "bush"
+    ],
+    "steps": 9,
+    "route": [
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "next to the big rock",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   },
+   "missScene": {
+    "map": [
+     "big rock",
+     "bush"
+    ],
+    "steps": 7,
+    "route": [
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   }
+  },
+  {
+   "params": {
+    "rows": 5,
+    "cols": 8,
+    "start": [
+     1,
+     0
+    ],
+    "treasure": [
+     4,
+     7
+    ],
+    "landmarks": [
+     {
+      "id": "house",
+      "name": "house",
+      "pic": "🏠",
+      "cells": [
+       [
+        0,
+        2
+       ]
+      ]
+     },
+     {
+      "id": "tree1",
+      "name": "tree",
+      "pic": "🌳",
+      "cells": [
+       [
+        3,
+        4
+       ]
+      ]
+     },
+     {
+      "id": "tree2",
+      "name": "tree",
+      "pic": "🌳",
+      "cells": [
+       [
+        3,
+        6
+       ]
+      ]
+     }
+    ],
+    "clues": [
+     {
+      "rel": "next",
+      "ref": [
+       "house"
+      ]
+     },
+     {
+      "rel": "between",
+      "ref": [
+       "tree1",
+       "tree2"
+      ]
+     }
+    ]
+   },
+   "ask": "Walk to the treasure. First walk next to the house, then walk between the two trees.",
+   "goal": "The path touches the house, then steps on the one square between the trees, then ends on the treasure. Passing beside one tree does not count.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-5",
+     "shot": "halfway"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-7"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-7"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-7"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-7"
+    }
+   ],
+   "scene": {
+    "map": [
+     "house",
+     "tree",
+     "tree"
+    ],
+    "steps": 0,
+    "route": [],
+    "explorerAtTreasure": false
+   },
+   "proofScene": {
+    "map": [
+     "house",
+     "tree",
+     "tree"
+    ],
+    "steps": 10,
+    "route": [
+     "open grass",
+     "next to the house",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "next to the tree",
+     "open grass",
+     "next to the tree",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   },
+   "missScene": {
+    "map": [
+     "house",
+     "tree",
+     "tree"
+    ],
+    "steps": 10,
+    "route": [
+     "open grass",
+     "next to the house",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "open grass",
+     "next to the tree",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   }
+  },
+  {
+   "params": {
+    "rows": 5,
+    "cols": 8,
+    "start": [
+     2,
+     0
+    ],
+    "treasure": [
+     0,
+     7
+    ],
+    "landmarks": [
+     {
+      "id": "rock",
+      "name": "big rock",
+      "pic": "🪨",
+      "cells": [
+       [
+        4,
+        1
+       ]
+      ]
+     },
+     {
+      "id": "pond",
+      "name": "pond",
+      "pic": "🦆",
+      "cells": [
+       [
+        1,
+        3
+       ],
+       [
+        2,
+        3
+       ],
+       [
+        1,
+        4
+       ],
+       [
+        2,
+        4
+       ]
+      ],
+      "ground": "water"
+     },
+     {
+      "id": "tree1",
+      "name": "tree",
+      "pic": "🌳",
+      "cells": [
+       [
+        0,
+        6
+       ]
+      ]
+     },
+     {
+      "id": "tree2",
+      "name": "tree",
+      "pic": "🌳",
+      "cells": [
+       [
+        2,
+        6
+       ]
+      ]
+     }
+    ],
+    "clues": [
+     {
+      "rel": "next",
+      "ref": [
+       "rock"
+      ]
+     },
+     {
+      "rel": "around",
+      "ref": [
+       "pond"
+      ]
+     },
+     {
+      "rel": "between",
+      "ref": [
+       "tree1",
+       "tree2"
+      ]
+     }
+    ]
+   },
+   "ask": "Walk to the treasure. Walk next to the big rock, then around the pond, then between the two trees.",
+   "goal": "The path touches the rock, goes past the pond without stepping in, steps between the trees, and ends on the treasure.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-3-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-5",
+     "shot": "halfway"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-7"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-3-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-7"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-7"
+    }
+   ],
+   "scene": {
+    "map": [
+     "big rock",
+     "pond",
+     "tree",
+     "tree"
+    ],
+    "steps": 0,
+    "route": [],
+    "explorerAtTreasure": false
+   },
+   "proofScene": {
+    "map": [
+     "big rock",
+     "pond",
+     "tree",
+     "tree"
+    ],
+    "steps": 11,
+    "route": [
+     "open grass",
+     "next to the big rock",
+     "open grass",
+     "next to the pond",
+     "next to the pond",
+     "open grass",
+     "next to the pond and the tree",
+     "next to the pond",
+     "next to the tree",
+     "open grass",
+     "next to the tree"
+    ],
+    "explorerAtTreasure": true
+   },
+   "missScene": {
+    "map": [
+     "big rock",
+     "pond",
+     "tree",
+     "tree"
+    ],
+    "steps": 11,
+    "route": [
+     "open grass",
+     "next to the big rock",
+     "open grass",
+     "next to the pond",
+     "on the pond",
+     "on the pond",
+     "next to the pond and the tree",
+     "next to the pond",
+     "next to the tree",
+     "open grass",
+     "next to the tree"
+    ],
+    "explorerAtTreasure": true
+   }
+  },
+  {
+   "params": {
+    "rows": 5,
+    "cols": 8,
+    "start": [
+     2,
+     0
+    ],
+    "treasure": [
+     0,
+     7
+    ],
+    "landmarks": [
+     {
+      "id": "hill",
+      "name": "hill",
+      "pic": "⛰️",
+      "cells": [
+       [
+        1,
+        2
+       ],
+       [
+        3,
+        2
+       ]
+      ],
+      "ground": "hill",
+      "picEach": true
+     },
+     {
+      "id": "tunnel",
+      "name": "tunnel",
+      "pic": "🕳️",
+      "cells": [
+       [
+        2,
+        2
+       ]
+      ],
+      "ground": "hill"
+     },
+     {
+      "id": "river",
+      "name": "river",
+      "pic": "🌊",
+      "cells": [
+       [
+        0,
+        5
+       ],
+       [
+        1,
+        5
+       ],
+       [
+        2,
+        5
+       ],
+       [
+        4,
+        5
+       ]
+      ],
+      "ground": "water",
+      "picEach": true
+     },
+     {
+      "id": "bridge",
+      "name": "bridge",
+      "pic": "🌉",
+      "cells": [
+       [
+        3,
+        5
+       ]
+      ]
+     }
+    ],
+    "clues": [
+     {
+      "rel": "through",
+      "ref": [
+       "tunnel"
+      ]
+     },
+     {
+      "rel": "across",
+      "ref": [
+       "bridge"
+      ]
+     }
+    ]
+   },
+   "ask": "Walk to the treasure. Go through the tunnel, then across the bridge.",
+   "goal": "The path enters the tunnel square, then the bridge square, never steps in the river, and ends on the treasure. Going around the hill is not through it.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2",
+     "shot": "halfway"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-3-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-4-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-3"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-4"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-5"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-6"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-7"
+    }
+   ],
+   "scene": {
+    "map": [
+     "hill",
+     "tunnel",
+     "river",
+     "bridge"
+    ],
+    "steps": 0,
+    "route": [],
+    "explorerAtTreasure": false
+   },
+   "proofScene": {
+    "map": [
+     "hill",
+     "tunnel",
+     "river",
+     "bridge"
+    ],
+    "steps": 11,
+    "route": [
+     "next to the tunnel",
+     "on the tunnel",
+     "next to the tunnel",
+     "next to the river",
+     "next to the bridge",
+     "on the bridge",
+     "next to the bridge",
+     "next to the river",
+     "next to the river",
+     "next to the river",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   },
+   "missScene": {
+    "map": [
+     "hill",
+     "tunnel",
+     "river",
+     "bridge"
+    ],
+    "steps": 13,
+    "route": [
+     "open grass",
+     "open grass",
+     "open grass",
+     "next to the hill",
+     "open grass",
+     "next to the hill",
+     "next to the bridge",
+     "on the bridge",
+     "next to the bridge",
+     "next to the river",
+     "next to the river",
+     "next to the river",
+     "open grass"
+    ],
+    "explorerAtTreasure": true
+   }
+  }
+ ]
+}

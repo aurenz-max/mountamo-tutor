@@ -8,6 +8,19 @@ agents then read the generator plus the domain, card, boss or component file for
 that code read confirmed the action and the scoring. Nothing was generated and nothing was played. The September
 atlas was used as a hint only; the catalog has changed too much since for its decisions to carry over.
 
+## Update 2026-11-14: two canvases built
+
+**Score now: 131 of 191 at level 2.** Built from the H5 records, both passing `canvas-check` with every screenshot read,
+in the pilot tier until played:
+
+| Canvas | Problems | Subskills |
+|---|---|---|
+| `picture-chain` (VO5, **played and approved 11-14, in the lesson library**) | fish drawn at their sizes; animals drawn against their real size (ant biggest); freezing to hot; seed to bee; egg to hen with an apple that does not belong | LA005-01-H, LA005-03-H |
+| `treasure-map` (GR14, **played and approved 11-14, in the lesson library**) | next to; next to then between; next to, around the pond, between; through the tunnel then across the bridge. Clues are numbered picture cards above the map | LA004-05-F, LA004-05-H |
+
+H5 said to wait for a play of `print-page` first (does the tutor speak a canvas `ask` to a non-reader?). That play is
+still owed and decides whether these two hold as built. `feeling-faces` and `do-two-things` are not built.
+
 ## Update, later on 2026-11-10: three strands built
 
 **Score now: 124 of 191 at level 2 (65%); Grammar 40 of 53. 0 played, 0 served.** `audit.json` carries the new

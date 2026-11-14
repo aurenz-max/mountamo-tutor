@@ -1,0 +1,602 @@
+{
+ "id": "picture-chain",
+ "title": "Picture Chain",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child drags picture cards into a row of boxes to order them along a scale (smallest to biggest by the real thing, freezing to hot) or a chain where each step leads to the next (seed to bee, egg to hen), leaving out a picture that does not belong, which shows understanding of words for degrees of size and temperature and of how related ideas connect in order."
+ },
+ "request": {
+  "topic": "Ordering pictures along a scale or a chain",
+  "grade": "kindergarten",
+  "objective": "Put pictures in order along a scale (tiny to huge, freezing to hot) by the real things, not their drawn size, or along a chain where each step leads to the next, leaving out a picture that does not belong. (LA005-01-H, LA005-03-H)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // Picture cards wait in a tray. A row of empty boxes runs along an arrow from one end mark to the other. Drag a card\n  // into a box; drop it on a full box to swap; drag a card back to the tray to take it out. The tray order is not the\n  // answer, and a card's drawn size can differ from the size of the thing (params items[].draw).\n  // params.items: [{ id, pic, name, draw }] in the true order (the key, for code only). params.extra: cards that do not\n  // belong. params.tray: ids in tray order. params.ends: 'size' (a small and a big dot) or [leftPic, rightPic].\n  // params.scale: what the order is along, for the tutor.\n  const items = (Array.isArray(params.items) ? params.items : [\n    { id: 'a', pic: '🐟', name: 'small fish', draw: 0.6 }, { id: 'b', pic: '🐟', name: 'middle fish', draw: 0.9 }, { id: 'c', pic: '🐟', name: 'big fish', draw: 1.3 },\n  ]).slice(0, 5);\n  const extra = (Array.isArray(params.extra) ? params.extra : []).slice(0, 2);\n  const all = [...items, ...extra];\n  const trayIds = (Array.isArray(params.tray) ? params.tray : all.map(i => i.id).reverse()).filter(id => all.some(i => i.id === id));\n  const ends = params.ends || 'size';\n  const scaleName = params.scale || 'smallest to biggest';\n  const N = items.length, W = 680, H = 440, SLOT_Y = 140, TRAY_Y = 350;\n\n  const [slots, setSlots] = useState(() => Array(N).fill(null));\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n  const byId = id => all.find(i => i.id === id);\n  const goalMet = slots.every((s, i) => s === items[i].id);\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      orderAlong: scaleName,\n      boxes: slots.map((s, i) => (i + 1) + ': ' + (s ? byId(s).name : 'empty')),\n      tray: trayIds.filter(id => !slots.includes(id)).map(id => byId(id).name),\n    });\n  }, [slots, goalMet]);\n\n  const slotW = Math.min(124, 560 / N), sx0 = (W - N * slotW) / 2 + 10;\n  const slotX = i => sx0 + i * slotW + slotW / 2;\n  const trayW = Math.min(124, (W - 40) / trayIds.length), tx0 = (W - trayIds.length * trayW) / 2;\n  const trayX = k => tx0 + k * trayW + trayW / 2;\n  const posOf = id => {\n    const s = slots.indexOf(id);\n    if (s >= 0) return { x: slotX(s), y: SLOT_Y };\n    return { x: trayX(trayIds.indexOf(id)), y: TRAY_Y };\n  };\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const p = pointOf(e), id = drag.id;\n    setDrag(null);\n    const from = slots.indexOf(id);\n    if (Math.abs(p.y - SLOT_Y) < 70) {\n      const i = Math.floor((p.x - sx0) / slotW);\n      if (i < 0 || i >= N || i === from) return;\n      setSlots(s => { const n = [...s]; const was = n[i]; n[i] = id; if (from >= 0) n[from] = was; return n; });\n    } else if (from >= 0) setSlots(s => s.map(v => (v === id ? null : v)));\n  };\n\n  const endMark = (x, right) => {\n    if (ends === 'size') return <circle cx={x} cy={SLOT_Y + 90} r={right ? 16 : 6} fill=\"#94a3b8\" />;\n    const pics = Array.isArray(ends) ? ends : ['', ''];\n    return <text x={x} y={SLOT_Y + 92} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"30\">{right ? pics[1] : pics[0]}</text>;\n  };\n\n  const card = id => {\n    const it = byId(id);\n    const held = drag && drag.id === id && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : posOf(id);\n    const fs = 54 * Math.max(0.5, Math.min(1.5, Number(it.draw) || 1));\n    return <g key={id} id={'card-' + id} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.08 : 1})`}\n      style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => grab(id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <rect x=\"-50\" y=\"-50\" width=\"100\" height=\"100\" rx=\"14\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text y=\"3\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={fs}>{it.pic}</text>\n    </g>;\n  };\n\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        <defs><marker id=\"pc-arr\" markerWidth=\"10\" markerHeight=\"10\" refX=\"6\" refY=\"5\" orient=\"auto\"><path d=\"M0,0 L10,5 L0,10 z\" fill=\"#94a3b8\" /></marker></defs>\n        <line x1={sx0 + 20} y1={SLOT_Y + 90} x2={sx0 + N * slotW - 24} y2={SLOT_Y + 90} stroke=\"#94a3b8\" strokeWidth=\"3\" markerEnd=\"url(#pc-arr)\" />\n        {endMark(sx0 - 8, false)}\n        {endMark(sx0 + N * slotW + 12, true)}\n        {slots.map((s, i) => <rect key={i} id={'box-' + i} x={slotX(i) - 54} y={SLOT_Y - 54} width=\"108\" height=\"108\" rx=\"16\"\n          fill=\"none\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"8 6\" />)}\n        <rect x=\"16\" y={TRAY_Y - 66} width={W - 32} height=\"132\" rx=\"18\" fill=\"#1e1b4b\" opacity=\"0.6\" />\n        {all.map(i => i.id).filter(id => !(drag && drag.id === id)).map(card)}\n        {drag ? card(drag.id) : null}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "scale": "smallest to biggest",
+    "ends": "size",
+    "items": [
+     {
+      "id": "s",
+      "pic": "🐟",
+      "name": "small fish",
+      "draw": 0.55
+     },
+     {
+      "id": "m",
+      "pic": "🐟",
+      "name": "middle fish",
+      "draw": 0.9
+     },
+     {
+      "id": "b",
+      "pic": "🐟",
+      "name": "big fish",
+      "draw": 1.4
+     }
+    ],
+    "tray": [
+     "m",
+     "s",
+     "b"
+    ]
+   },
+   "ask": "Put the fish in order from the smallest to the biggest.",
+   "goal": "Small, middle, big along the arrow. Copying the tray (middle, small, big) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-s",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-m",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-b",
+     "to": "#box-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-m",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-s",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-b",
+     "to": "#box-2"
+    }
+   ],
+   "scene": {
+    "orderAlong": "smallest to biggest",
+    "boxes": [
+     "1: empty",
+     "2: empty",
+     "3: empty"
+    ],
+    "tray": [
+     "middle fish",
+     "small fish",
+     "big fish"
+    ]
+   },
+   "proofScene": {
+    "orderAlong": "smallest to biggest",
+    "boxes": [
+     "1: small fish",
+     "2: middle fish",
+     "3: big fish"
+    ],
+    "tray": []
+   },
+   "missScene": {
+    "orderAlong": "smallest to biggest",
+    "boxes": [
+     "1: middle fish",
+     "2: small fish",
+     "3: big fish"
+    ],
+    "tray": []
+   }
+  },
+  {
+   "params": {
+    "scale": "tiniest animal to hugest animal",
+    "ends": "size",
+    "items": [
+     {
+      "id": "ant",
+      "pic": "🐜",
+      "name": "ant",
+      "draw": 1.4
+     },
+     {
+      "id": "mouse",
+      "pic": "🐁",
+      "name": "mouse",
+      "draw": 1.15
+     },
+     {
+      "id": "dog",
+      "pic": "🐕",
+      "name": "dog",
+      "draw": 0.85
+     },
+     {
+      "id": "elephant",
+      "pic": "🐘",
+      "name": "elephant",
+      "draw": 0.6
+     }
+    ],
+    "tray": [
+     "dog",
+     "ant",
+     "elephant",
+     "mouse"
+    ]
+   },
+   "ask": "Put the animals in order from the tiniest to the hugest.",
+   "goal": "Ant, mouse, dog, elephant by the real animals' size. The pictures are drawn the other way round (the ant biggest), so ordering by drawn size is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-ant",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-mouse",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-dog",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-elephant",
+     "to": "#box-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-elephant",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-dog",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-mouse",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-ant",
+     "to": "#box-3"
+    }
+   ],
+   "scene": {
+    "orderAlong": "tiniest animal to hugest animal",
+    "boxes": [
+     "1: empty",
+     "2: empty",
+     "3: empty",
+     "4: empty"
+    ],
+    "tray": [
+     "dog",
+     "ant",
+     "elephant",
+     "mouse"
+    ]
+   },
+   "proofScene": {
+    "orderAlong": "tiniest animal to hugest animal",
+    "boxes": [
+     "1: ant",
+     "2: mouse",
+     "3: dog",
+     "4: elephant"
+    ],
+    "tray": []
+   },
+   "missScene": {
+    "orderAlong": "tiniest animal to hugest animal",
+    "boxes": [
+     "1: elephant",
+     "2: dog",
+     "3: mouse",
+     "4: ant"
+    ],
+    "tray": []
+   }
+  },
+  {
+   "params": {
+    "scale": "freezing cold to very hot",
+    "ends": [
+     "🥶",
+     "🥵"
+    ],
+    "items": [
+     {
+      "id": "ice",
+      "pic": "🧊",
+      "name": "ice cube"
+     },
+     {
+      "id": "rain",
+      "pic": "🌧️",
+      "name": "cool rainy day"
+     },
+     {
+      "id": "beach",
+      "pic": "🏖️",
+      "name": "warm beach"
+     },
+     {
+      "id": "fire",
+      "pic": "🔥",
+      "name": "campfire"
+     }
+    ],
+    "tray": [
+     "beach",
+     "fire",
+     "ice",
+     "rain"
+    ]
+   },
+   "ask": "Put the pictures in order from freezing cold to very hot.",
+   "goal": "Ice, rain, beach, fire. Getting the two ends right and swapping the middle (beach before rain) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-ice",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-rain",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-beach",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-fire",
+     "to": "#box-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-ice",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-beach",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-rain",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-fire",
+     "to": "#box-3"
+    }
+   ],
+   "scene": {
+    "orderAlong": "freezing cold to very hot",
+    "boxes": [
+     "1: empty",
+     "2: empty",
+     "3: empty",
+     "4: empty"
+    ],
+    "tray": [
+     "warm beach",
+     "campfire",
+     "ice cube",
+     "cool rainy day"
+    ]
+   },
+   "proofScene": {
+    "orderAlong": "freezing cold to very hot",
+    "boxes": [
+     "1: ice cube",
+     "2: cool rainy day",
+     "3: warm beach",
+     "4: campfire"
+    ],
+    "tray": []
+   },
+   "missScene": {
+    "orderAlong": "freezing cold to very hot",
+    "boxes": [
+     "1: ice cube",
+     "2: warm beach",
+     "3: cool rainy day",
+     "4: campfire"
+    ],
+    "tray": []
+   }
+  },
+  {
+   "params": {
+    "scale": "a chain: each picture leads to the next",
+    "ends": [
+     "1️⃣",
+     "🏁"
+    ],
+    "items": [
+     {
+      "id": "seed",
+      "pic": "🌰",
+      "name": "seed"
+     },
+     {
+      "id": "sprout",
+      "pic": "🌱",
+      "name": "sprout"
+     },
+     {
+      "id": "flower",
+      "pic": "🌻",
+      "name": "flower"
+     },
+     {
+      "id": "bee",
+      "pic": "🐝",
+      "name": "bee"
+     }
+    ],
+    "tray": [
+     "flower",
+     "bee",
+     "seed",
+     "sprout"
+    ]
+   },
+   "ask": "These pictures show how a seed ends up feeding a bee. Put them in order.",
+   "goal": "Seed, sprout, flower, bee. Starting the chain at the flower is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-seed",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-sprout",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-flower",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-bee",
+     "to": "#box-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-flower",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-bee",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-seed",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-sprout",
+     "to": "#box-3"
+    }
+   ],
+   "scene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: empty",
+     "2: empty",
+     "3: empty",
+     "4: empty"
+    ],
+    "tray": [
+     "flower",
+     "bee",
+     "seed",
+     "sprout"
+    ]
+   },
+   "proofScene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: seed",
+     "2: sprout",
+     "3: flower",
+     "4: bee"
+    ],
+    "tray": []
+   },
+   "missScene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: flower",
+     "2: bee",
+     "3: seed",
+     "4: sprout"
+    ],
+    "tray": []
+   }
+  },
+  {
+   "params": {
+    "scale": "a chain: each picture leads to the next",
+    "ends": [
+     "1️⃣",
+     "🏁"
+    ],
+    "items": [
+     {
+      "id": "egg",
+      "pic": "🥚",
+      "name": "egg"
+     },
+     {
+      "id": "hatch",
+      "pic": "🐣",
+      "name": "hatching chick"
+     },
+     {
+      "id": "chick",
+      "pic": "🐥",
+      "name": "chick"
+     },
+     {
+      "id": "hen",
+      "pic": "🐔",
+      "name": "hen"
+     }
+    ],
+    "extra": [
+     {
+      "id": "apple",
+      "pic": "🍎",
+      "name": "apple"
+     }
+    ],
+    "tray": [
+     "chick",
+     "apple",
+     "hen",
+     "egg",
+     "hatch"
+    ]
+   },
+   "ask": "These pictures show how a hen grows. Put them in order. One picture does not belong.",
+   "goal": "Egg, hatching chick, chick, hen; the apple stays in the tray. Putting the apple in the chain is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-egg",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-hatch",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-chick",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-hen",
+     "to": "#box-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-egg",
+     "to": "#box-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-hatch",
+     "to": "#box-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-apple",
+     "to": "#box-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-hen",
+     "to": "#box-3"
+    }
+   ],
+   "scene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: empty",
+     "2: empty",
+     "3: empty",
+     "4: empty"
+    ],
+    "tray": [
+     "chick",
+     "apple",
+     "hen",
+     "egg",
+     "hatching chick"
+    ]
+   },
+   "proofScene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: egg",
+     "2: hatching chick",
+     "3: chick",
+     "4: hen"
+    ],
+    "tray": [
+     "apple"
+    ]
+   },
+   "missScene": {
+    "orderAlong": "a chain: each picture leads to the next",
+    "boxes": [
+     "1: egg",
+     "2: hatching chick",
+     "3: apple",
+     "4: hen"
+    ],
+    "tray": [
+     "chick"
+    ]
+   }
+  }
+ ]
+}
