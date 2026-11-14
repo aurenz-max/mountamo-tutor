@@ -527,6 +527,8 @@ export interface KnowledgeCheckJudgedMetrics extends BasePrimitiveMetrics {
 
   /** The problem type this submission covers (multiple_choice, sort, …). */
   problemType: string;
+  /** The problem's own difficulty tier as generated (easy / medium / hard), for per-problem analysis. */
+  difficulty?: 'easy' | 'medium' | 'hard';
   /** Judged item kinds this problem expanded into (choice, sort, blank, …). */
   itemKinds: string[];
   itemsTotal: number;
@@ -3682,6 +3684,18 @@ export interface AdditionFactStrategiesMetrics extends BasePrimitiveMetrics {
   averageFirstResponseMs: number;   // silent automaticity signal, never shown to the child
 }
 
+export interface DotCardsMetrics extends BasePrimitiveMetrics {
+  type: 'dot-cards';
+  challengeType: 'quick_total';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;          // 0-100, mean per-card score (100 / 50 / 25 by tries)
+  averageAttemptsPerChallenge: number;
+}
+
 export interface ShapeComposerMetrics extends BasePrimitiveMetrics {
   type: 'shape-composer';
   accuracy: number;
@@ -4272,6 +4286,7 @@ export type PrimitiveMetrics =
   | SpatialPathMetrics
   | AdditionFactStrategiesMetrics
   | ShapeComposerMetrics
+  | DotCardsMetrics
   | NetFolderMetrics
   | DeepDiveMetrics
   | WonderWalkMetrics

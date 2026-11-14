@@ -245,3 +245,31 @@ export function knowledgeCheckJourneyAnswers(item: KnowledgeCheckItem): { correc
   }
   return { correct: answers.correct, plainWrong: answers.plainWrong };
 }
+
+/**
+ * What the child did on an `on_screen` problem's own surface, as one line for the attempt record. The problem
+ * components send their work as `{ studentWork: {...} }`; ids are turned back into the text the child saw.
+ * Empty when the work carries nothing recognisable.
+ */
+export function onScreenWorkText(work: unknown): string {
+  const raw = (work && typeof work === 'object' && 'studentWork' in work ? (work as { studentWork: unknown }).studentWork : work) as
+    Record<string, unknown> | null | undefined;
+  if (!raw || typeof raw !== 'object') return '';
+  const names = new Map<string, string>();
+  for (const list of [raw.options, raw.leftItems, raw.rightItems]) {
+    if (Array.isArray(list)) for (const o of list) if (o && typeof o === 'object' && 'id' in o)
+      names.set(String((o as { id: unknown }).id), String((o as { text?: unknown }).text ?? (o as { id: unknown }).id));
+  }
+  const name = (v: unknown) => (Array.isArray(v) ? v.map(x => names.get(String(x)) ?? String(x)).join(' and ') : names.get(String(v)) ?? String(v));
+  const pairs = (o: unknown) => (o && typeof o === 'object' ? Object.entries(o as Record<string, unknown>)
+    .map(([k, v]) => `${names.get(k) ?? k} → ${name(v)}`).join('; ') : '');
+  const text = raw.selectedOptionId !== undefined ? `picked "${name(raw.selectedOptionId)}"`
+    : raw.selectedAnswer !== undefined && raw.selectedAnswer !== null ? `picked "${String(raw.selectedAnswer)}"`
+    : Array.isArray(raw.orderedItems) ? `put them in this order: ${raw.orderedItems.map(String).join(', then ')}`
+    : typeof raw.answer === 'string' ? `wrote "${raw.answer}"`
+    : raw.itemCategories ? `sorted: ${pairs(raw.itemCategories)}`
+    : raw.selectedWords ? `filled the blanks: ${pairs(raw.selectedWords)}`
+    : raw.matches ? `matched: ${pairs(raw.matches)}`
+    : '';
+  return text.slice(0, 500);
+}

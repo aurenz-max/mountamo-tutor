@@ -20,6 +20,8 @@ export interface ScoredWorkspaceSession {
   learningResponses: unknown[];
   teachingAttempts: unknown[];
   assistanceProvenance: string;
+  /** The same session scored over some of its items, for a primitive that submits once per problem. */
+  forItems?: (itemIds: readonly string[]) => ScoredWorkspaceSession;
 }
 
 export interface WorkspaceSubmission {

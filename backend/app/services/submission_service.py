@@ -624,6 +624,10 @@ class SubmissionService:
                 "duration_ms": primitive_response.get('duration_ms'),
                 "started_at": primitive_response.get('started_at'),
                 "completed_at": primitive_response.get('completed_at'),
+                # Which mount sent this: a knowledge check submits once per problem as
+                # `<instance>::pN`, so these join a set's problems into one activity.
+                "instance_id": primitive_response.get('instance_id'),
+                "exhibit_id": primitive_response.get('exhibit_id'),
             }
         }
 

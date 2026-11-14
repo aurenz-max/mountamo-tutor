@@ -73,7 +73,7 @@ import {
   correctOptionText,
   type KnowledgeCheckItem,
 } from './knowledgeCheckScript';
-import { knowledgeCheckItems, knowledgeCheckMiss, knowledgeCheckScene } from './knowledgeCheckWorkspace';
+import { knowledgeCheckItems, knowledgeCheckMiss, knowledgeCheckScene, onScreenWorkText } from './knowledgeCheckWorkspace';
 import { CUE_LEVER, DROP_LEVER, KNOWLEDGE_CHECK_LEVERS, NO_LEVERS, SPREAD_LEVER, farChoice, pictureRuns,
   type KnowledgeCheckLeverState } from './knowledgeCheckLevers';
 import { knowledgeCheckBoss } from './knowledgeCheck.boss';
@@ -137,10 +137,12 @@ const ProblemEvaluationBridge: React.FC<{
   index: number;
   instanceId: string;
   problem: ProblemData;
+  /** This problem's session items: its submission is scored on these alone. */
+  itemIds: readonly string[];
   exhibitId?: string;
   onEvaluationSubmit?: (result: any) => void;
   register: (index: number, submit: BridgeSubmit) => void;
-}> = ({ index, instanceId, problem, exhibitId, onEvaluationSubmit, register }) => {
+}> = ({ index, instanceId, problem, itemIds, exhibitId, onEvaluationSubmit, register }) => {
   const p = problem as any;
   const { submitResult } = usePrimitiveEvaluation<KnowledgeCheckJudgedMetrics>({
     primitiveType: 'knowledge-check',
@@ -151,6 +153,7 @@ const ProblemEvaluationBridge: React.FC<{
     exhibitId,
     contentSubject: p.subject,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+    workspaceItemIds: itemIds,
   });
   useEffect(() => {
     register(index, submitResult as BridgeSubmit);
@@ -188,51 +191,35 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
   }, []);
 
   const [finished, setFinished] = useState(false);
+  const itemIdsByProblem = useMemo(
+    () => problems.map((_, index) => items.filter((i) => i.problemIndex === index).map((i) => i.id)),
+    [problems, items],
+  );
 
   const handleFinished = (summary: TeachingEvaluationResult) => {
-    const itemById = new Map(items.map((item) => [item.id, item]));
-    const byProblem = new Map<number, typeof summary.outcomes>();
-    for (const outcome of summary.outcomes) {
-      const item = itemById.get(outcome.id);
-      if (!item) continue;
-      byProblem.set(item.problemIndex, [...(byProblem.get(item.problemIndex) ?? []), outcome]);
-    }
-    let evidenceAttached = false;
     problems.forEach((problem, index) => {
-      const outcomes = byProblem.get(index) ?? [];
-      const kinds = Array.from(new Set(
-        items.filter((i) => i.problemIndex === index).map((i) => i.kind),
-      ));
+      const ids = itemIdsByProblem[index];
+      if (!ids.length) return;
+      // One submission per problem, scored on that problem's items only (KC-6): the submission path scores the same
+      // slice (`workspaceItemIds`), so the score, the misses and the first-try score are this problem's own.
+      const own = summary.forItems(ids);
+      const outcomes = own.outcomes;
       const solved = outcomes.filter((o) => o.solved).length;
-      const corrections = outcomes.reduce((sum, o) => sum + o.corrections, 0);
-      const accuracy = outcomes.length
-        ? Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length)
-        : 0;
-      const success = outcomes.length > 0 && solved === outcomes.length;
       const metrics: KnowledgeCheckJudgedMetrics = {
         type: 'knowledge-check-judged',
         problemType: problem.type,
-        itemKinds: kinds,
+        ...(problem.difficulty ? { difficulty: problem.difficulty } : {}),
+        itemKinds: Array.from(new Set(items.filter((i) => i.problemIndex === index).map((i) => i.kind))),
         itemsTotal: outcomes.length,
         itemsSolved: solved,
-        corrections,
-        accuracy,
-        firstTryCount: outcomes.filter((o) => o.solved && o.corrections === 0).length,
+        corrections: outcomes.reduce((sum, o) => sum + o.corrections, 0),
+        accuracy: own.accuracy,
+        firstTryCount: own.firstTryCount,
       };
-      // Run-level Tier-A evidence rides the first unsuccessful problem.
-      const attachEvidence = !success && !evidenceAttached && summary.diagnosisEvidence;
-      if (attachEvidence) evidenceAttached = true;
-      bridgesRef.current.get(index)?.(
-        success,
-        accuracy,
-        metrics,
-        { itemResults: outcomes,
-          learningResponses: summary.learningResponses.filter((r) => itemById.get(r.itemId)?.problemIndex === index),
-          teachingAttempts: summary.teachingAttempts.filter((a) => itemById.get(a.itemId)?.problemIndex === index),
-          assistanceProvenance: summary.assistanceProvenance },
-        undefined,
-        attachEvidence ? summary.diagnosisEvidence : undefined,
-      );
+      bridgesRef.current.get(index)?.(outcomes.length > 0 && solved === outcomes.length, own.accuracy, metrics,
+        { itemResults: outcomes, learningResponses: own.learningResponses, teachingAttempts: own.teachingAttempts,
+          assistanceProvenance: own.assistanceProvenance },
+        undefined, own.diagnosisEvidence);
     });
     setFinished(true);
   };
@@ -373,8 +360,10 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
     if (!runner.canAttempt || runner.currentItem?.id !== item.id) return;
     if (runner.isAwaitingGesture()) return;
     const correct = result.success === true;
-    commitGesture(runner, { response: correct ? 'Worked the problem on the screen; its check passed.'
-      : 'Worked the problem on the screen; its check did not pass.', correct, cue: () => '' });
+    // The child's own work goes on the record (what they picked, ordered, wrote), not only the verdict.
+    const work = onScreenWorkText(result.studentWork);
+    commitGesture(runner, { response: `Worked the problem on the screen${work ? `: ${work}` : ''}; its check ${correct ? 'passed' : 'did not pass'}.`,
+      correct, cue: () => '' });
   };
 
   // ── Phase summary — `solved` is not `solved alone` ────────────────────────
@@ -675,6 +664,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
           index={index}
           instanceId={`${instanceId}::p${index}`}
           problem={problem}
+          itemIds={itemIdsByProblem[index]}
           exhibitId={exhibitId}
           onEvaluationSubmit={onEvaluationSubmit}
           register={registerBridge}

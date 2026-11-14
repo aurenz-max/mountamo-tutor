@@ -65,6 +65,26 @@ it('waits for the scored session, then sends the primitive\'s own record with th
     assistanceProvenance: 'explicit-actions-only' });
 });
 
+it('a submission that covers some items is scored on those items, never the whole session (KC-6)', async () => {
+  const slice: ScoredWorkspaceSession = { ...SESSION, accuracy: 100, diagnosisEvidence: { challengeSummary: 'p0', expected: 'e',
+    observed: '', firstResponseScore: 100, phases: [] }, learningResponses: [{ itemId: 'p0' }], teachingAttempts: [] };
+  const forItems = vi.fn(() => slice);
+  const submission = createWorkspaceSubmission();
+  submission.scored({ ...SESSION, accuracy: 75, forItems });
+  const ids = ['p0-tf'];
+  function Scoped() {
+    submit = usePrimitiveEvaluation({ primitiveType: 'knowledge-check', instanceId: 'kc::p0', workspaceItemIds: ids }).submitResult;
+    return null;
+  }
+  render(<WorkspaceSubmissionContext.Provider value={submission}><Scoped /></WorkspaceSubmissionContext.Provider>);
+  await act(async () => { submit(true, 100, { type: 'knowledge-check-judged' } as never, { itemResults: [] }); });
+  expect(forItems).toHaveBeenCalledWith(ids);
+  const [result] = sent();
+  expect(result.score).toBe(100);
+  expect(result.diagnosisEvidence.phases).toEqual([]);
+  expect(result.studentWork).toMatchObject({ learningResponses: [{ itemId: 'p0' }] });
+});
+
 it('sends at once when the session is already scored, and a primitive with no evidence gets the workspace packet', async () => {
   const submission = createWorkspaceSubmission();
   submission.scored(SESSION);

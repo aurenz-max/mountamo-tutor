@@ -62,6 +62,9 @@ export interface UsePrimitiveEvaluationOptions<TMetrics extends PrimitiveMetrics
   autoSubmitOnUnmount?: boolean;
   /** Keep provisional feedback in the local callback; never update adaptive state. */
   localOnly?: boolean;
+  /** The workspace items this submission covers, when one session submits once per problem (knowledge-check): its
+   *  score and evidence come from those items only, never the whole session's. Omitted: the whole session. */
+  workspaceItemIds?: readonly string[];
 }
 
 /**
@@ -168,6 +171,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     onSubmitError,
     autoSubmitOnUnmount = false,
     localOnly = false,
+    workspaceItemIds,
   } = options;
 
   // Get context (may be null if no provider)
@@ -355,7 +359,8 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     // (each wrong check's named miss) added and the session's score in place of the primitive's tally.
     if (workspaceSubmission && evaluationContext && !localOnly) {
       setIsSubmitting(true);
-      workspaceSubmission.whenScored(session => {
+      workspaceSubmission.whenScored(whole => {
+        const session = whole && workspaceItemIds?.length && whole.forItems ? whole.forItems(workspaceItemIds) : whole;
         const sent: PrimitiveEvaluationResult<TMetrics> = session ? { ...result, score: session.accuracy,
           ...withWorkspaceEvidence(result.diagnosisEvidence, result.studentWork, session) } : result;
         pendingResultRef.current = sent;
@@ -418,6 +423,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     localOnly,
     exhibitContext,
     workspaceSubmission,
+    workspaceItemIds,
   ]);
 
   /**

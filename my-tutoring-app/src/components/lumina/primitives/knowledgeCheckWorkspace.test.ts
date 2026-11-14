@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { knowledgeCheckMiss, knowledgeCheckSpokenMisses } from './knowledgeCheckWorkspace';
+import { knowledgeCheckMiss, knowledgeCheckSpokenMisses, onScreenWorkText } from './knowledgeCheckWorkspace';
 import type { KnowledgeCheckItem } from './knowledgeCheckScript';
 
 const tap = (texts: string[], correct: number) => ({ id: 'p0-mc', kind: 'choice_tap', problemIndex: 0, prompt: '',
@@ -34,4 +34,16 @@ it.each([
   expect(misses.map(m => m.id)).toEqual(ids);
   const ok = accepted.map(a => a.toLowerCase());
   for (const m of misses) for (const e of m.examples ?? []) expect(ok).not.toContain(e.toLowerCase());
+});
+
+it.each([
+  [{ studentWork: { selectedOptionId: 'b', options: [{ id: 'a', text: 'red' }, { id: 'b', text: 'green' }] } }, 'picked "green"'],
+  [{ studentWork: { selectedAnswer: false, statement: 's' } }, 'picked "false"'],
+  [{ studentWork: { orderedItems: ['dig', 'load'] } }, 'put them in this order: dig, then load'],
+  [{ studentWork: { answer: 'it sinks', question: 'q' } }, 'wrote "it sinks"'],
+  [{ studentWork: { itemCategories: { rock: 'sinks' } } }, 'sorted: rock → sinks'],
+  [{ studentWork: { matches: { l1: ['r2'] }, leftItems: [{ id: 'l1', text: 'cow' }], rightItems: [{ id: 'r2', text: 'milk' }] } }, 'matched: cow → milk'],
+  [undefined, ''],
+] as const)('on-screen work %#', (work, text) => {
+  expect(onScreenWorkText(work)).toBe(text);
 });

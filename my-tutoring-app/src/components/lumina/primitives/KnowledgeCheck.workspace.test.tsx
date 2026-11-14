@@ -83,6 +83,22 @@ it('completion submits once per problem (the ::pN bridges)', async () => {
   expect(seam.submit.mock.calls.every(c => c[0] === true)).toBe(true);
 });
 
+it('each problem is scored on its own items, with its difficulty (KC-6)', async () => {
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mount([TF, MC, { ...KATEX, difficulty: 'hard' }]);
+  h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
+  h.say('duck'); h.feedback('incorrect'); h.confirmVisible();
+  h.say('cow'); h.feedback('correct', 'advance'); h.confirmVisible();
+  fireEvent.click(document.querySelector('[data-pip-object="option-A"]')!); h.dispatch('advance'); h.confirmVisible();
+  await act(async () => { for (let tick = 0; tick < 20; tick++) await Promise.resolve(); });
+  const calls = seam.submit.mock.calls;
+  expect(calls.map(c => c[1])).toEqual([100, 67, 100]);
+  expect(calls.map(c => [c[2].accuracy, c[2].firstTryCount, c[2].difficulty])).toEqual([[100, 1, 'easy'], [67, 0, 'easy'], [100, 1, 'hard']]);
+  // The miss is on the problem it happened in, nowhere else.
+  expect(calls.map(c => c[5]?.phases?.length ?? 0)).toEqual([0, 1, 0]);
+  expect(calls.map(c => c[5]?.firstResponseScore)).toEqual([100, 0, 100]);
+});
+
 it('a problem the spoken kinds cannot ask is worked on screen, so the set still binds; an empty set is rejected', () => {
   const adapter = LIVE_ADAPTERS['knowledge-check'];
   const unaskable = [{ ...base, type: 'true_false', id: 'bad', statement: '', correct: true }];
