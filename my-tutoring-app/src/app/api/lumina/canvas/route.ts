@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 const DIR = () => join(process.cwd(), 'qa', 'canvas');
 const LIBRARY = () => join(process.cwd(), 'src', 'components', 'lumina', 'service', 'core', 'agent-canvas', 'library');
-const NAME = /^[a-z0-9][a-z0-9-]{0,80}$/;
+const NAME = /^[a-z0-9][a-z0-9-]{0,80}$/i;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'canvas';
 
 type ShotKind = 'rest' | 'miss' | 'proof';

@@ -161,6 +161,8 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
   const elapsed = () => Date.now() - started;
   const { budget } = spec;
   const model = spec.model ?? 'gemini-flash-latest';
+  // LOW by default; LUMINA_AUTHOR_THINKING=MINIMAL|LOW|MEDIUM|HIGH overrides it for a bench.
+  const thinkingLevel = (ThinkingLevel as Record<string, ThinkingLevel>)[(process.env.LUMINA_AUTHOR_THINKING ?? 'LOW').toUpperCase()] ?? ThinkingLevel.LOW;
   const debug: AuthorDebug = { turns: 0, seconds: 0, ...debugExtra, toolCalls: [], advisories: [] };
   const contents: Content[] = [{ role: 'user', parts: [{ text: spec.start }] }];
   const tools = authorTools(spec as never);
@@ -282,7 +284,7 @@ async function runStages<S, I, D>(spec: AgentAuthor<S, I, D>, state: S, debugExt
     const response = await ai.models.generateContent({
       model,
       contents,
-      config: { systemInstruction: spec.system, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, tools: [{ functionDeclarations: tools }] },
+      config: { systemInstruction: spec.system, thinkingConfig: { thinkingLevel }, tools: [{ functionDeclarations: tools }] },
     });
     trace.addCost(priceCall(model, response.usageMetadata));
     const modelContent = response.candidates?.[0]?.content;

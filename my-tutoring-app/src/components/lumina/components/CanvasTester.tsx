@@ -104,7 +104,7 @@ const CanvasCard: React.FC<{ run: SavedRun; onOpen: () => void }> = ({ run, onOp
           {frames.map((f, i) => (i === 0 || active) && (
             // eslint-disable-next-line @next/next/no-img-element
             <img key={`${f.problem}-${f.kind}`} alt={i === 0 ? `${run.title}: ${f.label}` : ''} loading="lazy" src={shotUrl(run, f)}
-              className={`absolute inset-x-0 top-0 w-full transition-opacity duration-300${i === index ? 'opacity-100' : 'opacity-0'}`} />
+              className={`absolute inset-x-0 top-0 w-full transition-opacity duration-300 ${i === index ? 'opacity-100' : 'opacity-0'}`} />
           ))}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/90 to-transparent" />
           {frame && frames.length > 1 && (
