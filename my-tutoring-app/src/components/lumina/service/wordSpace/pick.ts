@@ -9,7 +9,8 @@
  * shape cannot fill the session, and no target or answer word appears in two picks.
  */
 import type { SupportTier } from '../generation/generationContext';
-import { weakLetterSoundScorer } from '../componentMastery/bias';
+import { letterSoundCoverage, spellingCoverage, weakLetterSoundScorer, weakSpellingScorer } from '../componentMastery/bias';
+import { noteFocusWords } from '../attemptNotes/focus';
 
 export interface WordSpaceItem<P> {
   beta: number;
@@ -26,6 +27,9 @@ export interface WordSpaceItem<P> {
   /** What the child reads aloud from print, as letter-sound units (a word, or `letter:<letters>`). Set only where
    *  the task is print to sound; the picker then draws items with the learner's weak pairs first. */
   reads?: string[];
+  /** The words the child builds from letters after hearing them (sound to print). The picker draws items with the
+   *  learner's weak `spelling` pairs first, by the same rule as `reads`. */
+  spells?: string[];
   payload: P;
 }
 
@@ -47,6 +51,9 @@ export function mulberry32(seed: number): () => number {
 }
 
 const TIER_INDEX: Record<SupportTier, number> = { easy: 0, medium: 1, hard: 2 };
+
+/** The most a coverage lean can score. A weak pair scores its miss rate, which is above 0.2 (`WEAK_BELOW`). */
+const COVER_LEAN = 0.1;
 
 /**
  * `n` items from the tier's third of the space, spread across structures, skipping any item that uses a
@@ -70,8 +77,38 @@ export function tierPick<P>(
   // Items that read one of this learner's weak letter-sound pairs come first among equals: across a tier boundary
   // (an equal-beta swap into the band) and inside each structure. Tier, structure spread and session rules are unchanged
   // (componentMastery/bias.ts). Without tallies the order is the shuffle's.
-  const weakOf = items.some((it) => it.reads?.length) ? weakLetterSoundScorer() : null;
-  const weak = (it: WordSpaceItem<P>) => (weakOf && it.reads ? weakOf(it.reads) : 0);
+  const readOf = items.some((it) => it.reads?.length) ? weakLetterSoundScorer() : null;
+  const spellOf = items.some((it) => it.spells?.length) ? weakSpellingScorer() : null;
+  // A word one of this learner's attempt notes names (attemptNotes/focus.ts) ranks above any weak pair: the note
+  // records a miss on that exact word. Only words this scope already holds can be drawn.
+  const focus = noteFocusWords();
+  const focused = (it: WordSpaceItem<P>) => !!focus && (it.words.some((w) => focus.has(w.toLowerCase())) || (!!it.produces && focus.has(it.produces.toLowerCase())));
+  const weakOf = readOf ?? spellOf ?? (focus && items.some(focused) ? () => 0 : null);
+  const weak = (it: WordSpaceItem<P>) => focused(it) ? 2 : Math.max(readOf && it.reads ? readOf(it.reads) : 0, spellOf && it.spells ? spellOf(it.spells) : 0);
+  // Coverage: a pair this learner has read fewer than two times is neither weak nor known yet. An item scores by the
+  // share of its pairs that still need a read and that no earlier pick of this session reads, always below any weak
+  // pair, so a lesson's whole inventory gets read over sessions. It orders equals only: tier, cap and session rules
+  // hold. Absent without tallies for the kind.
+  const coverRead = items.some((it) => it.reads?.length) ? letterSoundCoverage() : null;
+  const coverSpell = items.some((it) => it.spells?.length) ? spellingCoverage() : null;
+  const pairsOf = new Map<WordSpaceItem<P>, Array<[string, number]>>();
+  const pairs = (it: WordSpaceItem<P>) => {
+    let p = pairsOf.get(it);
+    if (!p) {
+      p = [...(coverRead && it.reads ? coverRead(it.reads).map(([id, need]): [string, number] => [`r:${id}`, need]) : []),
+        ...(coverSpell && it.spells ? coverSpell(it.spells).map(([id, need]): [string, number] => [`s:${id}`, need]) : [])];
+      pairsOf.set(it, p);
+    }
+    return p;
+  };
+  const covered = new Set<string>();
+  const cover = (it: WordSpaceItem<P>) => {
+    const p = pairs(it);
+    return p.length ? COVER_LEAN * p.reduce((sum, [id, need]) => sum + (covered.has(id) ? 0 : need), 0) / p.length : 0;
+  };
+  const covering = !!(coverRead || coverSpell);
+  const leanOn = !!weakOf || covering;
+  const lean = (it: WordSpaceItem<P>) => weak(it) || cover(it);
   // Ties in beta are broken at random, so equal items cross a tier boundary differently each session.
   const sorted = shuffleInPlace([...fresh], rand).sort((a, b) => a.beta - b.beta);
   const size = Math.max(n, Math.floor(sorted.length / 3));
@@ -79,11 +116,24 @@ export function tierPick<P>(
   const band = sorted.length >= 3 * n
     ? (t === 0 ? sorted.slice(0, size) : t === 1 ? sorted.slice(size, 2 * size) : sorted.slice(2 * size))
     : (t === 0 ? sorted.slice(0, size) : t === 1 ? sorted.slice(Math.floor((sorted.length - size) / 2)).slice(0, size) : sorted.slice(-size));
-  // A weak item just outside the band at the same beta as a band item takes that item's place.
-  if (weakOf) {
-    for (const out of sorted.filter((it) => !band.includes(it) && weak(it) > 0).sort((a, b) => weak(b) - weak(a))) {
-      const at = band.reduce((best, it, i) => (it.beta === out.beta && weak(it) < weak(out)
-        && (best < 0 || weak(it) < weak(band[best])) ? i : best), -1);
+  // A weak (or less-read) item just outside the band at the same beta as a band item takes that item's place.
+  if (leanOn) {
+    for (const out of sorted.filter((it) => !band.includes(it) && lean(it) > 0).sort((a, b) => lean(b) - lean(a))) {
+      const at = band.reduce((best, it, i) => (it.beta === out.beta && lean(it) < lean(out)
+        && (best < 0 || lean(it) < lean(band[best])) ? i : best), -1);
+      if (at < 0) continue;
+      band[at] = out;
+      // One item per less-read pair crosses: the pairs it reads stop counting for the items after it.
+      if (weak(out) === 0) pairs(out).forEach(([id]) => covered.add(id));
+    }
+    covered.clear();
+  }
+
+  // A noted word outside the band takes the place of the band item nearest it in beta: at most two per session, and
+  // never the place of another noted word. The scope is unchanged and the tier moves by one item's distance at most.
+  if (focus) {
+    for (const out of sorted.filter((it) => !band.includes(it) && focused(it)).slice(0, 2)) {
+      const at = band.reduce((best, it, i) => (!focused(it) && (best < 0 || Math.abs(it.beta - out.beta) < Math.abs(band[best].beta - out.beta)) ? i : best), -1);
       if (at >= 0) band[at] = out;
     }
   }
@@ -91,7 +141,11 @@ export function tierPick<P>(
   const byStructure = new Map<string, WordSpaceItem<P>[]>();
   for (const it of band) byStructure.set(it.structure, [...(byStructure.get(it.structure) ?? []), it]);
   byStructure.forEach((list) => shuffleInPlace(list, rand));
-  if (weakOf) byStructure.forEach((list) => list.sort((a, b) => weak(b) - weak(a)));
+  // Ties keep the shuffle's order on every re-sort, so a word whose pairs were just covered falls back among its equals.
+  const shuffled = new Map<WordSpaceItem<P>, number>();
+  byStructure.forEach((list) => list.forEach((it, i) => shuffled.set(it, i)));
+  const order = () => byStructure.forEach((list) => list.sort((a, b) => lean(b) - lean(a) || shuffled.get(a)! - shuffled.get(b)!));
+  if (leanOn) order();
   const structures = shuffleInPlace(Array.from(byStructure.keys()), rand);
   const usedStructures = new Map<string, number>();
   const usedKeys = new Set<string>();
@@ -101,8 +155,13 @@ export function tierPick<P>(
   let weakPicked = 0;
   while (picks.length < n) {
     const leaning = !!weakOf && weakPicked < weakCap;
-    const next = (s: string) => { const it = byStructure.get(s)!.find((x) => ok(x)); return it ? weak(it) : 0; };
-    structures.sort((a, b) => (usedStructures.get(a) ?? 0) - (usedStructures.get(b) ?? 0) || (leaning ? next(b) - next(a) : 0));
+    // Among equally used structures: while leaning, the one whose next item leans most; after the cap, the one whose
+    // next item that is not weak covers most.
+    const next = (s: string) => {
+      const it = byStructure.get(s)!.find((x) => ok(x) && (leaning || weak(x) === 0));
+      return it ? (leaning ? lean(it) : cover(it)) : 0;
+    };
+    structures.sort((a, b) => (usedStructures.get(a) ?? 0) - (usedStructures.get(b) ?? 0) || (leanOn ? next(b) - next(a) : 0));
     let picked = false;
     for (const s of structures) {
       const list = byStructure.get(s)!;
@@ -113,6 +172,7 @@ export function tierPick<P>(
       const [it] = list.splice(at, 1);
       if (weak(it) > 0) weakPicked++;
       picks.push(it);
+      if (covering) { pairs(it).forEach(([id]) => covered.add(id)); order(); }
       if (it.key) usedKeys.add(it.key);
       it.words.forEach((w) => used.add(w));
       (it.shown ?? it.words).forEach((w) => heard.add(w));

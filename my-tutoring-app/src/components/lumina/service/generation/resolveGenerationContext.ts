@@ -14,6 +14,8 @@
 import type { ManifestItem } from '../registry/contentRegistry';
 import { resolvePedagogicalScope } from '../scopeContext';
 import type { GenerationContext, SupportTier } from './generationContext';
+import { cleanLearnerNotes, learnerNotesBlock } from '../attemptNotes/notes';
+import { readEvidence } from '../agent-kit/evidence';
 
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
 
@@ -65,16 +67,24 @@ export function resolveGenerationContext(
 ): GenerationContext {
   const config = item.config ?? {};
 
-  const intent = (config.intent as string | undefined) ?? item.intent ?? item.title;
+  const baseIntent = (config.intent as string | undefined) ?? item.intent ?? item.title;
+  // Learner notes ride the intent every generator already reads. Scope is resolved from the intent WITHOUT
+  // them: a note that names a number or a word must not move the objective's range.
+  const learnerNotes = cleanLearnerNotes(config.learnerNotes);
+  const intent = learnerNotes.length ? `${baseIntent ?? ''}${learnerNotesBlock(learnerNotes)}` : baseIntent;
 
+  const evidence = readEvidence(config.evidence);
   const objective = {
     id: config.objectiveId as string | undefined,
     text: config.objectiveText as string | undefined,
     verb: config.objectiveVerb as string | undefined,
+    // The lesson's evidence spec, stamped by flattenManifestToLayout (or sent by a tester).
+    ...(evidence ? { evidence } : {}),
   };
 
   // Axis 1 — always built; degrades gracefully when objective/intent absent.
-  const scope = resolvePedagogicalScope(topic, config, intent);
+  const resolvedScope = resolvePedagogicalScope(topic, config, baseIntent);
+  const scope = learnerNotes.length ? { ...resolvedScope, learnerNotes } : resolvedScope;
 
   return {
     componentId: item.componentId,
@@ -102,6 +112,7 @@ export function resolveGenerationContext(
         !!o && typeof (o as { id?: unknown }).id === 'string' && typeof (o as { summary?: unknown }).summary === 'string'
         && ['string', 'undefined'].includes(typeof (o as { evidence?: unknown }).evidence))
       : undefined,
+    ...(learnerNotes.length ? { learnerNotes } : {}),
     raw: config,
   };
 }

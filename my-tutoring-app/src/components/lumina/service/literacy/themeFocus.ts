@@ -12,6 +12,8 @@
  * replaced in 8/12 challenges, "asphalt" and "iron" as hidden-letter words,
  * and rarer CVC words (rig, jig) in place of the familiar ones.
  */
+import { splitLearnerNotes } from '../attemptNotes/notes';
+
 export function themedFocusLine(
   topic: string,
   intent: string | undefined,
@@ -24,7 +26,10 @@ export function themedFocusLine(
     themeWords?: boolean;
   },
 ): string {
-  if (!intent) return '';
+  // Learner notes ride the intent; they are not a theme. Cut them off the focus line and state them after it.
+  const split = splitLearnerNotes(intent);
+  intent = split.intent;
+  if (!intent) return split.section;
   const themeWords = opts.themeWords
     ? `\n- You MAY use up to 2 theme words among the ${opts.targets}, but only a word that obeys EVERY rule below `
       + `AND that a young child already says every day (dig, mud, bus). Never pick a rarer or harder word because `
@@ -33,5 +38,5 @@ export function themedFocusLine(
   return `\nSPECIFIC FOCUS: Beyond the topic "${topic}", this activity serves: "${intent}".
 - Take the SKILL and SCOPE from it: a named sound, letter set, word pattern or group is binding.
 - A theme or interest in it or in the topic (a child's favorite toys, vehicles or animals) is decoration. Show it in ${opts.carrier}. `
-    + `Choose the ${opts.targets} exactly as you would with no theme.${themeWords}\n`;
+    + `Choose the ${opts.targets} exactly as you would with no theme.${themeWords}\n${split.section}`;
 }

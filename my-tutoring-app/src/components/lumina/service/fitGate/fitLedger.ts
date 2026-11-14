@@ -31,6 +31,16 @@ export function appendAxisGap(entry: Record<string, unknown>): void {
   appendLine('axis-gaps', { at: new Date().toISOString(), ...entry });
 }
 
+/**
+ * What a learner's attempt notes did to each generated component (service/attemptNotes): none picked, or picked
+ * and the named items present / partly / absent in the content. A primitive that is often `absent` has no
+ * channel for the notes; that ranking is the wiring queue.
+ */
+export function appendLearnerNotesLedger(entry: Record<string, unknown>): void {
+  if (process.env.VITEST && !process.env.LUMINA_FIT_LEDGER_DIR) return;
+  appendLine('learner-notes', { at: new Date().toISOString(), ...entry });
+}
+
 function appendLine(prefix: string, entry: Record<string, unknown>): void {
   if (process.env.LUMINA_FIT_LEDGER === 'off') return;
   const dir = fitLedgerDir();

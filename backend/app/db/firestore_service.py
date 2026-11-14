@@ -1068,6 +1068,26 @@ class FirestoreService:
             pass  # First accepted inference wins; retry cannot rewrite history.
         return record_id
 
+    async def save_attempt_note(self, student_id: int, record: Dict[str, Any]) -> str:
+        """One note per client attempt and primitive (app/services/attempt_notes.py); a retry keeps the first."""
+        identity = json.dumps([record['primitive_type'], record['source_attempt_id']], separators=(',', ':'))
+        record_id = hashlib.sha256(identity.encode()).hexdigest()
+        doc = self._student_doc(student_id).collection('attempt_notes').document(record_id)
+        try:
+            doc.create({**record, 'created_at': record.get('created_at') or datetime.now(timezone.utc).isoformat()})
+        except AlreadyExists:
+            pass
+        return record_id
+
+    async def get_attempt_notes(self, student_id: int, unit_ids: List[str]):
+        """Notes with something to say, filed under any of these units. Sorted and capped by the caller."""
+        units = sorted({u for u in unit_ids if u})[:30]
+        if not units:
+            return []
+        query = (self._student_doc(student_id).collection('attempt_notes')
+                 .where('unit_id', 'in', units).limit(400))
+        return [(s.id, s.to_dict()) for s in query.stream() if (s.to_dict() or {}).get('notable')]
+
     async def get_response_observations(self, student_id: int):
         """Bounded most-recent profile projection; no read-time progress rollups."""
         query = self._student_doc(student_id).collection('learning_observations').order_by(

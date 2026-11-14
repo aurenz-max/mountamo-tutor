@@ -13,6 +13,7 @@ import { pulseApi } from './pulseApi';
 import { firstTryResults } from './firstTry';
 import { captureMisconception } from '../evaluation/diagnosis/captureMisconception';
 import { captureLearningObservation } from '../evaluation/diagnosis/captureLearningObservation';
+import { captureAttemptNote } from '../evaluation/diagnosis/captureAttemptNote';
 import { useStudent } from '../contexts/StudentContext';
 import type { ComponentId, HydratedPracticeItem, SessionBrief } from '../types';
 import type { PrimitiveEvaluationResult } from '../evaluation/types';
@@ -448,6 +449,8 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
       const subskillId = evalResult.subskillId || currentSpec.subskill_id;
       void captureMisconception(evalResult, { sessionId, subskillId, gradeLevel });
       void captureLearningObservation(evalResult, { studentId, subskillId, gradeLevel });
+      void captureAttemptNote(evalResult, { subskillId, subject: currentSpec.subject,
+        gradeLevel: currentSpec.grade ?? gradeLevel, subskill: currentSpec.description });
 
       console.log(`${LOG} Backend response for item ${state.currentIndex + 1}: theta=${response.theta_update.new_theta.toFixed(2)} complete=${response.session_progress.is_complete}`);
 

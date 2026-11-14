@@ -26,6 +26,7 @@ vi.mock('../../config/primitiveRegistry', () => ({ getPrimitive: (id: string) =>
 vi.mock('../../evaluation/api/evaluationApi', () => ({ submitEvaluationToBackend: seam.submit }));
 vi.mock('../../evaluation/diagnosis/captureMisconception', () => ({ captureMisconception: vi.fn(async () => ({ status: 'skipped' })) }));
 vi.mock('../../evaluation/diagnosis/captureLearningObservation', () => ({ captureLearningObservation: vi.fn(async () => ({ status: 'skipped' })) }));
+vi.mock('../../evaluation/diagnosis/captureAttemptNote', () => ({ captureAttemptNote: vi.fn(async () => null) }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../utils/SoundManager', () => ({ SoundManager: { playCorrect: vi.fn(), playPerfect: vi.fn(), pop: vi.fn(),
   tap: vi.fn(), invalid: vi.fn(), playStreak: vi.fn(), isEnabled: () => true, getVolume: () => 1 } }));

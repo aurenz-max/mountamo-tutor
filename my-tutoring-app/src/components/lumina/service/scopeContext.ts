@@ -24,6 +24,8 @@
  * challenge types may appear); this constrains *what scope* those challenges target.
  */
 
+import { learnerNotesBlock, type LearnerNote } from './attemptNotes/notes';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -42,6 +44,8 @@ export interface PedagogicalScope {
   objectiveVerb?: string;
   /** Component-level intent from the manifest (more specific than the objective). */
   intent?: string;
+  /** Notes from this child's earlier attempts picked for this component (service/attemptNotes). Never moves the scope. */
+  learnerNotes?: readonly LearnerNote[];
 }
 
 /**
@@ -108,7 +112,7 @@ SCOPE RULES:
 - If the topic or objective names or implies a numeric range (e.g. "to 10", "within 5", "up to 20", "numbers 1-100"), EVERY value you generate must stay inside that range. Never exceed it.
 - Any grade-level guidance further down describes the WIDEST band this primitive supports. Treat it as a CEILING, not a target. When the topic/objective is narrower than the grade band, the TOPIC/OBJECTIVE WINS.
 - Prefer the simplest representation that satisfies the scope. Do not introduce larger structures, wider ranges, or more advanced operations than the scope requires.
-`;
+${scope.learnerNotes?.length ? `${learnerNotesBlock(scope.learnerNotes)}\n` : ''}`;
 };
 
 // ---------------------------------------------------------------------------

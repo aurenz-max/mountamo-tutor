@@ -21,6 +21,7 @@ import type {
 import { submitEvaluationToBackend } from '../api/evaluationApi';
 import { captureMisconception } from '../diagnosis/captureMisconception';
 import { captureLearningObservation } from '../diagnosis/captureLearningObservation';
+import { captureAttemptNote } from '../diagnosis/captureAttemptNote';
 import type { CaptureStatus } from '../diagnosis/captureMisconception';
 
 // =============================================================================
@@ -339,6 +340,11 @@ export function EvaluationProvider({
       void captureLearningObservation(result, {
         studentId, subskillId: result.subskillId || skill?.subskillId, gradeLevel,
         onStatus: status => setLearningCaptureStatuses(previous => ({ ...previous, [result.instanceId]: status })),
+      });
+      // Attempt note: what the child was asked and gave, filed by unit / skill / subskill for later lessons.
+      void captureAttemptNote(result, {
+        subskillId: result.subskillId || skill?.subskillId, subject: skill?.subject, gradeLevel,
+        unit: skill?.unitTitle, skill: skill?.skillDescription, subskill: skill?.subskillDescription,
       });
     } catch (error) {
       console.error('[EvaluationContext] Submission failed:', error);

@@ -24,7 +24,11 @@ export const EVIDENCE_BUDGET = 7000;
 
 export interface PublishedScope { subject: string; grade: string; skill_id: string; subskill_id: string; curriculum_version: string }
 /** One lesson objective as requested, and what it resolves to in the live publication (null = not published). */
-export interface PacketScope { subskillId: string; skillId?: string | null; published: PublishedScope | null }
+export interface PacketScope { subskillId: string; skillId?: string | null; published: PublishedScope | null;
+  /** The objective's curriculum unit, for attempt notes filed under a neighbouring subskill. */
+  unitId?: string | null;
+  /** The objective's skill as the curriculum index files it (the notes' skill key); `skillId` is the launch's own. */
+  unitSkillId?: string | null }
 export interface PacketEvidence {
   problem: string; evalMode: string;
   phases: Array<{ phase: string; challenge: string; expected: string; observed: string; support: string }>;
@@ -43,7 +47,17 @@ export interface LearningObservationPacket {
   scopes: PacketScope[]; hypotheses: PacketHypothesis[];
   /** The learner's component tallies (`service/componentMastery`), {kind: {id: [attempts, correct]}}. Optional. */
   components?: PacketComponents;
+  /** Attempt notes filed under the lesson's units (`service/attemptNotes`), newest first. Optional. */
+  notes?: PacketNote[];
 }
+/** One signal of one attempt note, with the curriculum home the backend filed it under. */
+export interface PacketNote {
+  id: string; kind: 'strength' | 'struggle'; what: string; at: string;
+  grade: string; unitId: string; skillId: string; subskillId: string; primitiveType: string;
+}
+/** A note offered to one task, with how near its home is to the task's objective. */
+export interface OfferedNote extends PacketNote { tier: 'subskill' | 'skill' | 'unit' }
+export const NOTES_PER_TIER = 4;
 export type PacketComponents = Record<string, Record<string, [number, number]>>;
 /** What a generator receives in `ctx.learningObservations`. */
 export interface DeliveredObservation { id: string; summary: string; evidence?: string }
@@ -80,6 +94,8 @@ export function openLearningObservations(signed: unknown, key: string | undefine
   return {
     ...packet,
     ...(packet.components !== undefined ? { components: cleanComponents(packet.components) } : {}),
+    ...(packet.notes !== undefined ? { notes: (Array.isArray(packet.notes) ? packet.notes : []).filter(n => n && isText(n.id)
+      && (n.kind === 'strength' || n.kind === 'struggle') && isText(n.what) && isText(n.unitId) && isText(n.subskillId)) } : {}),
     scopes: packet.scopes.filter(s => s && isText(s.subskillId) && (s.published === null || isPublishedScope(s.published))),
     hypotheses: packet.hypotheses.filter(h => h && isText(h.hypothesisId) && isText(h.primitiveType) && isText(h.summary)
       && isText(h.skillId) && isPublishedScope(h.scope)),
@@ -144,6 +160,30 @@ export function scopedObservations(packet: LearningObservationPacket, task: Task
     .sort((a, b) => (a.lastDetectedAt < b.lastDetectedAt ? 1 : a.lastDetectedAt > b.lastDetectedAt ? -1 : 0))
     .slice(0, DELIVERY_LIMIT)
     .map(deliveredObservation);
+}
+
+/**
+ * Attempt notes for the task's objective: the newest few filed under the same subskill, then the same skill,
+ * then the same unit. Unit ids repeat across grades, so a note with a known grade must match the objective's.
+ * The backend already limited the packet to the lesson's subject. Offering is not applying: the applicability
+ * step (`service/attemptNotes/applyNotes.ts`) picks from these.
+ */
+export function scopedNotes(packet: LearningObservationPacket, task: TaskScope): OfferedNote[] {
+  if (!packet.notes?.length || !isText(task.subskillId)) return [];
+  const entry = packet.scopes.find(s => s.subskillId === task.subskillId || s.published?.subskill_id === task.subskillId);
+  if (!entry) return [];
+  const subskillId = entry.published?.subskill_id ?? entry.subskillId;
+  const skillId = entry.unitSkillId ?? entry.published?.skill_id ?? entry.skillId ?? null;
+  const grade = entry.published?.grade ?? normalizeObjectiveGrade(task.grade);
+  const tiers: Record<OfferedNote['tier'], OfferedNote[]> = { subskill: [], skill: [], unit: [] };
+  for (const note of packet.notes) {
+    if (grade && note.grade && note.grade !== grade) continue;
+    const tier = note.subskillId === subskillId ? 'subskill' : skillId && note.skillId === skillId ? 'skill'
+      : isText(entry.unitId) && note.unitId === entry.unitId ? 'unit' : null;
+    if (tier) tiers[tier].push({ ...note, tier });
+  }
+  const newest = (list: OfferedNote[]) => [...list].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, NOTES_PER_TIER);
+  return [...newest(tiers.subskill), ...newest(tiers.skill), ...newest(tiers.unit)];
 }
 
 /** A retest consumer's OWN hypothesis at exactly the task's live published scope (same subskill and publication). */

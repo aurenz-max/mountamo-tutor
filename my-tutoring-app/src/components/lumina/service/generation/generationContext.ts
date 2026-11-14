@@ -32,6 +32,9 @@
 
 import type { ComponentId } from '../../types';
 import type { PedagogicalScope } from '../scopeContext';
+import type { LearnerNote } from '../attemptNotes/notes';
+
+import type { EvidenceSpec } from '../agent-kit/evidence';
 
 /** Support tier — the scaffolding-withdrawal axis. Always one of these or absent. */
 export type SupportTier = 'easy' | 'medium' | 'hard';
@@ -41,6 +44,14 @@ export interface GenerationObjective {
   id?: string;
   text?: string;
   verb?: string;
+  /**
+   * The evidence the lesson must collect for this objective (`agent-kit/evidence.ts`):
+   * what the child does that counts and what does not. Written by the curator brief,
+   * stamped per component by the manifest flatten. A generator that can hold its
+   * items to it should (the kit's item loop does); one that cannot collect the act
+   * still ships, and the gap is the kit's to count.
+   */
+  evidence?: EvidenceSpec;
 }
 
 /**
@@ -106,6 +117,15 @@ export interface GenerationContext {
    * for wrapper prompts or serialized content.
    */
   learningObservations?: readonly { id: string; summary: string; evidence?: string }[];
+
+  // -- Axis 5: learner notes (content emphasis only) --
+  /**
+   * Notes from this child's earlier attempts that the applicability step picked for this objective
+   * (`service/attemptNotes`). Already appended to `intent` as a private block, so a generator that puts
+   * `intent` in its prompt needs nothing more; a code-only generator may read them here. They never change
+   * difficulty, eval mode, scope or item counts, and are never shown to the child.
+   */
+  learnerNotes?: readonly LearnerNote[];
 
   // ── Escape hatch: still-bespoke per-primitive config ───────
   /**

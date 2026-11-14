@@ -39,6 +39,7 @@ from ...dependencies import (
 from ...services.calibration_engine import CalibrationEngine, p_correct
 from ...config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
 from ...core.generation_auth import require_generation_server, sign_learning_observations
+from ...services.attempt_notes import AttemptNoteIn, note_home, note_record, packet_notes
 from ...services.component_mastery import packet_components
 from ...services.learning_observations import (
     LearningObservationIn, ObservationPhaseIn, ResponseObservationIn, delivery_packet, hypothesis_key,
@@ -534,8 +535,25 @@ async def get_generation_context(
                 published = await resolve_scope(firestore, {
                     "subject": subject_id, "grade": obj.grade or request.grade_level,
                     "skill_id": mapping.skill_id, "subskill_id": mapping.subskill_id})
-                scopes.append({"subskillId": mapping.subskill_id, "skillId": mapping.skill_id, "published": published})
+                scope = {"subskillId": mapping.subskill_id, "skillId": mapping.skill_id, "published": published}
+                # The objective's unit, so attempt notes filed under a neighbouring subskill can be offered.
+                try:
+                    home = await note_home(firestore, mapping_service.curriculum_service, subject_id, mapping.subskill_id)
+                    if home:
+                        scope["unitId"] = home["unit_id"]
+                        scope["unitSkillId"] = home["skill_id"]
+                except Exception as e:
+                    logger.warning(f"[GENERATION_CONTEXT] Unit lookup failed for {mapping.subskill_id}: {e}")
+                scopes.append(scope)
             packet = await delivery_packet(firestore, active_misconceptions, scopes, request.student_id)
+            # Attempt notes (app/services/attempt_notes.py) for the lesson's units ride the same signed packet.
+            try:
+                notes = packet_notes(await firestore.get_attempt_notes(
+                    request.student_id, [s.get("unitId") for s in scopes]), subject_id)
+                if notes:
+                    packet["notes"] = notes
+            except Exception as e:
+                logger.warning(f"[GENERATION_CONTEXT] Attempt notes unavailable: {e}")
             # Component tallies (app/services/component_mastery.py) ride the same signed packet: a generator may
             # draw items toward a weak component inside a lesson already chosen. A read failure only drops them.
             try:
@@ -659,6 +677,27 @@ async def record_learning_observation(request: ResponseObservationIn,
         return {'stored': True, 'observationId': 'response:' + record_id}
     except Exception:
         logger.exception('Learning observation storage failed')
+        return {'stored': False, 'reason': 'internal_error'}
+
+
+@router.post('/attempt-notes')
+async def record_attempt_note(request: AttemptNoteIn, user_context: dict = Depends(get_user_context),
+                              mapping_service=Depends(get_curriculum_mapping_service)):
+    """Store one attempt's note under its published unit / skill / subskill. Owner from auth; no model call."""
+    store = get_firestore_service()
+    if store is None or user_context.get('student_id') is None:
+        return {'stored': False, 'reason': 'unavailable'}
+    try:
+        subject = _normalize_subject(request.subject) or request.subject
+        home = await note_home(store, mapping_service.curriculum_service, subject, request.subskill_id)
+        if not home:
+            return {'stored': False, 'reason': 'no-curriculum-home'}
+        grade = store.normalize_grade_code(request.grade)
+        await store.save_attempt_note(int(user_context['student_id']),
+            note_record(request.model_dump(), home, subject, '' if grade == 'UNKNOWN' else grade))
+        return {'stored': True, **home}
+    except Exception:
+        logger.exception('Attempt note storage failed')
         return {'stored': False, 'reason': 'internal_error'}
 
 

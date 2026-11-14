@@ -6,7 +6,8 @@ import { openLearningObservations, type LearningObservationPacket } from './lear
 export interface GenerationRequestInit { authorization?: string | null; learningObservations?: unknown }
 
 // Request-local only. Never put learner credentials or the packet in config, globals or output.
-const requests = new AsyncLocalStorage<{ authorization: string; lessonId: string; observations: LearningObservationPacket | null }>();
+const requests = new AsyncLocalStorage<{ authorization: string; lessonId: string; observations: LearningObservationPacket | null;
+  memo: Map<string, Promise<unknown>> }>();
 
 /**
  * Run one generation request. The observation packet is verified once here,
@@ -17,7 +18,15 @@ const requests = new AsyncLocalStorage<{ authorization: string; lessonId: string
 export function withGenerationRequest<T>(init: GenerationRequestInit | string | null, run: () => T): T {
   const { authorization = null, learningObservations } = init !== null && typeof init === 'object' ? init : { authorization: init };
   const observations = openLearningObservations(learningObservations, process.env.LUMINA_GENERATION_SIGNING_KEY);
-  return requests.run({ authorization: authorization ?? '', lessonId: randomUUID(), observations }, run);
+  return requests.run({ authorization: authorization ?? '', lessonId: randomUUID(), observations, memo: new Map() }, run);
+}
+
+/** Run `make` once per key within this generation request; every later caller shares the result. Outside a request it just runs. */
+export function requestMemo<T>(key: string, make: () => Promise<T>): Promise<T> {
+  const memo = requests.getStore()?.memo;
+  if (!memo) return make();
+  if (!memo.has(key)) memo.set(key, make());
+  return memo.get(key) as Promise<T>;
 }
 
 /** This request's lesson id, or null outside a wrapped request. */
