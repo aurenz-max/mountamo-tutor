@@ -65,10 +65,13 @@ try {
   const { compileDisplay } = await runner.import('/src/components/lumina/service/gen-display/compile.ts');
   const { displayDocument } = await runner.import('/src/components/lumina/service/gen-display/document.ts');
   const { CanvasStage } = await runner.import('/src/components/lumina/service/agent-kit/canvas/stage.ts');
+  const { styleNotes } = await runner.import('/src/components/lumina/service/agent-kit/canvas/canvasStyle.ts');
   const compiled = compileDisplay(source);
   if (!compiled.ok) throw new Error(`the program does not compile: ${compiled.errors.join('; ')}`);
 
   const blocking = [], advisories = [];
+  // The shared look (canvasStyle.ts): advisory, since a canvas may need what the guide avoids.
+  for (const n of styleNotes(source)) advisories.push(`style: ${n}`);
   if (!/lumina\.goal\s*\(/.test(source)) blocking.push('the program never calls lumina.goal(met)');
   // Every value a problem sets must be one the program reads; otherwise the problems are the same canvas.
   const keys = [...new Set(spec.problems.flatMap(p => Object.keys(p.params ?? {})))];

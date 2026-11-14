@@ -1,0 +1,338 @@
+{
+ "id": "circuit-lab",
+ "title": "Electric Circuit Lab",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner strings wires between a battery, a knife switch and one or two bulbs so the switch turns every bulb on and off, repairs a bulb wired to only one contact, and removes a wire that bypasses the switch, which shows that current needs one complete loop through each bulb and that a switch works by opening and closing that loop."
+ },
+ "request": {
+  "topic": "Electric circuits",
+  "grade": "grade 4",
+  "objective": "Wire a battery, switch and bulb into one complete loop so the switch turns the bulb on and off: build it, repair a bulb wired to one contact, remove a wire that bypasses the switch, and put two bulbs in one loop. (4-PS3-2)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // A workbench with a battery, a knife switch and one or two bulbs. Drag from one terminal to another to string a\r\n  // wire; tap a wire's x to cut it; tap the switch blade to open or close it. The bulb glows only when current can go\r\n  // round a loop through it; a wire straight across the battery makes the battery hot and every bulb dark.\r\n  // params.bulbs: 1 or 2 bulbs in the loop. params.prewired: [[termA, termB]] wires already on the bench (a fault to\r\n  // fix). params.switchClosed: the blade's starting position. params.showNames: false hides the contact names.\r\n  const nBulbs = Number(params.bulbs) === 2 ? 2 : 1;\r\n  const showNames = params.showNames !== false;\r\n  const bulbAt = nBulbs === 2 ? [{ cx: 600, top: 235 }, { cx: 380, top: 280 }] : [{ cx: 580, top: 240 }];\r\n\r\n  const TERMINALS = {\r\n    bat_pos: { id: 'bat_pos', x: 120, y: 170, label: '+', color: '#ef4444' },\r\n    bat_neg: { id: 'bat_neg', x: 120, y: 350, label: '−', color: '#3b82f6' },\r\n    sw_a: { id: 'sw_a', x: 330, y: 150, label: 'A', color: '#eab308' },\r\n    sw_b: { id: 'sw_b', x: 430, y: 150, label: 'B', color: '#eab308' },\r\n  };\r\n  bulbAt.forEach((b, i) => {\r\n    const s = i === 0 ? '' : '2';\r\n    TERMINALS['bulb' + s + '_side'] = { id: 'bulb' + s + '_side', x: b.cx - 30, y: b.top + 90, label: 'Side', color: '#a855f7' };\r\n    TERMINALS['bulb' + s + '_base'] = { id: 'bulb' + s + '_base', x: b.cx, y: b.top + 140, label: 'Bottom', color: '#ec4899' };\r\n  });\r\n  const bulbs = bulbAt.map((b, i) => (i === 0 ? ['bulb_side', 'bulb_base'] : ['bulb2_side', 'bulb2_base']));\r\n\r\n  const startWires = () => (Array.isArray(params.prewired) ? params.prewired : [])\r\n    .filter(w => TERMINALS[w[0]] && TERMINALS[w[1]]).map(w => ({ id: w[0] + '-' + w[1], from: w[0], to: w[1] }));\r\n  const [wires, setWires] = useState(startWires);\r\n  const [activeDrag, setActiveDrag] = useState(null);\r\n  const [switchClosed, setSwitchClosed] = useState(params.switchClosed === true);\r\n  const svgRef = useRef(null);\r\n  const pt = e => svgPoint(svgRef.current, e);\r\n\r\n  const onDownTerm = (termId, e) => {\r\n    e.preventDefault(); e.stopPropagation();\r\n    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);\r\n    setActiveDrag({ fromTerm: termId, currentPos: pt(e) });\r\n  };\r\n  const onMove = e => { if (activeDrag) { const p = pt(e); setActiveDrag(prev => (prev ? { ...prev, currentPos: p } : null)); } };\r\n  const onUp = e => {\r\n    if (!activeDrag) return;\r\n    const p = pt(e);\r\n    let closest = null, minDist = 38;\r\n    Object.values(TERMINALS).forEach(t => {\r\n      if (t.id === activeDrag.fromTerm) return;\r\n      const d = Math.hypot(t.x - p.x, t.y - p.y);\r\n      if (d < minDist) { minDist = d; closest = t.id; }\r\n    });\r\n    if (closest) {\r\n      const a = activeDrag.fromTerm;\r\n      const exists = wires.some(w => (w.from === a && w.to === closest) || (w.from === closest && w.to === a));\r\n      if (!exists) setWires(prev => [...prev, { id: a + '-' + closest, from: a, to: closest }]);\r\n    }\r\n    setActiveDrag(null);\r\n  };\r\n  const cut = (id, e) => { e.stopPropagation(); setWires(prev => prev.filter(w => w.id !== id)); };\r\n\r\n  // A bulb glows when current can go from + to − along wires (and through the closed switch) passing in one contact\r\n  // and out the other, and no wire path runs straight from + to − around every bulb (that makes the battery hot).\r\n  const analyse = closed => {\r\n    const adj = {};\r\n    Object.keys(TERMINALS).forEach(k => { adj[k] = []; });\r\n    wires.forEach(({ from, to }) => { adj[from].push(to); adj[to].push(from); });\r\n    const paths = throughBulbs => {\r\n      const out = [], seen = new Set();\r\n      const dfs = (cur, path) => {\r\n        if (cur === 'bat_neg') { out.push(path); return; }\r\n        seen.add(cur);\r\n        const next = [...adj[cur]];\r\n        if (closed && cur === 'sw_a') next.push('sw_b');\r\n        if (closed && cur === 'sw_b') next.push('sw_a');\r\n        if (throughBulbs) bulbs.forEach(([s, b]) => { if (cur === s) next.push(b); if (cur === b) next.push(s); });\r\n        next.forEach(n => { if (!seen.has(n)) dfs(n, [...path, n]); });\r\n        seen.delete(cur);\r\n      };\r\n      dfs('bat_pos', ['bat_pos']);\r\n      return out;\r\n    };\r\n    const short = paths(false).length > 0;\r\n    const loops = short ? [] : paths(true);\r\n    const bypassed = (s, b) => wires.some(w => (w.from === s && w.to === b) || (w.from === b && w.to === s));\r\n    return { short, lit: bulbs.map(([s, b]) => !bypassed(s, b) && loops.some(p => { const i = p.indexOf(s), j = p.indexOf(b); return i >= 0 && j >= 0 && Math.abs(i - j) === 1; })) };\r\n  };\r\n  const now = analyse(switchClosed), ifClosed = analyse(true), ifOpen = analyse(false);\r\n  const switchControls = ifClosed.lit.every(Boolean) && !ifOpen.lit.some(Boolean);\r\n  const goalMet = switchClosed && switchControls;\r\n\r\n  const nameOf = id => {\r\n    if (id === 'bat_pos') return 'battery +';\r\n    if (id === 'bat_neg') return 'battery −';\r\n    if (id === 'sw_a') return 'switch post A';\r\n    if (id === 'sw_b') return 'switch post B';\r\n    const which = id.startsWith('bulb2') ? (nBulbs === 2 ? 'second bulb' : 'bulb') : (nBulbs === 2 ? 'first bulb' : 'bulb');\r\n    return which + (id.endsWith('side') ? ' side contact' : ' bottom contact');\r\n  };\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    lumina.scene({\r\n      switchBlade: switchClosed ? 'closed' : 'open',\r\n      wires: wires.map(w => nameOf(w.from) + ' to ' + nameOf(w.to)),\r\n      bulbsGlowing: nBulbs === 2 ? ['first bulb', 'second bulb'].filter((n, i) => now.lit[i]) : (now.lit[0] ? ['bulb'] : []),\r\n      batteryHot: now.short,\r\n    });\r\n  }, [wires, switchClosed, goalMet]);\r\n\r\n  const bulbPic = (b, i) => {\r\n    const { cx, top } = b, lit = now.lit[i];\r\n    return <g key={'bulb' + i}>\r\n      {lit && <circle cx={cx} cy={top} r=\"90\" fill=\"url(#bulbGlow)\" />}\r\n      <path d={`M ${cx - 45} ${top} C ${cx - 45} ${top - 50} ${cx + 45} ${top - 50} ${cx + 45} ${top} C ${cx + 45} ${top + 30} ${cx + 25} ${top + 50} ${cx + 25} ${top + 70} L ${cx - 25} ${top + 70} C ${cx - 25} ${top + 50} ${cx - 45} ${top + 30} ${cx - 45} ${top} Z`}\r\n        fill={lit ? '#fef9c3' : '#334155'} opacity={lit ? 0.95 : 0.4} stroke={lit ? '#facc15' : '#64748b'} strokeWidth=\"2.5\" />\r\n      <path d={`M ${cx - 15} ${top + 70} L ${cx - 12} ${top + 10} L ${cx - 5} ${top - 5} L ${cx} ${top + 5} L ${cx + 5} ${top - 5} L ${cx + 12} ${top + 10} L ${cx + 15} ${top + 70}`}\r\n        fill=\"none\" stroke={lit ? '#ffffff' : '#64748b'} strokeWidth={lit ? 3 : 2} strokeLinejoin=\"round\" />\r\n      <rect x={cx - 25} y={top + 70} width=\"50\" height=\"40\" rx=\"3\" fill=\"#94a3b8\" stroke=\"#475569\" strokeWidth=\"1.5\" />\r\n      {[80, 90, 100].map(d => <line key={d} x1={cx - 25} y1={top + d} x2={cx + 25} y2={top + d} stroke=\"#64748b\" strokeWidth=\"2\" />)}\r\n      <rect x={cx - 15} y={top + 110} width=\"30\" height=\"12\" fill=\"#0f172a\" />\r\n      <path d={`M ${cx - 10} ${top + 122} L ${cx + 10} ${top + 122} L ${cx + 5} ${top + 134} L ${cx - 5} ${top + 134} Z`} fill=\"#cbd5e1\" stroke=\"#64748b\" strokeWidth=\"1\" />\r\n    </g>;\r\n  };\r\n\r\n  return (\r\n    <Panel title=\"Electric Circuit Lab\">\r\n      <div style={{ position: 'relative', width: '100%', background: '#090d16', borderRadius: 12, border: '1px solid #1e293b', overflow: 'hidden', touchAction: 'none', userSelect: 'none' }}>\r\n        <svg ref={svgRef} viewBox=\"0 0 720 480\" style={{ width: '100%', height: 'auto', display: 'block', cursor: activeDrag ? 'crosshair' : 'default' }}\r\n          onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>\r\n          <defs>\r\n            <radialGradient id=\"bulbGlow\" cx=\"50%\" cy=\"50%\" r=\"50%\">\r\n              <stop offset=\"0%\" stopColor=\"#fef08a\" stopOpacity=\"0.9\" />\r\n              <stop offset=\"40%\" stopColor=\"#eab308\" stopOpacity=\"0.5\" />\r\n              <stop offset=\"100%\" stopColor=\"#ca8a04\" stopOpacity=\"0\" />\r\n            </radialGradient>\r\n            <radialGradient id=\"batHeat\" cx=\"50%\" cy=\"50%\" r=\"50%\">\r\n              <stop offset=\"0%\" stopColor=\"#f97316\" stopOpacity=\"0.7\" />\r\n              <stop offset=\"100%\" stopColor=\"#f97316\" stopOpacity=\"0\" />\r\n            </radialGradient>\r\n            <linearGradient id=\"batteryBody\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\r\n              <stop offset=\"0%\" stopColor=\"#334155\" /><stop offset=\"50%\" stopColor=\"#64748b\" /><stop offset=\"100%\" stopColor=\"#1e293b\" />\r\n            </linearGradient>\r\n            <linearGradient id=\"brass\" gradientUnits=\"userSpaceOnUse\" x1=\"330\" y1=\"80\" x2=\"430\" y2=\"160\">\r\n              <stop offset=\"0%\" stopColor=\"#fef08a\" /><stop offset=\"60%\" stopColor=\"#ca8a04\" /><stop offset=\"100%\" stopColor=\"#854d0e\" />\r\n            </linearGradient>\r\n            <pattern id=\"workbenchGrid\" width=\"40\" height=\"40\" patternUnits=\"userSpaceOnUse\">\r\n              <path d=\"M 40 0 L 0 0 0 40\" fill=\"none\" stroke=\"#1e293b\" strokeWidth=\"0.8\" opacity=\"0.6\" />\r\n            </pattern>\r\n          </defs>\r\n          <rect width=\"720\" height=\"480\" fill=\"url(#workbenchGrid)\" />\r\n\r\n          {/* battery: a wire straight across it makes it hot */}\r\n          <g id=\"battery-component\">\r\n            {now.short && <ellipse cx=\"120\" cy=\"260\" rx=\"95\" ry=\"130\" fill=\"url(#batHeat)\" />}\r\n            <rect x=\"70\" y=\"160\" width=\"100\" height=\"200\" rx=\"12\" fill=\"url(#batteryBody)\" stroke={now.short ? '#f97316' : '#94a3b8'} strokeWidth=\"2\" />\r\n            <rect x=\"100\" y=\"146\" width=\"40\" height=\"14\" rx=\"4\" fill=\"#cbd5e1\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\r\n            <rect x=\"70\" y=\"195\" width=\"100\" height=\"45\" fill=\"#ef4444\" opacity=\"0.9\" />\r\n            <text x=\"120\" y=\"225\" textAnchor=\"middle\" fill=\"#ffffff\" fontSize=\"18\" fontWeight=\"bold\">1.5V D-CELL</text>\r\n            <text x=\"120\" y=\"186\" textAnchor=\"middle\" fill=\"#fca5a5\" fontSize=\"22\" fontWeight=\"900\">+</text>\r\n            <text x=\"120\" y=\"335\" textAnchor=\"middle\" fill=\"#93c5fd\" fontSize=\"26\" fontWeight=\"900\">−</text>\r\n            {now.short && <text x=\"120\" y=\"290\" textAnchor=\"middle\" fontSize=\"28\">🔥</text>}\r\n          </g>\r\n\r\n          {/* knife switch: tap the blade */}\r\n          <g id=\"switch-component\">\r\n            <rect x=\"290\" y=\"125\" width=\"180\" height=\"85\" rx=\"8\" fill=\"#292524\" stroke=\"#57534e\" strokeWidth=\"2\" />\r\n            <text x=\"380\" y=\"195\" textAnchor=\"middle\" fill=\"#a8a29e\" fontSize=\"12\" fontWeight=\"600\">KNIFE SWITCH</text>\r\n            <circle cx=\"330\" cy=\"150\" r=\"14\" fill=\"#78350f\" stroke=\"#ca8a04\" strokeWidth=\"2\" />\r\n            <circle cx=\"430\" cy=\"150\" r=\"14\" fill=\"#78350f\" stroke=\"#ca8a04\" strokeWidth=\"2\" />\r\n            <g id=\"switch-handle\" onClick={() => setSwitchClosed(c => !c)} style={{ cursor: 'pointer' }}>\r\n              <rect x=\"320\" y={switchClosed ? 128 : 70} width=\"120\" height={switchClosed ? 44 : 90} fill=\"transparent\" />\r\n              {switchClosed\r\n                ? <g><line x1=\"330\" y1=\"150\" x2=\"430\" y2=\"150\" stroke=\"url(#brass)\" strokeWidth=\"8\" strokeLinecap=\"round\" />\r\n                    <circle cx=\"430\" cy=\"150\" r=\"10\" fill=\"#dc2626\" stroke=\"#fca5a5\" strokeWidth=\"2\" /></g>\r\n                : <g><line x1=\"330\" y1=\"150\" x2=\"415\" y2=\"85\" stroke=\"url(#brass)\" strokeWidth=\"8\" strokeLinecap=\"round\" />\r\n                    <circle cx=\"415\" cy=\"85\" r=\"12\" fill=\"#ef4444\" stroke=\"#fca5a5\" strokeWidth=\"2\" /></g>}\r\n            </g>\r\n          </g>\r\n\r\n          {bulbAt.map(bulbPic)}\r\n\r\n          {wires.map(w => {\r\n            const t1 = TERMINALS[w.from], t2 = TERMINALS[w.to];\r\n            const midX = (t1.x + t2.x) / 2, midY = (t1.y + t2.y) / 2 + 30;\r\n            const d = `M ${t1.x} ${t1.y} Q ${midX} ${midY} ${t2.x} ${t2.y}`;\r\n            return <g key={w.id} id={'wire-' + w.id}>\r\n              <path d={d} fill=\"none\" stroke=\"#0f172a\" strokeWidth=\"8\" strokeLinecap=\"round\" />\r\n              <path d={d} fill=\"none\" stroke=\"#38bdf8\" strokeWidth=\"4\" strokeLinecap=\"round\" />\r\n              <g id={'cut-' + w.id} transform={`translate(${midX}, ${midY})`} style={{ cursor: 'pointer' }} onClick={e => cut(w.id, e)}>\r\n                <circle r=\"22\" fill=\"transparent\" />\r\n                <circle r=\"11\" fill=\"#1e293b\" stroke=\"#94a3b8\" strokeWidth=\"1.5\" />\r\n                <text x=\"0\" y=\"4\" textAnchor=\"middle\" fill=\"#cbd5e1\" fontSize=\"13\" fontWeight=\"bold\">✕</text>\r\n              </g>\r\n            </g>;\r\n          })}\r\n\r\n          {activeDrag && <g pointerEvents=\"none\">\r\n            <line x1={TERMINALS[activeDrag.fromTerm].x} y1={TERMINALS[activeDrag.fromTerm].y} x2={activeDrag.currentPos.x} y2={activeDrag.currentPos.y}\r\n              stroke=\"#38bdf8\" strokeWidth=\"4\" strokeDasharray=\"6,4\" strokeLinecap=\"round\" />\r\n            <circle cx={activeDrag.currentPos.x} cy={activeDrag.currentPos.y} r=\"9\" fill=\"#38bdf8\" opacity=\"0.8\" />\r\n          </g>}\r\n\r\n          {Object.values(TERMINALS).map(t => (\r\n            <g key={t.id} id={t.id} transform={`translate(${t.x}, ${t.y})`} style={{ cursor: 'crosshair' }} onPointerDown={e => onDownTerm(t.id, e)}>\r\n              <circle r=\"22\" fill=\"transparent\" />\r\n              <circle r=\"14\" fill=\"#0f172a\" stroke={t.color} strokeWidth=\"3\" />\r\n              <circle r=\"8\" fill={activeDrag && activeDrag.fromTerm === t.id ? '#ffffff' : t.color} />\r\n              {(showNames || t.id.startsWith('bat')) && <text x=\"0\" y=\"-18\" textAnchor=\"middle\" fill=\"#f1f5f9\" fontSize=\"12\" fontWeight=\"700\">{t.label}</text>}\r\n            </g>))}\r\n\r\n          <text x=\"360\" y=\"466\" textAnchor=\"middle\" fill=\"#64748b\" fontSize=\"13\">Drag from one dot to another to add a wire. Tap ✕ to cut a wire.</text>\r\n        </svg>\r\n      </div>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {},
+   "ask": "Wire the battery, switch and bulb so the switch turns the bulb on and off. Then turn it on.",
+   "goal": "Battery + to the switch, the switch to one bulb contact, the other bulb contact to battery −, blade closed. Two wires that reach the bulb's side contact only leave the bulb dark.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bat_pos",
+     "to": "#sw_a"
+    },
+    {
+     "do": "drag",
+     "target": "#sw_b",
+     "to": "#bulb_side"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb_base",
+     "to": "#bat_neg"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bat_pos",
+     "to": "#sw_a"
+    },
+    {
+     "do": "drag",
+     "target": "#sw_b",
+     "to": "#bulb_side"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb_side",
+     "to": "#bat_neg"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "scene": {
+    "switchBlade": "open",
+    "wires": [],
+    "bulbsGlowing": [],
+    "batteryHot": false
+   },
+   "proofScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "bulb"
+    ],
+    "batteryHot": false
+   },
+   "missScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb side contact to battery −"
+    ],
+    "bulbsGlowing": [],
+    "batteryHot": true
+   }
+  },
+  {
+   "params": {
+    "prewired": [
+     [
+      "bat_pos",
+      "sw_a"
+     ],
+     [
+      "sw_b",
+      "bulb_side"
+     ],
+     [
+      "bulb_side",
+      "bat_neg"
+     ]
+    ]
+   },
+   "ask": "Someone wired this circuit, but the bulb will not light. Fix it so the switch turns the bulb on and off, then turn it on.",
+   "goal": "The wire from the side contact to battery − is cut and the bottom contact is wired to battery − instead; blade closed. Closing the switch on the bench as wired makes the battery hot.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-bulb_side-bat_neg"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb_base",
+     "to": "#bat_neg"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "scene": {
+    "switchBlade": "open",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb side contact to battery −"
+    ],
+    "bulbsGlowing": [],
+    "batteryHot": false
+   },
+   "proofScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "bulb"
+    ],
+    "batteryHot": false
+   },
+   "missScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb side contact to battery −"
+    ],
+    "bulbsGlowing": [],
+    "batteryHot": true
+   }
+  },
+  {
+   "params": {
+    "prewired": [
+     [
+      "bat_pos",
+      "sw_a"
+     ],
+     [
+      "sw_a",
+      "sw_b"
+     ],
+     [
+      "sw_b",
+      "bulb_side"
+     ],
+     [
+      "bulb_base",
+      "bat_neg"
+     ]
+    ]
+   },
+   "ask": "This bulb stays on even when the switch is open. Fix it so the switch turns the bulb on and off, then turn it on.",
+   "goal": "The wire jumped from switch post A to post B is cut and the blade is closed. Closing the blade with that wire left in lights the bulb, but the switch does nothing.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-sw_a-sw_b"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "scene": {
+    "switchBlade": "open",
+    "wires": [
+     "battery + to switch post A",
+     "switch post A to switch post B",
+     "switch post B to bulb side contact",
+     "bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "bulb"
+    ],
+    "batteryHot": false
+   },
+   "proofScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to bulb side contact",
+     "bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "bulb"
+    ],
+    "batteryHot": false
+   },
+   "missScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post A to switch post B",
+     "switch post B to bulb side contact",
+     "bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "bulb"
+    ],
+    "batteryHot": false
+   }
+  },
+  {
+   "params": {
+    "bulbs": 2,
+    "showNames": false
+   },
+   "ask": "Wire both bulbs so one switch turns them both on and off. Then turn them on.",
+   "goal": "One loop: battery +, the switch, in and out of the first bulb, in and out of the second bulb, battery −; blade closed. A loop through the first bulb only leaves the second dark.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#bat_pos",
+     "to": "#sw_a"
+    },
+    {
+     "do": "drag",
+     "target": "#sw_b",
+     "to": "#bulb_side"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb_base",
+     "to": "#bulb2_side"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb2_base",
+     "to": "#bat_neg",
+     "shot": "wired"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#bat_pos",
+     "to": "#sw_a"
+    },
+    {
+     "do": "drag",
+     "target": "#sw_b",
+     "to": "#bulb_side"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb_base",
+     "to": "#bat_neg"
+    },
+    {
+     "do": "drag",
+     "target": "#bulb2_side",
+     "to": "#bulb_side"
+    },
+    {
+     "do": "click",
+     "target": "#switch-handle"
+    }
+   ],
+   "scene": {
+    "switchBlade": "open",
+    "wires": [],
+    "bulbsGlowing": [],
+    "batteryHot": false
+   },
+   "proofScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to first bulb side contact",
+     "first bulb bottom contact to second bulb side contact",
+     "second bulb bottom contact to battery −"
+    ],
+    "bulbsGlowing": [
+     "first bulb",
+     "second bulb"
+    ],
+    "batteryHot": false
+   },
+   "missScene": {
+    "switchBlade": "closed",
+    "wires": [
+     "battery + to switch post A",
+     "switch post B to first bulb side contact",
+     "first bulb bottom contact to battery −",
+     "second bulb side contact to first bulb side contact"
+    ],
+    "bulbsGlowing": [
+     "first bulb"
+    ],
+    "batteryHot": false
+   }
+  }
+ ]
+}

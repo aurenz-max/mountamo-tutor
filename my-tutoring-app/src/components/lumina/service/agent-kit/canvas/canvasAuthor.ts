@@ -19,6 +19,7 @@ import { compileDisplay } from '../../gen-display/compile';
 import { displayDocument } from '../../gen-display/document';
 import { SDK_REFERENCE } from '../../gen-display/sdkSource';
 import { arr, num, runAuthor, str, type AgentAuthor, type Args, type AuthorDebug } from '../authorLoop';
+import { CANVAS_EXAMPLE, CANVAS_STYLE, styleNotes } from './canvasStyle';
 import { CanvasStage, STAGE_WIDTH, type PlayStep, type Snapshot } from './stage';
 
 export interface CanvasAsk { topic: string; grade: string; objective?: string }
@@ -128,10 +129,17 @@ Nobody else checks your logic. If the physics is wrong, a drag does not land, or
 
 ## The program
 - TSX defining function Display({ params, lumina }). No imports or exports. React hooks (useState, useMemo, useEffect, useRef, useCallback) and the kit below are in scope. Draw with SVG, a <canvas> element, or plain elements; use pointer events and requestAnimationFrame freely. There is no network and no storage.
-- The page is ${STAGE_WIDTH}px wide. Keep the canvas under 640px tall. Touch targets are at least 44px. A ${ask.grade} child reads few words: let the picture carry it. The page behind your canvas is dark (near #0f172a) with light text (#e2e8f0): check in your screenshot that every word can be read.
+- The page is ${STAGE_WIDTH}px wide. Keep the canvas under 640px tall. Touch targets are at least 44px. A ${ask.grade} child reads few words: let the picture carry it. Check in your screenshot that every word can be read.
 - Give every element the child acts on, and every place a thing can go, an id. play addresses elements by CSS selector and reports where each id is.
 - For dragging inside an svg use the kit's Handle, or your own pointer handlers with svgPoint.
 - Code computes every value shown from state. Never write a result as a literal.
+
+${CANVAS_STYLE}
+
+A canvas in this style (the look and the idioms only; your task is your own):
+\`\`\`tsx
+${CANVAS_EXAMPLE}
+\`\`\`
 
 ## What the program reports
 - lumina.goal(met): call it in an effect whenever state changes, true only while the child's work meets the goal. This is how the lesson knows the child succeeded, so check it as carefully as a test: true for every way of succeeding, false for everything else. When the idea allows many right answers, accept all of them.
@@ -141,7 +149,7 @@ Nobody else checks your logic. If the physics is wrong, a drag does not land, or
 The lesson shows your "ask" above the canvas and a Check button below it, and tells the child whether they are right. So:
 - The canvas starts in a state that does not meet the goal, and never says whether the child is right or what the answer is.
 - When the world itself shows whether it worked (the bridge holds, the ball lands in the cup), make the child commit before they see it: a Test or Launch button inside the canvas runs the world. Then the child reasons first, and cannot wiggle a control until it works.
-- A Reset inside the canvas is welcome after a run.
+- The lesson has a Start over button, so the canvas needs no Reset or Clear of its own.
 
 ## The kit (optional)
 ${SDK_REFERENCE}
@@ -183,7 +191,8 @@ export function canvasIssues(item: Pick<CanvasItem, 'rest' | 'proof' | 'miss'>):
 function spec(ask: CanvasAsk): AgentAuthor<CanvasState, CanvasItem, CanvasData> {
   return {
     tag: 'Canvas', label: 'canvas', noun: 'canvas', topic: ask.topic,
-    ...(process.env.LUMINA_CANVAS_MODEL ? { model: process.env.LUMINA_CANVAS_MODEL } : {}),
+    // Hydrogen over flash (bench 11-13: 4 topics, fewer turns, faster, 1.3-2x cost). LUMINA_CANVAS_MODEL overrides it.
+    model: process.env.LUMINA_CANVAS_MODEL || 'gemini-4-hydrogen',
     budget: { softMs: 240_000, hardMs: 330_000, maxTurns: 18, minItems: 1, salvageMin: 1 },
     system: canvasPrompt(ask),
     start: 'Build the canvas now. Start with plan_canvas.',
@@ -201,7 +210,7 @@ function spec(ask: CanvasAsk): AgentAuthor<CanvasState, CanvasItem, CanvasData> 
       const params = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
       s.versions++;
       return { item: { title: str(a.title) || ask.topic, ask: askText, goal, source, params, html: displayDocument(compiled.js, params), plays: 0 },
-        result: { compiled: true, next: 'play it' } };
+        result: { compiled: true, next: 'play it', ...(styleNotes(source).length ? { styleNotes: styleNotes(source) } : {}) } };
     } }],
     work: [{ decl: PLAY, async run(s, a, { items }) {
       const item = items[items.length - 1];

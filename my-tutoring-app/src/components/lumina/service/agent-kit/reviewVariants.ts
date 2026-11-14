@@ -4,7 +4,8 @@
  */
 
 /** The model the item loop's author and solver call. It is an alias: each run's debug records what Google served. */
-export const KIT_MODEL = 'gemini-flash-latest';
+/** LUMINA_KIT_MODEL overrides it for a model bench (server side only; the browser always sees the default). */
+export const KIT_MODEL = (typeof process !== 'undefined' ? process.env?.LUMINA_KIT_MODEL : undefined) || 'gemini-flash-latest';
 
 /** What a look at an item does. */
 export interface LookPlan {

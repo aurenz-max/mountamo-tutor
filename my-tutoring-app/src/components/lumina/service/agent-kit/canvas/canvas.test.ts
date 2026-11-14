@@ -77,3 +77,16 @@ describe('canvas ship checks', () => {
     expect(page.match(/<\/script>/g)?.length).toBe(2);
   });
 });
+
+describe('canvas style guide', () => {
+  it('the example in the prompt compiles and meets its own guide', async () => {
+    const { CANVAS_EXAMPLE, styleNotes } = await import('./canvasStyle');
+    expect(compileDisplay(CANVAS_EXAMPLE).ok).toBe(true);
+    expect(styleNotes(CANVAS_EXAMPLE)).toEqual([]);
+  });
+  it('notes readouts, a row of buttons and praise, not an operating caption', async () => {
+    const { styleNotes } = await import('./canvasStyle');
+    const notes = styleNotes('<Panel title="Lab" caption="Drag the wires"><Readout label="x" value={1} /><Button label="A" /><Button label="B" /><text>Correct!</text></Panel>');
+    expect(notes.length).toBe(3);
+  });
+});

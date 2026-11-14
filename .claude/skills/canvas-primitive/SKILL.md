@@ -54,6 +54,12 @@ scope (`service/gen-display/sdkSource.ts` is the reference: `Panel`, `Stack`, `R
 
 The host owns: prompt (`ask`), Check, verdict, Try again, Start over, sounds, tutor scene, evaluation submit.
 
+**The look is written once** in `service/agent-kit/canvas/canvasStyle.ts` (USER 11-14): `CANVAS_STYLE` (stage, card,
+line and text colours, dashed drop places, emoji objects, a caption that only says how to work the controls, no
+button row, no readout of the checked quantity) and `CANVAS_EXAMPLE`. Gemini reads both in its prompt; read them before writing or polishing a program, so
+both authors draw one world. `styleNotes` reports misses as `style:` advisories in `canvas-check` and in the author's
+write result. Do not restyle a canvas the user approved to meet it.
+
 Two idioms that bite: draw repeated parts with render functions (`{pile(i)}`), not components declared inside
 `Display` (`<Pile/>`), which remount on every render and drop CSS transitions; and size a dot grid to its count
 (`repeat(min(n, 5), ...)`), or a small pile sits off-centre.
@@ -97,7 +103,7 @@ Read by the author from the screenshots in `specs/<id>/plays/` (not code-checkab
   `node scripts/canvas-author.mjs --topic="..." --grade="grade 4" --objective="..."`. The run saves to
   `qa/canvas/<stamp>-<slug>.json`. The user plays it in the tester and says which ones are worth a spec.
 - **From Claude (no model call):** write `qa/canvas/specs/<id>/program.tsx` and `spec.json` directly against the
-  contract above. Read one existing spec's program first for the kit idioms.
+  contract above and `canvasStyle.ts`. Read one existing spec's program first for the kit idioms.
 
 ### 2. Make the spec
 
