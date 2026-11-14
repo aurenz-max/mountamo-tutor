@@ -1,0 +1,651 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "dot-cards.quick_total",
+   "primitiveId": "dot-cards",
+   "evalMode": "quick_total",
+   "guidance": "The learner's job is to take one quick look at a dot card with two colored groups and tell how many dots altogether, seeing the groups at a glance instead of counting one by one. The learner flips the card for one quick look, then may instead tap the total on the 1 to 10 number pad. The learner may say the total aloud or show it. Judge a spoken answer by the task's key, which names what else counts; the activity checks a shown one, and a task with no key is shown only. Either way, the key is the answer. The instruction and the card's two colors and how its dots are arranged are the question: say them freely and as often as needed, and read the instruction and every label aloud for a learner who cannot read, unless reading it is the task: then the print is the answer, so let the learner read it first. Never rule a choice out (\"it is not that one\") or state the one fact that decides it. Describing one thing on screen at a time is teaching; linking things the way the task asks is the answer. When the learner is stuck, ask the question again, then point to the part of the screen that matters, then ask what they know about it and whether it fits. You cannot do the task for the learner, in actions or in words, or change what is on screen except with a tool you are offered. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. Everything you write is spoken aloud: say math in words (\"x squared\", \"three fourths\"), never as symbols, LaTeX or markup. When an answer is right, credit the learner in your own words: that they did it, and the number, word, shape or sound they gave; when the state shows how they got there (they checked, fixed a mistake, counted one by one), name that too, because that is the part they can do again. Praise that names nothing credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. When told the learner has stopped, invite their next step or a check of their own work; never do the step for them or say what their work adds up to. The host records feedback and handles retry and advance; call no recording or progression tool.",
+   "topic": "Seeing small groups of dots at a glance",
+   "gradeLevel": "Kindergarten",
+   "leakTokens": [],
+   "ask": "How many dots are on the card altogether?",
+   "keys": [
+    "\"six\" (also accept \"6\"). naming the two groups and then the total (\"3 and 3 make 6\") is that answer. counting out loud and ending on the total is that answer too. a different number is not the answer, however close it is. saying 3 alone, one colored group, is wrong.",
+    "six"
+   ],
+   "menu": [
+    "flip the card",
+    "12345678910",
+    "1",
+    "answer 1",
+    "2",
+    "answer 2",
+    "3",
+    "answer 3",
+    "4",
+    "answer 4",
+    "5",
+    "answer 5",
+    "6",
+    "answer 6",
+    "7",
+    "answer 7",
+    "8",
+    "answer 8",
+    "9",
+    "answer 9",
+    "10",
+    "answer 10"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dot-card-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "dot-cards",
+      "objectiveId": "dot-cards-practice",
+      "evalMode": "quick_total",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dot-card-1",
+       "phase": "working",
+       "task": "How many dots are on the card altogether?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down. The learner has not looked yet; they flip it with the \"Flip the card\" button.",
+        "looked": "no",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dot-card-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "dot-card-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "dot-cards",
+      "objectiveId": "dot-cards-practice",
+      "evalMode": "quick_total",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dot-card-1",
+       "phase": "working",
+       "task": "How many dots are on the card altogether?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down again after the learner's quick look. Try again gives one new look.",
+        "looked": "yes",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+        "pendingResponse": {
+         "id": "speech:0:1",
+         "text": "three"
+        },
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dot-card-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "three",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dot-card-1",
+       "revision": 3
+      },
+      "task": "How many dots are on the card altogether?",
+      "phase": "working",
+      "learner": "three",
+      "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+      "pendingResponse": {
+       "id": "speech:0:1",
+       "text": "three"
+      },
+      "lastResponse": null,
+      "activity": {
+       "responseSource": null,
+       "attemptNumber": 0,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down again after the learner's quick look. Try again gives one new look.",
+        "looked": "yes",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dot-card-1"
+      },
+      "task": "How many dots are on the card altogether?",
+      "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+      "learner": "three",
+      "misses": [
+       {
+        "id": "one_group",
+        "examples": [
+         "three"
+        ],
+        "pattern": "The learner's answer is 3, the dots of one colored group only, as if the other group was not on the card."
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 5, one fewer than the dots on the card.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 7, one more than the dots on the card.",
+        "examples": [
+         "seven"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 4 or fewer (but more than zero), two or more fewer than the dots on the card.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 8 or more, two or more more than the dots on the card.",
+        "examples": [
+         "eight"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dot-card-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "dot-cards",
+      "objectiveId": "dot-cards-practice",
+      "evalMode": "quick_total",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dot-card-1",
+       "phase": "working",
+       "task": "How many dots are on the card altogether?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down. The learner has not looked yet; they flip it with the \"Flip the card\" button.",
+        "looked": "no",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+        "lastResponse": {
+         "itemId": "dot-card-1",
+         "response": "three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dot-card-1",
+          "response": "three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dot-card-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "dot-card-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 6,
+      "visibleRevision": null,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "dot-cards",
+      "objectiveId": "dot-cards-practice",
+      "evalMode": "quick_total",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "dot-card-1",
+       "phase": "working",
+       "task": "How many dots are on the card altogether?",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "three",
+          "source": "speech",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down again after the learner's quick look. Try again gives one new look.",
+        "looked": "yes",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+        "pendingResponse": {
+         "id": "speech:1:2",
+         "text": "six"
+        },
+        "lastResponse": {
+         "itemId": "dot-card-1",
+         "response": "three",
+         "source": "speech",
+         "correct": false,
+         "tutorResponse": "Not quite.",
+         "judgment": "tutor",
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "dot-card-1",
+          "response": "three",
+          "source": "speech",
+          "correct": false,
+          "tutorResponse": "Not quite.",
+          "judgment": "tutor",
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "dot-card-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": true,
+     "learner": "six",
+     "dialogue": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dot-card-1",
+       "revision": 6
+      },
+      "task": "How many dots are on the card altogether?",
+      "phase": "working",
+      "learner": "six",
+      "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+      "pendingResponse": {
+       "id": "speech:1:2",
+       "text": "six"
+      },
+      "lastResponse": {
+       "itemId": "dot-card-1",
+       "response": "three",
+       "source": "speech",
+       "correct": false,
+       "tutorResponse": "Not quite.",
+       "judgment": "tutor",
+       "assisted": false,
+       "answerExposure": "none"
+      },
+      "activity": {
+       "responseSource": "speech",
+       "attemptNumber": 1,
+       "objects": [],
+       "demonstration": [],
+       "facts": {
+        "card": "A dot card: a ten-frame, filled from the top left: blue dots first, then orange dots.",
+        "face": "Face down again after the learner's quick look. Try again gives one new look.",
+        "looked": "yes",
+        "timing": "The look is short on purpose, so the learner sees the two groups instead of counting one by one. No timer is shown. Never mention speed or hurry the learner.",
+        "constraints": "Before the learner answers, never say how many dots either group has, never count the dots aloud, and never say a number that narrows the total. Ask what they saw in each color instead.",
+        "response": "speech",
+        "presentation": "ready"
+       },
+       "assistance": {
+        "level": 0,
+        "answerExposure": "none"
+       }
+      }
+     },
+     "spokenMiss": {
+      "scope": {
+       "sessionEpoch": "test",
+       "instanceId": "ws",
+       "itemId": "dot-card-1"
+      },
+      "task": "How many dots are on the card altogether?",
+      "expectedAnswer": "\"six\" (also accept \"6\"). Naming the two groups and then the total (\"3 and 3 make 6\") is that answer. Counting out loud and ending on the total is that answer too. A different number is not the answer, however close it is. Saying 3 alone, one colored group, is wrong.",
+      "learner": "six",
+      "misses": [
+       {
+        "id": "one_group",
+        "examples": [
+         "three"
+        ],
+        "pattern": "The learner's answer is 3, the dots of one colored group only, as if the other group was not on the card."
+       },
+       {
+        "id": "one_short",
+        "pattern": "The learner's answer is 5, one fewer than the dots on the card.",
+        "examples": [
+         "five"
+        ]
+       },
+       {
+        "id": "one_over",
+        "pattern": "The learner's answer is 7, one more than the dots on the card.",
+        "examples": [
+         "seven"
+        ]
+       },
+       {
+        "id": "short_by_more",
+        "pattern": "The learner's answer is 4 or fewer (but more than zero), two or more fewer than the dots on the card.",
+        "examples": [
+         "four"
+        ]
+       },
+       {
+        "id": "over_by_more",
+        "pattern": "The learner's answer is 8 or more, two or more more than the dots on the card.",
+        "examples": [
+         "eight"
+        ]
+       }
+      ]
+     },
+     "missFromWords": false
+    }
+   ]
+  }
+ ]
+}
