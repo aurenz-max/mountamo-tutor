@@ -1,0 +1,932 @@
+{
+ "id": "apple-orchard",
+ "title": "Apple Orchard",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner packs a collection of up to 120 apples into crates of ten, stacks the full crates, and writes the numeral for how many (47, 104, 120), which shows counting to 120 by making tens and writing numbers past 100."
+ },
+ "request": {
+  "topic": "Counting a collection to 120 by making tens",
+  "grade": "grade 1",
+  "objective": "Count a collection of up to 120 objects by making groups of ten and write the numeral for how many."
+ },
+ "source": "function Display({ params, lumina }) {\n  const count = Math.max(1, Math.min(120, Math.round(Number(params.count) || 104)));\n  const expectedTens = Math.floor(count / 10);\n\n  // Deterministic organic positions on a 12-column grid (non-10 rows so child must count/group)\n  const apples = useMemo(() => {\n    const list = [];\n    const cols = 12;\n    const cellW = 30;\n    const cellH = 30;\n    const startX = 48;\n    const startY = 72;\n    for (let i = 0; i < count; i++) {\n      const col = i % cols;\n      const row = Math.floor(i / cols);\n      // Deterministic pseudo-random jitter\n      const s1 = Math.sin(i * 12.9898 + count * 78.233) * 43758.5453;\n      const s2 = Math.sin(i * 93.9898 + count * 17.133) * 24634.6345;\n      const r1 = s1 - Math.floor(s1);\n      const r2 = s2 - Math.floor(s2);\n      const jx = (r1 - 0.5) * 7;\n      const jy = (r2 - 0.5) * 7;\n      list.push({\n        id: i,\n        x: startX + col * cellW + jx,\n        y: startY + row * cellH + jy,\n      });\n    }\n    return list;\n  }, [count]);\n\n  const [packedCrates, setPackedCrates] = useState([]); // array of arrays of 10 apple ids\n  const [workingTray, setWorkingTray] = useState([]); // array of apple ids in the 10-crate\n  const [numeralStr, setNumeralStr] = useState('');\n  const [scoop, setScoop] = useState(null); // { startX, startY, curX, curY, hitAppleId }\n  const [crateDrag, setCrateDrag] = useState(null); // { x, y } when dragging full crate to shelf\n  const [warnTooMany, setWarnTooMany] = useState(false);\n\n  const svgRef = useRef(null);\n\n  const packedSet = useMemo(() => {\n    const s = new Set();\n    for (const c of packedCrates) for (const id of c) s.add(id);\n    return s;\n  }, [packedCrates]);\n\n  const traySet = useMemo(() => new Set(workingTray), [workingTray]);\n\n  const onMatApples = useMemo(\n    () => apples.filter(a => !packedSet.has(a.id) && !traySet.has(a.id)),\n    [apples, packedSet, traySet]\n  );\n\n  // Sync lumina goal and scene\n  useEffect(() => {\n    const met =\n      packedCrates.length === expectedTens &&\n      workingTray.length <= 9 &&\n      numeralStr === String(count);\n    lumina.goal(met);\n    lumina.scene({\n      packedCrates: packedCrates.length,\n      objectsInPackedCrates: packedCrates.length * 10,\n      objectsInWorkingCrate: workingTray.length,\n      objectsOnMat: onMatApples.length,\n      writtenNumeral: numeralStr || null,\n    });\n  }, [packedCrates, workingTray, onMatApples.length, numeralStr, expectedTens, count, lumina]);\n\n  // Clear temporary warning\n  useEffect(() => {\n    if (!warnTooMany) return;\n    const t = setTimeout(() => setWarnTooMany(false), 700);\n    return () => clearTimeout(t);\n  }, [warnTooMany]);\n\n  // Keyboard support for numeral writing\n  useEffect(() => {\n    const onKey = e => {\n      if (e.key >= '0' && e.key <= '9') {\n        setNumeralStr(s => (s.length < 4 ? s + e.key : s));\n      } else if (e.key === 'Backspace') {\n        setNumeralStr(s => s.slice(0, -1));\n      }\n    };\n    window.addEventListener('keydown', onKey);\n    return () => window.removeEventListener('keydown', onKey);\n  }, []);\n\n  const MAT = { x: 18, y: 18, w: 396, h: 350 };\n  const CRATE = { x: 18, y: 380, w: 396, h: 162 };\n  const SHELF = { x: 428, y: 18, w: 234, h: 228 };\n\n  const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;\n\n  const findMatAppleNear = (p, radius = 16) => {\n    let best = null;\n    let bestD = radius;\n    for (const a of onMatApples) {\n      const d = Math.hypot(a.x - p.x, a.y - p.y);\n      if (d < bestD) {\n        bestD = d;\n        best = a;\n      }\n    }\n    return best;\n  };\n\n  const getScoopSelection = sc => {\n    if (!sc) return [];\n    const dist = Math.hypot(sc.curX - sc.startX, sc.curY - sc.startY);\n    if (dist <= 10 || sc.curY > MAT.y + MAT.h) return [];\n    const minX = Math.min(sc.startX, sc.curX) - 10;\n    const maxX = Math.max(sc.startX, sc.curX) + 10;\n    const minY = Math.min(sc.startY, sc.curY) - 10;\n    const maxY = Math.max(sc.startY, sc.curY) + 10;\n    return onMatApples.filter(a => a.x >= minX && a.x <= maxX && a.y >= minY && a.y <= maxY);\n  };\n\n  const selectedInScoop = useMemo(() => getScoopSelection(scoop), [scoop, onMatApples]);\n  const scoopOverflow = scoop && workingTray.length + selectedInScoop.length > 14;\n\n  const packFullCrate = () => {\n    if (workingTray.length !== 10 || packedCrates.length >= 12) return;\n    setPackedCrates(prev => [...prev, workingTray]);\n    setWorkingTray([]);\n    setCrateDrag(null);\n  };\n\n  const unpackCrate = idx => {\n    setPackedCrates(prev => prev.filter((_, i) => i !== idx));\n  };\n\n  const removeFromTray = id => {\n    setWorkingTray(prev => prev.filter(x => x !== id));\n  };\n\n  const addDigit = d => {\n    setNumeralStr(s => (s.length < 4 ? s + String(d) : s));\n  };\n\n  const backspaceDigit = () => {\n    setNumeralStr(s => s.slice(0, -1));\n  };\n\n  const handlePointerDown = e => {\n    const p = svgPoint(svgRef.current, e);\n    if (inRect(p, MAT)) {\n      const hit = findMatAppleNear(p, 17);\n      setScoop({ startX: p.x, startY: p.y, curX: p.x, curY: p.y, hitAppleId: hit ? hit.id : null });\n    }\n  };\n\n  const handlePointerMove = e => {\n    const p = svgPoint(svgRef.current, e);\n    if (scoop) {\n      setScoop(prev => (prev ? { ...prev, curX: p.x, curY: p.y } : null));\n    }\n    if (crateDrag) {\n      setCrateDrag({ x: p.x, y: p.y });\n    }\n  };\n\n  const handlePointerUp = e => {\n    const p = svgPoint(svgRef.current, e);\n    if (crateDrag) {\n      if (inRect(p, SHELF) && workingTray.length === 10) {\n        packFullCrate();\n      } else {\n        setCrateDrag(null);\n      }\n    }\n    if (scoop) {\n      const dist = Math.hypot(p.x - scoop.startX, p.y - scoop.startY);\n      // Case 1: Single tap on an apple\n      if (dist <= 10) {\n        if (scoop.hitAppleId !== null) {\n          if (workingTray.length < 14) {\n            setWorkingTray(prev => (prev.includes(scoop.hitAppleId) ? prev : [...prev, scoop.hitAppleId]));\n          } else {\n            setWarnTooMany(true);\n          }\n        }\n      } else if (p.y > MAT.y + MAT.h && scoop.hitAppleId !== null) {\n        // Case 2: Dragged a single apple down into the working crate\n        if (inRect(p, CRATE)) {\n          if (workingTray.length < 14) {\n            setWorkingTray(prev => (prev.includes(scoop.hitAppleId) ? prev : [...prev, scoop.hitAppleId]));\n          } else {\n            setWarnTooMany(true);\n          }\n        }\n      } else {\n        // Case 3: Scoop box across apples on the mat\n        const sel = getScoopSelection({ ...scoop, curX: p.x, curY: p.y });\n        if (sel.length > 0) {\n          if (workingTray.length + sel.length <= 14) {\n            const addIds = sel.map(a => a.id);\n            setWorkingTray(prev => [...prev, ...addIds.filter(id => !prev.includes(id))]);\n          } else {\n            setWarnTooMany(true);\n          }\n        }\n      }\n      setScoop(null);\n    }\n  };\n\n  const drawApple = (x, y, r = 10.5, highlight = false) => (\n    <g>\n      {highlight && <circle cx={x} cy={y} r={r + 4.5} fill=\"none\" stroke=\"#22d3ee\" strokeWidth=\"2.5\" />}\n      <circle cx={x} cy={y + 0.5} r={r} fill=\"#dc2626\" />\n      <circle cx={x - 0.8} cy={y - 0.8} r={r * 0.85} fill=\"#ef4444\" />\n      <path d={`M ${x} ${y - r + 2} Q ${x + 1} ${y - r - 3} ${x + 3} ${y - r - 4}`} stroke=\"#78350f\" strokeWidth=\"2\" fill=\"none\" strokeLinecap=\"round\" />\n      <ellipse cx={x + 4} cy={y - r + 1} rx={r * 0.34} ry={r * 0.18} transform={`rotate(-25 ${x + 4} ${y - r + 1})`} fill=\"#22c55e\" />\n      <circle cx={x - r * 0.34} cy={y - r * 0.3} r={r * 0.2} fill=\"#fecaca\" opacity=\"0.8\" />\n    </g>\n  );\n\n  // Slot positions inside the 10-crate (5 cols x 2 rows)\n  const slotPos = idx => {\n    if (idx < 10) {\n      const c = idx % 5;\n      const r = Math.floor(idx / 5);\n      return { x: 55 + c * 48, y: 443 + r * 48 };\n    }\n    const extraIdx = idx - 10;\n    const c = extraIdx % 2;\n    const r = Math.floor(extraIdx / 2);\n    return { x: 316 + c * 44, y: 443 + r * 48 };\n  };\n\n  // Shelf positions for 12 mini 10-crates (3 cols x 4 rows)\n  const shelfSlotPos = idx => {\n    const c = idx % 3;\n    const r = Math.floor(idx / 3);\n    return { x: 442 + c * 70, y: 54 + r * 46, w: 64, h: 40 };\n  };\n\n  const keypadRows = [\n    [1, 2, 3],\n    [4, 5, 6],\n    [7, 8, 9],\n  ];\n\n  const isScoopDragging = scoop && Math.hypot(scoop.curX - scoop.startX, scoop.curY - scoop.startY) > 10 && scoop.curY <= MAT.y + MAT.h;\n  const scoopSelectedSet = useMemo(() => new Set(selectedInScoop.map(a => a.id)), [selectedInScoop]);\n\n  return (\n    <Panel\n      title=\"Apple Orchard\"\n      caption=\"Drag across apples or tap them to fill a crate. Drag or tap a full crate to stack it, and use the keys to write a number.\"\n    >\n      <svg\n        ref={svgRef}\n        viewBox=\"0 0 680 560\"\n        onPointerDown={handlePointerDown}\n        onPointerMove={handlePointerMove}\n        onPointerUp={handlePointerUp}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}\n      >\n        <rect width=\"680\" height=\"560\" fill=\"#0f172a\" />\n\n        {/* Orchard Mat */}\n        <rect id=\"orchard-mat\" x={MAT.x} y={MAT.y} width={MAT.w} height={MAT.h} rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        <text x=\"34\" y=\"40\" fontSize=\"14\" fontWeight=\"600\" fill=\"#94a3b8\">Orchard Mat</text>\n\n        {/* Loose Apples on Mat */}\n        {onMatApples.map(a => (\n          <g key={a.id} id={'apple-' + a.id} style={{ cursor: 'pointer' }}>\n            <circle cx={a.x} cy={a.y} r=\"14\" fill=\"transparent\" />\n            {drawApple(a.x, a.y, 10.5, scoopSelectedSet.has(a.id))}\n          </g>\n        ))}\n\n        {/* Dragged single apple preview when dragging down to crate */}\n        {scoop && scoop.hitAppleId !== null && scoop.curY > MAT.y + MAT.h && (\n          <g style={{ pointerEvents: 'none' }}>\n            {drawApple(scoop.curX, scoop.curY, 12, true)}\n          </g>\n        )}\n\n        {/* Scoop Net Rectangle */}\n        {isScoopDragging && (\n          <rect\n            x={Math.max(MAT.x + 4, Math.min(scoop.startX, scoop.curX) - 10)}\n            y={Math.max(MAT.y + 4, Math.min(scoop.startY, scoop.curY) - 10)}\n            width={Math.min(MAT.x + MAT.w - 4, Math.max(scoop.startX, scoop.curX) + 10) - Math.max(MAT.x + 4, Math.min(scoop.startX, scoop.curX) - 10)}\n            height={Math.min(MAT.y + MAT.h - 4, Math.max(scoop.startY, scoop.curY) + 10) - Math.max(MAT.y + 4, Math.min(scoop.startY, scoop.curY) - 10)}\n            rx=\"8\"\n            fill={scoopOverflow ? 'rgba(251, 113, 133, 0.14)' : 'rgba(34, 211, 238, 0.12)'}\n            stroke={scoopOverflow ? '#fb7185' : '#22d3ee'}\n            strokeWidth=\"2.5\"\n            strokeDasharray=\"6 4\"\n            style={{ pointerEvents: 'none' }}\n          />\n        )}\n\n        {/* Working 10-Crate */}\n        <rect\n          id=\"working-crate\"\n          x={CRATE.x}\n          y={CRATE.y}\n          width={CRATE.w}\n          height={CRATE.h}\n          rx=\"14\"\n          fill=\"#1e293b\"\n          stroke={warnTooMany ? '#fb7185' : workingTray.length === 10 ? '#22d3ee' : workingTray.length > 10 ? '#fbbf24' : '#475569'}\n          strokeWidth={workingTray.length === 10 || warnTooMany ? '2.5' : '2'}\n          onPointerDown={e => {\n            if (workingTray.length === 10) {\n              const p = svgPoint(svgRef.current, e);\n              setCrateDrag({ x: p.x, y: p.y });\n            }\n          }}\n        />\n        <text x=\"34\" y=\"404\" fontSize=\"14\" fontWeight=\"600\" fill=\"#cbd5e1\">\n          {warnTooMany ? 'Too many for one scoop!' : '10-Crate'}\n        </text>\n\n        {/* 10 slots inside crate */}\n        {Array.from({ length: 10 }, (_, idx) => {\n          const p = slotPos(idx);\n          const appleId = workingTray[idx];\n          const filled = appleId !== undefined;\n          return (\n            <g\n              key={idx}\n              id={'crate-slot-' + idx}\n              onClick={e => {\n                if (filled) {\n                  e.stopPropagation();\n                  removeFromTray(appleId);\n                }\n              }}\n              onPointerDown={e => {\n                if (filled) e.stopPropagation();\n              }}\n              style={{ cursor: filled ? 'pointer' : 'default' }}\n            >\n              <rect\n                x={p.x - 20}\n                y={p.y - 20}\n                width=\"40\"\n                height=\"40\"\n                rx=\"8\"\n                fill={filled ? '#334155' : 'none'}\n                stroke={filled ? '#64748b' : '#475569'}\n                strokeWidth=\"2\"\n                strokeDasharray={filled ? undefined : '5 4'}\n              />\n              {filled && drawApple(p.x, p.y, 13, false)}\n            </g>\n          );\n        })}\n\n        {/* Overflow extra area when > 10 */}\n        {workingTray.length > 10 && (\n          <g>\n            <rect x=\"288\" y=\"418\" width=\"112\" height=\"104\" rx=\"10\" fill=\"rgba(251, 191, 36, 0.08)\" stroke=\"#fbbf24\" strokeWidth=\"2\" strokeDasharray=\"5 4\" />\n            <text x=\"344\" y=\"404\" textAnchor=\"middle\" fontSize=\"13\" fontWeight=\"600\" fill=\"#fbbf24\">Extra (tap out)</text>\n            {workingTray.slice(10).map((appleId, eIdx) => {\n              const p = slotPos(10 + eIdx);\n              return (\n                <g\n                  key={appleId}\n                  id={'crate-extra-' + eIdx}\n                  onClick={e => {\n                    e.stopPropagation();\n                    removeFromTray(appleId);\n                  }}\n                  onPointerDown={e => e.stopPropagation()}\n                  style={{ cursor: 'pointer' }}\n                >\n                  <circle cx={p.x} cy={p.y} r=\"18\" fill=\"#334155\" stroke=\"#fbbf24\" strokeWidth=\"1.5\" />\n                  {drawApple(p.x, p.y, 12, false)}\n                </g>\n              );\n            })}\n          </g>\n        )}\n\n        {/* Stack 10 handle when exactly 10 apples are in the crate */}\n        {workingTray.length === 10 && (\n          <g\n            id=\"pack-crate\"\n            onClick={e => {\n              e.stopPropagation();\n              packFullCrate();\n            }}\n            onPointerDown={e => e.stopPropagation()}\n            style={{ cursor: 'pointer' }}\n          >\n            <rect x=\"288\" y=\"424\" width=\"110\" height=\"88\" rx=\"12\" fill=\"#334155\" stroke=\"#22d3ee\" strokeWidth=\"2.5\" />\n            <text x=\"343\" y=\"462\" textAnchor=\"middle\" fontSize=\"16\" fontWeight=\"700\" fill=\"#e2e8f0\">Stack 10</text>\n            <text x=\"343\" y=\"486\" textAnchor=\"middle\" fontSize=\"14\" fill=\"#22d3ee\">to Shelf ↑</text>\n          </g>\n        )}\n\n        {/* Dragged full crate preview */}\n        {crateDrag && (\n          <g style={{ pointerEvents: 'none' }} opacity=\"0.88\">\n            <rect x={crateDrag.x - 36} y={crateDrag.y - 22} width=\"72\" height=\"44\" rx=\"8\" fill=\"#334155\" stroke=\"#22d3ee\" strokeWidth=\"2.5\" />\n            {Array.from({ length: 10 }, (_, k) => (\n              <circle\n                key={k}\n                cx={crateDrag.x - 22 + (k % 5) * 11}\n                cy={crateDrag.y - 7 + Math.floor(k / 5) * 14}\n                r=\"4\"\n                fill=\"#ef4444\"\n              />\n            ))}\n          </g>\n        )}\n\n        {/* Crates of 10 Shelf */}\n        <rect\n          id=\"tens-shelf\"\n          x={SHELF.x}\n          y={SHELF.y}\n          width={SHELF.w}\n          height={SHELF.h}\n          rx=\"14\"\n          fill=\"#1e293b\"\n          stroke={crateDrag && inRect(crateDrag, SHELF) ? '#22d3ee' : '#475569'}\n          strokeWidth={crateDrag && inRect(crateDrag, SHELF) ? '2.5' : '2'}\n        />\n        <text x=\"444\" y=\"40\" fontSize=\"14\" fontWeight=\"600\" fill=\"#cbd5e1\">Crates of 10</text>\n\n        {Array.from({ length: 12 }, (_, idx) => {\n          const sp = shelfSlotPos(idx);\n          const isPacked = idx < packedCrates.length;\n          return (\n            <g\n              key={idx}\n              id={isPacked ? 'packed-crate-' + idx : 'shelf-slot-' + idx}\n              onClick={e => {\n                if (isPacked) {\n                  e.stopPropagation();\n                  unpackCrate(idx);\n                }\n              }}\n              onPointerDown={e => e.stopPropagation()}\n              style={{ cursor: isPacked ? 'pointer' : 'default' }}\n            >\n              <rect\n                x={sp.x}\n                y={sp.y}\n                width={sp.w}\n                height={sp.h}\n                rx=\"7\"\n                fill={isPacked ? '#334155' : 'none'}\n                stroke={isPacked ? '#fbbf24' : '#334155'}\n                strokeWidth={isPacked ? '2' : '1.5'}\n                strokeDasharray={isPacked ? undefined : '4 4'}\n              />\n              {isPacked &&\n                Array.from({ length: 10 }, (_, k) => (\n                  <circle\n                    key={k}\n                    cx={sp.x + 12 + (k % 5) * 10}\n                    cy={sp.y + 13 + Math.floor(k / 5) * 14}\n                    r=\"3.8\"\n                    fill=\"#ef4444\"\n                  />\n                ))}\n            </g>\n          );\n        })}\n\n        {/* Harvest Tag & Keypad */}\n        <rect x=\"428\" y=\"258\" width=\"234\" height=\"284\" rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        <text x=\"444\" y=\"280\" fontSize=\"14\" fontWeight=\"600\" fill=\"#cbd5e1\">How many apples?</text>\n\n        <rect\n          id=\"numeral-display\"\n          x=\"444\"\n          y=\"290\"\n          width=\"202\"\n          height=\"50\"\n          rx=\"10\"\n          fill=\"#0f172a\"\n          stroke={numeralStr.length > 0 ? '#22d3ee' : '#475569'}\n          strokeWidth=\"2\"\n          strokeDasharray={numeralStr.length > 0 ? undefined : '6 5'}\n        />\n        <text\n          x=\"545\"\n          y=\"324\"\n          textAnchor=\"middle\"\n          fontSize=\"30\"\n          fontWeight=\"700\"\n          fill={numeralStr.length > 0 ? '#e2e8f0' : '#64748b'}\n        >\n          {numeralStr.length > 0 ? numeralStr : '?'}\n        </text>\n\n        {/* Keypad 1-9 */}\n        {keypadRows.map((row, rIdx) =>\n          row.map((digit, cIdx) => {\n            const kx = 446 + cIdx * 68;\n            const ky = 350 + rIdx * 48;\n            return (\n              <g\n                key={digit}\n                id={'key-' + digit}\n                onClick={e => {\n                  e.stopPropagation();\n                  addDigit(digit);\n                }}\n                onPointerDown={e => e.stopPropagation()}\n                style={{ cursor: 'pointer' }}\n              >\n                <rect x={kx} y={ky} width=\"60\" height=\"44\" rx=\"9\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\n                <text x={kx + 30} y={ky + 29} textAnchor=\"middle\" fontSize=\"20\" fontWeight=\"600\" fill=\"#e2e8f0\">\n                  {digit}\n                </text>\n              </g>\n            );\n          })\n        )}\n\n        {/* Row 3: 0 and Backspace */}\n        <g\n          id=\"key-0\"\n          onClick={e => {\n            e.stopPropagation();\n            addDigit(0);\n          }}\n          onPointerDown={e => e.stopPropagation()}\n          style={{ cursor: 'pointer' }}\n        >\n          <rect x=\"446\" y=\"494\" width=\"128\" height=\"44\" rx=\"9\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\n          <text x=\"510\" y=\"523\" textAnchor=\"middle\" fontSize=\"20\" fontWeight=\"600\" fill=\"#e2e8f0\">0</text>\n        </g>\n\n        <g\n          id=\"key-back\"\n          onClick={e => {\n            e.stopPropagation();\n            backspaceDigit();\n          }}\n          onPointerDown={e => e.stopPropagation()}\n          style={{ cursor: 'pointer' }}\n        >\n          <rect x=\"582\" y=\"494\" width=\"64\" height=\"44\" rx=\"9\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"1.5\" />\n          <text x=\"614\" y=\"523\" textAnchor=\"middle\" fontSize=\"20\" fontWeight=\"600\" fill=\"#cbd5e1\">⌫</text>\n        </g>\n      </svg>\n    </Panel>\n  );\n}",
+ "problems": [
+  {
+   "params": {
+    "count": 47
+   },
+   "ask": "Pack the morning's apples into crates of 10, then write how many apples there are.",
+   "goal": "4 crates of 10 on the shelf, 7 apples left, and the number written is 47.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "scene": {
+    "packedCrates": 0,
+    "objectsInPackedCrates": 0,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 47,
+    "writtenNumeral": null
+   },
+   "proofScene": {
+    "packedCrates": 4,
+    "objectsInPackedCrates": 40,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 7,
+    "writtenNumeral": "47"
+   },
+   "missScene": {
+    "packedCrates": 4,
+    "objectsInPackedCrates": 40,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 7,
+    "writtenNumeral": "74"
+   }
+  },
+  {
+   "params": {
+    "count": 104
+   },
+   "ask": "Pack the apples into crates of 10 to count them all, then write how many apples there are.",
+   "goal": "10 crates of 10 on the shelf, 4 apples left, and the number written is 104.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-48",
+     "to": "#apple-57"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-60",
+     "to": "#apple-69"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-72",
+     "to": "#apple-81"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-84",
+     "to": "#apple-93"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-10"
+    },
+    {
+     "do": "click",
+     "target": "#apple-11"
+    },
+    {
+     "do": "click",
+     "target": "#apple-22"
+    },
+    {
+     "do": "click",
+     "target": "#apple-23"
+    },
+    {
+     "do": "click",
+     "target": "#apple-34"
+    },
+    {
+     "do": "click",
+     "target": "#apple-35"
+    },
+    {
+     "do": "click",
+     "target": "#apple-46"
+    },
+    {
+     "do": "click",
+     "target": "#apple-47"
+    },
+    {
+     "do": "click",
+     "target": "#apple-58"
+    },
+    {
+     "do": "click",
+     "target": "#apple-59"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-70"
+    },
+    {
+     "do": "click",
+     "target": "#apple-71"
+    },
+    {
+     "do": "click",
+     "target": "#apple-82"
+    },
+    {
+     "do": "click",
+     "target": "#apple-83"
+    },
+    {
+     "do": "click",
+     "target": "#apple-94"
+    },
+    {
+     "do": "click",
+     "target": "#apple-95"
+    },
+    {
+     "do": "click",
+     "target": "#apple-96"
+    },
+    {
+     "do": "click",
+     "target": "#apple-97"
+    },
+    {
+     "do": "click",
+     "target": "#apple-98"
+    },
+    {
+     "do": "click",
+     "target": "#apple-99"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-48",
+     "to": "#apple-57"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-60",
+     "to": "#apple-69"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-72",
+     "to": "#apple-81"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-84",
+     "to": "#apple-93"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-10"
+    },
+    {
+     "do": "click",
+     "target": "#apple-11"
+    },
+    {
+     "do": "click",
+     "target": "#apple-22"
+    },
+    {
+     "do": "click",
+     "target": "#apple-23"
+    },
+    {
+     "do": "click",
+     "target": "#apple-34"
+    },
+    {
+     "do": "click",
+     "target": "#apple-35"
+    },
+    {
+     "do": "click",
+     "target": "#apple-46"
+    },
+    {
+     "do": "click",
+     "target": "#apple-47"
+    },
+    {
+     "do": "click",
+     "target": "#apple-58"
+    },
+    {
+     "do": "click",
+     "target": "#apple-59"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-70"
+    },
+    {
+     "do": "click",
+     "target": "#apple-71"
+    },
+    {
+     "do": "click",
+     "target": "#apple-82"
+    },
+    {
+     "do": "click",
+     "target": "#apple-83"
+    },
+    {
+     "do": "click",
+     "target": "#apple-94"
+    },
+    {
+     "do": "click",
+     "target": "#apple-95"
+    },
+    {
+     "do": "click",
+     "target": "#apple-96"
+    },
+    {
+     "do": "click",
+     "target": "#apple-97"
+    },
+    {
+     "do": "click",
+     "target": "#apple-98"
+    },
+    {
+     "do": "click",
+     "target": "#apple-99"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-4"
+    }
+   ],
+   "scene": {
+    "packedCrates": 0,
+    "objectsInPackedCrates": 0,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 104,
+    "writtenNumeral": null
+   },
+   "proofScene": {
+    "packedCrates": 10,
+    "objectsInPackedCrates": 100,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 4,
+    "writtenNumeral": "104"
+   },
+   "missScene": {
+    "packedCrates": 10,
+    "objectsInPackedCrates": 100,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 4,
+    "writtenNumeral": "1004"
+   }
+  },
+  {
+   "params": {
+    "count": 120
+   },
+   "ask": "A big harvest! Pack the apples into crates of 10 and write how many apples there are.",
+   "goal": "12 crates of 10 on the shelf, none left, and the number written is 120.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-48",
+     "to": "#apple-57"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-60",
+     "to": "#apple-69"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-72",
+     "to": "#apple-81"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-84",
+     "to": "#apple-93"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-96",
+     "to": "#apple-105"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-108",
+     "to": "#apple-117"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-10"
+    },
+    {
+     "do": "click",
+     "target": "#apple-11"
+    },
+    {
+     "do": "click",
+     "target": "#apple-22"
+    },
+    {
+     "do": "click",
+     "target": "#apple-23"
+    },
+    {
+     "do": "click",
+     "target": "#apple-34"
+    },
+    {
+     "do": "click",
+     "target": "#apple-35"
+    },
+    {
+     "do": "click",
+     "target": "#apple-46"
+    },
+    {
+     "do": "click",
+     "target": "#apple-47"
+    },
+    {
+     "do": "click",
+     "target": "#apple-58"
+    },
+    {
+     "do": "click",
+     "target": "#apple-59"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-70"
+    },
+    {
+     "do": "click",
+     "target": "#apple-71"
+    },
+    {
+     "do": "click",
+     "target": "#apple-82"
+    },
+    {
+     "do": "click",
+     "target": "#apple-83"
+    },
+    {
+     "do": "click",
+     "target": "#apple-94"
+    },
+    {
+     "do": "click",
+     "target": "#apple-95"
+    },
+    {
+     "do": "click",
+     "target": "#apple-106"
+    },
+    {
+     "do": "click",
+     "target": "#apple-107"
+    },
+    {
+     "do": "click",
+     "target": "#apple-118"
+    },
+    {
+     "do": "click",
+     "target": "#apple-119"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#apple-0",
+     "to": "#apple-9"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-12",
+     "to": "#apple-21"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-24",
+     "to": "#apple-33"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-36",
+     "to": "#apple-45"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-48",
+     "to": "#apple-57"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-60",
+     "to": "#apple-69"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-72",
+     "to": "#apple-81"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-84",
+     "to": "#apple-93"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-96",
+     "to": "#apple-105"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "drag",
+     "target": "#apple-108",
+     "to": "#apple-117"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-10"
+    },
+    {
+     "do": "click",
+     "target": "#apple-11"
+    },
+    {
+     "do": "click",
+     "target": "#apple-22"
+    },
+    {
+     "do": "click",
+     "target": "#apple-23"
+    },
+    {
+     "do": "click",
+     "target": "#apple-34"
+    },
+    {
+     "do": "click",
+     "target": "#apple-35"
+    },
+    {
+     "do": "click",
+     "target": "#apple-46"
+    },
+    {
+     "do": "click",
+     "target": "#apple-47"
+    },
+    {
+     "do": "click",
+     "target": "#apple-58"
+    },
+    {
+     "do": "click",
+     "target": "#apple-59"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate"
+    },
+    {
+     "do": "click",
+     "target": "#apple-70"
+    },
+    {
+     "do": "click",
+     "target": "#apple-71"
+    },
+    {
+     "do": "click",
+     "target": "#apple-82"
+    },
+    {
+     "do": "click",
+     "target": "#apple-83"
+    },
+    {
+     "do": "click",
+     "target": "#apple-94"
+    },
+    {
+     "do": "click",
+     "target": "#apple-95"
+    },
+    {
+     "do": "click",
+     "target": "#apple-106"
+    },
+    {
+     "do": "click",
+     "target": "#apple-107"
+    },
+    {
+     "do": "click",
+     "target": "#apple-118"
+    },
+    {
+     "do": "click",
+     "target": "#apple-119"
+    },
+    {
+     "do": "click",
+     "target": "#pack-crate",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-2"
+    }
+   ],
+   "scene": {
+    "packedCrates": 0,
+    "objectsInPackedCrates": 0,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 120,
+    "writtenNumeral": null
+   },
+   "proofScene": {
+    "packedCrates": 12,
+    "objectsInPackedCrates": 120,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 0,
+    "writtenNumeral": "120"
+   },
+   "missScene": {
+    "packedCrates": 12,
+    "objectsInPackedCrates": 120,
+    "objectsInWorkingCrate": 0,
+    "objectsOnMat": 0,
+    "writtenNumeral": "12"
+   }
+  }
+ ]
+}
