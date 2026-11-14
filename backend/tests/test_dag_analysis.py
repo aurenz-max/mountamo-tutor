@@ -5,8 +5,8 @@ No Firestore, no IO — these test the core diagnostic placement algorithms.
 """
 
 import pytest
-from app.services.dag_analysis import DAGAnalysisEngine
-from app.models.diagnostic import (
+from app.services.dag_analysis import (
+    DAGAnalysisEngine,
     DiagnosticStatus,
     NodeMetrics,
     SubskillClassification,
@@ -95,8 +95,6 @@ def _init_classifications(nodes):
     return {
         n["id"]: SubskillClassification(
             subskill_id=n["id"],
-            subject=n.get("subject", ""),
-            skill_id=n.get("skill_id", ""),
             status=DiagnosticStatus.UNKNOWN,
         )
         for n in nodes
