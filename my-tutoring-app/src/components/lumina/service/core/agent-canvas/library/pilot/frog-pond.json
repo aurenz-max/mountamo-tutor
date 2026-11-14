@@ -1,0 +1,485 @@
+{
+ "id": "frog-pond",
+ "title": "Lily Pad Pond",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner hops a frog and a grasshopper along numbered lily pads by different jump sizes and puts flowers where both land, first with hops and then by reasoning alone, which shows multiples and common multiples (4 and 6 first meet at 12, not 24)."
+ },
+ "request": {
+  "topic": "Multiples and common multiples",
+  "grade": "grade 4",
+  "objective": "Generate multiples of one-digit numbers and find common multiples of two numbers, including the least one, within 40 (4.OA.B.4)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const a = Math.max(2, Math.min(12, Number(params.frog) || 3));\n  const b = Math.max(2, Math.min(12, Number(params.hopper) || 4));\n  const N = Math.max(10, Math.min(40, Number(params.pads) || 30));\n  const hops = params.hops !== false;\n  const find = params.find === 'all' ? 'all' : 'first';\n\n  const [fa, setFa] = useState(0); // frog's pad\n  const [fb, setFb] = useState(0); // grasshopper's pad\n  const [flowers, setFlowers] = useState([]);\n\n  const gcd = (x, y) => (y ? gcd(y, x % y) : x);\n  const lcm = (a * b) / gcd(a, b);\n  const common = [];\n  for (let n = lcm; n <= N; n += lcm) common.push(n);\n\n  const landedA = [], landedB = [];\n  for (let n = a; n <= fa; n += a) landedA.push(n);\n  for (let n = b; n <= fb; n += b) landedB.push(n);\n\n  useEffect(() => {\n    const set = flowers.slice().sort((x, y) => x - y);\n    const met = find === 'first'\n      ? set.length === 1 && set[0] === lcm\n      : set.length === common.length && set.every((v, i) => v === common[i]);\n    lumina.goal(met);\n    lumina.scene({\n      frogJumpsBy: a,\n      grasshopperJumpsBy: b,\n      padsNumbered: `1 to ${N}`,\n      ...(hops ? { padsTheFrogLandedOn: landedA, padsTheGrasshopperLandedOn: landedB } : { hopButtons: 'none: the animals are asleep on the start log' }),\n      flowersOnPads: set,\n    });\n  }, [fa, fb, flowers]);\n\n  const W = 680, PER = 10, SP = 58, X0 = 112, Y0 = 150, RG = 80;\n  const rows = Math.ceil(N / PER);\n  const H = Y0 + (rows - 1) * RG + 60;\n  const pos = n => (n === 0 ? [44, Y0] : [X0 + ((n - 1) % PER) * SP, Y0 + Math.floor((n - 1) / PER) * RG]);\n  const toggle = n => setFlowers(f => (f.includes(n) ? f.filter(x => x !== n) : [...f, n]));\n\n  const btn = (id, x, label, onClick, dim) => (\n    <g id={id} onClick={dim ? undefined : onClick} style={{ cursor: dim ? 'default' : 'pointer' }} opacity={dim ? 0.35 : 1}>\n      <rect x={x} y={26} width=\"190\" height=\"48\" rx=\"12\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text x={x + 95} y={57} textAnchor=\"middle\" fontSize=\"18\" fill=\"#e2e8f0\">{label}</text>\n    </g>\n  );\n\n  const [ax, ay] = pos(fa), [bx, by] = pos(fb);\n  return (\n    <Panel title=\"Lily Pad Pond\" caption={hops ? 'Tap a hop button to make that animal jump. Tap a pad to put a flower on it or take it off.' : 'Tap a pad to put a flower on it or take it off.'}>\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"14\" y={Y0 - 44} width={W - 28} height={H - Y0 + 34} rx=\"18\" fill=\"#0c4a6e\" opacity=\"0.55\" />\n        {hops && btn('hop-frog', 40, `🐸 hop ${a}`, () => setFa(p => p + a), fa + a > N)}\n        {hops && btn('hop-hopper', 250, `🦗 hop ${b}`, () => setFb(p => p + b), fb + b > N)}\n        {!hops && <text x=\"40\" y=\"58\" fontSize=\"18\" fill=\"#cbd5e1\">{`🐸 jumps ${a} pads each hop.  🦗 jumps ${b} pads each hop.`}</text>}\n\n        {/* start log */}\n        <rect x=\"18\" y={Y0 - 16} width=\"54\" height=\"32\" rx=\"12\" fill=\"#78350f\" stroke=\"#451a03\" strokeWidth=\"2\" />\n        <text x=\"45\" y={Y0 + 36} textAnchor=\"middle\" fontSize=\"13\" fill=\"#94a3b8\">start</text>\n\n        {Array.from({ length: N }, (_, k) => {\n          const n = k + 1, [x, y] = pos(n);\n          return (\n            <g key={'pad' + n} id={'pad-' + n} onClick={() => toggle(n)} style={{ cursor: 'pointer' }}>\n              <circle cx={x} cy={y} r=\"25\" fill=\"#166534\" stroke=\"#14532d\" strokeWidth=\"2\" />\n              <path d={`M ${x} ${y} L ${x + 25} ${y - 6} A 25 25 0 0 0 ${x + 22} ${y - 13} Z`} fill=\"#0c4a6e\" opacity=\"0.55\" />\n              <text x={x} y={y + 6} textAnchor=\"middle\" fontSize=\"16\" fontWeight=\"600\" fill=\"#e2e8f0\">{n}</text>\n              {landedA.includes(n) && <circle cx={x - 15} cy={y + 17} r=\"6\" fill=\"#34d399\" stroke=\"#0f172a\" strokeWidth=\"1.5\" />}\n              {landedB.includes(n) && <circle cx={x + 15} cy={y + 17} r=\"6\" fill=\"#fbbf24\" stroke=\"#0f172a\" strokeWidth=\"1.5\" />}\n              {flowers.includes(n) && <text x={x} y={y + 36} textAnchor=\"middle\" fontSize=\"20\">🌸</text>}\n            </g>\n          );\n        })}\n\n        {hops && <text x={ax - 12} y={ay - 18} textAnchor=\"middle\" fontSize=\"24\" pointerEvents=\"none\">🐸</text>}\n        {hops && <text x={bx + 13} y={by - 18} textAnchor=\"middle\" fontSize=\"22\" pointerEvents=\"none\">🦗</text>}\n        {!hops && <text x=\"34\" y={Y0 - 6} textAnchor=\"middle\" fontSize=\"24\" pointerEvents=\"none\">🐸</text>}\n        {!hops && <text x=\"56\" y={Y0 - 6} textAnchor=\"middle\" fontSize=\"22\" pointerEvents=\"none\">🦗</text>}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "frog": 3,
+    "hopper": 4,
+    "pads": 30
+   },
+   "ask": "The frog jumps 3 pads at a time and the grasshopper jumps 4. Put a flower on the first pad they both land on.",
+   "goal": "One flower, on pad 12.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper",
+     "shot": "hops"
+    },
+    {
+     "do": "click",
+     "target": "#pad-12"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#pad-7"
+    }
+   ],
+   "scene": {
+    "frogJumpsBy": 3,
+    "grasshopperJumpsBy": 4,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [],
+    "padsTheGrasshopperLandedOn": [],
+    "flowersOnPads": []
+   },
+   "proofScene": {
+    "frogJumpsBy": 3,
+    "grasshopperJumpsBy": 4,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [
+     3,
+     6,
+     9,
+     12
+    ],
+    "padsTheGrasshopperLandedOn": [
+     4,
+     8,
+     12
+    ],
+    "flowersOnPads": [
+     12
+    ]
+   },
+   "missScene": {
+    "frogJumpsBy": 3,
+    "grasshopperJumpsBy": 4,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [
+     3,
+     6
+    ],
+    "padsTheGrasshopperLandedOn": [
+     4,
+     8
+    ],
+    "flowersOnPads": [
+     7
+    ]
+   }
+  },
+  {
+   "params": {
+    "frog": 4,
+    "hopper": 6,
+    "pads": 30
+   },
+   "ask": "Now the frog jumps 4 and the grasshopper jumps 6. Put a flower on the first pad they both land on.",
+   "goal": "One flower, on pad 12 (not 24).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper",
+     "shot": "hops"
+    },
+    {
+     "do": "click",
+     "target": "#pad-12"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#pad-24"
+    }
+   ],
+   "scene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 6,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [],
+    "padsTheGrasshopperLandedOn": [],
+    "flowersOnPads": []
+   },
+   "proofScene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 6,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [
+     4,
+     8,
+     12
+    ],
+    "padsTheGrasshopperLandedOn": [
+     6,
+     12
+    ],
+    "flowersOnPads": [
+     12
+    ]
+   },
+   "missScene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 6,
+    "padsNumbered": "1 to 30",
+    "padsTheFrogLandedOn": [
+     4,
+     8,
+     12,
+     16,
+     20,
+     24
+    ],
+    "padsTheGrasshopperLandedOn": [
+     6,
+     12,
+     18,
+     24
+    ],
+    "flowersOnPads": [
+     24
+    ]
+   }
+  },
+  {
+   "params": {
+    "frog": 6,
+    "hopper": 9,
+    "pads": 40,
+    "find": "all"
+   },
+   "ask": "The frog jumps 6 and the grasshopper jumps 9. Put a flower on every pad up to 40 that they both land on.",
+   "goal": "Flowers on 18 and 36 only.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper",
+     "shot": "hops"
+    },
+    {
+     "do": "click",
+     "target": "#pad-18"
+    },
+    {
+     "do": "click",
+     "target": "#pad-36"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-frog"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#hop-hopper"
+    },
+    {
+     "do": "click",
+     "target": "#pad-18"
+    }
+   ],
+   "scene": {
+    "frogJumpsBy": 6,
+    "grasshopperJumpsBy": 9,
+    "padsNumbered": "1 to 40",
+    "padsTheFrogLandedOn": [],
+    "padsTheGrasshopperLandedOn": [],
+    "flowersOnPads": []
+   },
+   "proofScene": {
+    "frogJumpsBy": 6,
+    "grasshopperJumpsBy": 9,
+    "padsNumbered": "1 to 40",
+    "padsTheFrogLandedOn": [
+     6,
+     12,
+     18,
+     24,
+     30,
+     36
+    ],
+    "padsTheGrasshopperLandedOn": [
+     9,
+     18,
+     27,
+     36
+    ],
+    "flowersOnPads": [
+     18,
+     36
+    ]
+   },
+   "missScene": {
+    "frogJumpsBy": 6,
+    "grasshopperJumpsBy": 9,
+    "padsNumbered": "1 to 40",
+    "padsTheFrogLandedOn": [
+     6,
+     12,
+     18
+    ],
+    "padsTheGrasshopperLandedOn": [
+     9,
+     18
+    ],
+    "flowersOnPads": [
+     18
+    ]
+   }
+  },
+  {
+   "params": {
+    "frog": 5,
+    "hopper": 7,
+    "pads": 40,
+    "hops": false
+   },
+   "ask": "The animals are asleep. The frog would jump 5 and the grasshopper 7. Put a flower on the first pad they would both land on.",
+   "goal": "One flower, on pad 35.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#pad-35"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#pad-12"
+    }
+   ],
+   "scene": {
+    "frogJumpsBy": 5,
+    "grasshopperJumpsBy": 7,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": []
+   },
+   "proofScene": {
+    "frogJumpsBy": 5,
+    "grasshopperJumpsBy": 7,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": [
+     35
+    ]
+   },
+   "missScene": {
+    "frogJumpsBy": 5,
+    "grasshopperJumpsBy": 7,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": [
+     12
+    ]
+   }
+  },
+  {
+   "params": {
+    "frog": 4,
+    "hopper": 10,
+    "pads": 40,
+    "hops": false
+   },
+   "ask": "Still asleep. The frog would jump 4 and the grasshopper 10. Put a flower on the first pad they would both land on.",
+   "goal": "One flower, on pad 20 (not 40).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#pad-20"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#pad-40"
+    }
+   ],
+   "scene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 10,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": []
+   },
+   "proofScene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 10,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": [
+     20
+    ]
+   },
+   "missScene": {
+    "frogJumpsBy": 4,
+    "grasshopperJumpsBy": 10,
+    "padsNumbered": "1 to 40",
+    "hopButtons": "none: the animals are asleep on the start log",
+    "flowersOnPads": [
+     40
+    ]
+   }
+  }
+ ]
+}

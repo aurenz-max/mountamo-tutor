@@ -1,0 +1,442 @@
+{
+ "id": "remainder-depot",
+ "title": "Remainder Depot",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner solves division stories with remainders by bringing vans, cartons or bags that fill in order, and decides what the remainder means in each story (one more van for the kids left over, an unfilled carton cannot be sold, the leftover cookies are the answer), which shows interpreting remainders."
+ },
+ "request": {
+  "topic": "Interpreting remainders",
+  "grade": "grade 4",
+  "objective": "Solve division word problems with remainders and decide what the remainder means in the story: round up, drop it, or use it as the answer (4.OA.A.3)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const story = ['vans', 'eggs', 'cookies'].includes(params.story) ? params.story : 'vans';\n  const N = Math.max(1, Math.min(60, Number(params.items) || 23));\n  const d = Math.max(2, Math.min(12, Number(params.per) || 5));\n  const tool = params.tool !== false; // containers the child can add\n  const signLabel = params.sign || ''; // when set, the answer is given on a sign\n  const answer = params.answer || (story === 'vans' ? 'containers-up' : story === 'eggs' ? 'containers-full' : 'leftover');\n\n  const LOOK = {\n    vans: { item: '🧒', box: 'van', icon: '🚐', name: 'Vans' },\n    eggs: { item: '🥚', box: 'carton', icon: '📦', name: 'Cartons' },\n    cookies: { item: '🍪', box: 'bag', icon: '🛍️', name: 'Bags' },\n  }[story];\n\n  const [boxes, setBoxes] = useState(0);\n  const [sign, setSign] = useState(0);\n  const maxBoxes = 10; // a fixed cap: a cap tied to the answer would give it away\n  const placed = Math.min(N, boxes * d);\n  const waiting = N - placed;\n\n  useEffect(() => {\n    let met = false;\n    if (answer === 'containers-up') met = boxes === Math.ceil(N / d);\n    if (answer === 'containers-full') met = boxes === Math.floor(N / d);\n    if (answer === 'sign-up') met = sign === Math.ceil(N / d);\n    if (answer === 'sign-full') met = sign === Math.floor(N / d);\n    if (answer === 'leftover') met = sign === N % d;\n    lumina.goal(met);\n    lumina.scene({\n      story,\n      [story === 'vans' ? 'kids' : story]: N,\n      [`each${LOOK.box[0].toUpperCase() + LOOK.box.slice(1)}Holds`]: d,\n      ...(tool ? {\n        [LOOK.box + 's']: boxes,\n        fullOnes: Math.floor(placed / d),\n        lastOneHolds: boxes && placed % d ? placed % d : 'full or none',\n        stillWaitingOutside: waiting,\n      } : { containersOnScreen: 'none: only the crowd is shown' }),\n      ...(signLabel ? { sign: sign === 0 ? 'not set' : sign } : {}),\n    });\n  }, [boxes, sign]);\n\n  const W = 680;\n  const cols = Math.ceil(d / 2), SEAT = 24;\n  const BW = cols * SEAT + 18, BH = 2 * SEAT + 30;\n  const perRow = Math.max(1, Math.floor((W - 40) / (BW + 10)));\n  const shown = Math.min(boxes + 1, maxBoxes);\n  const boxRows = tool ? Math.ceil(shown / perRow) : 0;\n  const CURB_Y = 20, perLine = 17, IT = 36;\n  const curbRows = Math.ceil(N / perLine);\n  const CURB_H = Math.max(70, curbRows * IT + 26);\n  const CTRL_Y = CURB_Y + CURB_H + 16;\n  const SIGN_Y = CTRL_Y + (tool ? 62 : 0);\n  const BOX_Y = CTRL_Y + 70 + (tool && signLabel ? 62 : 0);\n  const H = BOX_Y + boxRows * (BH + 12) + 12;\n\n  const btn = (id, x, y, label, onClick, dim) => (\n    <g id={id} onClick={dim ? undefined : onClick} style={{ cursor: dim ? 'default' : 'pointer' }} opacity={dim ? 0.35 : 1}>\n      <rect x={x} y={y} width=\"48\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text x={x + 24} y={y + 29} textAnchor=\"middle\" fontSize=\"18\" fill=\"#e2e8f0\">{label}</text>\n    </g>\n  );\n\n  // the items still outside, in reading order; seated ones are drawn in their container\n  const curbItems = [];\n  for (let k = placed; k < N; k++) {\n    const idx = k - placed;\n    curbItems.push(<text key={'w' + k} x={34 + (idx % perLine) * IT + IT / 2} y={CURB_Y + 40 + Math.floor(idx / perLine) * IT} textAnchor=\"middle\" fontSize=\"26\">{LOOK.item}</text>);\n  }\n\n  return (\n    <Panel title={story === 'vans' ? 'Field Trip Depot' : story === 'eggs' ? 'Egg Farm' : 'Cookie Stand'} caption={tool ? `Tap − or + to bring or send back a ${LOOK.box}. They fill in order.` : 'Tap the sign buttons to set your answer.'}>\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"20\" y={CURB_Y} width={W - 40} height={CURB_H} rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {curbItems}\n\n        {tool && (\n          <g>\n            <text x=\"28\" y={CTRL_Y + 29} fontSize=\"18\" fill=\"#cbd5e1\">{LOOK.icon} {LOOK.name}</text>\n            {btn('box-minus', 150, CTRL_Y, '−', () => setBoxes(b => b - 1), boxes <= 0)}\n            <text x=\"224\" y={CTRL_Y + 30} textAnchor=\"middle\" fontSize=\"22\" fontWeight=\"700\" fill=\"#e2e8f0\">{boxes}</text>\n            {btn('box-plus', 250, CTRL_Y, '+', () => setBoxes(b => b + 1), boxes >= maxBoxes)}\n          </g>\n        )}\n        {signLabel && (\n          <g>\n            <rect x={20} y={SIGN_Y - 6} width={W - 40} height=\"56\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <text x={40} y={SIGN_Y + 29} fontSize=\"16\" fill=\"#e2e8f0\">{signLabel}</text>\n            {btn('sign-minus', 420, SIGN_Y, '−', () => setSign(s => s - 1), sign <= 0)}\n            <rect x={474} y={SIGN_Y - 2} width=\"58\" height=\"48\" rx=\"10\" fill=\"none\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n            <text x={503} y={SIGN_Y + 31} textAnchor=\"middle\" fontSize=\"24\" fontWeight=\"700\" fill=\"#22d3ee\">{sign === 0 ? '?' : sign}</text>\n            {btn('sign-plus', 540, SIGN_Y, '+', () => setSign(s => s + 1), sign >= 99)}\n          </g>\n        )}\n\n        {tool && Array.from({ length: shown }, (_, b) => {\n          const x = 20 + (b % perRow) * (BW + 10), y = BOX_Y + Math.floor(b / perRow) * (BH + 12);\n          const here = b < boxes;\n          return (\n            <g key={'box' + b}>\n              <rect x={x} y={y} width={BW} height={BH} rx=\"12\" fill={here ? '#334155' : 'none'} stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray={here ? undefined : '6 5'} opacity={here ? 1 : 0.5} />\n              {here && <text x={x + 8} y={y + 20} fontSize=\"16\">{LOOK.icon}</text>}\n              {here && Array.from({ length: d }, (_, s) => {\n                const sx = x + 9 + (s % cols) * SEAT, sy = y + 26 + Math.floor(s / cols) * SEAT;\n                const k = b * d + s;\n                return (\n                  <g key={s}>\n                    <rect x={sx} y={sy} width={SEAT - 3} height={SEAT - 3} rx=\"5\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"1\" />\n                    {k < N && <text x={sx + (SEAT - 3) / 2} y={sy + SEAT - 8} textAnchor=\"middle\" fontSize=\"16\">{LOOK.item}</text>}\n                  </g>\n                );\n              })}\n            </g>\n          );\n        })}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "story": "vans",
+    "items": 23,
+    "per": 5
+   },
+   "ask": "23 kids are going on a field trip. Each van holds 5 kids. Bring the vans the trip needs.",
+   "goal": "5 vans: 4 full vans leave 3 kids, so a fifth van is needed.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus",
+     "shot": "four"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    }
+   ],
+   "scene": {
+    "story": "vans",
+    "kids": 23,
+    "eachVanHolds": 5,
+    "vans": 0,
+    "fullOnes": 0,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 23
+   },
+   "proofScene": {
+    "story": "vans",
+    "kids": 23,
+    "eachVanHolds": 5,
+    "vans": 5,
+    "fullOnes": 4,
+    "lastOneHolds": 3,
+    "stillWaitingOutside": 0
+   },
+   "missScene": {
+    "story": "vans",
+    "kids": 23,
+    "eachVanHolds": 5,
+    "vans": 4,
+    "fullOnes": 4,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 3
+   }
+  },
+  {
+   "params": {
+    "story": "eggs",
+    "items": 23,
+    "per": 6
+   },
+   "ask": "The farm has 23 eggs. Only full cartons of 6 can be sold. Fill the cartons that go to the shop.",
+   "goal": "3 full cartons; the 5 eggs left over stay on the farm.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    }
+   ],
+   "scene": {
+    "story": "eggs",
+    "eggs": 23,
+    "eachCartonHolds": 6,
+    "cartons": 0,
+    "fullOnes": 0,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 23
+   },
+   "proofScene": {
+    "story": "eggs",
+    "eggs": 23,
+    "eachCartonHolds": 6,
+    "cartons": 3,
+    "fullOnes": 3,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 5
+   },
+   "missScene": {
+    "story": "eggs",
+    "eggs": 23,
+    "eachCartonHolds": 6,
+    "cartons": 4,
+    "fullOnes": 3,
+    "lastOneHolds": 5,
+    "stillWaitingOutside": 0
+   }
+  },
+  {
+   "params": {
+    "story": "cookies",
+    "items": 23,
+    "per": 4,
+    "sign": "Cookies left for the baker:"
+   },
+   "ask": "23 cookies are put in bags of 4. The cookies that do not fill a bag go to the baker. How many does the baker get?",
+   "goal": "The sign says 3: 5 full bags use 20 cookies, 3 are left.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus",
+     "shot": "bags"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#box-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "story": "cookies",
+    "cookies": 23,
+    "eachBagHolds": 4,
+    "bags": 0,
+    "fullOnes": 0,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 23,
+    "sign": "not set"
+   },
+   "proofScene": {
+    "story": "cookies",
+    "cookies": 23,
+    "eachBagHolds": 4,
+    "bags": 5,
+    "fullOnes": 5,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 3,
+    "sign": 3
+   },
+   "missScene": {
+    "story": "cookies",
+    "cookies": 23,
+    "eachBagHolds": 4,
+    "bags": 5,
+    "fullOnes": 5,
+    "lastOneHolds": "full or none",
+    "stillWaitingOutside": 3,
+    "sign": 5
+   }
+  },
+  {
+   "params": {
+    "story": "vans",
+    "items": 50,
+    "per": 8,
+    "tool": false,
+    "sign": "Vans needed:",
+    "answer": "sign-up"
+   },
+   "ask": "50 kids are going to the zoo. Each van holds 8 kids. How many vans are needed?",
+   "goal": "The sign says 7: 6 vans carry 48, 2 kids need a seventh.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "story": "vans",
+    "kids": 50,
+    "eachVanHolds": 8,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": "not set"
+   },
+   "proofScene": {
+    "story": "vans",
+    "kids": 50,
+    "eachVanHolds": 8,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": 7
+   },
+   "missScene": {
+    "story": "vans",
+    "kids": 50,
+    "eachVanHolds": 8,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": 6
+   }
+  },
+  {
+   "params": {
+    "story": "eggs",
+    "items": 50,
+    "per": 12,
+    "tool": false,
+    "sign": "Full cartons to sell:",
+    "answer": "sign-full"
+   },
+   "ask": "50 eggs are packed in cartons of 12. Only full cartons are sold. How many cartons can be sold?",
+   "goal": "The sign says 4: 48 eggs fill 4 cartons, 2 are left.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "story": "eggs",
+    "eggs": 50,
+    "eachCartonHolds": 12,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": "not set"
+   },
+   "proofScene": {
+    "story": "eggs",
+    "eggs": 50,
+    "eachCartonHolds": 12,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": 4
+   },
+   "missScene": {
+    "story": "eggs",
+    "eggs": 50,
+    "eachCartonHolds": 12,
+    "containersOnScreen": "none: only the crowd is shown",
+    "sign": 5
+   }
+  }
+ ]
+}

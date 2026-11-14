@@ -1,0 +1,457 @@
+{
+ "id": "stretch-ribbon",
+ "title": "Stretch and Shrink",
+ "serves": {
+  "grades": [
+   "5"
+  ],
+  "summary": "The learner stretches or shrinks copies of a ribbon by fraction factors (×3/4, ×5/4, ×1, ×1 1/3) on a number line, and with the numbers removed places each copy by reasoning that a factor above 1 makes it longer, below 1 shorter, and 1 the same, which shows multiplication as scaling."
+ },
+ "request": {
+  "topic": "Multiplication as scaling",
+  "grade": "grade 5",
+  "objective": "Interpret multiplication as scaling: compare the size of a product to the size of one factor based on the other factor, without multiplying (a factor greater than 1 gives a bigger product, less than 1 a smaller one, equal to 1 the same) (5.NF.B.5)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const n = Number(params.start) || 8;\n  const cardsIn = Array.isArray(params.cards) && params.cards.length ? params.cards : ['3/4', '3/2'];\n  const ticks = params.ticks || 'numbers'; // 'numbers' | 'marks' | 'none'\n  const judge = params.judge || 'exact'; // 'exact' | 'compare'\n  const step = Number(params.step) || 1;\n\n  const parse = s => {\n    const m = String(s).trim().match(/^(?:(\\d+)\\s+)?(\\d+)\\/(\\d+)$/);\n    if (m) return (m[1] ? Number(m[1]) : 0) + Number(m[2]) / Number(m[3]);\n    return Number(s);\n  };\n  const cards = cardsIn.map(s => ({ label: String(s), f: parse(s) }));\n\n  const W = 680, H = 400;\n  const X0 = 50, X1 = 640, MAX = n * 2;\n  const xOf = v => X0 + ((X1 - X0) * v) / MAX;\n  const vOf = x => Math.max(0, Math.min(MAX, ((x - X0) / (X1 - X0)) * MAX));\n  const LINE_Y = 340, START_Y = 128, LANE0 = 172, LANE_GAP = 40;\n  const TRAY_Y = 30;\n\n  const [at, setAt] = useState(() => cards.map(() => null)); // value on the line, or null in the tray\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n\n  const near = (a, b) => Math.abs(a - b) < 1e-6;\n  useEffect(() => {\n    const placed = at.every(v => v !== null);\n    let met = false;\n    if (placed && judge === 'exact') met = cards.every((c, i) => near(at[i], c.f * n));\n    if (placed && judge === 'compare') {\n      const sideOk = cards.every((c, i) => Math.sign(Math.round((c.f - 1) * 1e6)) === Math.sign(Math.round((at[i] - n) * 1e6)));\n      let orderOk = true;\n      for (let i = 0; i < cards.length; i++) for (let j = 0; j < cards.length; j++) {\n        if (cards[i].f < cards[j].f - 1e-9 && !(at[i] < at[j] - 1e-9)) orderOk = false;\n      }\n      met = sideOk && orderOk;\n    }\n    lumina.goal(met);\n    const where = v => (v === null ? 'not placed yet' : near(v, n) ? 'ends level with the start ribbon' : v < n ? 'ends short of the start ribbon' : 'ends past the start ribbon');\n    lumina.scene({\n      startRibbon: ticks === 'none' ? 'drawn from 0, length not marked' : `${n} long`,\n      tickMarks: ticks,\n      cards: cards.map((c, i) => ({\n        card: '× ' + c.label,\n        ribbon: where(at[i]),\n        ...(ticks === 'numbers' && at[i] !== null ? { endsAt: at[i] } : {}),\n      })),\n    });\n  }, [at]);\n\n  const trayX = i => 84 + i * 112;\n  const grab = (i, e) => {\n    e.currentTarget.setPointerCapture(e.pointerId);\n    const p = svgPoint(svgRef.current, e);\n    setDrag({ i, x: p.x, y: p.y });\n  };\n  const move = e => { if (drag) { const p = svgPoint(svgRef.current, e); setDrag({ ...drag, x: p.x, y: p.y }); } };\n  const drop = e => {\n    if (!drag) return;\n    const p = svgPoint(svgRef.current, e), i = drag.i;\n    setDrag(null);\n    if (p.y < 104) { setAt(a => a.map((v, k) => (k === i ? null : v))); return; }\n    const v = Math.round(vOf(p.x) / step) * step;\n    setAt(a => a.map((old, k) => (k === i ? Math.round(v * 1e6) / 1e6 : old)));\n  };\n\n  const cardBox = (c, i, x, y, small, extra) => (\n    <g key={'card' + i} id={'card-' + i} transform={`translate(${x}, ${y})`} {...extra}>\n      <rect x={small ? -38 : -46} y={small ? -17 : -24} width={small ? 76 : 92} height={small ? 34 : 48} rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text y={small ? 6 : 8} textAnchor=\"middle\" fontSize={small ? 18 : 22} fontWeight=\"700\" fill=\"#e2e8f0\">× {c.label}</text>\n    </g>\n  );\n\n  const LANE_COLORS = ['#22d3ee', '#f472b6', '#34d399', '#818cf8', '#fb7185'];\n  const tickVals = [];\n  for (let v = 0; v <= MAX + 1e-9; v += 1) tickVals.push(Math.round(v * 1e6) / 1e6);\n  const targetVals = [];\n  for (let v = 0; v <= MAX + 1e-9; v += step) targetVals.push(Math.round(v * 1e6) / 1e6);\n\n  return (\n    <Panel title=\"Stretch and Shrink\" caption=\"Drag a card onto the line to stretch or shrink a copy of the ribbon. Drag it back up to take it off.\">\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={move} style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"14\" y={TRAY_Y - 8} width={W - 28} height=\"72\" rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n\n        {/* the start ribbon */}\n        <text x={X0 - 8} y={START_Y + 6} textAnchor=\"end\" fontSize=\"28\">🧶</text>\n        <rect x={X0} y={START_Y - 9} width={xOf(n) - X0} height=\"18\" rx=\"5\" fill=\"#fbbf24\" />\n        <line x1={xOf(n)} y1={START_Y - 16} x2={xOf(n)} y2={LINE_Y} stroke=\"#fbbf24\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" opacity=\"0.7\" />\n\n        {/* lanes and the copies the child made */}\n        {cards.map((c, i) => {\n          const y = LANE0 + i * LANE_GAP;\n          const v = at[i];\n          const held = drag && drag.i === i;\n          return (\n            <g key={'lane' + i}>\n              <line x1={X0} y1={y} x2={X1} y2={y} stroke=\"#334155\" strokeWidth=\"1\" />\n              {v !== null && !held && <rect x={X0} y={y - 7} width={Math.max(0, xOf(v) - X0)} height=\"14\" rx=\"5\" fill={LANE_COLORS[i % LANE_COLORS.length]} opacity=\"0.85\" />}\n            </g>\n          );\n        })}\n\n        {/* the number line */}\n        <line x1={X0} y1={LINE_Y} x2={X1} y2={LINE_Y} stroke=\"#64748b\" strokeWidth=\"3\" />\n        {ticks !== 'none' && tickVals.map(v => (\n          <line key={'t' + v} x1={xOf(v)} y1={LINE_Y - 8} x2={xOf(v)} y2={LINE_Y + 8} stroke=\"#94a3b8\" strokeWidth=\"2\" />\n        ))}\n        {(ticks === 'numbers' ? tickVals : [0, n]).map(v => (\n          <text key={'l' + v} x={xOf(v)} y={LINE_Y + 30} textAnchor=\"middle\" fontSize={v === 0 || v === n ? 16 : 14} fill={v === n ? '#fbbf24' : '#cbd5e1'}>{ticks === 'none' && v === n ? 'start' : v}</text>\n        ))}\n        {targetVals.map(v => <circle key={'g' + v} id={'tick-' + String(v).replace('.', '_')} cx={xOf(v)} cy={LINE_Y} r=\"2\" fill=\"transparent\" pointerEvents=\"none\" />)}\n\n        {/* cards: in the tray, at the end of their copy, or in the hand */}\n        {cards.map((c, i) => {\n          const held = drag && drag.i === i && drag.x !== undefined;\n          const v = at[i];\n          const x = held ? drag.x : v === null ? trayX(i) : xOf(v) + 44;\n          const y = held ? drag.y : v === null ? TRAY_Y + 28 : LANE0 + i * LANE_GAP;\n          return cardBox(c, i, x, y, v !== null && !held, {\n            onPointerDown: e => grab(i, e),\n            onPointerUp: drop,\n            style: { cursor: 'grab', touchAction: 'none' },\n          });\n        })}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "start": 8,
+    "cards": [
+     "3/4",
+     "3/2"
+    ],
+    "ticks": "numbers",
+    "judge": "exact",
+    "step": 1
+   },
+   "ask": "The yarn ribbon is 8 long. Make a copy of it for each card: ×3/4 and ×3/2.",
+   "goal": "The ×3/4 copy ends at 6 and the ×3/2 copy ends at 12.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-12"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-11"
+    }
+   ],
+   "scene": {
+    "startRibbon": "8 long",
+    "tickMarks": "numbers",
+    "cards": [
+     {
+      "card": "× 3/4",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 3/2",
+      "ribbon": "not placed yet"
+     }
+    ]
+   },
+   "proofScene": {
+    "startRibbon": "8 long",
+    "tickMarks": "numbers",
+    "cards": [
+     {
+      "card": "× 3/4",
+      "ribbon": "ends short of the start ribbon",
+      "endsAt": 6
+     },
+     {
+      "card": "× 3/2",
+      "ribbon": "ends past the start ribbon",
+      "endsAt": 12
+     }
+    ]
+   },
+   "missScene": {
+    "startRibbon": "8 long",
+    "tickMarks": "numbers",
+    "cards": [
+     {
+      "card": "× 3/4",
+      "ribbon": "ends short of the start ribbon",
+      "endsAt": 6
+     },
+     {
+      "card": "× 3/2",
+      "ribbon": "ends past the start ribbon",
+      "endsAt": 11
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "start": 12,
+    "cards": [
+     "2/3",
+     "5/4",
+     "1"
+    ],
+    "ticks": "marks",
+    "judge": "exact",
+    "step": 1
+   },
+   "ask": "The start ribbon is 12 long. Make a ×2/3, a ×5/4 and a ×1 copy.",
+   "goal": "The copies end at 8, 15 and 12.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-8"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-15"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-12"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-8"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-15"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-13"
+    }
+   ],
+   "scene": {
+    "startRibbon": "12 long",
+    "tickMarks": "marks",
+    "cards": [
+     {
+      "card": "× 2/3",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 5/4",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "not placed yet"
+     }
+    ]
+   },
+   "proofScene": {
+    "startRibbon": "12 long",
+    "tickMarks": "marks",
+    "cards": [
+     {
+      "card": "× 2/3",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 5/4",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "ends level with the start ribbon"
+     }
+    ]
+   },
+   "missScene": {
+    "startRibbon": "12 long",
+    "tickMarks": "marks",
+    "cards": [
+     {
+      "card": "× 2/3",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 5/4",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "ends past the start ribbon"
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "start": 10,
+    "cards": [
+     "9/10",
+     "3/5",
+     "11/10",
+     "7/4"
+    ],
+    "ticks": "none",
+    "judge": "compare",
+    "step": 0.5
+   },
+   "ask": "There are no numbers this time. Put each copy where it should end compared with the start ribbon and with each other.",
+   "goal": "×3/5 and ×9/10 end short of the start (×9/10 just short), ×11/10 and ×7/4 end past it (×7/4 farthest), in size order.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-9"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-11"
+    },
+    {
+     "do": "drag",
+     "target": "#card-3",
+     "to": "#tick-17_5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-3",
+     "to": "#tick-12"
+    },
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-14"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-15"
+    }
+   ],
+   "scene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 9/10",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 3/5",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 11/10",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 7/4",
+      "ribbon": "not placed yet"
+     }
+    ]
+   },
+   "proofScene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 9/10",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 3/5",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 11/10",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 7/4",
+      "ribbon": "ends past the start ribbon"
+     }
+    ]
+   },
+   "missScene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 9/10",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 3/5",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 11/10",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 7/4",
+      "ribbon": "ends past the start ribbon"
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "start": 6,
+    "cards": [
+     "1 1/3",
+     "5/6",
+     "1",
+     "1/2"
+    ],
+    "ticks": "none",
+    "judge": "compare",
+    "step": 0.5
+   },
+   "ask": "No numbers again. Place a ×1 1/3, ×5/6, ×1 and ×1/2 copy of the start ribbon.",
+   "goal": "×1/2 shortest, then ×5/6 just short of the start, ×1 level with it, ×1 1/3 past it.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-8"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-5"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-3",
+     "to": "#tick-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-0",
+     "to": "#tick-8"
+    },
+    {
+     "do": "drag",
+     "target": "#card-1",
+     "to": "#tick-7"
+    },
+    {
+     "do": "drag",
+     "target": "#card-2",
+     "to": "#tick-6"
+    },
+    {
+     "do": "drag",
+     "target": "#card-3",
+     "to": "#tick-3"
+    }
+   ],
+   "scene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 1 1/3",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 5/6",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "not placed yet"
+     },
+     {
+      "card": "× 1/2",
+      "ribbon": "not placed yet"
+     }
+    ]
+   },
+   "proofScene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 1 1/3",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 5/6",
+      "ribbon": "ends short of the start ribbon"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "ends level with the start ribbon"
+     },
+     {
+      "card": "× 1/2",
+      "ribbon": "ends short of the start ribbon"
+     }
+    ]
+   },
+   "missScene": {
+    "startRibbon": "drawn from 0, length not marked",
+    "tickMarks": "none",
+    "cards": [
+     {
+      "card": "× 1 1/3",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 5/6",
+      "ribbon": "ends past the start ribbon"
+     },
+     {
+      "card": "× 1",
+      "ribbon": "ends level with the start ribbon"
+     },
+     {
+      "card": "× 1/2",
+      "ribbon": "ends short of the start ribbon"
+     }
+    ]
+   }
+  }
+ ]
+}

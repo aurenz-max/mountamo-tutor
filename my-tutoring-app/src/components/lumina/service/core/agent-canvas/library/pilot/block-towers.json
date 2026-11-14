@@ -1,0 +1,256 @@
+{
+ "id": "block-towers",
+ "title": "Block Towers",
+ "serves": {
+  "grades": [
+   "4"
+  ],
+  "summary": "The learner builds block towers that are a number of times as tall as another tower, or a number of blocks taller, finds the tower that fits 5 times into a tall one, and names how many times as tall one tower is, which shows multiplicative comparison and how it differs from \"more than\"."
+ },
+ "request": {
+  "topic": "Multiplicative comparison",
+  "grade": "grade 4",
+  "objective": "Interpret and build multiplicative comparisons (\"3 times as tall as\") and tell them apart from additive comparisons (\"3 more than\"), including finding the unknown factor or the smaller quantity (4.OA.A.1-2)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const mode = ['build', 'buildUnit', 'sign'].includes(params.mode) ? params.mode : 'build';\n  const ref = Number(params.ref) || 4; // the first tower (build, sign)\n  const big = Number(params.big) || 12; // the given tall tower (buildUnit, sign)\n  const target = Number(params.target) || 12;\n  const chunks = params.chunks === true;\n  const names = params.names || ['Ana', 'Ben', 'You'];\n\n  const [h, setH] = useState(Number(params.start) || 1); // the child's tower, in blocks\n  const [sign, setSign] = useState(0);\n\n  useEffect(() => {\n    lumina.goal(mode === 'sign' ? sign === target : h === target);\n    lumina.scene({\n      ...(mode !== 'buildUnit' ? { [names[0] + 'Tower']: ref + ' blocks' } : {}),\n      ...(mode !== 'build' ? { [names[1] + 'Tower']: big + ' blocks' } : {}),\n      ...(mode !== 'sign' ? { towerTheChildBuilt: h + ' blocks' } : { timesSign: sign === 0 ? 'not set' : sign }),\n      dashedMarks: chunks ? (mode === 'build' ? `every ${ref} blocks on the child's tower` : `every ${h} blocks on ${names[1]}'s tower`) : 'none',\n    });\n  }, [h, sign]);\n\n  const W = 680, H = 470, GROUND = 430, B = 12, TW = 66, MAXB = 32;\n  const yOf = n => GROUND - n * B;\n\n  const tower = (x, n, fill, edge, name, id, marksEvery) => (\n    <g key={id}>\n      {Array.from({ length: n }, (_, k) => (\n        <rect key={k} x={x} y={yOf(k + 1)} width={TW} height={B} fill={fill} stroke={edge} strokeWidth=\"1.2\" />\n      ))}\n      {marksEvery > 0 && Array.from({ length: Math.floor(n / marksEvery) }, (_, k) => {\n        const y = yOf((k + 1) * marksEvery);\n        return <line key={'m' + k} x1={x - 10} y1={y} x2={x + TW + 10} y2={y} stroke=\"#e2e8f0\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />;\n      })}\n      <text x={x + TW / 2} y={GROUND + 28} textAnchor=\"middle\" fontSize=\"18\" fill=\"#e2e8f0\">{name}</text>\n    </g>\n  );\n\n  const ladder = 600; // invisible level marks the plays aim at\n  const XA = 110, XB = 270, XC = 430;\n  const refX = mode === 'sign' ? XA : 200;\n  const childX = 400;\n  const bigX = mode === 'buildUnit' ? 200 : XB + 40;\n  const onDrag = p => setH(Math.max(1, Math.min(MAXB, Math.round((GROUND - p.y) / B))));\n\n  return (\n    <Panel title=\"Block Towers\" caption={mode === 'sign' ? 'Tap − or + on the sign to set it.' : 'Drag the top of your tower up or down to add or take away blocks.'}>\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none', touchAction: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"14\" y={GROUND} width={W - 28} height=\"10\" rx=\"4\" fill=\"#475569\" />\n        {Array.from({ length: MAXB + 1 }, (_, n) => <circle key={'lv' + n} id={'level-' + n} cx={ladder} cy={yOf(n) - B / 2 + B / 2} r=\"2\" fill=\"transparent\" pointerEvents=\"none\" />)}\n\n        {mode !== 'buildUnit' && tower(refX, ref, '#fbbf24', '#92400e', names[0], 'ref', 0)}\n        {mode !== 'build' && tower(bigX, big, '#f472b6', '#831843', names[1], 'big', mode === 'buildUnit' && chunks ? h : 0)}\n        {mode !== 'sign' && (\n          <g>\n            {tower(childX, h, '#22d3ee', '#155e75', names[2], 'mine', mode === 'build' && chunks ? ref : 0)}\n            <Handle id=\"tower-top\" x={childX + TW / 2} y={yOf(h) - 4} r={22} color=\"cyan\" onDrag={onDrag} onDrop={onDrag}>\n              <g>\n                <rect x=\"-26\" y=\"-10\" width=\"52\" height=\"16\" rx=\"6\" fill=\"#0891b2\" stroke=\"#e2e8f0\" strokeWidth=\"2\" />\n                <path d=\"M -8 -14 L 0 -22 L 8 -14 Z\" fill=\"#e2e8f0\" />\n              </g>\n            </Handle>\n          </g>\n        )}\n        {mode === 'sign' && (\n          <g>\n            <rect x=\"440\" y=\"150\" width=\"220\" height=\"150\" rx=\"16\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <text x=\"550\" y=\"182\" textAnchor=\"middle\" fontSize=\"16\" fill=\"#cbd5e1\">{`${names[1]}'s tower is`}</text>\n            <g id=\"sign-minus\" onClick={() => setSign(s => Math.max(0, s - 1))} style={{ cursor: 'pointer' }} opacity={sign > 0 ? 1 : 0.35}>\n              <rect x=\"456\" y=\"198\" width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n              <text x=\"478\" y=\"228\" textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">−</text>\n            </g>\n            <rect x=\"518\" y=\"194\" width=\"64\" height=\"52\" rx=\"10\" fill=\"none\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n            <text x=\"550\" y=\"230\" textAnchor=\"middle\" fontSize=\"26\" fontWeight=\"700\" fill=\"#22d3ee\">{sign === 0 ? '?' : sign}</text>\n            <g id=\"sign-plus\" onClick={() => setSign(s => Math.min(30, s + 1))} style={{ cursor: 'pointer' }}>\n              <rect x=\"600\" y=\"198\" width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n              <text x=\"622\" y=\"228\" textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">+</text>\n            </g>\n            <text x=\"550\" y=\"276\" textAnchor=\"middle\" fontSize=\"16\" fill=\"#cbd5e1\">{`times as tall as ${names[0]}'s`}</text>\n          </g>\n        )}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "mode": "build",
+    "ref": 4,
+    "target": 12,
+    "chunks": true
+   },
+   "ask": "Build your tower 3 times as tall as Ana's.",
+   "goal": "Your tower is 12 blocks: three of Ana's towers stacked.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-12"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-7"
+    }
+   ],
+   "scene": {
+    "AnaTower": "4 blocks",
+    "towerTheChildBuilt": "1 blocks",
+    "dashedMarks": "every 4 blocks on the child's tower"
+   },
+   "proofScene": {
+    "AnaTower": "4 blocks",
+    "towerTheChildBuilt": "12 blocks",
+    "dashedMarks": "every 4 blocks on the child's tower"
+   },
+   "missScene": {
+    "AnaTower": "4 blocks",
+    "towerTheChildBuilt": "7 blocks",
+    "dashedMarks": "every 4 blocks on the child's tower"
+   }
+  },
+  {
+   "params": {
+    "mode": "build",
+    "ref": 5,
+    "target": 8
+   },
+   "ask": "Build your tower 3 blocks taller than Ana's.",
+   "goal": "Your tower is 8 blocks.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-8"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-15"
+    }
+   ],
+   "scene": {
+    "AnaTower": "5 blocks",
+    "towerTheChildBuilt": "1 blocks",
+    "dashedMarks": "none"
+   },
+   "proofScene": {
+    "AnaTower": "5 blocks",
+    "towerTheChildBuilt": "8 blocks",
+    "dashedMarks": "none"
+   },
+   "missScene": {
+    "AnaTower": "5 blocks",
+    "towerTheChildBuilt": "15 blocks",
+    "dashedMarks": "none"
+   }
+  },
+  {
+   "params": {
+    "mode": "buildUnit",
+    "big": 15,
+    "target": 3,
+    "chunks": true
+   },
+   "ask": "Ben's tower is 5 times as tall as yours. Build your tower.",
+   "goal": "Your tower is 3 blocks: 5 of them make Ben's 15.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-10"
+    }
+   ],
+   "scene": {
+    "BenTower": "15 blocks",
+    "towerTheChildBuilt": "1 blocks",
+    "dashedMarks": "every 1 blocks on Ben's tower"
+   },
+   "proofScene": {
+    "BenTower": "15 blocks",
+    "towerTheChildBuilt": "3 blocks",
+    "dashedMarks": "every 3 blocks on Ben's tower"
+   },
+   "missScene": {
+    "BenTower": "15 blocks",
+    "towerTheChildBuilt": "10 blocks",
+    "dashedMarks": "every 10 blocks on Ben's tower"
+   }
+  },
+  {
+   "params": {
+    "mode": "sign",
+    "ref": 3,
+    "big": 12,
+    "target": 4
+   },
+   "ask": "How many times as tall as Ana's tower is Ben's tower?",
+   "goal": "The sign says 4: 12 = 4 × 3.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "AnaTower": "3 blocks",
+    "BenTower": "12 blocks",
+    "timesSign": "not set",
+    "dashedMarks": "none"
+   },
+   "proofScene": {
+    "AnaTower": "3 blocks",
+    "BenTower": "12 blocks",
+    "timesSign": 4,
+    "dashedMarks": "none"
+   },
+   "missScene": {
+    "AnaTower": "3 blocks",
+    "BenTower": "12 blocks",
+    "timesSign": 9,
+    "dashedMarks": "none"
+   }
+  },
+  {
+   "params": {
+    "mode": "build",
+    "ref": 7,
+    "target": 28
+   },
+   "ask": "Build your tower 4 times as tall as Ana's.",
+   "goal": "Your tower is 28 blocks, with no marks to count by.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-28"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#tower-top",
+     "to": "#level-11"
+    }
+   ],
+   "scene": {
+    "AnaTower": "7 blocks",
+    "towerTheChildBuilt": "1 blocks",
+    "dashedMarks": "none"
+   },
+   "proofScene": {
+    "AnaTower": "7 blocks",
+    "towerTheChildBuilt": "28 blocks",
+    "dashedMarks": "none"
+   },
+   "missScene": {
+    "AnaTower": "7 blocks",
+    "towerTheChildBuilt": "11 blocks",
+    "dashedMarks": "none"
+   }
+  }
+ ]
+}

@@ -1,0 +1,473 @@
+{
+ "id": "cube-crate",
+ "title": "Cube Crate",
+ "serves": {
+  "grades": [
+   "5"
+  ],
+  "summary": "The learner packs a crate with unit cubes layer by layer and finds its volume, finds a volume from one layer and the height, and builds crates of a given volume, including one twice as big (doubling one edge, not all three), which shows volume as length × width × height."
+ },
+ "request": {
+  "topic": "Volume with unit cubes",
+  "grade": "grade 5",
+  "objective": "Measure the volume of a rectangular prism by packing it with unit cubes layer by layer, relate it to length × width × height, and reason about how changing one edge changes the volume (5.MD.C.3-5)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const mode = params.mode === 'design' ? 'design' : 'pack';\n  const L = Number(params.length) || 3, Wd = Number(params.width) || 2, Hh = Number(params.height) || 2;\n  const maxLayers = Math.max(1, Math.min(Hh, Number(params.cubeLayers) || Hh));\n  const target = Number(params.target) || 24;\n  const fixedH = params.fixedHeight ? Number(params.fixedHeight) : 0;\n  const ref = params.ref || null; // [l, w, h] of a grey reference box\n  const start = params.start || [1, 1, fixedH || 1];\n\n  const [base, setBase] = useState([]); // 'i-j' keys of floor cells with a cube (pack)\n  const [layers, setLayers] = useState(1);\n  const [sign, setSign] = useState(0);\n  const [dims, setDims] = useState(() => ({ l: start[0], w: start[1], h: fixedH || start[2] }));\n\n  useEffect(() => {\n    if (mode === 'pack') {\n      lumina.goal(sign === L * Wd * Hh);\n      lumina.scene({\n        crate: `${L} long, ${Wd} wide, ${Hh} tall (unit marks on its edges)`,\n        cubesOnTheFloor: base.length,\n        layersStacked: base.length ? layers : 0,\n        mostLayersTheCubesMake: maxLayers,\n        volumeSign: sign === 0 ? 'not set' : sign + ' cubic units',\n      });\n    } else {\n      lumina.goal(dims.l * dims.w * dims.h === target && (!fixedH || dims.h === fixedH));\n      lumina.scene({\n        boxTheChildBuilt: `${dims.l} long, ${dims.w} wide, ${dims.h} tall`,\n        ...(ref ? { greyBox: `${ref[0]} long, ${ref[1]} wide, ${ref[2]} tall` } : {}),\n        ...(fixedH ? { heightIsSetTo: fixedH } : {}),\n      });\n    }\n  }, [base, layers, sign, dims]);\n\n  const W = 680, H = 470;\n  const S = 26, C = S * 0.866, OX = 228, OY = 190;\n  const P = (i, j, k, s = S, ox = OX, oy = OY) => [ox + (i - j) * s * 0.866, oy + (i + j) * s * 0.5 - k * s];\n  const poly = pts => pts.map(p => p.join(',')).join(' ');\n\n  const cube = (i, j, k, key, extra, s, ox, oy, grey) => {\n    const p = (a, b, c) => P(a, b, c, s, ox, oy);\n    return (\n      <g key={key} {...extra}>\n        <polygon points={poly([p(i, j + 1, k), p(i + 1, j + 1, k), p(i + 1, j + 1, k + 1), p(i, j + 1, k + 1)])} fill={grey ? '#64748b' : '#0891b2'} stroke=\"#0f172a\" strokeWidth=\"1.5\" />\n        <polygon points={poly([p(i + 1, j, k), p(i + 1, j + 1, k), p(i + 1, j + 1, k + 1), p(i + 1, j, k + 1)])} fill={grey ? '#475569' : '#0e7490'} stroke=\"#0f172a\" strokeWidth=\"1.5\" />\n        <polygon points={poly([p(i, j, k + 1), p(i + 1, j, k + 1), p(i + 1, j + 1, k + 1), p(i, j + 1, k + 1)])} fill={grey ? '#94a3b8' : '#67e8f9'} stroke=\"#0f172a\" strokeWidth=\"1.5\" />\n      </g>\n    );\n  };\n  const sorted = list => list.slice().sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]) || a[2] - b[2]);\n  const boxEdges = (l, w, h, key, marksOnly) => {\n    const c = [[0, 0], [l, 0], [l, w], [0, w]];\n    const e = [];\n    for (let q = 0; q < 4; q++) {\n      const [a, b] = c[q], [a2, b2] = c[(q + 1) % 4];\n      e.push([P(a, b, 0), P(a2, b2, 0)], [P(a, b, h), P(a2, b2, h)], [P(a, b, 0), P(a, b, h)]);\n    }\n    return (\n      <g key={key} pointerEvents=\"none\">\n        {!marksOnly && e.map(([p1, p2], n) => <line key={n} x1={p1[0]} y1={p1[1]} x2={p2[0]} y2={p2[1]} stroke=\"#cbd5e1\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" opacity=\"0.8\" />)}\n        {/* unit marks on the three front edges */}\n        {Array.from({ length: h + 1 }, (_, k) => { const p = P(l, w, k); return <line key={'h' + k} x1={p[0] - 5} y1={p[1]} x2={p[0] + 5} y2={p[1]} stroke=\"#fbbf24\" strokeWidth=\"2\" />; })}\n        {Array.from({ length: l + 1 }, (_, i) => { const p = P(i, w, 0); return <circle key={'l' + i} cx={p[0]} cy={p[1]} r=\"2.5\" fill=\"#fbbf24\" />; })}\n        {Array.from({ length: w + 1 }, (_, j) => { const p = P(l, j, 0); return <circle key={'w' + j} cx={p[0]} cy={p[1]} r=\"2.5\" fill=\"#fbbf24\" />; })}\n      </g>\n    );\n  };\n\n  const btn = (id, x, y, label, onClick, dim, w = 52) => (\n    <g id={id} onClick={dim ? undefined : onClick} style={{ cursor: dim ? 'default' : 'pointer' }} opacity={dim ? 0.35 : 1}>\n      <rect x={x} y={y} width={w} height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text x={x + w / 2} y={y + 29} textAnchor=\"middle\" fontSize=\"18\" fill=\"#e2e8f0\">{label}</text>\n    </g>\n  );\n  const PX = 452; // right-hand control column\n  const card = (y, h) => <rect x={PX - 12} y={y} width={W - PX - 2} height={h} rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />;\n\n  if (mode === 'pack') {\n    const cubes = [];\n    base.forEach(key => { const [i, j] = key.split('-').map(Number); for (let k = 0; k < layers; k++) cubes.push([i, j, k]); });\n    const toggle = key => setBase(b => (b.includes(key) ? b.filter(x => x !== key) : [...b, key]));\n    return (\n      <Panel title=\"Cube Crate\" caption=\"Tap a floor square to put a cube on it. Tap − or + to stack layers or set the sign.\">\n        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n          <rect width={W} height={H} fill=\"#0f172a\" />\n          {Array.from({ length: L }, (_, i) => Array.from({ length: Wd }, (_, j) => {\n            const key = i + '-' + j;\n            return <polygon key={'c' + key} id={'cell-' + key} points={poly([P(i, j, 0), P(i + 1, j, 0), P(i + 1, j + 1, 0), P(i, j + 1, 0)])} fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"1.5\" onClick={() => toggle(key)} style={{ cursor: 'pointer' }} />;\n          }))}\n          {sorted(cubes).map(([i, j, k]) => cube(i, j, k, `q${i}-${j}-${k}`, { onClick: () => toggle(i + '-' + j), style: { cursor: 'pointer' } }))}\n          {boxEdges(L, Wd, Hh, 'box')}\n\n          {card(30, 122)}\n          <text x={PX + 6} y={60} fontSize=\"16\" fill=\"#cbd5e1\">Layers of cubes</text>\n          {btn('layer-minus', PX + 6, 78, '−', () => setLayers(n => Math.max(1, n - 1)), layers <= 1 || !base.length)}\n          <text x={PX + 104} y={107} textAnchor=\"middle\" fontSize=\"22\" fontWeight=\"700\" fill=\"#e2e8f0\">{base.length ? layers : 0}</text>\n          {btn('layer-plus', PX + 146, 78, '+', () => setLayers(n => Math.min(maxLayers, n + 1)), layers >= maxLayers || !base.length)}\n          {maxLayers < Hh && <text x={PX + 6} y={142} fontSize=\"13\" fill=\"#94a3b8\">{`Only enough cubes for ${maxLayers} layer${maxLayers > 1 ? 's' : ''}.`}</text>}\n\n          {card(160, 190)}\n          <text x={PX + 6} y={192} fontSize=\"16\" fill=\"#cbd5e1\">Volume of the crate</text>\n          <rect x={PX + 50} y={206} width=\"110\" height=\"52\" rx=\"10\" fill=\"none\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n          <text x={PX + 105} y={242} textAnchor=\"middle\" fontSize=\"28\" fontWeight=\"700\" fill=\"#22d3ee\">{sign === 0 ? '?' : sign}</text>\n          <text x={PX + 105} y={278} textAnchor=\"middle\" fontSize=\"14\" fill=\"#94a3b8\">cubic units</text>\n          {btn('sign-minus10', PX - 2, 290, '−10', () => setSign(s => Math.max(0, s - 10)), sign < 10, 48)}\n          {btn('sign-minus', PX + 50, 290, '−1', () => setSign(s => Math.max(0, s - 1)), sign < 1, 48)}\n          {btn('sign-plus', PX + 102, 290, '+1', () => setSign(s => Math.min(400, s + 1)), false, 48)}\n          {btn('sign-plus10', PX + 154, 290, '+10', () => setSign(s => Math.min(400, s + 10)), false, 48)}\n        </svg>\n      </Panel>\n    );\n  }\n\n  // design: the child sets the box's length, width and height and it fills with cubes\n  const cubes = [];\n  for (let i = 0; i < dims.l; i++) for (let j = 0; j < dims.w; j++) for (let k = 0; k < dims.h; k++) cubes.push([i, j, k]);\n  const set = (key, d, max) => setDims(x => ({ ...x, [key]: Math.max(1, Math.min(max, x[key] + d)) }));\n  const rows = [['l', 'Length', 8], ['w', 'Width', 8], ['h', 'Height', 6]].filter(r => !(fixedH && r[0] === 'h'));\n  const refTop = 30, refH = ref ? 150 : 0;\n  return (\n    <Panel title=\"Cube Crate\" caption=\"Tap − or + to make the crate longer, wider or taller.\">\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        {Array.from({ length: dims.l }, (_, i) => Array.from({ length: dims.w }, (_, j) => (\n          <polygon key={'f' + i + j} points={poly([P(i, j, 0), P(i + 1, j, 0), P(i + 1, j + 1, 0), P(i, j + 1, 0)])} fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"1.5\" />\n        )))}\n        {sorted(cubes).map(([i, j, k]) => cube(i, j, k, `d${i}-${j}-${k}`))}\n        {boxEdges(dims.l, dims.w, dims.h, \"box\", true)}\n\n        {ref && (\n          <g>\n            {card(refTop, refH)}\n            <text x={PX + 6} y={refTop + 26} fontSize=\"16\" fill=\"#cbd5e1\">Grey crate</text>\n            {(() => {\n              const s = 16, ox = PX + 92, oy = refTop + 70 + ref[2] * 4;\n              const list = [];\n              for (let i = 0; i < ref[0]; i++) for (let j = 0; j < ref[1]; j++) for (let k = 0; k < ref[2]; k++) list.push([i, j, k]);\n              return sorted(list).map(([i, j, k]) => cube(i, j, k, `r${i}-${j}-${k}`, {}, s, ox, oy, true));\n            })()}\n          </g>\n        )}\n        {card(refTop + refH + (ref ? 14 : 0), rows.length * 64 + 24 + (fixedH ? 30 : 0))}\n        {rows.map(([key, name, max], r) => {\n          const y = refTop + refH + (ref ? 14 : 0) + 18 + r * 64;\n          return (\n            <g key={key}>\n              <text x={PX + 6} y={y + 28} fontSize=\"16\" fill=\"#cbd5e1\">{name}</text>\n              {btn(key + '-minus', PX + 70, y, '−', () => set(key, -1, max), dims[key] <= 1, 44)}\n              <text x={PX + 140} y={y + 30} textAnchor=\"middle\" fontSize=\"22\" fontWeight=\"700\" fill=\"#e2e8f0\">{dims[key]}</text>\n              {btn(key + '-plus', PX + 162, y, '+', () => set(key, 1, max), dims[key] >= max, 44)}\n            </g>\n          );\n        })}\n        {fixedH ? <text x={PX + 6} y={refTop + refH + (ref ? 14 : 0) + 18 + rows.length * 64 + 18} fontSize=\"15\" fill=\"#94a3b8\">{`Height is set: ${fixedH}`}</text> : null}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "mode": "pack",
+    "length": 3,
+    "width": 2,
+    "height": 2,
+    "cubeLayers": 2
+   },
+   "ask": "Pack the crate with cubes. What is its volume?",
+   "goal": "The sign says 12 cubic units: a layer of 6, two layers.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-1",
+     "shot": "layer"
+    },
+    {
+     "do": "click",
+     "target": "#layer-plus",
+     "shot": "packed"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus10"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "crate": "3 long, 2 wide, 2 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 0,
+    "layersStacked": 0,
+    "mostLayersTheCubesMake": 2,
+    "volumeSign": "not set"
+   },
+   "proofScene": {
+    "crate": "3 long, 2 wide, 2 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 6,
+    "layersStacked": 2,
+    "mostLayersTheCubesMake": 2,
+    "volumeSign": "12 cubic units"
+   },
+   "missScene": {
+    "crate": "3 long, 2 wide, 2 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 6,
+    "layersStacked": 1,
+    "mostLayersTheCubesMake": 2,
+    "volumeSign": "6 cubic units"
+   }
+  },
+  {
+   "params": {
+    "mode": "pack",
+    "length": 4,
+    "width": 3,
+    "height": 3,
+    "cubeLayers": 1
+   },
+   "ask": "There are only enough cubes for one layer. What is the volume of the crate?",
+   "goal": "The sign says 36: a layer of 12 cubes fits 3 times up the crate.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cell-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-2",
+     "shot": "layer"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus10"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus10"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus10"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cell-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-1-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-2-2"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-0"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-1"
+    },
+    {
+     "do": "click",
+     "target": "#cell-3-2"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus10"
+    }
+   ],
+   "scene": {
+    "crate": "4 long, 3 wide, 3 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 0,
+    "layersStacked": 0,
+    "mostLayersTheCubesMake": 1,
+    "volumeSign": "not set"
+   },
+   "proofScene": {
+    "crate": "4 long, 3 wide, 3 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 12,
+    "layersStacked": 1,
+    "mostLayersTheCubesMake": 1,
+    "volumeSign": "36 cubic units"
+   },
+   "missScene": {
+    "crate": "4 long, 3 wide, 3 tall (unit marks on its edges)",
+    "cubesOnTheFloor": 12,
+    "layersStacked": 1,
+    "mostLayersTheCubesMake": 1,
+    "volumeSign": "10 cubic units"
+   }
+  },
+  {
+   "params": {
+    "mode": "design",
+    "fixedHeight": 2,
+    "target": 24,
+    "start": [
+     1,
+     1,
+     2
+    ]
+   },
+   "ask": "Make a crate 2 cubes tall that holds exactly 24 cubes.",
+   "goal": "Length × width = 12 with height 2 (4 by 3, 6 by 2 or 3 by 4).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    }
+   ],
+   "scene": {
+    "boxTheChildBuilt": "1 long, 1 wide, 2 tall",
+    "heightIsSetTo": 2
+   },
+   "proofScene": {
+    "boxTheChildBuilt": "4 long, 3 wide, 2 tall",
+    "heightIsSetTo": 2
+   },
+   "missScene": {
+    "boxTheChildBuilt": "6 long, 4 wide, 2 tall",
+    "heightIsSetTo": 2
+   }
+  },
+  {
+   "params": {
+    "mode": "design",
+    "target": 24,
+    "ref": [
+     2,
+     2,
+     3
+    ],
+    "start": [
+     2,
+     2,
+     3
+    ]
+   },
+   "ask": "Make a crate that holds exactly twice as many cubes as the grey crate.",
+   "goal": "Any crate of 24 cubes, e.g. doubling one edge only (2 by 2 by 6).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#h-plus"
+    },
+    {
+     "do": "click",
+     "target": "#h-plus"
+    },
+    {
+     "do": "click",
+     "target": "#h-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#l-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    },
+    {
+     "do": "click",
+     "target": "#w-plus"
+    },
+    {
+     "do": "click",
+     "target": "#h-plus"
+    },
+    {
+     "do": "click",
+     "target": "#h-plus"
+    },
+    {
+     "do": "click",
+     "target": "#h-plus"
+    }
+   ],
+   "scene": {
+    "boxTheChildBuilt": "2 long, 2 wide, 3 tall",
+    "greyBox": "2 long, 2 wide, 3 tall"
+   },
+   "proofScene": {
+    "boxTheChildBuilt": "2 long, 2 wide, 6 tall",
+    "greyBox": "2 long, 2 wide, 3 tall"
+   },
+   "missScene": {
+    "boxTheChildBuilt": "4 long, 4 wide, 6 tall",
+    "greyBox": "2 long, 2 wide, 3 tall"
+   }
+  }
+ ]
+}

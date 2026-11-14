@@ -1,0 +1,1071 @@
+{
+ "id": "pizza-share",
+ "title": "Pizza Party",
+ "serves": {
+  "grades": [
+   "5"
+  ],
+  "summary": "The learner cuts whole pizzas into equal slices and deals them so every friend gets the same amount with none left over, which shows that a fraction a/b is a divided by b (3 pizzas for 4 friends is 3/4 each; 5 for 3 is 1 2/3 each)."
+ },
+ "request": {
+  "topic": "Fractions as division",
+  "grade": "grade 5",
+  "objective": "Interpret a fraction as division of the numerator by the denominator (a/b = a ÷ b) by sharing wholes equally, including shares less than and greater than one whole (5.NF.B.3)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const pizzas = Math.max(1, Math.min(5, Number(params.pizzas) || 3));\n  const friends = Math.max(2, Math.min(6, Number(params.friends) || 4));\n  const startCut = Math.max(1, Math.min(8, Number(params.startCut) || 1));\n  const MAXCUT = 8;\n  const UNIT = 840; // every cut 1..8 divides 840, so shares compare as whole numbers\n\n  const [cuts, setCuts] = useState(() => Array.from({ length: pizzas }, () => startCut));\n  // where[p][s] = -1 on the counter, or the plate index it was dealt to (in deal order kept by `order`)\n  const [where, setWhere] = useState(() => Array.from({ length: pizzas }, () => Array.from({ length: startCut }, () => -1)));\n  const [order, setOrder] = useState([]); // [p, s] in the order they were dealt, so a plate fills in that order\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n\n  const W = 680, H = 450;\n  const R = 46;\n  const pizzaX = p => (W / (pizzas + 1)) * (p + 1);\n  const PY = 92;\n  const plateW = Math.min(104, (W - 40) / friends - 10);\n  const plateX = k => 20 + ((W - 40) / friends) * k + ((W - 40) / friends - plateW) / 2;\n  const PLATE_Y = 268, PLATE_H = 150;\n  const FACES = ['🧒', '👧', '👦', '🧑', '👩', '👨'];\n\n  const dealtFrom = p => where[p].some(w => w >= 0);\n  const plateAmount = k => {\n    let t = 0;\n    where.forEach((row, p) => row.forEach(w => { if (w === k) t += UNIT / cuts[p]; }));\n    return t;\n  };\n  const onCounter = where.reduce((n, row) => n + row.filter(w => w < 0).length, 0);\n\n  useEffect(() => {\n    const amounts = Array.from({ length: friends }, (_, k) => plateAmount(k));\n    const fair = onCounter === 0 && amounts.every(a => a === amounts[0]) && amounts[0] > 0;\n    lumina.goal(fair);\n    lumina.scene({\n      pizzasOnCounterAtStart: pizzas,\n      friends,\n      slicesEachPizzaIsCutInto: cuts,\n      slicesStillOnCounter: onCounter,\n      plates: Array.from({ length: friends }, (_, k) => {\n        const pieces = [];\n        order.forEach(([p, s]) => { if (where[p][s] === k) pieces.push(cuts[p] === 1 ? 'whole pizza' : '1/' + cuts[p] + ' of a pizza'); });\n        return { friend: k + 1, pieces };\n      }),\n    });\n  }, [cuts, where, order]);\n\n  const setCut = (p, d) => {\n    if (dealtFrom(p)) return;\n    const n = Math.max(1, Math.min(MAXCUT, cuts[p] + d));\n    setCuts(c => c.map((v, i) => (i === p ? n : v)));\n    setWhere(w => w.map((row, i) => (i === p ? Array.from({ length: n }, () => -1) : row)));\n  };\n\n  const sector = (cx, cy, r, a0, a1) => {\n    if (a1 - a0 >= Math.PI * 2 - 1e-6) return `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`;\n    const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);\n    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);\n    const big = a1 - a0 > Math.PI ? 1 : 0;\n    return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${big} 1 ${x1} ${y1} Z`;\n  };\n  const sliceAngles = (n, s) => {\n    const a0 = -Math.PI / 2 + (2 * Math.PI * s) / n;\n    return [a0, a0 + (2 * Math.PI) / n];\n  };\n  const pizzaFill = (cx, cy, r, a0, a1, key, extra) => { const inset = a1 - a0 >= Math.PI * 2 - 1e-6 ? 0 : 0.02; return (\n    <g key={key} {...extra}>\n      <path d={sector(cx, cy, r, a0, a1)} fill=\"#f59e0b\" stroke=\"#7c2d12\" strokeWidth=\"2.5\" />\n      <path d={sector(cx, cy, r * 0.82, a0 + inset, a1 - inset)} fill=\"#fcd34d\" stroke=\"none\" />\n      {[0.35, 0.65].map((t, i) => {\n        const a = a0 + (a1 - a0) * t, rr = r * (i ? 0.55 : 0.42);\n        return <circle key={i} cx={cx + rr * Math.cos(a)} cy={cy + rr * Math.sin(a)} r={r * 0.09} fill=\"#dc2626\" />;\n      })}\n    </g>\n  ); };\n\n  const grab = (p, s, e) => {\n    const pt = svgPoint(svgRef.current, e);\n    e.currentTarget.setPointerCapture(e.pointerId);\n    setDrag({ p, s, dx: pt.x - pizzaX(p), dy: pt.y - PY, x: pt.x, y: pt.y });\n  };\n  const move = e => { if (drag) { const pt = svgPoint(svgRef.current, e); setDrag({ ...drag, x: pt.x, y: pt.y }); } };\n  const drop = e => {\n    if (!drag) return;\n    const pt = svgPoint(svgRef.current, e);\n    const { p, s } = drag;\n    setDrag(null);\n    let k = -1;\n    for (let i = 0; i < friends; i++) {\n      const x = plateX(i);\n      if (pt.x >= x - 6 && pt.x <= x + plateW + 6 && pt.y >= PLATE_Y - 40 && pt.y <= PLATE_Y + PLATE_H + 6) k = i;\n    }\n    if (k < 0) return;\n    setWhere(w => w.map((row, i) => (i === p ? row.map((v, j) => (j === s ? k : v)) : row)));\n    setOrder(o => [...o.filter(([a, b]) => !(a === p && b === s)), [p, s]]);\n  };\n  const takeBack = (p, s) => {\n    setWhere(w => w.map((row, i) => (i === p ? row.map((v, j) => (j === s ? -1 : v)) : row)));\n    setOrder(o => o.filter(([a, b]) => !(a === p && b === s)));\n  };\n\n  // A plate shows its slices put back together into pizzas, so the share reads as an amount of pizza.\n  const plateDraw = k => {\n    const x = plateX(k), cx = x + plateW / 2;\n    const r = Math.min(30, plateW / 2 - 12);\n    const slots = [PLATE_Y + 48, PLATE_Y + 112];\n    let filled = 0; // in UNITs, across the plate's circles\n    const out = [];\n    order.forEach(([p, s], idx) => {\n      if (where[p][s] !== k) return;\n      const size = UNIT / cuts[p];\n      let circle = Math.floor(filled / UNIT);\n      if ((filled % UNIT) + size > UNIT) { circle += 1; filled = circle * UNIT; }\n      const start = filled % UNIT;\n      filled += size;\n      const cy = slots[Math.min(circle, 1)] + (circle > 1 ? 10 * (circle - 1) : 0);\n      const a0 = -Math.PI / 2 + (2 * Math.PI * start) / UNIT;\n      const a1 = a0 + (2 * Math.PI * size) / UNIT;\n      out.push(pizzaFill(cx, cy, r, a0, a1, 'pp' + idx, {\n        id: `plate-${k}-piece-${p}-${s}`,\n        onClick: () => takeBack(p, s),\n        style: { cursor: 'pointer' },\n      }));\n    });\n    return (\n      <g key={'plate' + k}>\n        <text x={cx} y={PLATE_Y - 12} textAnchor=\"middle\" fontSize=\"32\">{FACES[k % FACES.length]}</text>\n        <rect id={`plate-${k}`} x={x} y={PLATE_Y} width={plateW} height={PLATE_H} rx=\"14\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {slots.map((sy, i) => <circle key={i} cx={cx} cy={sy} r={r} fill=\"none\" stroke=\"#475569\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" />)}\n        {out}\n      </g>\n    );\n  };\n\n  return (\n    <Panel title=\"Pizza Party\" caption=\"Tap − or + under a pizza to cut it. Drag a slice to a plate; tap a slice on a plate to take it back.\">\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={move} style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"14\" y=\"20\" width={W - 28} height=\"190\" rx=\"16\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {Array.from({ length: pizzas }, (_, p) => {\n          const cx = pizzaX(p), n = cuts[p], locked = dealtFrom(p);\n          return (\n            <g key={'pz' + p}>\n              <circle cx={cx} cy={PY} r={R + 6} fill=\"#e2e8f0\" opacity=\"0.12\" />\n              <circle cx={cx} cy={PY} r={R} fill=\"none\" stroke=\"#475569\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" />\n              {Array.from({ length: n }, (_, s) => {\n                if (where[p][s] >= 0) return null;\n                const held = drag && drag.p === p && drag.s === s;\n                const [a0, a1] = sliceAngles(n, s);\n                return pizzaFill(cx, PY, R, a0, a1, 's' + s, {\n                  id: `slice-${p}-${s}`,\n                  onPointerDown: e => grab(p, s, e),\n                  onPointerUp: drop,\n                  opacity: held ? 0 : 1,\n                  style: { cursor: 'grab', touchAction: 'none' },\n                });\n              })}\n              {!locked && (\n                <g>\n                  <g id={`cut-minus-${p}`} onClick={() => setCut(p, -1)} style={{ cursor: 'pointer' }} opacity={n > 1 ? 1 : 0.35}>\n                    <rect x={cx - 62} y={150} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n                    <text x={cx - 40} y={179} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">−</text>\n                  </g>\n                  <text x={cx} y={178} textAnchor=\"middle\" fontSize=\"16\" fill=\"#cbd5e1\">🔪 {n}</text>\n                  <g id={`cut-plus-${p}`} onClick={() => setCut(p, 1)} style={{ cursor: 'pointer' }} opacity={n < MAXCUT ? 1 : 0.35}>\n                    <rect x={cx + 18} y={150} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n                    <text x={cx + 40} y={179} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">+</text>\n                  </g>\n                </g>\n              )}\n            </g>\n          );\n        })}\n        {Array.from({ length: friends }, (_, k) => plateDraw(k))}\n        {drag && drag.x !== undefined && (() => {\n          const [a0, a1] = sliceAngles(cuts[drag.p], drag.s);\n          return <g pointerEvents=\"none\" opacity=\"0.92\">{pizzaFill(drag.x - drag.dx, drag.y - drag.dy, R, a0, a1, 'drag')}</g>;\n        })()}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "pizzas": 3,
+    "friends": 4,
+    "startCut": 1
+   },
+   "ask": "Share the 3 pizzas fairly among 4 friends. Use up all the pizza.",
+   "goal": "Every slice is on a plate and each friend has the same amount: 3/4 of a pizza (for example three quarter slices).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2",
+     "shot": "cut"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-3",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-3",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-3",
+     "to": "#plate-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-2",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-1",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-2",
+     "to": "#plate-0"
+    }
+   ],
+   "scene": {
+    "pizzasOnCounterAtStart": 3,
+    "friends": 4,
+    "slicesEachPizzaIsCutInto": [
+     1,
+     1,
+     1
+    ],
+    "slicesStillOnCounter": 3,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": []
+     },
+     {
+      "friend": 2,
+      "pieces": []
+     },
+     {
+      "friend": 3,
+      "pieces": []
+     },
+     {
+      "friend": 4,
+      "pieces": []
+     }
+    ]
+   },
+   "proofScene": {
+    "pizzasOnCounterAtStart": 3,
+    "friends": 4,
+    "slicesEachPizzaIsCutInto": [
+     4,
+     4,
+     4
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 4,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "pizzasOnCounterAtStart": 3,
+    "friends": 4,
+    "slicesEachPizzaIsCutInto": [
+     3,
+     3,
+     3
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 4,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "pizzas": 2,
+    "friends": 3,
+    "startCut": 2
+   },
+   "ask": "These 2 pizzas come cut in halves. Share them fairly among 3 friends, with no pizza left over.",
+   "goal": "The pizzas are re-cut so the slices deal evenly, and each friend has 2/3 of a pizza.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1",
+     "shot": "cut"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-2",
+     "to": "#plate-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-0"
+    }
+   ],
+   "scene": {
+    "pizzasOnCounterAtStart": 2,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     2,
+     2
+    ],
+    "slicesStillOnCounter": 4,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": []
+     },
+     {
+      "friend": 2,
+      "pieces": []
+     },
+     {
+      "friend": 3,
+      "pieces": []
+     }
+    ]
+   },
+   "proofScene": {
+    "pizzasOnCounterAtStart": 2,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     3,
+     3
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "pizzasOnCounterAtStart": 2,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     2,
+     2
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/2 of a pizza",
+       "1/2 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/2 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/2 of a pizza"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "pizzas": 5,
+    "friends": 3,
+    "startCut": 1
+   },
+   "ask": "Share 5 pizzas fairly among 3 friends. Use up all the pizza.",
+   "goal": "Each friend has 1 and 2/3 pizzas (5/3) and nothing is left on the counter.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-2",
+     "shot": "wholes"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-4"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-4",
+     "shot": "cut"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-4-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-4-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-4-2",
+     "to": "#plate-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-4"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-4-0",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-4-1",
+     "to": "#plate-0"
+    }
+   ],
+   "scene": {
+    "pizzasOnCounterAtStart": 5,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "slicesStillOnCounter": 5,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": []
+     },
+     {
+      "friend": 2,
+      "pieces": []
+     },
+     {
+      "friend": 3,
+      "pieces": []
+     }
+    ]
+   },
+   "proofScene": {
+    "pizzasOnCounterAtStart": 5,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     1,
+     1,
+     1,
+     3,
+     3
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "whole pizza",
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "whole pizza",
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "whole pizza",
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "pizzasOnCounterAtStart": 5,
+    "friends": 3,
+    "slicesEachPizzaIsCutInto": [
+     1,
+     1,
+     1,
+     2,
+     2
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "whole pizza",
+       "1/2 of a pizza",
+       "1/2 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "whole pizza",
+       "1/2 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "whole pizza",
+       "1/2 of a pizza"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "params": {
+    "pizzas": 4,
+    "friends": 6,
+    "startCut": 1
+   },
+   "ask": "Share 4 pizzas fairly among 6 friends. Use up all the pizza.",
+   "goal": "Each friend has 4/6 = 2/3 of a pizza (thirds, sixths or any fair mix pass).",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3",
+     "shot": "cut"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-4"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-2",
+     "to": "#plate-5"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-0",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-1",
+     "to": "#plate-4"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-2",
+     "to": "#plate-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-0"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-1"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-2"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "click",
+     "target": "#cut-plus-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-0-3",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-0",
+     "to": "#plate-4"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-1",
+     "to": "#plate-5"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-2",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-1-3",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-0",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-1",
+     "to": "#plate-3"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-2",
+     "to": "#plate-4"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-2-3",
+     "to": "#plate-5"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-0",
+     "to": "#plate-0"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-1",
+     "to": "#plate-1"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-2",
+     "to": "#plate-2"
+    },
+    {
+     "do": "drag",
+     "target": "#slice-3-3",
+     "to": "#plate-3"
+    }
+   ],
+   "scene": {
+    "pizzasOnCounterAtStart": 4,
+    "friends": 6,
+    "slicesEachPizzaIsCutInto": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "slicesStillOnCounter": 4,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": []
+     },
+     {
+      "friend": 2,
+      "pieces": []
+     },
+     {
+      "friend": 3,
+      "pieces": []
+     },
+     {
+      "friend": 4,
+      "pieces": []
+     },
+     {
+      "friend": 5,
+      "pieces": []
+     },
+     {
+      "friend": 6,
+      "pieces": []
+     }
+    ]
+   },
+   "proofScene": {
+    "pizzasOnCounterAtStart": 4,
+    "friends": 6,
+    "slicesEachPizzaIsCutInto": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 4,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 5,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     },
+     {
+      "friend": 6,
+      "pieces": [
+       "1/3 of a pizza",
+       "1/3 of a pizza"
+      ]
+     }
+    ]
+   },
+   "missScene": {
+    "pizzasOnCounterAtStart": 4,
+    "friends": 6,
+    "slicesEachPizzaIsCutInto": [
+     4,
+     4,
+     4,
+     4
+    ],
+    "slicesStillOnCounter": 0,
+    "plates": [
+     {
+      "friend": 1,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 2,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 3,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 4,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 5,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     },
+     {
+      "friend": 6,
+      "pieces": [
+       "1/4 of a pizza",
+       "1/4 of a pizza"
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

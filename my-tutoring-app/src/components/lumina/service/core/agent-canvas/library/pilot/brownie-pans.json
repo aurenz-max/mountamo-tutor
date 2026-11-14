@@ -1,0 +1,613 @@
+{
+ "id": "brownie-pans",
+ "title": "Brownie Bake Sale",
+ "serves": {
+  "grades": [
+   "5"
+  ],
+  "summary": "The learner cuts brownie pans to find how many unit-fraction servings are in whole pans (2 ÷ 1/3 = 6) and how much of the whole pan one friend gets when a leftover unit fraction is shared (1/3 ÷ 4 = 1/12), which shows division with unit fractions."
+ },
+ "request": {
+  "topic": "Dividing with unit fractions",
+  "grade": "grade 5",
+  "objective": "Divide a whole number by a unit fraction and a unit fraction by a whole number using a visual model, and explain the quotient (2 ÷ 1/3 = 6 because each whole has 3 thirds; 1/3 ÷ 4 = 1/12 of the whole) (5.NF.B.7)."
+ },
+ "source": "function Display({ params, lumina }) {\n  const mode = params.mode === 'share' ? 'share' : 'servings';\n  const pans = Math.max(1, Math.min(4, Number(params.pans) || 2));\n  const b = Math.max(2, Math.min(6, Number(params.serving) || 3)); // a serving, or what is left, is 1/b of a pan\n  const friends = Math.max(2, Math.min(6, Number(params.friends) || 4));\n  const cuttable = Math.max(0, Math.min(pans, params.cuttable === undefined ? pans : Number(params.cuttable)));\n  const guides = params.guides !== false;\n\n  const [cuts, setCuts] = useState(() => Array.from({ length: mode === 'share' ? 1 : pans }, () => 1)); // pieces per pan (or in the leftover)\n  const [sign, setSign] = useState(0);\n\n  useEffect(() => {\n    const met = mode === 'servings' ? sign === pans * b : sign === b * friends;\n    lumina.goal(met);\n    lumina.scene(mode === 'servings'\n      ? {\n          pans,\n          oneServing: `1/${b} of a pan`,\n          pansUnderFoil: pans - cuttable,\n          piecesEachOpenPanIsCutInto: cuts.slice(0, cuttable),\n          servingsSign: sign === 0 ? 'not set' : sign,\n        }\n      : {\n          leftInPan: `1/${b} of the pan`,\n          friends,\n          piecesTheLeftoverIsCutInto: cuts[0],\n          dottedGuidesAcrossTheEmptyPan: guides,\n          eachFriendGetsSign: sign === 0 ? 'not set' : `1/${sign} of the whole pan`,\n        });\n  }, [cuts, sign]);\n\n  const setCut = (i, d) => setCuts(c => c.map((v, k) => (k === i ? Math.max(1, Math.min(12, v + d)) : v)));\n  const W = 680, H = 430;\n\n  const stepper = (id, x, y, onMinus, onPlus, label, minusDim, plusDim) => (\n    <g>\n      <g id={id + '-minus'} onClick={onMinus} style={{ cursor: 'pointer' }} opacity={minusDim ? 0.35 : 1}>\n        <rect x={x - 70} y={y - 22} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <text x={x - 48} y={y + 8} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">−</text>\n      </g>\n      <text x={x} y={y + 7} textAnchor=\"middle\" fontSize=\"18\" fill=\"#cbd5e1\">{label}</text>\n      <g id={id + '-plus'} onClick={onPlus} style={{ cursor: 'pointer' }} opacity={plusDim ? 0.35 : 1}>\n        <rect x={x + 26} y={y - 22} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <text x={x + 48} y={y + 8} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">+</text>\n      </g>\n    </g>\n  );\n  const brownie = (x, y, w, h, key) => (\n    <g key={key}>\n      <rect x={x} y={y} width={w} height={h} fill=\"#78350f\" />\n      <rect x={x + 3} y={y + 3} width={Math.max(0, w - 6)} height={Math.max(0, h - 6)} fill=\"#92400e\" />\n    </g>\n  );\n  const panFrame = (x, y, w, h) => <rect x={x - 6} y={y - 6} width={w + 12} height={h + 12} rx=\"8\" fill=\"#94a3b8\" opacity=\"0.25\" stroke=\"#64748b\" strokeWidth=\"2\" />;\n\n  const signCard = (y, text1, text2) => (\n    <g>\n      <rect x=\"60\" y={y - 40} width=\"570\" height=\"80\" rx=\"16\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n      <text x=\"80\" y={y + 7} fontSize=\"20\" fill=\"#e2e8f0\">{text1}</text>\n      <g id=\"sign-minus\" onClick={() => setSign(s => Math.max(0, s - 1))} style={{ cursor: 'pointer' }} opacity={sign > 0 ? 1 : 0.35}>\n        <rect x=\"346\" y={y - 22} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <text x=\"368\" y={y + 8} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">−</text>\n      </g>\n      <rect x=\"398\" y={y - 26} width=\"64\" height=\"52\" rx=\"10\" fill=\"none\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n      <text x=\"430\" y={y + 9} textAnchor=\"middle\" fontSize=\"26\" fontWeight=\"700\" fill=\"#22d3ee\">{sign === 0 ? '?' : sign}</text>\n      <g id=\"sign-plus\" onClick={() => setSign(s => Math.min(48, s + 1))} style={{ cursor: 'pointer' }}>\n        <rect x=\"470\" y={y - 22} width=\"44\" height=\"44\" rx=\"10\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        <text x=\"492\" y={y + 8} textAnchor=\"middle\" fontSize=\"24\" fill=\"#e2e8f0\">+</text>\n      </g>\n      {text2 && <text x=\"524\" y={y + 7} fontSize=\"18\" fill=\"#cbd5e1\">{text2}</text>}\n    </g>\n  );\n\n  if (mode === 'servings') {\n    const PW = 112, PH = 90, PY = 70;\n    const gap = 30, plateW = PW / b + 40;\n    const total = pans * PW + (pans - 1) * gap + 40 + plateW;\n    const left = (W - total) / 2;\n    const px = i => left + i * (PW + gap);\n    const plateX = left + pans * (PW + gap) + 10;\n    return (\n      <Panel title=\"Brownie Bake Sale\" caption=\"Tap − or + under a pan to cut it. Tap − or + on the sign to set it.\">\n        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n          <rect width={W} height={H} fill=\"#0f172a\" />\n          <rect x=\"14\" y=\"22\" width={W - 28} height=\"240\" rx=\"16\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n          {Array.from({ length: pans }, (_, i) => {\n            const x = px(i), open = i < cuttable, n = cuts[i];\n            return (\n              <g key={'pan' + i}>\n                {panFrame(x, PY, PW, PH)}\n                {brownie(x, PY, PW, PH, 'b' + i)}\n                {open && Array.from({ length: n - 1 }, (_, k) => (\n                  <line key={k} x1={x + (PW * (k + 1)) / n} y1={PY} x2={x + (PW * (k + 1)) / n} y2={PY + PH} stroke=\"#fde68a\" strokeWidth=\"2.5\" />\n                ))}\n                {!open && (\n                  <g>\n                    <rect x={x - 6} y={PY - 6} width={PW + 12} height={PH + 12} rx=\"8\" fill=\"#cbd5e1\" />\n                    <path d={`M ${x + 6} ${PY + 20} l 30 18 l 24 -12 l 30 22 l 16 -8`} stroke=\"#94a3b8\" strokeWidth=\"2\" fill=\"none\" />\n                    <text x={x + PW / 2} y={PY + PH - 12} textAnchor=\"middle\" fontSize=\"15\" fill=\"#334155\">foil</text>\n                  </g>\n                )}\n                {open && stepper(`cut-${i}`, x + PW / 2, PY + PH + 50, () => setCut(i, -1), () => setCut(i, 1), `🔪 ${n}`, n <= 1, n >= 12)}\n              </g>\n            );\n          })}\n          {/* one serving, to scale */}\n          <rect x={plateX} y={PY - 6} width={plateW} height={PH + 12} rx=\"12\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"2\" />\n          {brownie(plateX + 20, PY, PW / b, PH, 'serving')}\n          <text x={plateX + plateW / 2} y={PY + PH + 30} textAnchor=\"middle\" fontSize=\"15\" fill=\"#cbd5e1\">1 serving</text>\n          <text x={plateX + plateW / 2} y={PY + PH + 50} textAnchor=\"middle\" fontSize=\"15\" fill=\"#cbd5e1\">{`1/${b} pan`}</text>\n          {signCard(340, 'Servings we can sell:', null)}\n        </svg>\n      </Panel>\n    );\n  }\n\n  // share: 1/b of one pan is left, and `friends` friends share it\n  const PX = 150, PY = 50, PW = 300, PH = 190;\n  const stripW = PW / b, n = cuts[0];\n  const faces = ['🧒', '👧', '👦', '🧑', '👩', '👨'];\n  return (\n    <Panel title=\"Leftover Brownies\" caption=\"Tap − or + beside the pan to cut the brownie that is left. Tap − or + on the sign to set it.\">\n      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n        <rect width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"14\" y=\"22\" width={W - 28} height=\"300\" rx=\"16\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {panFrame(PX, PY, PW, PH)}\n        <rect x={PX} y={PY} width={PW} height={PH} fill=\"#0f172a\" opacity=\"0.6\" />\n        {Array.from({ length: 14 }, (_, k) => (\n          <circle key={'cr' + k} cx={PX + stripW + ((k * 53) % (PW - stripW - 12)) + 6} cy={PY + 14 + ((k * 37) % (PH - 24))} r=\"2.5\" fill=\"#78350f\" opacity=\"0.7\" />\n        ))}\n        {brownie(PX, PY, stripW, PH, 'left')}\n        {Array.from({ length: n - 1 }, (_, k) => (\n          <line key={'c' + k} x1={PX} y1={PY + (PH * (k + 1)) / n} x2={PX + stripW} y2={PY + (PH * (k + 1)) / n} stroke=\"#fde68a\" strokeWidth=\"2.5\" />\n        ))}\n        {guides && Array.from({ length: n - 1 }, (_, k) => (\n          <line key={'gh' + k} x1={PX + stripW} y1={PY + (PH * (k + 1)) / n} x2={PX + PW} y2={PY + (PH * (k + 1)) / n} stroke=\"#94a3b8\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" />\n        ))}\n        {guides && Array.from({ length: b - 1 }, (_, k) => (\n          <line key={'gv' + k} x1={PX + stripW * (k + 1)} y1={PY} x2={PX + stripW * (k + 1)} y2={PY + PH} stroke=\"#94a3b8\" strokeWidth=\"1.5\" strokeDasharray=\"6 5\" />\n        ))}\n        <rect x={PX} y={PY} width={PW} height={PH} fill=\"none\" stroke=\"#64748b\" strokeWidth=\"2\" />\n        {stepper('cut-0', PX + PW + 110, PY + PH / 2, () => setCut(0, -1), () => setCut(0, 1), `🔪 ${n}`, n <= 1, n >= 12)}\n        <text x={PX + PW / 2} y={PY + PH + 28} textAnchor=\"middle\" fontSize=\"16\" fill=\"#cbd5e1\">{'one whole pan'}</text>\n        <g>\n          {Array.from({ length: friends }, (_, k) => (\n            <text key={'f' + k} x={W / 2 - ((friends - 1) * 44) / 2 + k * 44} y={PY + PH + 68} textAnchor=\"middle\" fontSize=\"32\">{faces[k % faces.length]}</text>\n          ))}\n        </g>\n        {signCard(375, 'Each friend gets 1 /', 'of the pan')}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "mode": "servings",
+    "pans": 2,
+    "serving": 3
+   },
+   "ask": "Each serving is 1/3 of a pan. How many servings can we sell from 2 pans?",
+   "goal": "The sign says 6: 2 ÷ 1/3 = 6.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-1-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-1-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus",
+     "shot": "cut"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "pans": 2,
+    "oneServing": "1/3 of a pan",
+    "pansUnderFoil": 0,
+    "piecesEachOpenPanIsCutInto": [
+     1,
+     1
+    ],
+    "servingsSign": "not set"
+   },
+   "proofScene": {
+    "pans": 2,
+    "oneServing": "1/3 of a pan",
+    "pansUnderFoil": 0,
+    "piecesEachOpenPanIsCutInto": [
+     3,
+     3
+    ],
+    "servingsSign": 6
+   },
+   "missScene": {
+    "pans": 2,
+    "oneServing": "1/3 of a pan",
+    "pansUnderFoil": 0,
+    "piecesEachOpenPanIsCutInto": [
+     3,
+     1
+    ],
+    "servingsSign": 3
+   }
+  },
+  {
+   "params": {
+    "mode": "servings",
+    "pans": 3,
+    "serving": 4,
+    "cuttable": 1
+   },
+   "ask": "Each serving is 1/4 of a pan. How many servings are in 3 pans? Two pans are still under foil.",
+   "goal": "The sign says 12: 4 servings in each pan, 3 pans.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "pans": 3,
+    "oneServing": "1/4 of a pan",
+    "pansUnderFoil": 2,
+    "piecesEachOpenPanIsCutInto": [
+     1
+    ],
+    "servingsSign": "not set"
+   },
+   "proofScene": {
+    "pans": 3,
+    "oneServing": "1/4 of a pan",
+    "pansUnderFoil": 2,
+    "piecesEachOpenPanIsCutInto": [
+     4
+    ],
+    "servingsSign": 12
+   },
+   "missScene": {
+    "pans": 3,
+    "oneServing": "1/4 of a pan",
+    "pansUnderFoil": 2,
+    "piecesEachOpenPanIsCutInto": [
+     4
+    ],
+    "servingsSign": 4
+   }
+  },
+  {
+   "params": {
+    "mode": "share",
+    "serving": 3,
+    "friends": 4,
+    "guides": true
+   },
+   "ask": "1/3 of the pan is left. 4 friends share it equally. How much of the whole pan does each friend get?",
+   "goal": "The sign says 1/12: 1/3 ÷ 4 = 1/12.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus",
+     "shot": "cut"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "leftInPan": "1/3 of the pan",
+    "friends": 4,
+    "piecesTheLeftoverIsCutInto": 1,
+    "dottedGuidesAcrossTheEmptyPan": true,
+    "eachFriendGetsSign": "not set"
+   },
+   "proofScene": {
+    "leftInPan": "1/3 of the pan",
+    "friends": 4,
+    "piecesTheLeftoverIsCutInto": 4,
+    "dottedGuidesAcrossTheEmptyPan": true,
+    "eachFriendGetsSign": "1/12 of the whole pan"
+   },
+   "missScene": {
+    "leftInPan": "1/3 of the pan",
+    "friends": 4,
+    "piecesTheLeftoverIsCutInto": 4,
+    "dottedGuidesAcrossTheEmptyPan": true,
+    "eachFriendGetsSign": "1/4 of the whole pan"
+   }
+  },
+  {
+   "params": {
+    "mode": "share",
+    "serving": 2,
+    "friends": 3,
+    "guides": false
+   },
+   "ask": "1/2 of the pan is left. 3 friends share it equally. How much of the whole pan does each friend get?",
+   "goal": "The sign says 1/6: 1/2 ÷ 3 = 1/6, with no guide lines on the empty pan.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#cut-0-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "leftInPan": "1/2 of the pan",
+    "friends": 3,
+    "piecesTheLeftoverIsCutInto": 1,
+    "dottedGuidesAcrossTheEmptyPan": false,
+    "eachFriendGetsSign": "not set"
+   },
+   "proofScene": {
+    "leftInPan": "1/2 of the pan",
+    "friends": 3,
+    "piecesTheLeftoverIsCutInto": 3,
+    "dottedGuidesAcrossTheEmptyPan": false,
+    "eachFriendGetsSign": "1/6 of the whole pan"
+   },
+   "missScene": {
+    "leftInPan": "1/2 of the pan",
+    "friends": 3,
+    "piecesTheLeftoverIsCutInto": 3,
+    "dottedGuidesAcrossTheEmptyPan": false,
+    "eachFriendGetsSign": "1/3 of the whole pan"
+   }
+  },
+  {
+   "params": {
+    "mode": "servings",
+    "pans": 4,
+    "serving": 5,
+    "cuttable": 0
+   },
+   "ask": "Each serving is 1/5 of a pan. All 4 pans are under foil. How many servings can we sell?",
+   "goal": "The sign says 20: 4 ÷ 1/5 = 20.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    },
+    {
+     "do": "click",
+     "target": "#sign-plus"
+    }
+   ],
+   "scene": {
+    "pans": 4,
+    "oneServing": "1/5 of a pan",
+    "pansUnderFoil": 4,
+    "piecesEachOpenPanIsCutInto": [],
+    "servingsSign": "not set"
+   },
+   "proofScene": {
+    "pans": 4,
+    "oneServing": "1/5 of a pan",
+    "pansUnderFoil": 4,
+    "piecesEachOpenPanIsCutInto": [],
+    "servingsSign": 20
+   },
+   "missScene": {
+    "pans": 4,
+    "oneServing": "1/5 of a pan",
+    "pansUnderFoil": 4,
+    "piecesEachOpenPanIsCutInto": [],
+    "servingsSign": 9
+   }
+  }
+ ]
+}
