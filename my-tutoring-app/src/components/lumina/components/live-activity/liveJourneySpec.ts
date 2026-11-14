@@ -176,6 +176,7 @@ import { hundredsChartBoss } from '../../primitives/visual-primitives/math/hundr
 import { skipCountingBoss } from '../../primitives/visual-primitives/math/skipCounting.boss';
 import { mathFactFluencyBoss } from '../../primitives/visual-primitives/math/mathFactFluency.boss';
 import { additionFactStrategiesBoss } from '../../primitives/visual-primitives/math/additionFactStrategies.boss';
+import { dotCardsBoss } from '../../primitives/visual-primitives/math/dotCards.boss';
 import { equationBuilderBoss } from '../../primitives/visual-primitives/math/equationBuilder.boss';
 import { patternBuilderBoss } from '../../primitives/visual-primitives/math/patternBuilder.boss';
 import { angleWorkshopBoss } from '../../primitives/visual-primitives/math/angleWorkshop.boss';
@@ -522,6 +523,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
   'skip-counting-runner': bossJourney(skipCountingBoss),
   'math-fact-fluency': bossJourney(mathFactFluencyBoss),
   'addition-fact-strategies': bossJourney(additionFactStrategiesBoss),
+  'dot-cards': bossJourney(dotCardsBoss),
   'equation-builder': bossJourney(equationBuilderBoss),
   'pattern-builder': bossJourney(patternBuilderBoss),
   'strategy-picker': bossJourney(strategyPickerBoss),

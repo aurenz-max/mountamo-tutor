@@ -44,6 +44,7 @@ import { hundredsChartCard } from '../../../primitives/visual-primitives/math/hu
 import { skipCountingCard } from '../../../primitives/visual-primitives/math/skipCounting.card';
 import { mathFactFluencyCard } from '../../../primitives/visual-primitives/math/mathFactFluency.card';
 import { additionFactStrategiesCard } from '../../../primitives/visual-primitives/math/additionFactStrategies.card';
+import { dotCardsCard } from '../../../primitives/visual-primitives/math/dotCards.card';
 import { angleWorkshopCard } from '../../../primitives/visual-primitives/math/angleWorkshop.card';
 import { numberBondCard } from '../../../primitives/visual-primitives/math/numberBond.card';
 import { numberLineCard } from '../../../primitives/visual-primitives/math/numberLine.card';
@@ -2896,6 +2897,17 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     ...bossEntry(additionFactStrategiesCard),
+  },
+  {
+    id: 'dot-cards',
+    description: 'Quick-look DOT CARDS for CONCEPTUAL SUBITIZING in Kindergarten-Grade 1 math (K.CC.B.5 how many; K.OA.A.3 decompose numbers within 10; 1.OA.C.6 add within 10). Each card shows two colored groups of 1-5 dots (two dice patterns, two rows, a ten-frame, or scattered dots). The child flips the card for one quick look, it turns back over, and they say the total or tap it on a 1-10 pad: seeing "3 and 2 make 5" at a glance instead of counting one by one. A solved card turns face up with its two groups named. Totals 2-10; the difficulty is the card structure (group sizes and arrangement). Use for subitizing, quick images, dot cards, seeing parts of a number, and composing small numbers. Differs from counting-board (counts or flashes ONE group of objects) and ten-frame (builds and decomposes on a frame).',
+    constraints: 'Totals 2-10, two groups of 1-5 dots in two colors. One look per try; no visible timer. The manifest must NOT supply dots, totals or answers: code builds every card from the support tier.',
+    affordances: { representation: 'pictorial', answers: ['spoken', 'tap'], role: 'apply', minutes: 4 },
+    evalModes: [
+      { evalMode: 'quick_total', label: 'Quick Look Total', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['quick_total'], description: 'Flip a two-color dot card for one quick look, then say or tap how many dots altogether.' },
+    ],
+    supportsEvaluation: true,
+    ...bossEntry(dotCardsCard),
   },
   {
     id: 'strategy-picker',

@@ -18,6 +18,7 @@ import { generateDoubleNumberLine } from '../../math/gemini-double-number-line';
 import { generateTapeDiagram } from '../../math/gemini-tape-diagram';
 import { generateFactorTree } from '../../math/gemini-factor-tree';
 import { generateAdditionFactStrategies } from '../../math/gemini-addition-fact-strategies';
+import { generateDotCards } from '../../math/dot-cards-generator';
 import { generateRatioTable } from '../../math/gemini-ratio-table';
 import { generateBalanceScale } from '../../math/gemini-balance-scale';
 import { generateFunctionMachine } from '../../math/gemini-function-machine';
@@ -561,6 +562,13 @@ registerContextGenerator('percent-bar', async (ctx) => ({
   type: 'percent-bar',
   instanceId: ctx.instanceId,
   data: await generatePercentBar(ctx),
+}));
+
+// Dot Cards (quick-look two-color dot cards; code-only, no model call)
+registerContextGenerator('dot-cards', async (ctx) => ({
+  type: 'dot-cards',
+  instanceId: ctx.instanceId,
+  data: generateDotCards(ctx),
 }));
 
 // Addition Fact Strategies (strategy-sequenced facts within 20; facts built in code)

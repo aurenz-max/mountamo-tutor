@@ -227,6 +227,7 @@ export type {
   SpatialPathMetrics,
   AdditionFactStrategiesMetrics,
   ShapeComposerMetrics,
+  DotCardsMetrics,
   NetFolderMetrics,
   DeepDiveMetrics,
   WonderWalkMetrics,

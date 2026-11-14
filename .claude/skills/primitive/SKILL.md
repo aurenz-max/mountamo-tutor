@@ -27,10 +27,10 @@ This skill builds **L0 of the primitive lifecycle** (ladder: [PRIMITIVE_LIFECYCL
 
 **Deliberately NOT built at birth** (deferred to layers):
 - **Eval-mode ladder** — every mode beyond the core one, their β priors, `resolveEvalModes`, mixed-path (SP-21) handling → `/add-eval-modes`
-- **Support tiers, structural difficulty, sound, voice control** → their skills, in the ladder order the birth certificate prints (Phase 8). Spoken-production primitives wire voice with `/add-voice-control` (open-mic answer/choice); its doctrine — asymmetric grading + quiet-tutor laws, plus the push-to-talk reference — lives in `docs/SPOKEN_INTERACTION_DOCTRINE.md` (`/add-spoken-judge` was retired 2026-08-09).
+- **Support tiers, sound, voice control** → their skills, in the ladder order the birth certificate prints (Phase 8). Spoken-production primitives wire voice with `/add-voice-control` (open-mic answer/choice); its doctrine — asymmetric grading + quiet-tutor laws, plus the push-to-talk reference — lives in `docs/SPOKEN_INTERACTION_DOCTRINE.md`.
 
 **Never deferred** (expensive or impossible to retrofit — the reason this skill front-loads them):
-multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, `onEvaluationSubmit` wiring, the Pip surface (Phase 2d — where Pip may point is an answer-leak decision, and the dock is a layout decision, both made while the component is written), and **the tutor: the teaching-workspace binding** (Phase 2b). A primitive is born on the canonical tutor path: the live tutor teaches from the workspace, the observer or the primitive's own check commits, the runtime owns progression. It is never born on the legacy channel (`useLuminaAI` + bracket-tag `sendText` + a catalog `tutoring:` block), which `/add-live-tutor-tools` would then have to tear out (WB-5: 34 workspace families carried a dead block). The binding needs one catalog eval mode to pin, so birth declares the core mode, and only that one. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
+multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork C/A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, `onEvaluationSubmit` wiring, the Pip surface (Phase 2d — where Pip may point is an answer-leak decision, and the dock is a layout decision, both made while the component is written), and **the tutor: the teaching-workspace binding** (Phase 2b). A primitive is born on the canonical tutor path: the live tutor teaches from the workspace, the observer or the primitive's own check commits, the runtime owns progression. It is never born on the legacy channel (`useLuminaAI` + bracket-tag `sendText` + a catalog `tutoring:` block), which `/add-live-tutor-tools` would then have to tear out. The binding needs one catalog eval mode to pin, so birth declares the core mode, and only that one. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
 
 ## Architecture: Sequential Focused Agents
 
@@ -55,7 +55,7 @@ Phase 8: Birth certificate     (main agent — lifecycle L0 record + follow-up q
 
 ## Phase 1: Gather Requirements (Main Agent)
 
-**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD. Build only the birth contract now: pick the CORE challenge type from the PRD's list and carry the rest of the ladder into the birth certificate as follow-up-queue input for `/add-eval-modes`. A PRD's tutoring scaffold is not built as a `tutoring:` block: its domain rules (what stays hidden, what the tutor must never say) become `teachingWorkspace.guidance`, and its struggles become miss candidates.
+**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD. Build only the birth contract now: pick the CORE challenge type from the PRD's list and carry the rest of the ladder into the birth certificate as follow-up-queue input for `/add-eval-modes`. A PRD's tutoring scaffold is not built as a `tutoring:` block: its domain rules (what stays hidden, what the tutor must never say) become the card's `words` (`special` for a fact only this primitive has), and its struggles become miss candidates.
 
 **Otherwise**, ask the user for:
 - **Primitive name** (e.g., "CountingBoard", "FractionBar")
@@ -93,11 +93,11 @@ Pick one from the same domain:
 | engineering | `lumina/primitives/visual-primitives/engineering/TowerStacker.tsx` |
 | astronomy | `lumina/primitives/visual-primitives/astronomy/MissionPlanner.tsx` |
 | literacy | `lumina/primitives/visual-primitives/literacy/PhonicsBlender.tsx` |
-| physics | `lumina/primitives/visual-primitives/physics/InclinedPlane.tsx` |
+| physics | `lumina/primitives/visual-primitives/physics/GravityDropTower.tsx` |
 | core (explore+challenge) | `lumina/primitives/visual-primitives/core/FactFile.tsx` |
 | core (timed drill) | `lumina/primitives/visual-primitives/core/FastFact.tsx` |
 
-These are references for chrome and interaction only. Most predate the workspace and still call `useLuminaAI` / `sendText`; do not copy that part. The tutor-wiring reference is `math/BarModel.tsx` + `barModelWorkspace.ts` + `BarModel.workspace.test.tsx` (workspace-only, Check-driven, gesture and spoken items). For a spoken-only answer, use `literacy/PhonicsBlender.tsx`; for a checked gesture beside speech, `literacy/CvcSpeller.tsx`.
+These are references for chrome and interaction. The tutor-wiring reference is `math/BarModel.tsx` + `barModelWorkspace.ts` + `BarModel.workspace.test.tsx` (workspace-only, Check-driven, gesture and spoken items). For a spoken-only answer, use `literacy/PhonicsBlender.tsx`; for a checked gesture beside speech, `literacy/CvcSpeller.tsx`.
 
 ### 2b. Write the component
 
@@ -161,7 +161,7 @@ Classify the per-challenge data BEFORE designing the schema. This determines whe
 
 | Per-challenge data | Fork | Examples |
 |---|---|---|
-| **Code-authored** (the content is a world, simulation, or item space code builds fully — every item, answer and fixed label) | **C: Code-only** — no Gemini call. `registerContextGenerator` with a pure function of `ctx` (eval mode, `config.difficulty`, a seed) that returns N varied items; the catalog `description` names only the skills it was built for, so the manifest places it there and nowhere else | none yet — the first one is the pilot |
+| **Code-authored** (the content is a world, simulation, or item space code builds fully — every item, answer and fixed label) | **C: Code-only** — no Gemini call. `registerContextGenerator` with a pure function of `ctx` (eval mode, `config.difficulty`, a seed) that returns N varied items; the catalog `description` names only the skills it was built for, so the manifest places it there and nowhere else | `dot-cards`, `machine-workshop`, `circuit-workbench`, `buoyancy-harbor` (`service/<domain>/<id>-generator.ts`) |
 | **Value-only** (a number, coordinate, target, matrix values) | **A: Pool service** — Gemini emits wrapper only; local code picks N values | `factor-tree`, `place-value-chart`, `area-model`, `matrix-display`, `slope-triangle`, `histogram`, `systems-equations` |
 | **Content-bearing** (word problem text, scenario context, label sets) | **B: Orchestrator** — N parallel Gemini calls; results merged | `bar-model`, `tape-diagram`, `coin-counter` |
 
@@ -382,7 +382,7 @@ Tasks:
 Rules:
 - `description` is the retrieval surface for BOTH manifest selection and /curriculum-fit — name the skill taught, the grade band, and the subject explicitly.
 - `evalModes` holds the core mode ONLY. Every further mode is /add-eval-modes' layer (it owns the ladder, `resolveEvalModes` and the mixed path).
-- Do NOT add a `tutoring` field. A workspace-only family sends `tutoring: null`, so a block would reach no tutor (WB-5). The tutor's primitive-specific text is the card's `words`.
+- Do NOT add a `tutoring` field. A workspace-only family sends `tutoring: null`, so a block would reach no tutor. The tutor's primitive-specific text is the card's `words`.
 ```
 
 ### Subagent C: "Evaluation types & tester"
@@ -418,7 +418,7 @@ Tasks:
    - DO NOT add per-challenge tautological fields (currentInput, phaseStep, mode-specific per-instance state) — they measure the LAST challenge, not the session (PRD §5 rule 18). If the primitive has genuine session-level signal not captured by the 9 canonical fields, justify it before adding.
 
 2. Read `my-tutoring-app/src/components/lumina/evaluation/index.ts`
-   - Re-export `<Name>Metrics` (add to the math-phase-2 export block or appropriate domain block).
+   - Re-export `<Name>Metrics` in the domain's export block.
 
 3. Read `my-tutoring-app/src/components/lumina/components/<Domain>PrimitivesTester.tsx` and apply the 5-edit checklist (PRD §5 rule 17):
 
@@ -432,7 +432,7 @@ Tasks:
    type PrimitiveType = '...' | '<id>';
    ```
 
-   **Edit 3 — Add to `PRIMITIVE_OPTIONS`:**
+   **Edit 3 — Add to its group in `PRIMITIVE_GROUPS`** (`PRIMITIVE_OPTIONS` is derived from the groups; a tester with no groups lists options directly):
    ```tsx
    { value: '<id>', label: '<Display Name>', icon: '<emoji>', topic: '<short topic>' },
    ```
@@ -471,9 +471,7 @@ Tasks:
    ```
 ```
 
-**Why `onEvaluationSubmit` MUST be passed:** Every recent multi-instance ship (function-sketch, balance-scale, measurement-tools, slope-triangle, matrix-display, histogram, systems-equations) passes `onEvaluationSubmit`. The old "do NOT pass onEvaluationSubmit to avoid double submission" guidance was wrong — `usePrimitiveEvaluation` guards via `submittedRef` against double submission, and omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch §6i had this gap; matrix-display §6m had this gap). Always pass it.
-
-**There is no backend-registry subagent at birth.** β priors in `backend/app/services/calibration/problem_type_registry.py` are registered by `/add-eval-modes` together with the catalog `evalModes[]` — the two must match, so one skill owns both.
+**Why `onEvaluationSubmit` MUST be passed:** `usePrimitiveEvaluation` guards against double submission via `submittedRef`, and omitting the prop silently suppresses ALL metrics submission from the tester.
 
 ---
 
@@ -559,7 +557,7 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
    ```typescript
    const subGenerator = subGeneratorFor(challengeType);
    const results = await Promise.all(
-     Array.from({ length: DEFAULT_INSTANCE_COUNT }, () => subGenerator(topic, gradeLevel))
+     Array.from({ length: DEFAULT_INSTANCE_COUNT }, () => subGenerator(ctx.topic, ctx.gradeContext))
    );
    const challenges = results.map((r, i) => ({ ...r.challenge, id: `foo-${i + 1}` }));
    return { ...firstResult.wrapper, challenges };
@@ -623,6 +621,17 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
 
 10. **If using multi-type schema with nullable fields:** After flat-field reconstruction, VALIDATE that each challenge has all required fields for its type. REJECT (return null) any challenge missing critical data. NEVER silently fall back to a default value.
 
+11. **Learner notes reach the content (attempt notes, `service/attemptNotes/`).** At generation the dispatch site may hand the generator notes about what this child recently missed ("said das for bus"), picked for this activity. They are private prompt input: the goal is to give the child another try at the missed thing inside the same objective. The generator needs one channel for them, by fork:
+
+    | The content is | Channel | What to write |
+    |---|---|---|
+    | Model-authored (Fork B, or Fork A's wrapper prompt) | The scope section | Put `${buildScopePromptSection(ctx.scope)}` in every prompt that authors items (`../scopeContext`). The notes section is appended to it. Use `ctx.scope` as resolved; a scope rebuilt by hand drops the notes. |
+    | Model-authored words, letters or sort groups (literacy) | The themed focus line | `themedFocusLine(topic, ctx.intent, {...})` (`../literacy/themeFocus`). Pass `ctx.intent` unmodified; the helper states the notes after the theme rules. |
+    | Model-authored, prompt interpolates intent itself | The intent tail | `const { intent, section } = splitLearnerNotes(ctx.intent)` (`../attemptNotes/notes`); put `intent` in the intent line and `${section}` on its own line. Never wrap the whole string in "theme" wording, and never truncate or regex-parse it. |
+    | Code-built (Fork C, a pool, an item or word space) | The picker | `noteFocusWords()` (`../attemptNotes/focus`) returns the exact items to offer again, lower case, or null. Prefer them among the candidates the scope already holds: at most two per session, each in place of the candidate nearest it in difficulty, never widening the range. `tierPick` in `wordSpace/pick.ts` already does this. |
+
+    Limits, every fork: a note never changes eval mode, tier, range or item count; its wording never appears in student-visible text; the generator does not spread `ctx.raw` or `config` into its output (a copied `learnerNotes` field would reach the client; the dispatch site scrubs it, do not rely on that).
+
 ### Task 3: Write the generator
 
 Create: `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
@@ -641,14 +650,13 @@ import { ai } from "../geminiClient";
 // Post-validation...
 ```
 
-**Generator function signature:**
+**Generator function signature (context-native — the only form):**
 ```typescript
-export const generate<Name> = async (
-  topic: string,
-  gradeLevel: string,
-  config?: { intent?: string; [key: string]: unknown },
-): Promise<<Name>Data> => { ... };
-// Keep config open — /add-eval-modes adds targetEvalMode/objectiveText to this type later.
+import type { GenerationContext } from '../generation/generationContext';
+
+export const generate<Name> = async (ctx: GenerationContext): Promise<<Name>Data> => { ... };
+// Read ctx.topic, ctx.gradeContext, ctx.grade, ctx.intent, ctx.objective, ctx.scope, ctx.supportTier,
+// ctx.learnerNotes. `ctx.raw` is for a genuinely primitive-specific field only; never spread it into the output.
 ```
 
 **Post-validation checklist (MANDATORY):**
@@ -672,15 +680,13 @@ Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>
 - Add import: `import { generate<Name> } from '../../<domain>/gemini-<id>';`
 - Add registration:
   ```
-  registerGenerator('<id>', async (item, topic, gradeContext) => ({
+  registerContextGenerator('<id>', async (ctx) => ({
     type: '<id>',
-    instanceId: item.instanceId,
-    data: await generate<Name>(topic, gradeContext, {
-      ...item.config,                     // config pass-through — carries tester params now, targetEvalMode/objectiveText once /add-eval-modes runs
-      intent: item.intent || item.title,  // routing + topic-fidelity signal — bake the correct pattern at birth so densification never has to fix it
-    }),
+    instanceId: ctx.instanceId,
+    data: await generate<Name>(ctx),
   }));
   ```
+  The registry resolves `ctx` once (`resolveGenerationContext`); a handler never shapes config.
 
 ### Task 5: Self-verify
 
@@ -692,6 +698,10 @@ After writing the generator, mentally trace one challenge through:
    c. Rejects the challenge if missing
 
 If any required field can reach the component as undefined/empty, fix the generator before finishing.
+
+3. Learner notes (rule 11): name the channel this generator uses, and confirm it is on the path that authors or picks the items:
+   `grep -n "buildScopePromptSection\|themedFocusLine\|splitLearnerNotes\|noteFocusWords" service/<domain>/gemini-<id>.ts`
+   No match means the notes cannot change this primitive's content. Report that as a gap; do not leave it silent.
 ```
 
 ---
@@ -705,9 +715,7 @@ Fix any errors. Common issues:
 - Import path typos
 - Metrics not added to PrimitiveMetrics union
 
-Then run the Pip surface test (and, for math, the helper attach test): `cd "<abs>/my-tutoring-app" && npm test -- src/components/lumina/pip/<Name>.surface.test.tsx src/components/lumina/pip/MathPrimitivesTester.surface.test.tsx`. A layout check in the browser is optional at birth — `/add-pip-surface` Phase 3 has the script.
-
-**Known pre-existing error to IGNORE:** `ManifestViewer.tsx` has an incomplete `Record<ComponentId, string>` that is missing 140+ component IDs. This error predates your changes — do not try to fix it.
+Then run the Pip surface test: `cd "<abs>/my-tutoring-app" && npm test -- src/components/lumina/pip/WorkspacePip.surface.test.tsx` (it covers every boss that marks the layout; a primitive that took 2d's steps 1-4 also runs its own `pip/<Name>.surface.test.tsx`). A layout check in the browser is optional at birth — `/add-pip-surface` Phase 3 has the script.
 
 ### 5b. Workspace checks (interactive only)
 
@@ -834,7 +842,7 @@ Format:
 
 After QA passes, report to the user:
 - Files created/modified (list all)
-- Workspace binding (if interactive): the domain module, the core mode's response channel and misses, the guidance, and the W1 check results
+- Workspace binding (if interactive): the domain module, the card and boss, the core mode's response channel and misses, and the W1 check results
 - Answer-leak audit result (what was walked, what got gated)
 - QA results (pass/fail, any G1/G2/G4/G5 issues found and fixed)
 - Pip surface (if interactive): where Pip points and never points, and the surface test result
@@ -864,7 +872,8 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 **Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode, bound to the teaching workspace.
 
 - Core task identity: `<coreType>`
-- Generator fork: <A pool service | B orchestrator>
+- Generator fork: <C code-only | A pool service | B orchestrator>
+- Learner notes channel (Phase 4 rule 11): <scope section | themed focus line | intent tail | picker | none: why>. Runtime check when the target student has notes in the objective's unit: `node scripts/attempt-notes-replay.mjs replay` (named item in more noted draws than baseline draws, no notes field in the output); in real lessons, `qa/fit-gate/learner-notes-*.jsonl` rows for this id that say `absent`
 - Workspace binding: `<x>Workspace.ts` + `<x>.card.ts` + `<x>.boss.ts` on preset <spoken|tap|bespoke: why>; response `<gesture|speech>`; misses <…>; card printed by `boss-card.mjs`; `/review-live-wiring`: <all PASS | changes>; W1 checks <workspaceContract / <Name>.workspace.test / journey sweep / tutor replay: pass|fail>
 - Answer-leak audit: <what was walked, what got gated>
 - Design gate (Phase 2): <five one-liners — manipulation / simulation / production / timer / layout-leak — each "pass: <how>" or "exception: <justification shown to user>">
@@ -876,17 +885,17 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 | # | Skill | Layer | Input from this birth |
 |---|-------|-------|----------------------|
 | 1 | `/add-eval-modes` | L1 eval-dense | Ladder candidates: <types the design/PRD implied beyond `<coreType>`, or "design from scratch"> |
-| 3 | `/add-support-tiers` | L3 levered | Why learners fail each mode, as seen in this birth's QA: <...>; help/simplify lever candidates: <...> |
-| 5 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
-| 6 | `/add-voice-control` | L5 polished | <only if a spoken-production primitive; else omit this row. Doctrine + push-to-talk reference: `docs/SPOKEN_INTERACTION_DOCTRINE.md`> |
+| 2 | `/add-support-tiers` | L3 levered | Why learners fail each mode, as seen in this birth's QA: <...>; help/simplify lever candidates: <...> |
+| 3 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
+| 4 | `/add-voice-control` | L5 polished | <only if a spoken-production primitive; else omit this row. Doctrine + push-to-talk reference: `docs/SPOKEN_INTERACTION_DOCTRINE.md`> |
 | ✓ | `/eval-test <id>` | QA loop | Run after EVERY layer lands (`/eval-fix` for findings) — a layer only counts when eval-test passes at that layer |
 ```
 
 Rules:
 - **Every row gets real input, not placeholders.** The birth session is when the design is freshest — ladder candidates and withdrawal-scaffold observations written now save the follow-up session its discovery phase.
 - L1 is ordered first because it changes what students experience most (routing). The tutor is already bound at birth, so there is no L2 row; L3 levers plug into that binding.
-- `/eval-test` is the cross-cutting QA loop, not a rung: birth already ran it once (Phase 6); every follow-up skill re-runs it at its layer (per-mode after L1, tier sweep after L3/L4).
-- A display-only primitive's certificate marks rows 1-4 and 6 N/A and notes why.
+- `/eval-test` is the cross-cutting QA loop, not a rung: birth already ran it once (Phase 6); every follow-up skill re-runs it at its layer (per-mode after L1, tier sweep after L3).
+- A display-only primitive's certificate marks rows 1, 2 and 4 N/A and notes why.
 
 ---
 
@@ -895,14 +904,17 @@ Rules:
 | Domain | Component Dir | Generator Dir | Catalog | Generator Registry | Tester |
 |--------|--------------|---------------|---------|-------------------|--------|
 | astronomy | `primitives/visual-primitives/astronomy/` | `service/astronomy/` | `catalog/astronomy.ts` | `generators/astronomyGenerators.ts` | `components/AstronomyPrimitivesTester.tsx` |
-| math | `primitives/visual-primitives/math/` | `service/math/` | `catalog/math.ts` | `generators/mathGenerators.ts` | `components/MathPrimitivesTester.tsx` |
-| engineering | `primitives/visual-primitives/engineering/` | `service/engineering/` | `catalog/engineering.ts` | `generators/engineeringGenerators.ts` | `components/EngineeringPrimitivesTester.tsx` |
-| physics | `primitives/visual-primitives/physics/` | `service/physics/` | `catalog/physics.ts` | `generators/physicsGenerators.ts` | `components/PhysicsPrimitivesTester.tsx` |
-| science | `primitives/visual-primitives/science/` | `service/science/` | `catalog/science.ts` | `generators/scienceGenerators.ts` | N/A |
-| literacy | `primitives/visual-primitives/literacy/` | `service/literacy/` | `catalog/literacy.ts` | `generators/literacyGenerators.ts` | N/A |
-| media | `primitives/visual-primitives/media/` | `service/media/` | `catalog/media.ts` | `generators/mediaGenerators.ts` | N/A |
-| assessment | `primitives/visual-primitives/assessment/` | `service/assessment/` | `catalog/assessment.ts` | N/A | N/A |
+| biology | `primitives/visual-primitives/biology/` | `service/biology/` | `catalog/biology.ts` | `generators/biologyGenerators.ts` | `components/BiologyPrimitivesTester.tsx` |
+| chemistry | `primitives/visual-primitives/chemistry/` | `service/chemistry/` | `catalog/chemistry.ts` | `generators/chemistryGenerators.ts` | `components/ChemistryPrimitivesTester.tsx` |
 | core | `primitives/visual-primitives/core/` | `service/core/` | `catalog/core.ts` | `generators/coreGenerators.ts` | N/A |
+| direct-instruction | `primitives/visual-primitives/direct-instruction/` | `service/direct-instruction/` | `catalog/di.ts` | `generators/diGenerators.ts` | `components/DirectInstructionPrimitivesTester.tsx` |
+| engineering | `primitives/visual-primitives/engineering/` | `service/engineering/` | `catalog/engineering.ts` | `generators/engineeringGenerators.ts` | `components/EngineeringPrimitivesTester.tsx` |
+| history | `primitives/visual-primitives/history/` | `service/history/` | `catalog/history.ts` | `generators/historyGenerators.ts` | `components/HistoryPrimitivesTester.tsx` |
+| literacy | `primitives/visual-primitives/literacy/` | `service/literacy/` | `catalog/literacy.ts` | `generators/literacyGenerators.ts` | `components/LanguageArtsPrimitivesTester.tsx` |
+| math | `primitives/visual-primitives/math/` | `service/math/` | `catalog/math.ts` | `generators/mathGenerators.ts` | `components/MathPrimitivesTester.tsx` |
+| physics | `primitives/visual-primitives/physics/` | `service/physics/` | `catalog/physics.ts` | `generators/physicsGenerators.ts` | `components/PhysicsPrimitivesTester.tsx` |
+
+Other domains: list `primitives/visual-primitives/`, `service/manifest/catalog/` and `service/registry/generators/` and match the nearest existing one.
 
 ## Index Files to Update
 
@@ -913,17 +925,18 @@ When adding a **new domain** (not new primitive in existing domain), also update
 ## Key Rules
 
 1. **Single source of truth**: Data interface defined and exported ONLY in the component file. Generator imports it.
-2. **Pass `onEvaluationSubmit` in the tester**: `usePrimitiveEvaluation` guards against double submission via `submittedRef`. Omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch and matrix-display both had this silent gap before the multi-instance refactors). **Always pass it.**
+2. **Pass `onEvaluationSubmit` in the tester**: `usePrimitiveEvaluation` guards against double submission via `submittedRef`. Omitting the prop silently suppresses ALL metrics submission from the tester.
 3. **Multi-instance is the default**: Every new evaluable primitive ships with `challenges: <Name>Challenge[]` and `useChallengeProgress`. Singular `<Name>Data` shapes are Bucket A by definition — don't create new ones. See [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).
 4. **Compose ALL chrome from the Lumina UI kit (`lumina/ui`)** — read the barrel `lumina/ui/index.ts` for the live list. Containers/controls (`LuminaCard`/`LuminaButton`/`LuminaBadge`/`LuminaPanel`/`LuminaTable`/`LuminaAccordion`), the multi-phase scaffold (`LuminaModeTabs`/`LuminaChallengeCounter`/`LuminaPrompt`/`LuminaStepper`/`LuminaInlineStat`), and the eval loop (`LuminaAnswerChoice`/`LuminaFeedbackCard`/`LuminaActionButton`/`LuminaHintDisclosure`/`LuminaScoreRing`) all come from the kit — never re-derive glass strings, hand-roll a +/- stepper or answer FSM, or build a local TIER_CONFIG. Only genuinely uncovered shadcn parts (Tabs, Switch, Select) drop to `@/components/ui/*` themed via tokens. The kit is the frame, not the bespoke interaction surface.
 5. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
-6. **Required Fields Manifest**: Always create one in Phase 2c (includes the Fork A vs Fork B decision from PRD §5 rule 1) and pass it to Phases 4 and 6.
+6. **Required Fields Manifest**: Always create one in Phase 2c (includes the Fork C / A / B decision) and pass it to Phases 4 and 6.
 7. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.
-8. **Fork A (pool service) vs Fork B (orchestrator) — decision is value-only vs content-bearing, NOT by challenge-type count**. Value-only data (numbers, coordinates, matrix values) → pool service even with N challenge types. Content-bearing data (word problems, scenarios) → orchestrator. See [PRD §5 rule 1](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
+8. **Fork C first, then A vs B.** If code can author every item, answer and label, write a code-only generator (Fork C). Otherwise the A/B decision is value-only vs content-bearing, NOT challenge-type count. Value-only data (numbers, coordinates, matrix values) → pool service even with N challenge types. Content-bearing data (word problems, scenarios) → orchestrator. See [PRD §5 rule 1](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
 9. **Mode-specific answer-leak audit before declaring done**: walk every label, tooltip, panel, stats display in the rendered UI — would it disclose the current mode's correct answer? Fix by gating visibility on `currentChallenge.challengeType`. See [PRD §5 rule 7](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
 10. **No hardcoded mock fixtures in the tester** — they mask all generator changes. Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`. See [SHIPPED_LOG §6k #4](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md).
-11. **Birth ends with a birth certificate** (Phase 8). One core task identity at birth; the eval-mode ladder, tutoring block, support tiers, structural difficulty, and sound are layered by the add- skills in the printed queue order. Never inline another skill's template here — one source of truth per layer, or the copies drift (the pre-refactor version of this skill carried a legacy `resolveEvalModeConstraint` template that /add-eval-modes had already retired).
-12. **Born with a Pip surface** (Phase 2d) — targeting decided with the answer-leak audit, wiring per `/add-pip-surface`, never gated on a tutor session.
+11. **Birth ends with a birth certificate** (Phase 8). One core task identity at birth; the eval-mode ladder, support tiers, sound and voice are layered by the add- skills in the printed queue order. Never inline another skill's template here — one source of truth per layer, or the copies drift.
+12. **Born with a Pip surface** (Phase 2d) — on a boss Pip is framework (`<PipDock />` + `<PipWorkspace>`); targeting is decided with the answer-leak audit, and `/add-pip-surface` is followed only when the whole-region point is wrong.
+13. **Learner notes have a channel** (Phase 4 rule 11) — scope section, themed focus line, intent tail or picker; none is a reported gap.
 
 ## PRD Reference
 

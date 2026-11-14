@@ -354,6 +354,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "plus_two":   PriorConfig(5.0, "Symbolic recall: count on two"),
         "big_facts":  PriorConfig(5.5, "Symbolic recall: remaining facts, addends 3-9"),
     },
+    "dot-cards": {
+        "quick_total": PriorConfig(3.0, "Pictorial: conceptual subitizing, two colored groups composed at a glance"),
+    },
     "3d-shape-explorer": {
         "identify_3d":      PriorConfig(1.5, "Concrete: name 3D shapes from visual display"),
         "match_real_world":  PriorConfig(2.5, "Pictorial: connect shapes to real-world objects"),

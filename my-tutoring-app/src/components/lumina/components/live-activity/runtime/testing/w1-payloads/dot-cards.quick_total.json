@@ -1,0 +1,233 @@
+{
+  "source": "service/math/dot-cards-generator.ts (code-only, seed 20261111, medium)",
+  "primitiveId": "dot-cards",
+  "evalMode": "quick_total",
+  "data": {
+    "title": "Dot Cards",
+    "description": "Flip a card and take a quick look. How many dots altogether?",
+    "challengeType": "quick_total",
+    "supportTier": "medium",
+    "challenges": [
+      {
+        "id": "dot-card-1",
+        "type": "quick_total",
+        "parts": [
+          3,
+          3
+        ],
+        "total": 6,
+        "arrangement": "frame",
+        "dots": [
+          {
+            "x": 40,
+            "y": 45,
+            "part": 0
+          },
+          {
+            "x": 70,
+            "y": 45,
+            "part": 0
+          },
+          {
+            "x": 100,
+            "y": 45,
+            "part": 0
+          },
+          {
+            "x": 130,
+            "y": 45,
+            "part": 1
+          },
+          {
+            "x": 160,
+            "y": 45,
+            "part": 1
+          },
+          {
+            "x": 40,
+            "y": 75,
+            "part": 1
+          }
+        ],
+        "lookMs": 2500
+      },
+      {
+        "id": "dot-card-2",
+        "type": "quick_total",
+        "parts": [
+          5,
+          2
+        ],
+        "total": 7,
+        "arrangement": "dice",
+        "dots": [
+          {
+            "x": 24,
+            "y": 32,
+            "part": 0
+          },
+          {
+            "x": 80,
+            "y": 32,
+            "part": 0
+          },
+          {
+            "x": 52,
+            "y": 60,
+            "part": 0
+          },
+          {
+            "x": 24,
+            "y": 88,
+            "part": 0
+          },
+          {
+            "x": 80,
+            "y": 88,
+            "part": 0
+          },
+          {
+            "x": 120,
+            "y": 32,
+            "part": 1
+          },
+          {
+            "x": 176,
+            "y": 88,
+            "part": 1
+          }
+        ],
+        "lookMs": 2500
+      },
+      {
+        "id": "dot-card-3",
+        "type": "quick_total",
+        "parts": [
+          4,
+          2
+        ],
+        "total": 6,
+        "arrangement": "rows",
+        "dots": [
+          {
+            "x": 52,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 84,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 116,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 148,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 52,
+            "y": 82,
+            "part": 1
+          },
+          {
+            "x": 84,
+            "y": 82,
+            "part": 1
+          }
+        ],
+        "lookMs": 2500
+      },
+      {
+        "id": "dot-card-4",
+        "type": "quick_total",
+        "parts": [
+          2,
+          3
+        ],
+        "total": 5,
+        "arrangement": "rows",
+        "dots": [
+          {
+            "x": 68,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 100,
+            "y": 38,
+            "part": 0
+          },
+          {
+            "x": 68,
+            "y": 82,
+            "part": 1
+          },
+          {
+            "x": 100,
+            "y": 82,
+            "part": 1
+          },
+          {
+            "x": 132,
+            "y": 82,
+            "part": 1
+          }
+        ],
+        "lookMs": 2500
+      },
+      {
+        "id": "dot-card-5",
+        "type": "quick_total",
+        "parts": [
+          4,
+          3
+        ],
+        "total": 7,
+        "arrangement": "dice",
+        "dots": [
+          {
+            "x": 24,
+            "y": 32,
+            "part": 0
+          },
+          {
+            "x": 80,
+            "y": 32,
+            "part": 0
+          },
+          {
+            "x": 24,
+            "y": 88,
+            "part": 0
+          },
+          {
+            "x": 80,
+            "y": 88,
+            "part": 0
+          },
+          {
+            "x": 120,
+            "y": 32,
+            "part": 1
+          },
+          {
+            "x": 148,
+            "y": 60,
+            "part": 1
+          },
+          {
+            "x": 176,
+            "y": 88,
+            "part": 1
+          }
+        ],
+        "lookMs": 2500
+      }
+    ]
+  }
+}

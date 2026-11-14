@@ -174,6 +174,7 @@ import { hundredsChartBoss } from '../../primitives/visual-primitives/math/hundr
 import { skipCountingBoss } from '../../primitives/visual-primitives/math/skipCounting.boss';
 import { mathFactFluencyBoss } from '../../primitives/visual-primitives/math/mathFactFluency.boss';
 import { additionFactStrategiesBoss } from '../../primitives/visual-primitives/math/additionFactStrategies.boss';
+import { dotCardsBoss } from '../../primitives/visual-primitives/math/dotCards.boss';
 import { shapeTracerBoss } from '../../primitives/visual-primitives/math/shapeTracer.boss';
 import { paragraphArchitectBoss } from '../../primitives/visual-primitives/literacy/paragraphArchitect.boss';
 import { sentenceBuilderBoss } from '../../primitives/visual-primitives/literacy/sentenceBuilder.boss';
@@ -364,6 +365,7 @@ export const LIVE_ADAPTERS = {
   'skip-counting-runner': bossAdapter(skipCountingBoss),
   'math-fact-fluency': bossAdapter(mathFactFluencyBoss),
   'addition-fact-strategies': bossAdapter(additionFactStrategiesBoss),
+  'dot-cards': bossAdapter(dotCardsBoss),
   'equation-builder': bossAdapter(equationBuilderBoss),
   'pattern-builder': bossAdapter(patternBuilderBoss),
   'strategy-picker': bossAdapter(strategyPickerBoss),
