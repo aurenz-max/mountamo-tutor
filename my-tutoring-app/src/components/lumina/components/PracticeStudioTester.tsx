@@ -25,6 +25,7 @@ import { ACT_WORDS, EVIDENCE_ACTS, type EvidenceAct, type EvidenceRecord } from 
 import { setControlSpecs } from '../service/agent-kit/setting';
 import { CurriculumBrowser } from './CurriculumBrowser';
 import { useAuth } from '@/contexts/AuthContext';
+import { STUDIO_PLANS } from '../service/core/practice-studio/plans';
 
 interface EvidenceForm { act: EvidenceAct | ''; on: string; credit: string; notCredit: string; observed: boolean }
 const NO_EVIDENCE: EvidenceForm = { act: '', on: '', credit: '', notCredit: '', observed: false };
@@ -165,6 +166,9 @@ const PracticeStudioTesterInner: React.FC<{ onBack: () => void }> = ({ onBack })
   const [elapsed, setElapsed] = useState(0);
   const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
   const [browseOpen, setBrowseOpen] = useState(false);
+  const [planId, setPlanId] = useState(STUDIO_PLANS[0]?.id ?? '');
+  const [planProblem, setPlanProblem] = useState<'random' | number>('random');
+  const plan = STUDIO_PLANS.find(p => p.id === planId);
   const { user } = useAuth();
   const evaluationContext = useEvaluationContext();
   const Component = getPrimitive('practice-studio')?.component;
@@ -204,6 +208,31 @@ const PracticeStudioTesterInner: React.FC<{ onBack: () => void }> = ({ onBack })
       setMs(Date.now() - started);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /** PROTOTYPE: a studio plan written offline, filled by code on the server (no model call, free). */
+  const buildFromPlan = async () => {
+    if (!plan) return;
+    setIsGenerating(true); setError(null); setData(null); setPickedRow(null); setEvents([]);
+    setTopic(plan.serves.objective); setGrade(plan.serves.grades[0] ?? grade);
+    const started = Date.now();
+    try {
+      const response = await fetch('/api/lumina', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generateComponentContent', params: {
+          componentId: 'practice-studio', topic: plan.serves.objective, gradeLevel: `grade ${plan.serves.grades[0] ?? grade}`,
+          config: { plan: plan.id, ...(planProblem !== 'random' ? { problem: planProblem } : {}) },
+        } }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result?.error ?? `HTTP ${response.status}`);
+      setData((result.data || result) as PracticeStudioData);
+      setMs(Date.now() - started);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to build from the plan');
     } finally {
       setIsGenerating(false);
     }
@@ -311,6 +340,22 @@ const PracticeStudioTesterInner: React.FC<{ onBack: () => void }> = ({ onBack })
               </button>
               <p className="text-[10px] text-slate-500">Paid: one write shared by every setting, then each setting's own review (~$0.20-0.35 for all four).</p>
             </fieldset>
+            <fieldset className="space-y-2 rounded-lg border border-emerald-500/40 p-2 text-xs text-slate-300">
+              <legend className="px-1 font-semibold text-emerald-300">Studio plan, written offline (prototype, free)</legend>
+              <p className="text-[11px] text-slate-400">One model through the whole session (set up, predict, test, a harder case), filled by code with no model call.</p>
+              <select aria-label="Studio plan" value={planId} onChange={e => setPlanId(e.target.value)} className="w-full px-2 py-1.5 bg-slate-900/60 border border-slate-600 rounded text-white">
+                {STUDIO_PLANS.map(p => <option key={p.id} value={p.id}>{p.title} (G{p.serves.grades.join(', ')}, {p.problems.length} problems)</option>)}
+              </select>
+              {plan && <p className="text-[11px] text-slate-500">{plan.serves.objective} · steps: {plan.steps.map(s => s.role).join(' → ')}</p>}
+              <select aria-label="Problem" value={String(planProblem)} onChange={e => setPlanProblem(e.target.value === 'random' ? 'random' : Number(e.target.value))} className="w-full px-2 py-1.5 bg-slate-900/60 border border-slate-600 rounded text-white">
+                <option value="random">Any problem</option>
+                {plan?.problems.map((_, n) => <option key={n} value={n}>Problem {n + 1}</option>)}
+              </select>
+              <button type="button" onClick={() => void buildFromPlan()} disabled={isGenerating || !plan}
+                className="w-full py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold">
+                Build from plan
+              </button>
+            </fieldset>
             {error && <p className="text-xs text-rose-300 break-words">{error}</p>}
             {!isGenerating && events.length > 0 && (
               <details open={!!error} className="text-[11px]">
@@ -326,6 +371,7 @@ const PracticeStudioTesterInner: React.FC<{ onBack: () => void }> = ({ onBack })
             <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 space-y-2">
               <h3 className="text-sm font-bold text-slate-200">{shown.title}</h3>
               <p className="text-xs text-slate-400">{shown.description}</p>
+              {(shown.agentDebug as { plan?: string; problem?: number } | undefined)?.plan && <p className="text-[11px] text-emerald-300">From studio plan {(shown.agentDebug as { plan?: string }).plan}, problem {(shown.agentDebug as { problem?: number }).problem}: no model call</p>}
               <p className="text-[11px] text-slate-500">Author loop {String(debugOf(shown).seconds ?? '—')} s · round trip {ms != null ? (ms / 1000).toFixed(0) : '—'} s</p>
               <p className="text-[11px] text-slate-400">Surfaces: {shown.challenges.map(c => c.surface).join(', ')}</p>
               {debugOf(shown).evidence

@@ -1,0 +1,91 @@
+{
+  "id": "stream-settle",
+  "title": "Where the Sand Settles",
+  "idea": "Moving water drops a grain where it gets too slow to carry it, so the biggest grains drop first and the place water slows is where sediment piles up.",
+  "serves": { "grades": ["4"], "objective": "SCI004-02-c: explain that water drops its sediment where it slows down, the largest grains first, by setting the flow and the land and running the stream" },
+  "world": {
+    "stream": {
+      "kind": "system",
+      "title": "From the hills to the lake",
+      "parts": [
+        { "id": "speed", "label": "Stream speed in the hills", "icon": "🌊", "value": 9, "min": 1, "max": 9 },
+        { "id": "slowing", "label": "Slowing on the flat", "icon": "🌾", "value": "{{slow}}" },
+        { "id": "pebble", "label": "Speed that moves pebbles", "icon": "🪨", "value": "{{pebble}}" },
+        { "id": "sand", "label": "Speed that moves sand", "icon": "🏖️", "value": "{{sand}}" }
+      ],
+      "rules": [
+        { "id": "flat_speed", "label": "Stream speed on the flat", "op": "subtract", "of": ["speed", "slowing"] },
+        { "id": "pebble_hills", "label": "Pebbles carried past the hills", "op": "at_least", "of": ["speed", "pebble"] },
+        { "id": "sand_hills", "label": "Sand carried past the hills", "op": "at_least", "of": ["speed", "sand"] },
+        { "id": "sand_lake", "label": "Sand carried out to the lake", "op": "at_least", "of": ["flat_speed", "sand"] }
+      ],
+      "scene": "<svg viewBox='0 0 320 120' xmlns='http://www.w3.org/2000/svg'><polygon points='0,30 120,82 0,82' fill='#78716c'/><rect x='0' y='82' width='320' height='38' fill='#44403c'/><rect x='230' y='76' width='90' height='32' fill='#1d4ed8' opacity='0.55'/><path d='M0,26 L120,78 L230,78' stroke='#38bdf8' stroke-width='4' fill='none'/><text x='40' y='100' font-size='10' fill='#cbd5e1' text-anchor='middle'>hills</text><text x='175' y='100' font-size='10' fill='#cbd5e1' text-anchor='middle'>flat</text><text x='275' y='118' font-size='10' fill='#cbd5e1' text-anchor='middle'>lake</text><g data-bind='speed' data-move='9,0'><text x='6' y='20' font-size='16'>🍃</text></g><g data-bind='slowing' data-move='10,0'><text x='122' y='74' font-size='12'>🌾</text></g><g data-bind='pebble_hills' data-show='no'><circle cx='80' cy='62' r='5' fill='#d6d3d1'/><circle cx='91' cy='67' r='5' fill='#d6d3d1'/></g><g data-bind='pebble_hills' data-show='yes'><circle cx='138' cy='76' r='5' fill='#d6d3d1'/><circle cx='149' cy='76' r='5' fill='#d6d3d1'/></g><g data-bind='sand_hills' data-show='no'><ellipse cx='106' cy='73' rx='9' ry='3' fill='#fde68a'/></g><g data-bind='sand_hills' data-show='yes'><g data-bind='sand_lake' data-show='no'><ellipse cx='196' cy='78' rx='14' ry='4' fill='#fde68a'/></g></g><g data-bind='sand_lake' data-show='yes'><ellipse cx='275' cy='106' rx='16' ry='4' fill='#fde68a'/></g></svg>"
+    }
+  },
+  "steps": [
+    {
+      "role": "setup",
+      "draft": {
+        "tier": "easy",
+        "surface": "set",
+        "prompt": "Rain sets how fast the stream runs. Set the stream so the pebbles stay in the hills and the sand settles on the flat.",
+        "board": { "$use": "stream" },
+        "goal": { "pebble_hills": false, "sand_hills": true, "sand_lake": false },
+        "help": { "says": "Water drops a grain where it gets too slow to move it, and the water slows down on the flat.", "add_stimulus": [{ "kind": "text", "text": "A grain keeps moving while the water is at least as fast as the speed that moves it." }] },
+        "simplify": { "says": "I slowed the stream part of the way.", "board": { "$use": "stream", "parts": { "speed": { "value": "{{s1_simple}}" } } } },
+        "why": "The child finds a speed window: fast enough to carry sand, too slow for pebbles, and slow enough on the flat for the sand to drop there."
+      }
+    },
+    {
+      "role": "predict",
+      "keyFrom": { "part": "speed", "rule": "sand_lake" },
+      "draft": {
+        "tier": "medium",
+        "surface": "choose",
+        "prompt": "A storm is coming. Before it runs: what is the slowest stream speed in the hills that carries the sand all the way out to the lake?",
+        "stimulus": [{ "$use": "stream", "parts": { "speed": { "value": 1, "min": null, "max": null } } }],
+        "options": [
+          { "id": "a", "label": "Speed {{oa}}", "value": "{{oa}}" },
+          { "id": "b", "label": "Speed {{ob}}", "value": "{{ob}}" },
+          { "id": "c", "label": "Speed {{oc}}", "value": "{{oc}}" },
+          { "id": "d", "label": "Speed {{od}}", "value": "{{od}}" }
+        ],
+        "help": { "says": "The sand has to keep moving on the flat, and the water there is slower than in the hills.", "add_stimulus": [{ "kind": "text", "text": "Speed on the flat = speed in the hills − {{slow}}" }] },
+        "simplify": { "says": "One of these speeds is out.", "remove_options": ["{{drop}}"] },
+        "why": "The child predicts from the rule before running it: the sand reaches the lake only if it is still fast enough after the flat slows it."
+      }
+    },
+    {
+      "role": "test",
+      "draft": {
+        "tier": "medium",
+        "surface": "set",
+        "prompt": "Test your answer. Make the sand reach the lake, but keep the pebbles in the hills.",
+        "board": { "$use": "stream", "parts": { "speed": { "value": 1 } } },
+        "goal": { "sand_lake": true, "pebble_hills": false },
+        "help": { "says": "Work out the speed on the flat: the sand needs to still be moving there.", "add_stimulus": [{ "kind": "text", "text": "Speed on the flat = speed in the hills − {{slow}}" }] },
+        "simplify": { "says": "I sped the stream up part of the way.", "board": { "$use": "stream", "parts": { "speed": { "value": "{{s3_simple}}" } } } },
+        "why": "The child runs the prediction on the same stream and sees where the sand lands; the pebbles stay put, so the window has a top as well as a bottom."
+      }
+    },
+    {
+      "role": "harder",
+      "draft": {
+        "tier": "hard",
+        "surface": "set",
+        "prompt": "A flood: the stream runs at {{flood}} and the rain will not stop. Change the land instead: make the sand settle on the flat and not wash into the lake.",
+        "board": { "$use": "stream", "parts": { "speed": { "value": "{{flood}}", "min": null, "max": null }, "slowing": { "value": "{{h_start}}", "min": 1, "max": 8 } } },
+        "goal": { "sand_hills": true, "sand_lake": false },
+        "help": { "says": "The water drops sand where it gets slower than the speed that moves sand. A wider, flatter stretch slows it more.", "add_stimulus": [{ "kind": "text", "text": "Speed on the flat = {{flood}} − slowing" }] },
+        "simplify": { "says": "I widened the flat part of the way.", "board": { "$use": "stream", "parts": { "speed": { "value": "{{flood}}", "min": null, "max": null }, "slowing": { "value": "{{h_simple}}", "min": 1, "max": 8 } } } },
+        "why": "The other half of deposition: when the flow cannot change, changing where the water slows (the land) decides where the sediment drops."
+      }
+    }
+  ],
+  "problems": [
+    { "pebble": 7, "sand": 2, "slow": 3, "s1_simple": 5, "oa": 2, "ob": 4, "oc": 5, "od": 7, "drop": "d", "s3_simple": 3, "flood": 8, "h_start": 1, "h_simple": 5 },
+    { "pebble": 8, "sand": 3, "slow": 4, "s1_simple": 7, "oa": 3, "ob": 7, "oc": 8, "od": 9, "drop": "d", "s3_simple": 5, "flood": 8, "h_start": 1, "h_simple": 4 },
+    { "pebble": 6, "sand": 1, "slow": 3, "s1_simple": 4, "oa": 4, "ob": 1, "oc": 6, "od": 3, "drop": "c", "s3_simple": 2, "flood": 6, "h_start": 1, "h_simple": 4 },
+    { "pebble": 9, "sand": 2, "slow": 4, "s1_simple": 6, "oa": 2, "ob": 4, "oc": 5, "od": 6, "drop": "b", "s3_simple": 4, "flood": 9, "h_start": 2, "h_simple": 6 }
+  ]
+}

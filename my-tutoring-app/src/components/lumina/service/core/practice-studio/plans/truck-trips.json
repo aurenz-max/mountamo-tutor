@@ -1,0 +1,88 @@
+{
+  "id": "truck-trips",
+  "title": "How Many Trips?",
+  "idea": "When every truck load is the same size, the trips needed is how many loads fit the pile, and a part load left over still needs a whole trip.",
+  "serves": { "grades": ["1"], "objective": "SCI005-02-d: estimate how many full truck loads it takes to move a pile when every load is the same size, then check by hauling" },
+  "world": {
+    "haul": {
+      "kind": "system",
+      "title": "Haul the pile",
+      "parts": [
+        { "id": "pile", "label": "Dirt in the pile", "icon": "🟫", "value": "{{pile1}}", "unit": "scoops" },
+        { "id": "holds", "label": "One truck load", "icon": "🚚", "value": "{{holds}}", "unit": "scoops" },
+        { "id": "trips", "label": "Trips", "icon": "🔁", "value": 0, "min": 0, "max": 8 }
+      ],
+      "rules": [
+        { "id": "hauled", "label": "Dirt hauled away", "unit": "scoops", "op": "multiply", "of": ["trips", "holds"] },
+        { "id": "gone", "label": "The pile is gone", "op": "at_least", "of": ["hauled", "pile"] }
+      ],
+      "scene": "<svg viewBox='0 0 320 90' xmlns='http://www.w3.org/2000/svg'><rect x='0' y='70' width='320' height='20' fill='#44403c'/><polygon points='8,70 40,38 72,70' fill='#92400e'/><text x='40' y='84' font-size='10' fill='#e2e8f0' text-anchor='middle'>pile</text><rect x='280' y='60' width='34' height='10' fill='#a16207'/><text x='297' y='84' font-size='10' fill='#e2e8f0' text-anchor='middle'>dump</text><g data-bind='trips' data-move='24,0'><text x='78' y='68' font-size='26'>🚚</text><g data-bind='holds' data-move='0,-2'><ellipse cx='94' cy='48' rx='9' ry='4' fill='#92400e'/></g></g><g data-bind='gone' data-show='yes'><text x='160' y='18' fill='#34d399' font-size='13' text-anchor='middle'>The pile is gone!</text></g><g data-bind='gone' data-show='no'><text x='160' y='18' fill='#f87171' font-size='13' text-anchor='middle'>Some dirt is left</text></g></svg>"
+    }
+  },
+  "steps": [
+    {
+      "role": "setup",
+      "draft": {
+        "tier": "easy",
+        "surface": "set",
+        "prompt": "The truck carries the same load every trip. Set the trips so the whole pile is hauled away, with no extra trip.",
+        "board": { "$use": "haul" },
+        "goal": { "hauled": { "min": "{{pile1}}", "max": "{{p1_max}}" } },
+        "help": { "says": "Each trip takes one full load. Count on by the truck load for every trip.", "add_stimulus": [{ "kind": "text", "text": "Every trip hauls {{holds}} scoops." }] },
+        "simplify": { "says": "I set some of the trips for you.", "board": { "$use": "haul", "parts": { "trips": { "value": "{{s1_simple}}" } } } },
+        "why": "The child counts a pile in truck loads, not scoops, on a pile that is an exact number of loads."
+      }
+    },
+    {
+      "role": "predict",
+      "keyFrom": { "part": "trips", "rule": "gone" },
+      "draft": {
+        "tier": "medium",
+        "surface": "choose",
+        "prompt": "A new pile of {{pile2}} scoops. Before the truck goes: what is the fewest trips that moves the whole pile?",
+        "stimulus": [{ "$use": "haul", "parts": { "pile": { "value": "{{pile2}}" }, "trips": { "value": 0, "min": null, "max": null } } }],
+        "options": [
+          { "id": "a", "label": "{{oa}} trips", "value": "{{oa}}" },
+          { "id": "b", "label": "{{ob}} trips", "value": "{{ob}}" },
+          { "id": "c", "label": "{{oc}} trips", "value": "{{oc}}" },
+          { "id": "d", "label": "{{od}} trips", "value": "{{od}}" }
+        ],
+        "help": { "says": "Count by the truck load until you reach the pile or go past it. A little dirt left over still needs a trip.", "add_stimulus": [{ "kind": "text", "text": "Every trip hauls {{holds}} scoops." }] },
+        "simplify": { "says": "One of these is out.", "remove_options": ["{{drop}}"] },
+        "why": "The child commits a trip count before hauling; this pile leaves a part load, so the last trip is the one children miss."
+      }
+    },
+    {
+      "role": "test",
+      "draft": {
+        "tier": "medium",
+        "surface": "set",
+        "prompt": "Now haul it. Set the trips for the pile of {{pile2}}, with no extra trip.",
+        "board": { "$use": "haul", "parts": { "pile": { "value": "{{pile2}}" } } },
+        "goal": { "hauled": { "min": "{{pile2}}", "max": "{{p2_max}}" } },
+        "help": { "says": "After the full loads, look at what is left in the pile. Does it need one more trip?", "add_stimulus": [{ "kind": "text", "text": "Every trip hauls {{holds}} scoops." }] },
+        "simplify": { "says": "I set the trips for all the full loads. Run it and look at the pile.", "board": { "$use": "haul", "parts": { "pile": { "value": "{{pile2}}" }, "trips": { "value": "{{s3_simple}}" } } } },
+        "why": "The prediction played out on the same truck: the run shows the dirt left after the full loads, the misconception's own result."
+      }
+    },
+    {
+      "role": "harder",
+      "draft": {
+        "tier": "hard",
+        "surface": "set",
+        "prompt": "A pile of {{pile3}} scoops and only {{t4}} trips before dark. Change the truck instead: use the smallest truck load that clears the pile in {{t4}} trips.",
+        "board": { "$use": "haul", "parts": { "pile": { "value": "{{pile3}}" }, "trips": { "value": "{{t4}}", "min": null, "max": null }, "holds": { "value": 1, "min": 1, "max": 8 } } },
+        "goal": { "hauled": { "min": "{{pile3}}", "max": "{{h4_max}}" } },
+        "help": { "says": "With the trips fixed, a bigger load means more dirt each trip. Count by the load {{t4}} times.", "add_stimulus": [{ "kind": "text", "text": "Dirt hauled = the load, {{t4}} times" }] },
+        "simplify": { "says": "I made the truck bigger part of the way.", "board": { "$use": "haul", "parts": { "pile": { "value": "{{pile3}}" }, "trips": { "value": "{{t4}}", "min": null, "max": null }, "holds": { "value": "{{h4_simple}}", "min": 1, "max": 8 } } } },
+        "why": "The other side of the same model: when the trips are fixed, the load size has to change, and a bigger load means fewer trips."
+      }
+    }
+  ],
+  "problems": [
+    { "holds": 5, "pile1": 10, "p1_max": 14, "s1_simple": 1, "pile2": 13, "p2_max": 17, "oa": 2, "ob": 3, "oc": 4, "od": 13, "drop": "c", "s3_simple": 2, "pile3": 12, "t4": 3, "h4_max": 14, "h4_simple": 3 },
+    { "holds": 3, "pile1": 9, "p1_max": 11, "s1_simple": 2, "pile2": 10, "p2_max": 12, "oa": 10, "ob": 3, "oc": 4, "od": 5, "drop": "d", "s3_simple": 3, "pile3": 10, "t4": 2, "h4_max": 11, "h4_simple": 4 },
+    { "holds": 4, "pile1": 8, "p1_max": 11, "s1_simple": 1, "pile2": 17, "p2_max": 20, "oa": 4, "ob": 6, "oc": 17, "od": 5, "drop": "b", "s3_simple": 4, "pile3": 14, "t4": 2, "h4_max": 15, "h4_simple": 6 },
+    { "holds": 2, "pile1": 8, "p1_max": 9, "s1_simple": 3, "pile2": 11, "p2_max": 12, "oa": 6, "ob": 5, "oc": 7, "od": 11, "drop": "c", "s3_simple": 5, "pile3": 9, "t4": 3, "h4_max": 11, "h4_simple": 2 }
+  ]
+}

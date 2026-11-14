@@ -5,10 +5,10 @@
  * built once for every agent primitive. The host keeps the Check button and the feedback. Tap targets are the harness's
  * names (`surfaceTaps` in `surfaces.ts`).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { answerStateClasses, surface } from '../../ui/tokens';
 import { SoundManager } from '../../utils/SoundManager';
-import { DISPLAY_CSS, displayHtml, displayMaxWidth, displayParts, displayPointed, displayRevealed } from './displays';
+import { DISPLAY_CSS, displayHtml, displayMaxWidth, displayParts, displayPointed, displayRevealed, type Display } from './displays';
 import { setApply, setControls } from './setting';
 import { KitDisplay } from './KitDisplay';
 import { pointTarget, setTarget, type SurfaceAnswer, type SurfaceItem } from './surfaces';
@@ -46,6 +46,28 @@ export const SurfaceBoard: React.FC<{ item: SurfaceItem; board: SurfaceAnswerSta
     setPicked(null);
   };
   const indexOf = (id: string) => item.options.findIndex(o => o.id === id);
+  // teach: nothing to tap. The character and its wrong idea are the board; the child answers out loud to the tutor, who plays the character.
+  if (item.surface === 'teach' && item.teach) {
+    const t = item.teach;
+    return (
+      <>
+        <style>{DISPLAY_CSS}</style>
+        {item.stimulus.length > 0 && (
+          <div className="flex flex-wrap items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3" data-pip-object="stimulus">
+            {item.stimulus.map((d, i) => <div key={i} style={{ maxWidth: displayMaxWidth(d) }}><KitDisplay display={d} /></div>)}
+          </div>
+        )}
+        <div className="flex items-start gap-3" data-pip-object="character">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-amber-300/60 bg-amber-400/20 text-2xl" aria-hidden="true">🙋</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold uppercase tracking-wide text-amber-200">{t.character}</div>
+            <div className="mt-1 rounded-2xl rounded-tl-sm border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-base text-slate-100">“{t.holds}”</div>
+          </div>
+        </div>
+        <p className="text-sm text-slate-300">Tell {t.character} what you think. Say it out loud.</p>
+      </>
+    );
+  }
   // set: the board is the child's work. It redraws from its values after every tap; the marks sit over it as buttons.
   const boardNow = item.surface === 'set' && item.board ? answer.board ?? item.board : null;
   // point: the board is drawn again for each tapped part, with that part lit. Each part's unseen shape becomes a button.
@@ -67,6 +89,56 @@ export const SurfaceBoard: React.FC<{ item: SurfaceItem; board: SurfaceAnswerSta
   const tapBoard = (id: string, dir?: 1 | -1) => change(a => ({ ...a, board: setApply(item, a.board ?? item.board!, { id, ...(dir ? { dir } : {}) }) }));
   const boardDrawn = useMemo(() => (boardNow && checked ? displayRevealed(boardNow) : boardNow), [boardNow, checked]);
   const controls = boardNow ? setControls(item, boardNow) : [];
+  // A system board carries its own controls: ◀ ▶ in each part's row, and the scene piece a part moves is a handle.
+  const onDrawing = boardNow?.kind === 'system';
+  const systemHtml = useMemo(() => {
+    if (!boardDrawn || boardDrawn.kind !== 'system') return null;
+    const html = displayHtml({ ...boardDrawn, controls: !locked } as Display);
+    return { __html: html.replace(/data-step="([^"]+)" data-dir="(-?1)"/g, (all, field: string, dir: string) => `${all} data-pip-object="${setTarget(field, Number(dir) as 1 | -1)}"`) };
+  }, [boardDrawn, locked]);
+  const drag = useRef<{ field: string; start: Display; steps: number; at: DOMPoint; inv: DOMMatrix; move?: [number, number]; turn?: number; pivot?: [number, number] } | null>(null);
+  const stepFrom = (start: Display, field: string, n: number) => {
+    let b = start;
+    for (let k = 0; k < Math.abs(n); k++) { const next = setApply(item, b, { id: field, dir: n < 0 ? -1 : 1 }); if (next === b) break; b = next; }
+    return b;
+  };
+  const userPoint = (inv: DOMMatrix, x: number, y: number) => new DOMPoint(x, y).matrixTransform(inv);
+  const onBoardDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = (e.target as Element).closest?.('[data-drag]');
+    const svg = (el as SVGGraphicsElement | null)?.ownerSVGElement, ctm = svg?.getScreenCTM();
+    if (!el || !ctm || locked) return;
+    const nums = (s: string | null) => (s ?? '').split(/[\s,]+/).filter(Boolean).map(Number);
+    const mv = el.getAttribute('data-move'), tn = el.getAttribute('data-turn');
+    const inv = ctm.inverse();
+    drag.current = { field: el.getAttribute('data-drag')!, start: answer.board ?? item.board!, steps: 0, at: userPoint(inv, e.clientX, e.clientY), inv,
+      ...(mv !== null ? { move: nums(mv).slice(0, 2) as [number, number] } : {}), ...(tn !== null ? { turn: Number(tn), pivot: nums(el.getAttribute('data-pivot')).slice(0, 2) as [number, number] } : {}) };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+  const onBoardMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const p = userPoint(d.inv, e.clientX, e.clientY);
+    let n = 0;
+    if (d.move && (d.move[0] || d.move[1])) {
+      const [dx, dy] = d.move;
+      n = Math.round(((p.x - d.at.x) * dx + (p.y - d.at.y) * dy) / (dx * dx + dy * dy));
+    } else if (d.turn && d.pivot) {
+      const [px = 0, py = 0] = d.pivot, deg = (q: DOMPoint) => (Math.atan2(q.y - py, q.x - px) * 180) / Math.PI;
+      let a = deg(p) - deg(d.at);
+      if (a > 180) a -= 360; if (a < -180) a += 360;
+      n = Math.round(a / d.turn);
+    }
+    if (n === d.steps) return;
+    d.steps = n;
+    const next = stepFrom(d.start, d.field, n);
+    change(a => ({ ...a, board: next }));
+  };
+  const onBoardUp = () => { drag.current = null; };
+  const onBoardStep = (target: EventTarget | null) => {
+    const el = (target as Element | null)?.closest?.('[data-step]');
+    if (el) tapBoard(el.getAttribute('data-step')!, Number(el.getAttribute('data-dir')) < 0 ? -1 : 1);
+  };
   const placed = controls.filter(c => c.kind === 'toggle' && c.x !== undefined), loose = controls.filter(c => c.kind === 'toggle' && c.x === undefined);
   const cardClass = (on: boolean) => `flex w-40 flex-col items-center gap-1 rounded-xl border-2 p-2 text-center transition-all duration-200 disabled:opacity-80 ${answerStateClasses[on ? 'selected' : 'idle']}`;
 
@@ -93,7 +165,13 @@ export const SurfaceBoard: React.FC<{ item: SurfaceItem; board: SurfaceAnswerSta
         <div className={`flex flex-col items-center gap-3 rounded-xl border p-3 ${surface.nested}`} data-studio-board="">
           {/* The box is exactly the drawing: the marks are placed in percent of it. */}
           <div className="relative w-full" style={{ maxWidth: displayMaxWidth(boardNow) }}>
-            <KitDisplay display={boardDrawn!} className="w-full [&>svg]:block" />
+            {systemHtml ? (
+              <div className={`w-full [&>svg]:block ${locked ? '' : '[&_[data-drag]]:cursor-grab [&_[data-drag]]:active:cursor-grabbing'}`} data-studio-system=""
+                onPointerDown={onBoardDown} onPointerMove={onBoardMove} onPointerUp={onBoardUp} onPointerCancel={onBoardUp}
+                onClick={e => onBoardStep(e.target)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBoardStep(e.target); } }}
+                dangerouslySetInnerHTML={systemHtml} />
+            ) : <KitDisplay display={boardDrawn!} className="w-full [&>svg]:block" />}
             {placed.map(c => (
               <button key={c.id} type="button" disabled={locked} aria-pressed={!!c.on} aria-label={c.label} data-pip-object={setTarget(c.id)} onClick={() => tapBoard(c.id)}
                 style={{ left: `${c.x}%`, top: `${c.y}%`, width: `${c.size ?? 12}%` }}
@@ -108,7 +186,8 @@ export const SurfaceBoard: React.FC<{ item: SurfaceItem; board: SurfaceAnswerSta
               ))}
             </div>
           )}
-          {controls.filter(c => c.kind === 'step').map(c => (
+          {onDrawing && !locked && <p className="text-xs text-slate-400">Drag the moving piece, or use ◀ ▶ beside each amount.</p>}
+          {!onDrawing && controls.filter(c => c.kind === 'step').map(c => (
             <div key={c.id} className="flex items-center gap-2 text-sm text-slate-100">
               <button type="button" disabled={locked} aria-label={`${c.label} back`} data-pip-object={setTarget(c.id, -1)} onClick={() => tapBoard(c.id, -1)} className="h-11 w-11 rounded-lg border-2 border-slate-500 text-lg hover:border-cyan-300">◀</button>
               <span className="min-w-[6rem] text-center">{c.label}</span>

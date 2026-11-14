@@ -13,6 +13,8 @@ import { surfacePrompt, runItemBench, runItemLoop, shipLevers, type ItemLoopResu
 import type { Tier } from '../../agent-kit/surfaces';
 import type { PracticeStudioData } from '../../../primitives/visual-primitives/core/practice-studio/PracticeStudio';
 import { validatePracticeStudioData } from '../../../primitives/visual-primitives/core/practice-studio/practiceStudio.boss';
+import { fillPlan } from './studioPlan';
+import { studioPlan } from './plans';
 
 const ITEMS = 4;
 
@@ -36,9 +38,19 @@ ${evidence ? `${evidencePrompt(evidence)}\n` : ''}Every item practises this obje
 }
 
 export async function generatePracticeStudio(gctx: GenerationContext): Promise<PracticeStudioData> {
-  const raw = (gctx.raw ?? {}) as { seed?: number; reviewBench?: unknown; withoutDisplays?: unknown; evidence?: unknown };
-  // The evidence spec rides on the manifest item's config until the manifest emits it per objective.
-  const evidence = readEvidence(raw.evidence);
+  const raw = (gctx.raw ?? {}) as { seed?: number; reviewBench?: unknown; withoutDisplays?: unknown; evidence?: unknown; plan?: unknown; problem?: unknown };
+  // Tester only (PROTOTYPE): a studio plan written offline, filled by code with no model call.
+  if (typeof raw.plan === 'string') {
+    const plan = studioPlan(raw.plan);
+    if (!plan) throw new Error(`Practice studio: no studio plan "${raw.plan}"`);
+    const problem = Number.isInteger(raw.problem) ? Number(raw.problem) : Math.floor(Math.random() * plan.problems.length);
+    const filled = fillPlan(plan, problem, Number(raw.seed) || Math.floor(Math.random() * 2 ** 31));
+    if (filled.problems.length) throw new Error(`Studio plan ${plan.id} problem ${problem + 1} fails its checks: ${filled.problems.join('; ')}`);
+    return filled.data;
+  }
+  // The lesson's spec (written per objective by the curator brief, stamped by the manifest flatten) wins; a tester
+  // still sends one on the item's config.
+  const evidence = gctx.objective?.evidence ?? readEvidence(raw.evidence);
   const seed = Number(raw.seed) || Math.floor(Math.random() * 2 ** 31);
   const tiers = tierPlan(gctx.supportTier as Tier | undefined);
   // Tester only: hide displays from the author, to measure one against the agent drawing it by hand.

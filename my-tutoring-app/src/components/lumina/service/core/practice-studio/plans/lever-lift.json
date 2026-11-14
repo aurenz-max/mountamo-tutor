@@ -1,0 +1,90 @@
+{
+  "id": "lever-lift",
+  "title": "Lift the Rock",
+  "idea": "A lever trades distance for force: a push further from the middle, or a load closer to it, lifts more.",
+  "serves": { "grades": ["4"], "objective": "Use a lever to lift a heavy load with a small force, and explain the trade between force and distance" },
+  "world": {
+    "lever": {
+      "kind": "system",
+      "title": "Lift the rock",
+      "parts": [
+        { "id": "push", "label": "Your push", "icon": "✋", "value": 3, "min": 1, "max": 6 },
+        { "id": "push_arm", "label": "Push distance", "unit": "blocks", "value": 3, "min": 1, "max": 6 },
+        { "id": "rock", "label": "Rock weight", "icon": "🪨", "value": "{{rock}}" },
+        { "id": "rock_arm", "label": "Rock distance", "unit": "blocks", "value": "{{rock_arm}}" }
+      ],
+      "rules": [
+        { "id": "push_turn", "label": "Turning from your push", "op": "multiply", "of": ["push", "push_arm"] },
+        { "id": "rock_turn", "label": "Turning from the rock", "op": "multiply", "of": ["rock", "rock_arm"] },
+        { "id": "lifts", "label": "The rock lifts", "op": "at_least", "of": ["push_turn", "rock_turn"] }
+      ],
+      "scene": "<svg viewBox='0 0 320 110' xmlns='http://www.w3.org/2000/svg'><polygon points='160,80 146,102 174,102' fill='#94a3b8'/><rect x='24' y='74' width='272' height='6' rx='3' fill='#b45309'/><g data-bind='rock_arm' data-move='-22,0'><circle cx='160' cy='60' r='14' fill='#64748b'/></g><g data-bind='push_arm' data-move='22,0'><text x='160' y='68' font-size='22' text-anchor='middle'>✋</text></g><g data-bind='lifts' data-show='yes'><text x='160' y='22' fill='#34d399' font-size='14' text-anchor='middle'>The rock lifts!</text></g><g data-bind='lifts' data-show='no'><text x='160' y='22' fill='#f87171' font-size='14' text-anchor='middle'>The rock stays down</text></g></svg>"
+    }
+  },
+  "steps": [
+    {
+      "role": "setup",
+      "draft": {
+        "tier": "easy",
+        "surface": "set",
+        "prompt": "The rock weighs {{rock}}. Use the lever to lift it.",
+        "board": { "$use": "lever" },
+        "goal": { "lifts": true },
+        "help": { "says": "Each side turns the plank: how hard times how far from the middle. Make your side turn at least as much as the rock's side.", "add_stimulus": [{ "kind": "text", "text": "Turning = how hard × how far from the middle" }] },
+        "simplify": { "says": "I set your push to 6. Now find where to push.", "board": { "$use": "lever", "parts": { "push": { "value": 6 } } } },
+        "why": "The child finds that a small push can lift a heavier rock, and that how hard and how far both count."
+      }
+    },
+    {
+      "role": "predict",
+      "keyFrom": { "part": "push_arm", "rule": "lifts" },
+      "draft": {
+        "tier": "medium",
+        "surface": "choose",
+        "prompt": "Your push is {{p_push}}. What is the closest spot to the middle where your push still lifts the rock?",
+        "stimulus": [{ "$use": "lever", "parts": { "push": { "value": "{{p_push}}", "min": null, "max": null }, "push_arm": { "value": 1, "min": null, "max": null } } }],
+        "options": [
+          { "id": "a", "label": "{{oa}} blocks out", "value": "{{oa}}" },
+          { "id": "b", "label": "{{ob}} blocks out", "value": "{{ob}}" },
+          { "id": "c", "label": "{{oc}} blocks out", "value": "{{oc}}" },
+          { "id": "d", "label": "{{od}} blocks out", "value": "{{od}}" }
+        ],
+        "help": { "says": "Work out the rock's turning first: its weight times its distance from the middle.", "add_stimulus": [{ "kind": "text", "text": "Rock's turning = {{rock}} × {{rock_arm}}" }] },
+        "simplify": { "says": "One of these spots is out.", "remove_options": ["{{drop}}"] },
+        "why": "The child predicts from the rule before running it: the least distance at which push times distance reaches the rock's turning."
+      }
+    },
+    {
+      "role": "test",
+      "draft": {
+        "tier": "medium",
+        "surface": "set",
+        "prompt": "Test your answer. Your push stays at {{p_push}}. Make the rock lift.",
+        "board": { "$use": "lever", "parts": { "push": { "value": "{{p_push}}", "min": null, "max": null }, "push_arm": { "value": 1 } } },
+        "goal": { "lifts": true },
+        "help": { "says": "Your turning has to be at least the rock's turning.", "add_stimulus": [{ "kind": "text", "text": "Your turning = {{p_push}} × push distance" }] },
+        "simplify": { "says": "I moved your hand part of the way out.", "board": { "$use": "lever", "parts": { "push": { "value": "{{p_push}}", "min": null, "max": null }, "push_arm": { "value": "{{s3_simple}}" } } } },
+        "why": "The child tests the prediction on the same lever and sees the result: with the push held, only distance can make up the difference."
+      }
+    },
+    {
+      "role": "harder",
+      "draft": {
+        "tier": "hard",
+        "surface": "set",
+        "prompt": "A heavier rock: it weighs {{rock2}}, and your push can only go up to {{push_max}}. Lift it.",
+        "board": { "$use": "lever", "parts": { "push": { "max": "{{push_max}}" }, "rock": { "value": "{{rock2}}" }, "rock_arm": { "value": "{{ra2_start}}", "min": 1, "max": 3 } } },
+        "goal": { "lifts": true },
+        "help": { "says": "Your side is as far out as it goes. Look at the rock's side of the plank.", "add_stimulus": [{ "kind": "text", "text": "Rock's turning = rock weight × rock distance" }] },
+        "simplify": { "says": "I slid the rock right next to the middle and moved your hand out.", "board": { "$use": "lever", "parts": { "push": { "max": "{{push_max}}" }, "push_arm": { "value": 4 }, "rock": { "value": "{{rock2}}" }, "rock_arm": { "value": 1, "min": 1, "max": 3 } } } },
+        "why": "Moving the load closer to the middle is the other half of the lever trade, and the only way left to lift this rock."
+      }
+    }
+  ],
+  "problems": [
+    { "rock": 12, "rock_arm": 2, "p_push": 6, "oa": 3, "ob": 4, "oc": 5, "od": 6, "drop": "a", "s3_simple": 3, "rock2": 20, "push_max": 4, "ra2_start": 3 },
+    { "rock": 9, "rock_arm": 3, "p_push": 5, "oa": 3, "ob": 4, "oc": 5, "od": 6, "drop": "a", "s3_simple": 4, "rock2": 15, "push_max": 3, "ra2_start": 3 },
+    { "rock": 8, "rock_arm": 3, "p_push": 8, "oa": 2, "ob": 3, "oc": 4, "od": 5, "drop": "a", "s3_simple": 2, "rock2": 24, "push_max": 5, "ra2_start": 2 },
+    { "rock": 10, "rock_arm": 2, "p_push": 4, "oa": 3, "ob": 4, "oc": 5, "od": 6, "drop": "a", "s3_simple": 4, "rock2": 16, "push_max": 4, "ra2_start": 3 }
+  ]
+}

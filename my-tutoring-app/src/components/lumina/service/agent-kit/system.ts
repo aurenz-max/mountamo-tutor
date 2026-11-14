@@ -17,7 +17,9 @@ export interface SystemPart { id: string; label: string; icon?: string; value: n
 export const SYSTEM_OPS = ['add', 'subtract', 'multiply', 'divide', 'least', 'most', 'at_least', 'more_than', 'equal'] as const;
 export type SystemOp = typeof SYSTEM_OPS[number];
 export interface SystemRule { id: string; label: string; unit?: string; op: SystemOp; of: Array<string | number> }
-export interface SystemDisplay { kind: 'system'; title?: string; parts: SystemPart[]; rules: SystemRule[]; /** The author's drawing, moved by `data-bind` attributes. */ scene?: string; /** True shows the results; otherwise they are "?". */ run?: boolean }
+export interface SystemDisplay { kind: 'system'; title?: string; parts: SystemPart[]; rules: SystemRule[]; /** The author's drawing, moved by `data-bind` attributes. */ scene?: string; /** True shows the results; otherwise they are "?". */ run?: boolean;
+  /** Set by the host of a set board, never by an author: each changeable part gets ◀ ▶ in its own row, and its piece of the scene can be dragged. */
+  controls?: boolean }
 
 type Value = number | boolean;
 const YES_NO: readonly SystemOp[] = ['at_least', 'more_than', 'equal'];
@@ -151,15 +153,28 @@ export function systemDrawn(d: SystemDisplay, sanitize: (svg: string) => string)
   const W = 420, ROW = 32, RULE = 42, top = d.title ? 28 : 8, gap = 22;
   const H = top + d.parts.length * ROW + gap + d.rules.length * RULE + 6;
   const label = (x: string | number) => (typeof x === 'number' ? String(x) : [...d.parts, ...d.rules].find(y => y.id === x)?.label ?? x);
-  let g = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" role="img" aria-label="${esc(d.title ?? 'a working model')}">`;
+  const live = (p: SystemPart) => d.controls === true && finite(p.min) && finite(p.max);
+  let g = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" role="${d.controls ? 'group' : 'img'}" aria-label="${esc(d.title ?? 'a working model')}">`;
   if (d.title) g += `<text x="${W / 2}" y="18" text-anchor="middle" font-size="13" font-weight="600" fill="${INK.text}">${esc(d.title)}</text>`;
   d.parts.forEach((p, i) => {
     const y = top + i * ROW + ROW / 2;
     g += `<text x="10" y="${y + 5}" font-size="16">${esc(p.icon ?? '')}</text><text x="${p.icon ? 36 : 10}" y="${y + 4}" font-size="12" fill="${INK.text}">${esc(p.label)}</text>`;
     // The bar sits beside a short label; a long one takes its room.
+    const on = live(p), bx = on ? 230 : 212, bw = on ? 84 : 110;
     if (finite(p.min) && finite(p.max) && p.label.length <= 26) {
-      const bw = 110, fill = Math.max(0, Math.min(1, (p.value - p.min) / (p.max - p.min)));
-      g += `<rect x="212" y="${y - 5}" width="${bw}" height="10" rx="5" fill="${INK.track}"/><rect x="212" y="${y - 5}" width="${r2(Math.max(6, bw * fill))}" height="10" rx="5" fill="${INK.cyan}"/>`;
+      const fill = Math.max(0, Math.min(1, (p.value - p.min) / (p.max - p.min)));
+      g += `<rect x="${bx}" y="${y - 5}" width="${bw}" height="10" rx="5" fill="${INK.track}"/><rect x="${bx}" y="${y - 5}" width="${r2(Math.max(6, bw * fill))}" height="10" rx="5" fill="${INK.cyan}"/>`;
+    }
+    // The child's controls sit in the part's own row, beside its bar, not in a row of buttons under the drawing.
+    if (on) {
+      const step = (x: number, dir: 1 | -1) => {
+        const atEnd = dir < 0 ? p.value <= p.min! : p.value >= p.max!;
+        return `<g data-step="parts[${i}].value" data-dir="${dir}" role="button" tabindex="0" aria-label="${esc(`${p.label} ${dir < 0 ? 'back' : 'forward'}`)}" style="cursor:pointer;opacity:${atEnd ? 0.35 : 1}">`
+          + `<rect x="${x - 16}" y="${y - 15}" width="32" height="30" fill="#000" fill-opacity="0"/>`
+          + `<circle cx="${x}" cy="${y}" r="12" fill="rgba(34,211,238,0.12)" stroke="${INK.cyan}" stroke-width="1.5"/>`
+          + `<path d="${dir < 0 ? `M${x + 3} ${y - 5} L${x - 4} ${y} L${x + 3} ${y + 5} Z` : `M${x - 3} ${y - 5} L${x + 4} ${y} L${x - 3} ${y + 5} Z`}" fill="${INK.cyan}"/></g>`;
+      };
+      g += step(212, -1) + step(332, 1);
     }
     g += `<text x="${W - 10}" y="${y + 4}" font-size="13" font-weight="600" text-anchor="end" fill="${INK.text}">${esc(amount(p.value, p.unit))}</text>`;
   });
@@ -175,7 +190,16 @@ export function systemDrawn(d: SystemDisplay, sanitize: (svg: string) => string)
     g += `<rect x="${W - 10 - pw}" y="${y - 11}" width="${pw}" height="22" rx="11" fill="none" stroke="${color}"/><text x="${W - 10 - pw / 2}" y="${y + 4}" font-size="13" font-weight="600" text-anchor="middle" fill="${color}">${esc(shown)}</text>`;
   });
   g += '</svg>';
-  const scene = d.scene ? `<div class="ks-svg" style="margin-bottom:6px">${bindScene(sanitize(d.scene), values, id => run || !ruleIds.has(id))}</div>` : '';
+  let drawn = d.scene ? bindScene(sanitize(d.scene), values, id => run || !ruleIds.has(id)) : '';
+  // A piece the author bound to a changeable part (data-move or data-turn) is a handle: the child drags it along its own path.
+  if (drawn && d.controls) {
+    drawn = drawn.replace(BOUND, (all, tag: string, attrs: string, _q: string, id: string, close: string) => {
+      const at = d.parts.findIndex(p => p.id === id);
+      if (at < 0 || !live(d.parts[at]) || (attrOf(attrs, 'data-move') === undefined && attrOf(attrs, 'data-turn') === undefined)) return all;
+      return `<${tag}${attrs} data-drag="parts[${at}].value" role="slider" tabindex="-1" aria-label="${esc(`drag ${d.parts[at].label}`)}" aria-valuenow="${d.parts[at].value}"${close}>`;
+    });
+  }
+  const scene = drawn ? `<div class="ks-svg" style="margin-bottom:6px;touch-action:${d.controls ? 'none' : 'auto'}">${drawn}</div>` : '';
   return `<div class="ks-system" style="max-width:${W}px">${scene}${g}</div>`;
 }
 
