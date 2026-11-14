@@ -1,0 +1,657 @@
+{
+ "id": "map-maker",
+ "title": "Map Maker",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child makes a map seen from above of a pictured classroom or town block by putting each legend symbol where its thing is, and reads a finished map to put a hidden thing in the right place in the picture, which shows making and reading simple maps with symbols and a legend."
+ },
+ "request": {
+  "topic": "Making and reading simple maps with symbols and a legend",
+  "grade": "kindergarten",
+  "objective": "Turn a picture of a classroom or a town block into a map seen from above: put each legend symbol where its thing is in the picture, and read a finished map to find where a hidden thing is. (SS001-02-H, SS001-04-E, SS003-02-B, SS003-03-E)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // Left: a picture of a room or a block, drawn at a slant the way a child sees it. Right: the same place as a plan seen\r\n  // from above, with a legend under it. The plan's top edge is the picture's back wall (or far street); the door or road\r\n  // is drawn in both so the two can be lined up.\r\n  //  make: drag symbols from the legend onto the plan where each thing is in the picture. Drag one off to take it away.\r\n  //  read: the plan is already made and marks a hidden thing with a star; drag that thing into the picture where the map says.\r\n  // params.task (make | read), params.place (room | block), params.legend [{ kind, pic, name, shape, color }],\r\n  // params.things [{ kind, c, r }] (c: 0..cols-1 left to right, r: 0 is the back), params.cols, params.rows,\r\n  // params.hidden { pic, name, c, r } (read only).\r\n  const task = params.task === 'read' ? 'read' : 'make';\r\n  const place = params.place === 'block' ? 'block' : 'room';\r\n  const cols = Math.max(2, Math.min(5, Number(params.cols) || 4));\r\n  const rows = Math.max(2, Math.min(4, Number(params.rows) || 3));\r\n  const legend = (Array.isArray(params.legend) ? params.legend : [\r\n    { kind: 'plant', pic: '🪴', name: 'plant', shape: 'circle', color: '#22c55e' },\r\n    { kind: 'books', pic: '📚', name: 'bookshelf', shape: 'bar', color: '#3b82f6' },\r\n  ]).slice(0, 6);\r\n  const legendOf = k => legend.find(l => l.kind === k);\r\n  const things = (Array.isArray(params.things) ? params.things : [{ kind: 'plant', c: 0, r: 0 }, { kind: 'books', c: 3, r: 0 }])\r\n    .filter(t => legendOf(t.kind)).map(t => ({ kind: t.kind, c: Math.max(0, Math.min(cols - 1, Number(t.c) || 0)), r: Math.max(0, Math.min(rows - 1, Number(t.r) || 0)) }));\r\n  const hidden = params.hidden && params.hidden.pic ? params.hidden : { pic: '⚽', name: 'ball', c: 1, r: 1 };\r\n  const where = (c, r) => (r === 0 ? 'at the back' : r === rows - 1 ? 'at the front' : 'in the middle') + ', ' +\r\n    (c === 0 ? 'far left' : c === cols - 1 ? 'far right' : c < cols / 2 ? 'left of the middle' : 'right of the middle');\r\n\r\n  const W = 680, H = 500;\r\n  const PLAN = { x: 372, y: 84, w: 288, h: 240 };\r\n  const cw = PLAN.w / cols, ch = PLAN.h / rows;\r\n  const [placed, setPlaced] = useState([]);   // make: [{ kind, c, r }]\r\n  const [ball, setBall] = useState(null);     // read: { c, r }\r\n  const [drag, setDrag] = useState(null);\r\n  const svgRef = useRef(null);\r\n\r\n  const key = t => t.kind + '@' + t.c + ',' + t.r;\r\n  const goalMet = task === 'read'\r\n    ? !!ball && ball.c === Number(hidden.c) && ball.r === Number(hidden.r)\r\n    : placed.length === things.length && things.map(key).sort().join('|') === placed.map(key).sort().join('|');\r\n\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    const scene = {\r\n      place: place === 'room' ? 'a classroom, drawn at a slant with the back wall at the top' : 'a town block, drawn at a slant with the far street at the top',\r\n      picture: things.map(t => legendOf(t.kind).name + ' ' + where(t.c, t.r)),\r\n      legend: legend.map(l => l.shape + ' = ' + l.name),\r\n    };\r\n    if (task === 'make') scene.map = placed.length ? placed.map(t => legendOf(t.kind).name + ' symbol ' + where(t.c, t.r)) : 'empty';\r\n    else { scene.map = 'every thing in the picture has its symbol; a star marks where the ' + hidden.name + ' is'; scene.ballInPicture = ball ? where(ball.c, ball.r) : 'not placed yet'; }\r\n    lumina.scene(scene);\r\n  }, [placed, ball, goalMet]);\r\n\r\n  // ---- the picture: a floor seen at a slant ----\r\n  const BACK = { y: 150, l: 92, r: 268 }, FRONT = { y: 330, l: 22, r: 338 };\r\n  const pic = (c, r) => {\r\n    const t = (r + 0.5) / rows, y = BACK.y + t * (FRONT.y - BACK.y);\r\n    const l = BACK.l + t * (FRONT.l - BACK.l), rr = BACK.r + t * (FRONT.r - BACK.r);\r\n    return { x: l + ((c + 0.5) / cols) * (rr - l), y, s: 0.75 + 0.5 * t };\r\n  };\r\n  const nearestPicCell = p => {\r\n    let best = null, bd = 1e9;\r\n    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const q = pic(c, r), d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2; if (d < bd) { bd = d; best = { c, r }; } }\r\n    return p.y > BACK.y - 30 && p.y < FRONT.y + 30 && p.x > 0 && p.x < 360 ? best : null;\r\n  };\r\n  const picture = () => <g id=\"picture\">\r\n    {place === 'room'\r\n      ? <g><rect x={BACK.l} y=\"64\" width={BACK.r - BACK.l} height={BACK.y - 64} fill=\"#e7e5e4\" opacity=\"0.85\" />\r\n        <path d={`M ${BACK.l} 64 L ${FRONT.l} 100 L ${FRONT.l} ${FRONT.y} L ${BACK.l} ${BACK.y} Z`} fill=\"#d6d3d1\" opacity=\"0.7\" />\r\n        <path d={`M ${BACK.r} 64 L ${FRONT.r} 100 L ${FRONT.r} ${FRONT.y} L ${BACK.r} ${BACK.y} Z`} fill=\"#d6d3d1\" opacity=\"0.7\" />\r\n        <rect x={(BACK.l + BACK.r) / 2 - 18} y={BACK.y - 58} width=\"36\" height=\"58\" rx=\"3\" fill=\"#92400e\" stroke=\"#451a03\" strokeWidth=\"2\" />\r\n        <circle cx={(BACK.l + BACK.r) / 2 + 10} cy={BACK.y - 28} r=\"3\" fill=\"#facc15\" />\r\n        <path d={`M ${BACK.l} ${BACK.y} L ${BACK.r} ${BACK.y} L ${FRONT.r} ${FRONT.y} L ${FRONT.l} ${FRONT.y} Z`} fill=\"#a8a29e\" /></g>\r\n      : <g><rect x=\"10\" y=\"64\" width=\"340\" height={BACK.y - 64} fill=\"#38bdf8\" opacity=\"0.35\" />\r\n        <path d={`M ${BACK.l} ${BACK.y} L ${BACK.r} ${BACK.y} L ${FRONT.r} ${FRONT.y} L ${FRONT.l} ${FRONT.y} Z`} fill=\"#4d7c0f\" />\r\n        <path d={`M ${BACK.l - 6} ${BACK.y - 14} L ${BACK.r + 6} ${BACK.y - 14} L ${BACK.r} ${BACK.y} L ${BACK.l} ${BACK.y} Z`} fill=\"#57534e\" />\r\n        <line x1={BACK.l} y1={BACK.y - 7} x2={BACK.r} y2={BACK.y - 7} stroke=\"#facc15\" strokeWidth=\"2\" strokeDasharray=\"8 8\" /></g>}\r\n    {task === 'read' && Array.from({ length: rows * cols }, (_, k) => { const c = k % cols, r = Math.floor(k / cols), q = pic(c, r); return <rect key={'spot' + k} id={'spot-' + c + '-' + r}\r\n      x={q.x - 4} y={q.y - 4} width=\"8\" height=\"8\" fill=\"none\" style={{ pointerEvents: 'none' }} />; })}\r\n    {things.map((t, i) => { const p = pic(t.c, t.r); return <text key={i} x={p.x} y={p.y} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={34 * p.s}>{legendOf(t.kind).pic}</text>; })}\r\n  </g>;\r\n\r\n  // ---- the plan and its symbols ----\r\n  const symbol = (l, size) => {\r\n    const s = size / 2;\r\n    if (l.shape === 'circle') return <circle r={s} fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n    if (l.shape === 'triangle') return <path d={`M 0 ${-s} L ${s} ${s} L ${-s} ${s} Z`} fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n    if (l.shape === 'diamond') return <path d={`M 0 ${-s} L ${s} 0 L 0 ${s} L ${-s} 0 Z`} fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n    if (l.shape === 'bar') return <rect x={-s} y={-s * 0.45} width={s * 2} height={s * 0.9} rx=\"3\" fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n    if (l.shape === 'cross') return <path d={`M ${-s * 0.35} ${-s} h ${s * 0.7} v ${s * 0.65} h ${s * 0.65} v ${s * 0.7} h ${-s * 0.65} v ${s * 0.65} h ${-s * 0.7} v ${-s * 0.65} h ${-s * 0.65} v ${-s * 0.7} h ${s * 0.65} Z`} fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n    return <rect x={-s} y={-s} width={s * 2} height={s * 2} rx=\"3\" fill={l.color} stroke=\"#0f172a\" strokeWidth=\"2\" />;\r\n  };\r\n  const star = size => { const s = size / 2, pts = Array.from({ length: 10 }, (_, k) => { const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? s * 0.45 : s; return (Math.cos(a) * rr).toFixed(1) + ',' + (Math.sin(a) * rr).toFixed(1); }).join(' '); return <polygon points={pts} fill=\"#facc15\" stroke=\"#0f172a\" strokeWidth=\"2\" />; };\r\n  const cellCenter = (c, r) => ({ x: PLAN.x + (c + 0.5) * cw, y: PLAN.y + (r + 0.5) * ch });\r\n  const planCell = p => (p.x >= PLAN.x && p.x <= PLAN.x + PLAN.w && p.y >= PLAN.y && p.y <= PLAN.y + PLAN.h\r\n    ? { c: Math.min(cols - 1, Math.floor((p.x - PLAN.x) / cw)), r: Math.min(rows - 1, Math.floor((p.y - PLAN.y) / ch)) } : null);\r\n  const plan = () => <g id=\"plan\">\r\n    <rect x={PLAN.x} y={PLAN.y} width={PLAN.w} height={PLAN.h} fill={place === 'room' ? '#e7e5e4' : '#bef264'} />\r\n    {Array.from({ length: cols - 1 }, (_, k) => <line key={'c' + k} x1={PLAN.x + (k + 1) * cw} y1={PLAN.y} x2={PLAN.x + (k + 1) * cw} y2={PLAN.y + PLAN.h} stroke=\"#78716c\" strokeWidth=\"1\" strokeDasharray=\"3 5\" />)}\r\n    {Array.from({ length: rows - 1 }, (_, k) => <line key={'r' + k} x1={PLAN.x} y1={PLAN.y + (k + 1) * ch} x2={PLAN.x + PLAN.w} y2={PLAN.y + (k + 1) * ch} stroke=\"#78716c\" strokeWidth=\"1\" strokeDasharray=\"3 5\" />)}\r\n    {place === 'room'\r\n      ? <g><rect x={PLAN.x} y={PLAN.y} width={PLAN.w} height={PLAN.h} fill=\"none\" stroke=\"#f8fafc\" strokeWidth=\"6\" />\r\n        <rect x={PLAN.x + PLAN.w / 2 - 20} y={PLAN.y - 5} width=\"40\" height=\"10\" fill=\"#92400e\" /></g>\r\n      : <g><rect x={PLAN.x - 6} y={PLAN.y - 22} width={PLAN.w + 12} height=\"22\" fill=\"#57534e\" />\r\n        <line x1={PLAN.x} y1={PLAN.y - 11} x2={PLAN.x + PLAN.w} y2={PLAN.y - 11} stroke=\"#facc15\" strokeWidth=\"2\" strokeDasharray=\"8 8\" /></g>}\r\n    {Array.from({ length: rows * cols }, (_, k) => { const c = k % cols, r = Math.floor(k / cols); return <rect key={'cell' + k} id={'cell-' + c + '-' + r}\r\n      x={PLAN.x + c * cw + cw / 2 - 4} y={PLAN.y + r * ch + ch / 2 - 4} width=\"8\" height=\"8\" fill=\"none\" style={{ pointerEvents: 'none' }} />; })}\r\n    {task === 'read' && <g>\r\n      {things.map((t, i) => { const p = cellCenter(t.c, t.r); return <g key={i} transform={`translate(${p.x}, ${p.y})`}>{symbol(legendOf(t.kind), 34)}</g>; })}\r\n      <g id=\"map-star\" transform={`translate(${cellCenter(Number(hidden.c), Number(hidden.r)).x}, ${cellCenter(Number(hidden.c), Number(hidden.r)).y})`}>{star(36)}</g>\r\n    </g>}\r\n  </g>;\r\n\r\n  const pointOf = e => svgPoint(svgRef.current, e);\r\n  const grab = (d, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag(d); };\r\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\r\n  const onUp = e => {\r\n    if (!drag || !svgRef.current) return;\r\n    const p = pointOf(e), d = drag;\r\n    setDrag(null);\r\n    if (d.from === 'ball') { const cell = nearestPicCell(p); setBall(cell); return; }\r\n    const cell = planCell(p);\r\n    setPlaced(list => {\r\n      const rest = d.from === 'placed' ? list.filter((_, i) => i !== d.i) : list;\r\n      if (!cell) return rest;\r\n      return [...rest.filter(t => !(t.c === cell.c && t.r === cell.r)), { kind: d.kind, c: cell.c, r: cell.r }];\r\n    });\r\n  };\r\n  const dragProps = d => ({ style: { cursor: 'grab', touchAction: 'none' }, onPointerDown: e => grab(d, e), onPointerUp: onUp, onPointerCancel: () => setDrag(null) });\r\n  const heldAt = (match, home) => (drag && match(drag) && drag.x !== undefined ? { x: drag.x, y: drag.y } : home);\r\n\r\n  // legend along the bottom: each symbol beside the picture of what it means\r\n  const LG_Y = 352, nCols = legend.length + (task === 'read' ? 1 : 0), lgW = Math.min(150, (W - 40) / nCols);\r\n  const colX = i => 20 + (W - 40 - lgW * nCols) / 2 + i * lgW + lgW / 2;\r\n  const legendRow = () => <g id=\"legend\">\r\n    <rect x=\"20\" y={LG_Y} width={W - 40} height=\"128\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\r\n    {legend.map((l, i) => { const x = colX(i); return <g key={l.kind}>\r\n      <text x={x} y={LG_Y + 98} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"30\">{l.pic}</text>\r\n      <text x={x} y={LG_Y + 70} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"18\" fill=\"#94a3b8\">=</text>\r\n      {task === 'make'\r\n        ? <g id={'legend-' + l.kind} transform={`translate(${x}, ${LG_Y + 36})`} {...dragProps({ from: 'legend', kind: l.kind })}>\r\n          <rect x=\"-24\" y=\"-24\" width=\"48\" height=\"48\" fill=\"transparent\" />{symbol(l, 34)}</g>\r\n        : <g transform={`translate(${x}, ${LG_Y + 36})`}>{symbol(l, 34)}</g>}\r\n    </g>; })}\r\n    {task === 'read' && (() => { const x = colX(legend.length); return <g>\r\n      <g transform={`translate(${x}, ${LG_Y + 36})`}>{star(36)}</g>\r\n      <text x={x} y={LG_Y + 70} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"18\" fill=\"#94a3b8\">=</text>\r\n      <rect x={x - 26} y={LG_Y + 74} width=\"52\" height=\"48\" rx=\"10\" fill=\"none\" stroke=\"#64748b\" strokeWidth=\"2\" strokeDasharray=\"5 5\" /></g>; })()}\r\n  </g>;\r\n\r\n  const placedSymbols = () => placed.map((t, i) => {\r\n    const p = heldAt(d => d.from === 'placed' && d.i === i, cellCenter(t.c, t.r));\r\n    return <g key={i + key(t)} id={'placed-' + i} transform={`translate(${p.x}, ${p.y})`} {...dragProps({ from: 'placed', i, kind: t.kind })}>\r\n      <rect x=\"-24\" y=\"-24\" width=\"48\" height=\"48\" fill=\"transparent\" />{symbol(legendOf(t.kind), 34)}</g>;\r\n  });\r\n  const heldLegend = () => (drag && drag.from === 'legend' && drag.x !== undefined\r\n    ? <g transform={`translate(${drag.x}, ${drag.y})`} style={{ pointerEvents: 'none' }}>{symbol(legendOf(drag.kind), 34)}</g> : null);\r\n\r\n  // read: the hidden thing waits in a tray until it is dragged into the picture\r\n  const TRAY = { x: colX(legend.length), y: LG_Y + 98 };\r\n  const ballEl = () => {\r\n    const home = ball ? pic(ball.c, ball.r) : { x: TRAY.x, y: TRAY.y, s: 1 };\r\n    const p = heldAt(d => d.from === 'ball', home);\r\n    return <g id=\"hidden-thing\" transform={`translate(${p.x}, ${p.y})`} {...dragProps({ from: 'ball' })}>\r\n      <circle r=\"24\" fill=\"transparent\" /><text textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={34 * (home.s || 1)}>{hidden.pic}</text></g>;\r\n  };\r\n\r\n  return (\r\n    <Panel>\r\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\r\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\r\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\r\n        {picture()}\r\n        {plan()}\r\n        {legendRow()}\r\n        {task === 'make' && placedSymbols()}\r\n        {task === 'make' && heldLegend()}\r\n        {task === 'read' && ballEl()}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "task": "make",
+    "place": "room",
+    "legend": [
+     {
+      "kind": "plant",
+      "pic": "🪴",
+      "name": "plant",
+      "shape": "circle",
+      "color": "#22c55e"
+     },
+     {
+      "kind": "books",
+      "pic": "📚",
+      "name": "bookshelf",
+      "shape": "bar",
+      "color": "#3b82f6"
+     },
+     {
+      "kind": "bin",
+      "pic": "🗑️",
+      "name": "trash can",
+      "shape": "triangle",
+      "color": "#94a3b8"
+     }
+    ],
+    "things": [
+     {
+      "kind": "plant",
+      "c": 0,
+      "r": 0
+     },
+     {
+      "kind": "books",
+      "c": 3,
+      "r": 0
+     },
+     {
+      "kind": "bin",
+      "c": 1,
+      "r": 2
+     }
+    ]
+   },
+   "ask": "Here is a picture of our classroom. Make a map of it with the symbols.",
+   "goal": "The plant symbol is at the back on the left, the bookshelf symbol at the back on the right and the trash can symbol at the front, left of the middle.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#legend-plant",
+     "to": "#cell-0-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-books",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-bin",
+     "to": "#cell-1-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#legend-plant",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-books",
+     "to": "#cell-0-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-bin",
+     "to": "#cell-2-2"
+    }
+   ],
+   "scene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "trash can at the front, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can"
+    ],
+    "map": "empty"
+   },
+   "proofScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "trash can at the front, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can"
+    ],
+    "map": [
+     "plant symbol at the back, far left",
+     "bookshelf symbol at the back, far right",
+     "trash can symbol at the front, left of the middle"
+    ]
+   },
+   "missScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "trash can at the front, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can"
+    ],
+    "map": [
+     "plant symbol at the back, far right",
+     "bookshelf symbol at the back, far left",
+     "trash can symbol at the front, right of the middle"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "make",
+    "place": "room",
+    "legend": [
+     {
+      "kind": "plant",
+      "pic": "🪴",
+      "name": "plant",
+      "shape": "circle",
+      "color": "#22c55e"
+     },
+     {
+      "kind": "books",
+      "pic": "📚",
+      "name": "bookshelf",
+      "shape": "bar",
+      "color": "#3b82f6"
+     },
+     {
+      "kind": "bin",
+      "pic": "🗑️",
+      "name": "trash can",
+      "shape": "triangle",
+      "color": "#94a3b8"
+     },
+     {
+      "kind": "chair",
+      "pic": "🪑",
+      "name": "chair",
+      "shape": "square",
+      "color": "#f97316"
+     },
+     {
+      "kind": "computer",
+      "pic": "🖥️",
+      "name": "computer",
+      "shape": "diamond",
+      "color": "#a855f7"
+     }
+    ],
+    "things": [
+     {
+      "kind": "computer",
+      "c": 0,
+      "r": 0
+     },
+     {
+      "kind": "books",
+      "c": 3,
+      "r": 0
+     },
+     {
+      "kind": "chair",
+      "c": 1,
+      "r": 1
+     },
+     {
+      "kind": "chair",
+      "c": 2,
+      "r": 1
+     },
+     {
+      "kind": "plant",
+      "c": 0,
+      "r": 2
+     }
+    ]
+   },
+   "ask": "This classroom has more things in it. Make a map of it with the symbols.",
+   "goal": "Five symbols, each in its thing's place: computer back left, bookshelf back right, two chairs in the middle, plant front left. The trash can symbol is not used.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#legend-computer",
+     "to": "#cell-0-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-books",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-chair",
+     "to": "#cell-1-1"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-chair",
+     "to": "#cell-2-1"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-plant",
+     "to": "#cell-0-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#legend-computer",
+     "to": "#cell-0-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-books",
+     "to": "#cell-1-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-chair",
+     "to": "#cell-2-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-chair",
+     "to": "#cell-3-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-plant",
+     "to": "#cell-0-1"
+    }
+   ],
+   "scene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "computer at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle",
+     "chair in the middle, right of the middle",
+     "plant at the front, far left"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair",
+     "diamond = computer"
+    ],
+    "map": "empty"
+   },
+   "proofScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "computer at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle",
+     "chair in the middle, right of the middle",
+     "plant at the front, far left"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair",
+     "diamond = computer"
+    ],
+    "map": [
+     "computer symbol at the back, far left",
+     "bookshelf symbol at the back, far right",
+     "chair symbol in the middle, left of the middle",
+     "chair symbol in the middle, right of the middle",
+     "plant symbol at the front, far left"
+    ]
+   },
+   "missScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "computer at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle",
+     "chair in the middle, right of the middle",
+     "plant at the front, far left"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair",
+     "diamond = computer"
+    ],
+    "map": [
+     "computer symbol at the front, far left",
+     "bookshelf symbol at the front, left of the middle",
+     "chair symbol at the front, right of the middle",
+     "chair symbol at the front, far right",
+     "plant symbol in the middle, far left"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "make",
+    "place": "block",
+    "legend": [
+     {
+      "kind": "school",
+      "pic": "🏫",
+      "name": "school",
+      "shape": "square",
+      "color": "#f97316"
+     },
+     {
+      "kind": "library",
+      "pic": "🏛️",
+      "name": "library",
+      "shape": "bar",
+      "color": "#3b82f6"
+     },
+     {
+      "kind": "park",
+      "pic": "🌳",
+      "name": "park tree",
+      "shape": "circle",
+      "color": "#16a34a"
+     },
+     {
+      "kind": "pond",
+      "pic": "💧",
+      "name": "pond",
+      "shape": "diamond",
+      "color": "#38bdf8"
+     },
+     {
+      "kind": "fire",
+      "pic": "🚒",
+      "name": "fire station",
+      "shape": "cross",
+      "color": "#ef4444"
+     }
+    ],
+    "things": [
+     {
+      "kind": "school",
+      "c": 0,
+      "r": 0
+     },
+     {
+      "kind": "library",
+      "c": 3,
+      "r": 0
+     },
+     {
+      "kind": "park",
+      "c": 1,
+      "r": 1
+     },
+     {
+      "kind": "pond",
+      "c": 0,
+      "r": 2
+     },
+     {
+      "kind": "fire",
+      "c": 3,
+      "r": 2
+     }
+    ]
+   },
+   "ask": "Here is a picture of a town block. Make a map of it with the symbols.",
+   "goal": "School back left, library back right, park tree in the middle, pond front left, fire station front right, each with its own symbol.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#legend-school",
+     "to": "#cell-0-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-library",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-park",
+     "to": "#cell-1-1"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-pond",
+     "to": "#cell-0-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-fire",
+     "to": "#cell-3-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#legend-school",
+     "to": "#cell-3-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-library",
+     "to": "#cell-0-0"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-park",
+     "to": "#cell-1-1"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-pond",
+     "to": "#cell-0-2"
+    },
+    {
+     "do": "drag",
+     "target": "#legend-fire",
+     "to": "#cell-3-2"
+    }
+   ],
+   "scene": {
+    "place": "a town block, drawn at a slant with the far street at the top",
+    "picture": [
+     "school at the back, far left",
+     "library at the back, far right",
+     "park tree in the middle, left of the middle",
+     "pond at the front, far left",
+     "fire station at the front, far right"
+    ],
+    "legend": [
+     "square = school",
+     "bar = library",
+     "circle = park tree",
+     "diamond = pond",
+     "cross = fire station"
+    ],
+    "map": "empty"
+   },
+   "proofScene": {
+    "place": "a town block, drawn at a slant with the far street at the top",
+    "picture": [
+     "school at the back, far left",
+     "library at the back, far right",
+     "park tree in the middle, left of the middle",
+     "pond at the front, far left",
+     "fire station at the front, far right"
+    ],
+    "legend": [
+     "square = school",
+     "bar = library",
+     "circle = park tree",
+     "diamond = pond",
+     "cross = fire station"
+    ],
+    "map": [
+     "school symbol at the back, far left",
+     "library symbol at the back, far right",
+     "park tree symbol in the middle, left of the middle",
+     "pond symbol at the front, far left",
+     "fire station symbol at the front, far right"
+    ]
+   },
+   "missScene": {
+    "place": "a town block, drawn at a slant with the far street at the top",
+    "picture": [
+     "school at the back, far left",
+     "library at the back, far right",
+     "park tree in the middle, left of the middle",
+     "pond at the front, far left",
+     "fire station at the front, far right"
+    ],
+    "legend": [
+     "square = school",
+     "bar = library",
+     "circle = park tree",
+     "diamond = pond",
+     "cross = fire station"
+    ],
+    "map": [
+     "school symbol at the back, far right",
+     "library symbol at the back, far left",
+     "park tree symbol in the middle, left of the middle",
+     "pond symbol at the front, far left",
+     "fire station symbol at the front, far right"
+    ]
+   }
+  },
+  {
+   "params": {
+    "task": "read",
+    "place": "room",
+    "legend": [
+     {
+      "kind": "plant",
+      "pic": "🪴",
+      "name": "plant",
+      "shape": "circle",
+      "color": "#22c55e"
+     },
+     {
+      "kind": "books",
+      "pic": "📚",
+      "name": "bookshelf",
+      "shape": "bar",
+      "color": "#3b82f6"
+     },
+     {
+      "kind": "bin",
+      "pic": "🗑️",
+      "name": "trash can",
+      "shape": "triangle",
+      "color": "#94a3b8"
+     },
+     {
+      "kind": "chair",
+      "pic": "🪑",
+      "name": "chair",
+      "shape": "square",
+      "color": "#f97316"
+     }
+    ],
+    "things": [
+     {
+      "kind": "plant",
+      "c": 0,
+      "r": 0
+     },
+     {
+      "kind": "books",
+      "c": 3,
+      "r": 0
+     },
+     {
+      "kind": "chair",
+      "c": 1,
+      "r": 1
+     }
+    ],
+    "hidden": {
+     "pic": "⚽",
+     "name": "ball",
+     "c": 3,
+     "r": 2
+    }
+   },
+   "ask": "The map shows where the ball is hiding. Put the ball in the picture where the map says.",
+   "goal": "The ball is at the front on the right of the classroom picture, where the star is on the map.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#hidden-thing",
+     "to": "#spot-3-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#hidden-thing",
+     "to": "#spot-0-2"
+    }
+   ],
+   "scene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair"
+    ],
+    "map": "every thing in the picture has its symbol; a star marks where the ball is",
+    "ballInPicture": "not placed yet"
+   },
+   "proofScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair"
+    ],
+    "map": "every thing in the picture has its symbol; a star marks where the ball is",
+    "ballInPicture": "at the front, far right"
+   },
+   "missScene": {
+    "place": "a classroom, drawn at a slant with the back wall at the top",
+    "picture": [
+     "plant at the back, far left",
+     "bookshelf at the back, far right",
+     "chair in the middle, left of the middle"
+    ],
+    "legend": [
+     "circle = plant",
+     "bar = bookshelf",
+     "triangle = trash can",
+     "square = chair"
+    ],
+    "map": "every thing in the picture has its symbol; a star marks where the ball is",
+    "ballInPicture": "at the front, far left"
+   }
+  }
+ ]
+}

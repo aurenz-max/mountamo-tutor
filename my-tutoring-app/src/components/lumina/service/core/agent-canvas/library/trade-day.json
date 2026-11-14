@@ -1,0 +1,566 @@
+{
+ "id": "trade-day",
+ "title": "Trade Day",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child trades goods between neighbours (drag one good onto another to swap them) until every neighbour has the thing they need, including needs that go around a ring of three and a neighbour with nothing to trade who is given a share, which shows how trading and sharing let people get what they need."
+ },
+ "request": {
+  "topic": "Trading goods so everyone has what they need",
+  "grade": "kindergarten",
+  "objective": "Neighbours each have extra of one thing and need another: trade goods between them, in more than one step when needs go around a ring, so every neighbour ends with what they need, and share with a neighbour who has nothing to trade. (SS002-03-A, SS002-01-I, SS002-03-I, SS002-03-C)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A street of neighbours. Each one holds some goods on their porch and thinks of one thing they need (a picture in a\n  // thought bubble). Drag one good onto another neighbour's good to TRADE (the two swap owners). Drag a good onto\n  // another neighbour's house to GIVE it (for a neighbour who has nothing to trade). Nothing says who is done.\n  // params.goods: { kind: emoji }. params.neighbours: [{ id, pic, name, need, has: [kind] }]. params.story: for the tutor.\n  const goods = params.goods || { bread: '🍞', milk: '🥛' };\n  const nbrs = (Array.isArray(params.neighbours) ? params.neighbours : [\n    { id: 'ana', pic: '👩', name: 'Ana', need: 'milk', has: ['bread'] },\n    { id: 'ben', pic: '👨', name: 'Ben', need: 'bread', has: ['milk'] },\n  ]).slice(0, 4);\n  const story = params.story || 'neighbours trading';\n  const W = 680, H = 470, colW = W / nbrs.length;\n\n  const start = () => {\n    const o = {};\n    nbrs.forEach(n => (n.has || []).forEach((k, i) => { o[n.id + '-' + k + '-' + i] = n.id; }));\n    return o;\n  };\n  const [owner, setOwner] = useState(start);\n  const [drag, setDrag] = useState(null);\n  const [last, setLast] = useState(null);\n  const svgRef = useRef(null);\n  const kindOf = id => id.split('-')[1];\n  const nameOf = nid => nbrs.find(n => n.id === nid).name;\n  const holds = nid => Object.keys(owner).filter(id => owner[id] === nid);\n  const goalMet = nbrs.every(n => holds(n.id).some(id => kindOf(id) === n.need));\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      story,\n      neighbours: nbrs.map(n => ({ name: n.name, thinksOf: n.need, porch: holds(n.id).map(kindOf) })),\n      lastMove: last,\n    });\n  }, [owner, last, goalMet]);\n\n  const colX = i => colW * i + colW / 2;\n  const HOUSE_Y = 150, PORCH_Y = 360;\n  const slotAt = (i, k, n) => ({ x: colX(i) + (k - (n - 1) / 2) * 62, y: PORCH_Y });\n  const pos = {};\n  nbrs.forEach((n, i) => { const h = holds(n.id); h.forEach((id, k) => { pos[id] = slotAt(i, k, h.length); }); });\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const p = pointOf(e), id = drag.id, from = owner[id];\n    setDrag(null);\n    const hit = Object.keys(pos).find(o => o !== id && owner[o] !== from && Math.abs(pos[o].x - p.x) < 30 && Math.abs(pos[o].y - p.y) < 32);\n    if (hit) {\n      const to = owner[hit];\n      setOwner(w => ({ ...w, [id]: to, [hit]: from }));\n      setLast(nameOf(from) + ' traded ' + kindOf(id) + ' to ' + nameOf(to) + ' for ' + kindOf(hit));\n      return;\n    }\n    const col = Math.floor(p.x / colW);\n    if (col >= 0 && col < nbrs.length && p.y > 40 && p.y < H - 20 && nbrs[col].id !== from) {\n      const to = nbrs[col].id;\n      setOwner(w => ({ ...w, [id]: to }));\n      setLast(nameOf(from) + ' gave ' + kindOf(id) + ' to ' + nameOf(to) + ' and got nothing back');\n    }\n  };\n\n  const house = (n, i) => {\n    const x = colX(i);\n    return <g key={n.id}>\n      <path d={`M ${x - 70} ${HOUSE_Y} L ${x} ${HOUSE_Y - 60} L ${x + 70} ${HOUSE_Y} Z`} fill=\"#b91c1c\" stroke=\"#7f1d1d\" strokeWidth=\"3\" />\n      <rect id={'house-' + n.id} x={x - 58} y={HOUSE_Y} width=\"116\" height=\"130\" fill=\"#334155\" stroke=\"#1e293b\" strokeWidth=\"3\" />\n      <rect x={x - 22} y={HOUSE_Y + 60} width=\"44\" height=\"70\" rx=\"4\" fill=\"#78350f\" />\n      <text x={x} y={HOUSE_Y + 32} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"40\">{n.pic}</text>\n      {/* thought bubble: what this neighbour needs */}\n      <circle cx={x + 30} cy={HOUSE_Y - 66} r=\"5\" fill=\"#e2e8f0\" />\n      <circle cx={x + 40} cy={HOUSE_Y - 80} r=\"8\" fill=\"#e2e8f0\" />\n      <ellipse cx={x + 48} cy={HOUSE_Y - 112} rx=\"34\" ry=\"26\" fill=\"#e2e8f0\" />\n      <text x={x + 48} y={HOUSE_Y - 110} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"30\">{goods[n.need]}</text>\n      <text x={x} y={HOUSE_Y + 152} textAnchor=\"middle\" fontSize=\"18\" fill=\"#cbd5e1\">{n.name}</text>\n      <rect x={x - 80} y={PORCH_Y - 36} width=\"160\" height=\"72\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" strokeDasharray=\"6 5\" />\n    </g>;\n  };\n\n  const good = id => {\n    const held = drag && drag.id === id && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : pos[id];\n    return <g key={id} id={'good-' + id} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.15 : 1})`}\n      style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => grab(id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <circle r=\"27\" fill=\"#0f172a\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text y=\"2\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"34\">{goods[kindOf(id)]}</text>\n    </g>;\n  };\n\n  const ids = Object.keys(owner);\n  return (\n    <Panel>\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"0\" y={PORCH_Y + 46} width={W} height=\"40\" fill=\"#1f2937\" />\n        {nbrs.map(house)}\n        {ids.filter(id => !(drag && drag.id === id)).map(good)}\n        {ids.filter(id => drag && drag.id === id).map(good)}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "story": "Ana baked bread but has no milk. Ben has milk but no bread.",
+    "goods": {
+     "bread": "🍞",
+     "milk": "🥛"
+    },
+    "neighbours": [
+     {
+      "id": "ana",
+      "pic": "👩",
+      "name": "Ana",
+      "need": "milk",
+      "has": [
+       "bread"
+      ]
+     },
+     {
+      "id": "ben",
+      "pic": "👨",
+      "name": "Ben",
+      "need": "bread",
+      "has": [
+       "milk"
+      ]
+     }
+    ]
+   },
+   "ask": "Ana and Ben each need something. Help them both get what they need.",
+   "goal": "Ana holds milk and Ben holds bread: one swap.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#good-ana-bread-0",
+     "to": "#good-ben-milk-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#good-ana-bread-0",
+     "to": "#house-ben"
+    }
+   ],
+   "scene": {
+    "story": "Ana baked bread but has no milk. Ben has milk but no bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": [
+       "bread"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "bread",
+      "porch": [
+       "milk"
+      ]
+     }
+    ],
+    "lastMove": null
+   },
+   "proofScene": {
+    "story": "Ana baked bread but has no milk. Ben has milk but no bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": [
+       "milk"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "bread",
+      "porch": [
+       "bread"
+      ]
+     }
+    ],
+    "lastMove": "Ana traded bread to Ben for milk"
+   },
+   "missScene": {
+    "story": "Ana baked bread but has no milk. Ben has milk but no bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": []
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "bread",
+      "porch": [
+       "bread",
+       "milk"
+      ]
+     }
+    ],
+    "lastMove": "Ana gave bread to Ben and got nothing back"
+   }
+  },
+  {
+   "params": {
+    "story": "Three neighbours. Ana has bread and apples and needs milk. Ben has milk and needs eggs. Cal has eggs and needs bread.",
+    "goods": {
+     "bread": "🍞",
+     "milk": "🥛",
+     "eggs": "🥚",
+     "apple": "🍎"
+    },
+    "neighbours": [
+     {
+      "id": "ana",
+      "pic": "👩",
+      "name": "Ana",
+      "need": "milk",
+      "has": [
+       "bread",
+       "apple"
+      ]
+     },
+     {
+      "id": "ben",
+      "pic": "👨",
+      "name": "Ben",
+      "need": "eggs",
+      "has": [
+       "milk"
+      ]
+     },
+     {
+      "id": "cal",
+      "pic": "🧑",
+      "name": "Cal",
+      "need": "bread",
+      "has": [
+       "eggs"
+      ]
+     }
+    ]
+   },
+   "ask": "Ana, Ben and Cal each need something. Help all three get what they need.",
+   "goal": "Ana holds milk, Ben holds eggs, Cal holds bread. The needs go around a ring, so one trade is never enough: the bread has to pass through Ben.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#good-ana-bread-0",
+     "to": "#good-ben-milk-0",
+     "shot": "first-trade"
+    },
+    {
+     "do": "drag",
+     "target": "#good-ana-bread-0",
+     "to": "#good-cal-eggs-0"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#good-ana-bread-0",
+     "to": "#good-ben-milk-0"
+    }
+   ],
+   "scene": {
+    "story": "Three neighbours. Ana has bread and apples and needs milk. Ben has milk and needs eggs. Cal has eggs and needs bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": [
+       "bread",
+       "apple"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "eggs",
+      "porch": [
+       "milk"
+      ]
+     },
+     {
+      "name": "Cal",
+      "thinksOf": "bread",
+      "porch": [
+       "eggs"
+      ]
+     }
+    ],
+    "lastMove": null
+   },
+   "proofScene": {
+    "story": "Three neighbours. Ana has bread and apples and needs milk. Ben has milk and needs eggs. Cal has eggs and needs bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": [
+       "apple",
+       "milk"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "eggs",
+      "porch": [
+       "eggs"
+      ]
+     },
+     {
+      "name": "Cal",
+      "thinksOf": "bread",
+      "porch": [
+       "bread"
+      ]
+     }
+    ],
+    "lastMove": "Ben traded bread to Cal for eggs"
+   },
+   "missScene": {
+    "story": "Three neighbours. Ana has bread and apples and needs milk. Ben has milk and needs eggs. Cal has eggs and needs bread.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "milk",
+      "porch": [
+       "apple",
+       "milk"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "eggs",
+      "porch": [
+       "bread"
+      ]
+     },
+     {
+      "name": "Cal",
+      "thinksOf": "bread",
+      "porch": [
+       "eggs"
+      ]
+     }
+    ],
+    "lastMove": "Ana traded bread to Ben for milk"
+   }
+  },
+  {
+   "params": {
+    "story": "A farmer grew wheat and needs bread. A baker has bread and needs wheat to bake more. A fisher caught fish and needs bread.",
+    "goods": {
+     "wheat": "🌾",
+     "bread": "🍞",
+     "fish": "🐟"
+    },
+    "neighbours": [
+     {
+      "id": "farmer",
+      "pic": "🧑‍🌾",
+      "name": "Farmer",
+      "need": "bread",
+      "has": [
+       "wheat",
+       "wheat"
+      ]
+     },
+     {
+      "id": "baker",
+      "pic": "🧑‍🍳",
+      "name": "Baker",
+      "need": "wheat",
+      "has": [
+       "bread",
+       "bread"
+      ]
+     },
+     {
+      "id": "fisher",
+      "pic": "🎣",
+      "name": "Fisher",
+      "need": "bread",
+      "has": [
+       "fish"
+      ]
+     }
+    ]
+   },
+   "ask": "The farmer, the baker and the fisher each need something. Help all three get what they need.",
+   "goal": "The farmer and the fisher each hold bread and the baker holds wheat. Both bread trades are with the baker; a fish-for-wheat trade with the farmer leaves the fisher without bread.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#good-farmer-wheat-0",
+     "to": "#good-baker-bread-0"
+    },
+    {
+     "do": "drag",
+     "target": "#good-fisher-fish-0",
+     "to": "#good-baker-bread-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#good-fisher-fish-0",
+     "to": "#good-farmer-wheat-1"
+    },
+    {
+     "do": "drag",
+     "target": "#good-farmer-wheat-0",
+     "to": "#good-baker-bread-0"
+    }
+   ],
+   "scene": {
+    "story": "A farmer grew wheat and needs bread. A baker has bread and needs wheat to bake more. A fisher caught fish and needs bread.",
+    "neighbours": [
+     {
+      "name": "Farmer",
+      "thinksOf": "bread",
+      "porch": [
+       "wheat",
+       "wheat"
+      ]
+     },
+     {
+      "name": "Baker",
+      "thinksOf": "wheat",
+      "porch": [
+       "bread",
+       "bread"
+      ]
+     },
+     {
+      "name": "Fisher",
+      "thinksOf": "bread",
+      "porch": [
+       "fish"
+      ]
+     }
+    ],
+    "lastMove": null
+   },
+   "proofScene": {
+    "story": "A farmer grew wheat and needs bread. A baker has bread and needs wheat to bake more. A fisher caught fish and needs bread.",
+    "neighbours": [
+     {
+      "name": "Farmer",
+      "thinksOf": "bread",
+      "porch": [
+       "wheat",
+       "bread"
+      ]
+     },
+     {
+      "name": "Baker",
+      "thinksOf": "wheat",
+      "porch": [
+       "wheat",
+       "fish"
+      ]
+     },
+     {
+      "name": "Fisher",
+      "thinksOf": "bread",
+      "porch": [
+       "bread"
+      ]
+     }
+    ],
+    "lastMove": "Fisher traded fish to Baker for bread"
+   },
+   "missScene": {
+    "story": "A farmer grew wheat and needs bread. A baker has bread and needs wheat to bake more. A fisher caught fish and needs bread.",
+    "neighbours": [
+     {
+      "name": "Farmer",
+      "thinksOf": "bread",
+      "porch": [
+       "bread",
+       "fish"
+      ]
+     },
+     {
+      "name": "Baker",
+      "thinksOf": "wheat",
+      "porch": [
+       "wheat",
+       "bread"
+      ]
+     },
+     {
+      "name": "Fisher",
+      "thinksOf": "bread",
+      "porch": [
+       "wheat"
+      ]
+     }
+    ],
+    "lastMove": "Farmer traded wheat to Baker for bread"
+   }
+  },
+  {
+   "params": {
+    "story": "Ana made two pots of soup and needs bread. Ben has bread and needs soup. Grandpa has nothing to trade and needs soup.",
+    "goods": {
+     "soup": "🍲",
+     "bread": "🍞"
+    },
+    "neighbours": [
+     {
+      "id": "ana",
+      "pic": "👩",
+      "name": "Ana",
+      "need": "bread",
+      "has": [
+       "soup",
+       "soup"
+      ]
+     },
+     {
+      "id": "ben",
+      "pic": "👨",
+      "name": "Ben",
+      "need": "soup",
+      "has": [
+       "bread"
+      ]
+     },
+     {
+      "id": "grandpa",
+      "pic": "👴",
+      "name": "Grandpa",
+      "need": "soup",
+      "has": []
+     }
+    ]
+   },
+   "ask": "Ana, Ben and Grandpa each need something. Grandpa has nothing to trade. Help all three get what they need.",
+   "goal": "Ana holds bread, Ben holds soup and Grandpa holds soup: one trade and one share. Giving both soups to Grandpa leaves Ana and Ben without.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#good-ana-soup-0",
+     "to": "#good-ben-bread-0",
+     "shot": "trade"
+    },
+    {
+     "do": "drag",
+     "target": "#good-ana-soup-1",
+     "to": "#house-grandpa"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#good-ana-soup-0",
+     "to": "#house-grandpa"
+    },
+    {
+     "do": "drag",
+     "target": "#good-ana-soup-1",
+     "to": "#house-grandpa"
+    }
+   ],
+   "scene": {
+    "story": "Ana made two pots of soup and needs bread. Ben has bread and needs soup. Grandpa has nothing to trade and needs soup.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "bread",
+      "porch": [
+       "soup",
+       "soup"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "soup",
+      "porch": [
+       "bread"
+      ]
+     },
+     {
+      "name": "Grandpa",
+      "thinksOf": "soup",
+      "porch": []
+     }
+    ],
+    "lastMove": null
+   },
+   "proofScene": {
+    "story": "Ana made two pots of soup and needs bread. Ben has bread and needs soup. Grandpa has nothing to trade and needs soup.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "bread",
+      "porch": [
+       "bread"
+      ]
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "soup",
+      "porch": [
+       "soup"
+      ]
+     },
+     {
+      "name": "Grandpa",
+      "thinksOf": "soup",
+      "porch": [
+       "soup"
+      ]
+     }
+    ],
+    "lastMove": "Ana gave soup to Grandpa and got nothing back"
+   },
+   "missScene": {
+    "story": "Ana made two pots of soup and needs bread. Ben has bread and needs soup. Grandpa has nothing to trade and needs soup.",
+    "neighbours": [
+     {
+      "name": "Ana",
+      "thinksOf": "bread",
+      "porch": []
+     },
+     {
+      "name": "Ben",
+      "thinksOf": "soup",
+      "porch": [
+       "bread"
+      ]
+     },
+     {
+      "name": "Grandpa",
+      "thinksOf": "soup",
+      "porch": [
+       "soup",
+       "soup"
+      ]
+     }
+    ],
+    "lastMove": "Ana gave soup to Grandpa and got nothing back"
+   }
+  }
+ ]
+}

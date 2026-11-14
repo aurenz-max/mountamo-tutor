@@ -7,51 +7,51 @@ Records and routes: `audit.json` (rebuild with `python build.py`).
 
 ## Score
 
-**66 of 159 at level 2** (42%). 0 at level 3 (played), 0 at level 4 (served). Level 1: 38. Level 0: 55.
+**83 of 159 at level 2+** (52%). 8 at level 3 (played: `trade-day`, `class-vote`), 0 at level 4 (served). Level 1: 39. Level 0: 37.
 
 | Unit | Level 2+ | Subskills |
 |---|---|---|
-| Civics and Government | 20 | 46 |
-| Economics | 15 | 35 |
-| Geography | 11 | 17 |
+| Civics and Government | 25 | 46 |
+| Economics | 25 | 35 |
+| Geography | 13 | 17 |
 | History | 15 | 44 |
 | Culture and Diversity | 5 | 17 |
 
 | Route | Level 2+ | Subskills |
 |---|---|---|
 | specialist | 56 | 83 |
-| canvas-new | 10 | 33 |
+| canvas-new | 27 | 33 |
 | add-mode | 0 | 13 |
 | native (converge) | 0 | 8 |
 | ambiguous | 0 | 22 |
 
 The level-2 specialists are `sorting-station` sort_one (picture sorts with named bins, 17), `knowledge-check` and
 `foundation-explorer` (voiced recall and reasons, 27), `time-sequencer` (daily order, before/after, 5), `era-explorer`
-era_sort (then/now/both, 5), `spatial-scene` and `open-builder` (1 each). The two canvases built here add 10.
+era_sort (then/now/both, 5), `spatial-scene` and `open-builder` (1 each). The six canvases built here add 27.
 
 ## Canvases
 
-Built in this push, both passing `canvas-check` with screenshots read, user play owed:
+Built (two on 11-11, two on 11-14), all passing `canvas-check` with screenshots read, user play owed:
 
 | Canvas | Family | Problems | Subskills |
 |---|---|---|---|
 | `care-for-it` | F11 spot and fix what is not cared for | classroom caps and put-away; water left running; park recycling vs trash; empty house; Grandma reading (one light stays on) | SS001-01-B, -01-E, -02-A, -02-G, -05-A, SS002-01-E |
 | `coin-basket` | F12 shop with fixed coins, needs first | lunch; cold day; storm kit (exact budget); beach trip (a want fits after the needs) | SS002-01-D, -01-F, -01-H, -03-G |
-| `market-stall` (11-11) | F13 stock the stall for the day's demand | rainy stock; hot day swapping out yesterday's rain stock; restock a wagon from yesterday's sold/left shelf; sale day (lower the unsold price only); rain (raise the scarce umbrella, lower sunglasses) | SS002-04-A, C, F, I |
+| `market-stall` (11-11) | F13 stock the stall for the day's demand | rainy stock; hot day swapping out yesterday's rain stock; restock a wagon from yesterday's sold/left shelf; sale day (lower the unsold price only); rain (raise the scarce umbrella, lower sunglasses); same crayons in two shops | SS002-04-A, C, F, H, I |
+| `map-maker` (11-11) | F07 make a map with symbols and a legend | classroom, 3 things; classroom, 5 things with two chairs and an unused symbol; town block with public services and a pond; read a finished map to hide the ball in the picture | SS001-02-H, SS001-04-E, SS003-02-B, SS003-03-E |
+| `trade-day` (11-14, **played and approved, in the lesson library**) | F14 trade so every neighbour has what they need | one swap; a ring of three (two trades); farmer, baker and fisher (trade with the right one); a neighbour with nothing to trade gets a share | SS002-03-A, -03-C, -03-I, SS002-01-I |
+| `class-vote` (11-14, **played and approved, in the lesson library**) | F17 count a class vote, plan fair turns | 2-choice vote into a picture graph; 3 choices, the fewest votes drawn biggest; a tie; swing turns for 4 children | SS001-02-E, SS001-03-E, SS001-05-H, SS002-04-D |
 
 To build next (records for 1-5 are in `audit.json` on each family):
 
 | Rank | Canvas | Action | Subskills | Cost |
 |---|---|---|---|---|
-| 1 | market-stall | compare one item's price in two stores; vote on a scarce toy | 2 (SS002-04-H, E) | new params / task |
-| 2 | map-maker | put symbols on a bird's-eye plan | 4 (SS001-02-H, SS001-04-E, SS003-02-B, SS003-03-E) | new program |
-| 3 | trade-day | trade so every neighbour has needs | 4 (SS002-03-A, C, I, SS002-01-I) | new program |
-| 4 | class-vote | count votes, plan fair turns | 4 (SS001-02-E, SS001-03-E, SS001-05-H, SS002-04-D) | new program |
+| 4 | class-vote | a vote on a scarce toy | 1 (SS002-04-E) | new params |
 | 5 | coin-basket | buy a service, pay a helper | 2 (SS002-03-F, SS002-02-H) | new params |
 | 6 | family-tree | place a told family in generations | 2 (SS004-01-E, SS004-02-F) | new program |
 | 7 | sign-walk | stop, cross and exit by the signs | 1 (SS001-02-I) | new program |
 
-Stopped after two: K canvases in science and math are already waiting on play, and play is the limit.
+Six built; `trade-day` and `class-vote` played and approved by the user (11-14) and promoted to the lesson library. K canvases in science and math are also waiting on play, and play is the limit.
 
 ## Converge
 
@@ -75,6 +75,6 @@ Stopped after two: K canvases in science and math are already waiting on play, a
 ## Not verified
 
 - No generation ran: every specialist level 2 rests on a generator read, not a draw for these objectives.
-- No play: `care-for-it` and `coin-basket` passed the gate only. `coin-basket` uses emoji item pictures (the water is a droplet).
+- No play: `care-for-it`, `coin-basket`, `market-stall` and `map-maker` passed the gate only. All four draw things as emoji (the water is a droplet, the pond is a droplet, lemonade is a cup).
 - Voice paths (sorting-station, era-explorer, knowledge-check read-aloud) were not exercised.
-- Neither canvas is promoted; `--promote` after the user plays them.
+- `trade-day` and `class-vote` are promoted (11-14). The rest wait on a play; `--promote` after the user plays them.

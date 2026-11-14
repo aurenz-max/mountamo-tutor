@@ -31,8 +31,8 @@ R = {
        'SS004-01-J': (1, 'The learner\'s own surroundings changing: no era fits.')}),
  'F06': dict(route='add-mode', target='map-explorer', executor='/add-eval-modes map-explorer (find_place: tap the named building; home continent)', level=1,
    why=L + 'primitives/visual-primitives/history/map/mapModel.ts: PLACE_KINDS (L30-32) has school, park, library, fire station, post office, police station, hospital (no city hall); tasks are find_by_direction, name_direction, build_route, find_on_globe, world_direction (L21); find_on_globe picks a random continent (L228-235). The world has the hands; no find-the-named-place task.'),
- 'F07': dict(route='canvas-new', target='map-maker (not built)', executor='/canvas-primitive', level=0,
-   why='map-explorer has no make-a-map task and no legend (mapModel.ts L21); the agent-kit map display has a legend (displays.ts) but is a display, not a placing task. Nothing has the action.'),
+ 'F07': dict(route='canvas-new', target='map-maker (built 11-11)', executor='/canvas-primitive', level=2,
+   why='qa/canvas/specs/map-maker: canvas-check 4/4 both ways (classroom 3 things, classroom 5 with two chairs, town block, read a map to hide the ball); screenshots read. map-explorer has no make-a-map task and no legend (mapModel.ts L21); the agent-kit map display has a legend (displays.ts) but is a display, not a placing task. Nothing has the action.'),
  'F08': dict(route='specialist', target='spatial-scene/place', executor=None, level=2,
    why=L + 'service/math/gemini-spatial-scene.ts VALID_POSITIONS (L213-216) has above, below, left_of, right_of; place/follow_directions are tap, reader none. Up/down are said as above/below.'),
  'F09': dict(route='specialist', target='knowledge-check/recall; foundation-explorer', executor='CV1 for depth', level=2,
@@ -45,14 +45,17 @@ R = {
    why='qa/canvas/specs/coin-basket: canvas-check 4/4 (lunch, cold day, storm kit, beach trip); screenshots read. coin-counter has no budget or choose-what-to-buy mode (catalog math.ts L3174-3237).',
    lv={'SS002-03-F': (1, 'Paying a helper for a task is a service bought, not a good: needs a coin-basket problem with a helper on the shelf.'),
        'SS002-02-H': (1, 'Goods and services in one marketplace: needs a coin-basket problem mixing a haircut or a bus ride with goods.')}),
- 'F13': dict(route='canvas-new', target='market-stall (not built)', executor='/canvas-primitive', level=0,
-   why='No primitive simulates demand changing with weather or scarcity; coin-counter "things to buy" are flavour (gemini-coin-counter.ts L804-813).'),
- 'F14': dict(route='canvas-new', target='trade-day (not built)', executor='/canvas-primitive', level=0, why='Nothing has a trade between holders.'),
+ 'F13': dict(route='canvas-new', target='market-stall (built 11-11)', executor='/canvas-primitive', level=2,
+   lv={'SS002-04-E': (1, 'A vote on a scarce toy is a class vote, not a stall: class-vote counts votes but has no scarce-toy problem yet (new params).')},
+   why='qa/canvas/specs/market-stall: canvas-check 6/6 both ways (rainy stock, hot-day swap, restock from yesterday, sale day, scarce umbrella, two shops); screenshots read. No primitive simulates demand changing with weather or scarcity; coin-counter "things to buy" are flavour (gemini-coin-counter.ts L804-813).'),
+ 'F14': dict(route='canvas-new', target='trade-day (built 11-14, user played and approved 11-14, in the lesson library)', executor='/canvas-primitive', level=3,
+   why='USER PLAY 11-14: thumbs up, promoted to the lesson library. qa/canvas/specs/trade-day: canvas-check 4/4 both ways (one swap; a ring of three needing two trades; farmer, baker, fisher; a neighbour with nothing to trade is given a share); screenshots read. Nothing else has a trade between holders.'),
  'F15': dict(route='specialist', target='sorting-station/sort_one with only-A / both / only-B bins', executor='/eval-test sorting-station on SS005-01-G', level=1,
    why='sorting-station takes objective-named bins (3 at K), so a same/different sort is reachable, but no generation has shown a Venn-style "both" bin; content is cultural facts (open value space), so not a canvas.'),
  'F16': dict(route='native', target='CV2 oral-sentence-studio i_message', executor='/add-eval-modes oral-sentence-studio', level=0,
    why='oral-sentence-studio (catalog literacy.ts) has a scene and one judged spoken sentence; no social-conflict task. story-talk "How did they feel?" names a feeling but does not produce an I-message.'),
- 'F17': dict(route='canvas-new', target='class-vote (not built)', executor='/canvas-primitive', level=0, why='sorting-station tally_record counts groups but no vote or turn schedule.'),
+ 'F17': dict(route='canvas-new', target='class-vote (built 11-14, user played and approved 11-14, in the lesson library)', executor='/canvas-primitive', level=3,
+   why='USER PLAY 11-14: approved, promoted to the lesson library. qa/canvas/specs/class-vote: canvas-check 4/4 both ways (2-choice vote into a picture graph; 3 choices with the fewest votes drawn biggest; a tie; fair swing turns for 4 children); screenshots read. sorting-station tally_record has no vote or turn schedule.'),
  'F18': dict(route='specialist', target='open-builder/build_to_goal', executor='/add-eval-modes open-builder (park, library, old and new home scenes)', level=2,
    why=L + 'primitives/visual-primitives/creation/openBuilderModel.ts L60-62: menu scenes include bridge (stream practice); goal judged by Gemini vision (gemini-open-builder-judge.ts L16-17).',
    lv={'SS001-04-F': (0, 'No park or library scene; kitten-shade is practice-only and cannot be picked (gemini-open-builder.ts L211).'),
@@ -109,16 +112,17 @@ for f in fams:
     if f['key'] in RECORDS: f['record'] = RECORDS[f['key']]
 
 canvases = [
- dict(rank=1, canvas='market-stall (new)', families=['F13'], cost='new program', subskillIds=FAMILIES[12]['members']),
- dict(rank=2, canvas='map-maker (new)', families=['F07'], cost='new program', subskillIds=FAMILIES[6]['members']),
- dict(rank=3, canvas='trade-day (new)', families=['F14'], cost='new program', subskillIds=FAMILIES[13]['members']),
- dict(rank=4, canvas='class-vote (new)', families=['F17'], cost='new program', subskillIds=FAMILIES[16]['members']),
+ dict(rank=4, canvas='class-vote (new params: a scarce toy)', families=['F13'], cost='new params', subskillIds=['SS002-04-E']),
  dict(rank=5, canvas='coin-basket (new params)', families=['F12'], cost='new params', subskillIds=['SS002-03-F', 'SS002-02-H']),
  dict(rank=6, canvas='family-tree (new)', families=['F19'], cost='new program', subskillIds=FAMILIES[18]['members']),
  dict(rank=7, canvas='sign-walk (new)', families=['F20'], cost='new program', subskillIds=FAMILIES[19]['members']),
 ]
 built = [dict(canvas='care-for-it', families=['F11'], subskillIds=FAMILIES[10]['members'], check='5/5'),
-         dict(canvas='coin-basket', families=['F12'], subskillIds=['SS002-01-D', 'SS002-01-F', 'SS002-01-H', 'SS002-03-G'], check='4/4')]
+         dict(canvas='coin-basket', families=['F12'], subskillIds=['SS002-01-D', 'SS002-01-F', 'SS002-01-H', 'SS002-03-G'], check='4/4'),
+         dict(canvas='market-stall', families=['F13'], subskillIds=['SS002-04-A', 'SS002-04-C', 'SS002-04-F', 'SS002-04-H', 'SS002-04-I'], check='6/6'),
+         dict(canvas='map-maker', families=['F07'], subskillIds=FAMILIES[6]['members'], check='4/4'),
+         dict(canvas='trade-day', families=['F14'], subskillIds=FAMILIES[13]['members'], check='4/4'),
+         dict(canvas='class-vote', families=['F17'], subskillIds=FAMILIES[16]['members'], check='4/4')]
 
 convergence = [
  dict(id='CV1', strand='K social-studies knowledge with pictures: helpers, tools, places, symbols, goods, features, partners (F02 + F09)',

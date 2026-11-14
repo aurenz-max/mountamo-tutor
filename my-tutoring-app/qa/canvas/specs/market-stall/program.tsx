@@ -3,11 +3,12 @@ function Display({ params, lumina }) {
   //  stock:   drag things from the crate onto the stall's shelf (params.start may pre-fill it with yesterday's stock).
   //  restock: yesterday's shelf shows what sold (faded places) and what was left; fill the wagon for tomorrow.
   //  price:   each row shows what is left, its price in coins and the buyers waiting; tap - or + to change a price.
+  //  compare: two shops sell the same thing at different prices; drag one into the basket and its coins leave the purse.
   // Nothing on screen says which things fit the day or which price is right. The sky, the sales and the queue do.
   // params.task, params.weather (rain | sun | hot | snow), params.slots, params.kinds [{ id, pic, name, count, fits }],
   // params.start [kind ids], params.yesterday [{ id, morning, left }], params.rows [{ id, pic, name, left, buyers, price, move }],
-  // params.story (for the tutor).
-  const task = ['stock', 'restock', 'price'].includes(params.task) ? params.task : 'stock';
+  // params.item { pic, name }, params.shops [{ id, sign, name, price }], params.coins, params.story (for the tutor).
+  const task = ['stock', 'restock', 'price', 'compare'].includes(params.task) ? params.task : 'stock';
   const weather = ['rain', 'sun', 'hot', 'snow'].includes(params.weather) ? params.weather : 'sun';
   const story = params.story || 'a day at the market stall';
   const slots = Math.max(1, Math.min(4, Number(params.slots) || 3));
@@ -26,9 +27,15 @@ function Display({ params, lumina }) {
     ...r, left: Math.max(0, Math.min(6, Number(r.left) || 0)), buyers: Math.max(0, Math.min(6, Number(r.buyers) || 0)),
     price: Math.max(1, Math.min(5, Number(r.price) || 2)),
   }));
+  const item = params.item && params.item.pic ? params.item : { pic: '🖍️', name: 'crayons' };
+  const shops = (Array.isArray(params.shops) ? params.shops : [
+    { id: 'toys', sign: '🧸', name: 'toy shop', price: 4 },
+    { id: 'food', sign: '🥕', name: 'grocery shop', price: 2 },
+  ]).slice(0, 2).map(s => ({ ...s, price: Math.max(1, Math.min(5, Number(s.price) || 2)) }));
+  const coins = Math.max(1, Math.min(8, Number(params.coins) || 5));
 
   const W = 680;
-  const H = task === 'price' ? 440 : task === 'restock' ? 592 : 490;
+  const H = task === 'compare' ? 470 : task === 'price' ? 440 : task === 'restock' ? 592 : 490;
   const SLOT = 96, SGAP = 18;
   const SLOTS_Y = task === 'restock' ? 336 : 162;
   const slotsW = slots * SLOT + (slots - 1) * SGAP;
@@ -37,12 +44,17 @@ function Display({ params, lumina }) {
 
   const [shelf, setShelf] = useState(startSlots);
   const [prices, setPrices] = useState(rows.map(r => r.price));
+  const [bought, setBought] = useState(null);
   const [drag, setDrag] = useState(null);
   const svgRef = useRef(null);
 
   const placed = id => shelf.filter(s => s === id).length;
   const avail = k => k.count - placed(k.id);
-  const goalMet = task === 'price'
+  const cheapest = Math.min(...shops.map(s => s.price));
+  const shopOf = id => shops.find(s => s.id === id);
+  const purse = coins - (bought ? shopOf(bought).price : 0);
+  const goalMet = task === 'compare' ? !!bought && shopOf(bought).price === cheapest
+    : task === 'price'
     ? rows.every((r, i) => (r.move === 'up' ? prices[i] > r.price : r.move === 'down' ? prices[i] < r.price : prices[i] === r.price))
     : shelf.every(s => s && kindOf(s) && kindOf(s).fits);
 
@@ -50,7 +62,11 @@ function Display({ params, lumina }) {
   useEffect(() => {
     lumina.goal(goalMet);
     const scene = { situation: story, sky: weatherWords + (task === 'restock' ? ' (tomorrow)' : '') };
-    if (task === 'price') {
+    if (task === 'compare') {
+      scene.shops = shops.map(s => s.name + ' sells ' + item.name + ' for ' + s.price + (s.price === 1 ? ' coin' : ' coins'));
+      scene.purse = purse + ' of ' + coins + ' coins left';
+      scene.basket = bought ? item.name + ' from the ' + shopOf(bought).name : 'empty';
+    } else if (task === 'price') {
       scene.stall = rows.map((r, i) => r.name + ': ' + r.left + ' left, price ' + prices[i] + (prices[i] === 1 ? ' coin' : ' coins') +
         (prices[i] !== r.price ? ' (was ' + r.price + ')' : '') + ', ' + r.buyers + (r.buyers === 1 ? ' buyer waiting' : ' buyers waiting'));
     } else {
@@ -59,7 +75,7 @@ function Display({ params, lumina }) {
       scene.crate = kinds.filter(k => avail(k) > 0).map(k => k.name);
     }
     lumina.scene(scene);
-  }, [shelf, prices, goalMet]);
+  }, [shelf, prices, bought, goalMet]);
 
   const pointOf = e => svgPoint(svgRef.current, e);
   const inRect = (p, r) => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
@@ -69,6 +85,12 @@ function Display({ params, lumina }) {
     if (!drag || !svgRef.current) return;
     const p = pointOf(e), d = drag;
     setDrag(null);
+    if (d.from === 'shop') {
+      const inBasket = inRect(p, BASKET_RECT);
+      if (inBasket && d.shop !== bought) setBought(d.shop);
+      else if (!inBasket && d.shop === bought) setBought(null);
+      return;
+    }
     const into = inRect(p, SLOTS_RECT);
     if (d.from === 'crate' && into) {
       const k = kindOf(d.kind), free = shelf.indexOf(null);
@@ -173,14 +195,44 @@ function Display({ params, lumina }) {
     <g id={'buyers-' + r.id}>{Array.from({ length: r.buyers }, (_, j) => <text key={j} x={516 + (j % 3) * 40} y={y - 22 + Math.floor(j / 3) * 46} textAnchor="middle" dominantBaseline="middle" fontSize="32">🧒</text>)}</g>
   </g>; };
 
+  // ---- two shops, one basket ----
+  const BASKET_RECT = { x: 250, y: 330, w: 380, h: 120 };
+  const shopX = i => (i === 0 ? 70 : 380);
+  const shopHome = i => ({ x: shopX(i) + 115, y: 214 });
+  const compareScene = () => <g>
+    <g id="purse">
+      <rect x="30" y="342" width="190" height="96" rx="16" fill="#7c2d12" stroke="#431407" strokeWidth="3" />
+      <path d="M 70 342 Q 95 318 120 342" fill="none" stroke="#431407" strokeWidth="4" />
+      {Array.from({ length: purse }, (_, k) => <circle key={k} cx={58 + (k % 4) * 44} cy={372 + Math.floor(k / 4) * 40} r="15" fill="#facc15" stroke="#a16207" strokeWidth="2.5" />)}
+    </g>
+    <g id="basket">
+      <path d={`M ${BASKET_RECT.x} ${BASKET_RECT.y + 20} L ${BASKET_RECT.x + BASKET_RECT.w} ${BASKET_RECT.y + 20} L ${BASKET_RECT.x + BASKET_RECT.w - 30} ${BASKET_RECT.y + BASKET_RECT.h} L ${BASKET_RECT.x + 30} ${BASKET_RECT.y + BASKET_RECT.h} Z`} fill="#a16207" stroke="#713f12" strokeWidth="3" />
+      <path d={`M ${BASKET_RECT.x + 70} ${BASKET_RECT.y + 20} Q ${BASKET_RECT.x + BASKET_RECT.w / 2} ${BASKET_RECT.y - 40} ${BASKET_RECT.x + BASKET_RECT.w - 70} ${BASKET_RECT.y + 20}`} fill="none" stroke="#713f12" strokeWidth="6" />
+    </g>
+    {shops.map((s, i) => { const x = shopX(i), n = s.price; return <g key={s.id} id={'shop-' + s.id}>
+      {Array.from({ length: 5 }, (_, k) => <path key={k} d={`M ${x + k * 46} 108 l 46 0 l 0 26 q -23 14 -46 0 z`} fill={k % 2 ? '#f8fafc' : (i === 0 ? '#7c3aed' : '#16a34a')} />)}
+      <circle cx={x + 115} cy="104" r="24" fill="#f8fafc" /><text x={x + 115} y="106" textAnchor="middle" dominantBaseline="middle" fontSize="30">{s.sign}</text>
+      <rect x={x} y="142" width="230" height="160" rx="10" fill="#1c1917" stroke="#57534e" strokeWidth="2" />
+      {bought === s.id && <rect x={x + 71} y="170" width="88" height="88" rx="12" fill="none" stroke="#78716c" strokeWidth="2" strokeDasharray="6 6" />}
+      <g transform={`translate(${x + 115}, 282)`}><path d="M -66 -16 L 66 -16 L 66 16 L -66 16 L -76 0 Z" fill="#fef3c7" stroke="#a16207" strokeWidth="2" />
+        {Array.from({ length: n }, (_, k) => <circle key={k} cx={(k - (n - 1) / 2) * 24} cy="0" r="10" fill="#facc15" stroke="#a16207" strokeWidth="2.5" />)}</g>
+    </g>; })}
+    {shops.map((s, i) => {
+      const held = drag && drag.from === 'shop' && drag.shop === s.id && drag.x !== undefined;
+      const p = held ? { x: drag.x, y: drag.y } : bought === s.id ? { x: BASKET_RECT.x + BASKET_RECT.w / 2, y: BASKET_RECT.y + 64 } : shopHome(i);
+      return <g key={'it' + s.id} id={'item-' + s.id} transform={`translate(${p.x}, ${p.y})`} style={{ cursor: 'grab', touchAction: 'none' }}
+        onPointerDown={e => grab({ from: 'shop', shop: s.id }, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>{card(item)}</g>;
+    })}
+  </g>;
+
   return (
     <Panel>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <rect x="0" y="0" width={W} height={H} fill="#0f172a" />
         {sky()}
-        {awning()}
-        {task === 'price' ? rows.map(priceRow) : <g>
+        {task !== 'compare' && awning()}
+        {task === 'compare' ? compareScene() : task === 'price' ? rows.map(priceRow) : <g>
           {task === 'restock' && yesterdayRows()}
           {shelfArea()}
           {crate()}
