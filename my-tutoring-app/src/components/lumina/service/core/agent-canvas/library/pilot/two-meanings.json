@@ -1,0 +1,410 @@
+{
+ "id": "two-meanings",
+ "title": "Two Meanings",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child hears a word with two meanings (bat, ring, bow, mouse) and drags the two pictures it names into the places beside the word, leaving out things that only go with one meaning or look like it, which shows identifying multiple meanings of common words."
+ },
+ "request": {
+  "topic": "Words with more than one meaning",
+  "grade": "kindergarten",
+  "objective": "Hear a common word with two meanings (bat, ring, bow, mouse) and show both meanings by picking the two pictures the word names. (LA005-02-G)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A web: a centre card with lines out to empty places. Picture cards wait in the tray. Drag a card into a place;\n  // drop it on a full place to swap; drag it back to the tray to take it out. When the centre is empty, one of the\n  // tray cards goes in the centre too.\n  // params.center: { pic, name, label } or null (the centre is an empty place). params.slots: how many places (2-4).\n  // params.cards: [{ id, pic, name }] in tray order. params.members: the ids that belong (the key, for code only).\n  // params.topic: the id that belongs in an empty centre (the key, for code only).\n  const cards = (Array.isArray(params.cards) ? params.cards : [\n    { id: 'cow', pic: '🐄', name: 'cow' }, { id: 'pig', pic: '🐖', name: 'pig' }, { id: 'car', pic: '🚗', name: 'car' },\n  ]).slice(0, 7);\n  const N = Math.max(2, Math.min(4, Number(params.slots) || 2));\n  const center = params.center === null ? null : (params.center || { pic: '🚜', name: 'farm' });\n  const members = Array.isArray(params.members) ? params.members : ['cow', 'pig'];\n  const topic = params.topic || null;\n  const W = 680, H = 470, CX = 340, CY = 172, TRAY_Y = 400;\n  const LAYOUT = {\n    2: [[-210, 0], [210, 0]],\n    3: [[-220, 34], [220, 34], [0, -112]],\n    4: [[-220, -62], [220, -62], [-220, 82], [220, 82]],\n  }[N];\n\n  const [spots, setSpots] = useState(() => ({}));   // place key ('s0'.., 'c') -> card id\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n  const byId = id => cards.find(c => c.id === id);\n  const keys = [...LAYOUT.map((_, i) => 's' + i), ...(center ? [] : ['c'])];\n  const inSpokes = LAYOUT.map((_, i) => spots['s' + i]).filter(Boolean);\n  const goalMet = inSpokes.length === members.length && members.every(m => inSpokes.includes(m)) &&\n    (center ? true : spots.c === topic);\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      centre: center ? (center.label ? center.name + ' (shown: ' + center.label + ')' : center.name) : (spots.c ? byId(spots.c).name : 'empty'),\n      places: LAYOUT.map((_, i) => spots['s' + i] ? byId(spots['s' + i]).name : 'empty'),\n      tray: cards.filter(c => !Object.values(spots).includes(c.id)).map(c => c.name),\n    });\n  }, [spots, goalMet]);\n\n  const spotXY = k => (k === 'c' ? { x: CX, y: CY } : { x: CX + LAYOUT[+k.slice(1)][0], y: CY + LAYOUT[+k.slice(1)][1] });\n  const trayW = Math.min(96, 640 / cards.length), tx0 = (W - cards.length * trayW) / 2;\n  const posOf = id => {\n    const k = keys.find(k => spots[k] === id);\n    if (k) return spotXY(k);\n    return { x: tx0 + cards.findIndex(c => c.id === id) * trayW + trayW / 2, y: TRAY_Y };\n  };\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = pointOf(e), id = drag.id;\n    setDrag(null);\n    if (drag.x === undefined) return;\n    const from = keys.find(k => spots[k] === id);\n    const to = keys.find(k => { const s = spotXY(k); return Math.abs(pt.x - s.x) < 62 && Math.abs(pt.y - s.y) < 62; });\n    setSpots(s => {\n      const n = { ...s };\n      if (to) { if (to === from) return s; const was = n[to]; n[to] = id; if (from) { if (was) n[from] = was; else delete n[from]; } }\n      else if (from && pt.y > TRAY_Y - 70) delete n[from];\n      return n;\n    });\n  };\n\n  const card = id => {\n    const it = byId(id);\n    const held = drag && drag.id === id && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : posOf(id);\n    return <g key={id} id={'card-' + id} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.08 : 1})`}\n      style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => grab(id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <rect x=\"-42\" y=\"-42\" width=\"84\" height=\"84\" rx=\"14\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text y=\"3\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"50\">{it.pic}</text>\n    </g>;\n  };\n\n  return (\n    <Panel title={params.title || 'Picture Web'} caption=\"Drag a picture into a place. Drag it back to take it out.\">\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        {LAYOUT.map(([dx, dy], i) => <line key={i} x1={CX} y1={CY} x2={CX + dx} y2={CY + dy} stroke=\"#475569\" strokeWidth=\"4\" />)}\n        {LAYOUT.map(([dx, dy], i) => <rect key={i} id={'place-' + i} x={CX + dx - 48} y={CY + dy - 48} width=\"96\" height=\"96\" rx=\"16\"\n          fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 5\" />)}\n        {center\n          ? <g id=\"centre\">\n              <circle cx={CX} cy={CY} r=\"62\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"3\" />\n              <text x={CX} y={CY + (center.label ? -10 : 3)} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={center.label ? 46 : 60}>{center.pic}</text>\n              {center.label ? <text x={CX} y={CY + 38} textAnchor=\"middle\" fontSize=\"22\" fontWeight=\"700\" fill=\"#e2e8f0\">{center.label}</text> : null}\n            </g>\n          : <circle id=\"place-c\" cx={CX} cy={CY} r=\"62\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 5\" />}\n        <rect x=\"16\" y={TRAY_Y - 56} width={W - 32} height=\"112\" rx=\"18\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {cards.map(c => c.id).filter(id => !(drag && drag.id === id)).map(card)}\n        {drag ? card(drag.id) : null}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "title": "Two Meanings",
+    "center": {
+     "pic": "🗣️",
+     "name": "the word bat",
+     "label": "bat"
+    },
+    "slots": 2,
+    "cards": [
+     {
+      "id": "ball",
+      "pic": "⚾",
+      "name": "baseball"
+     },
+     {
+      "id": "animal",
+      "pic": "🦇",
+      "name": "bat, the animal"
+     },
+     {
+      "id": "stick",
+      "pic": "🏏",
+      "name": "bat for hitting a ball"
+     }
+    ],
+    "members": [
+     "animal",
+     "stick"
+    ]
+   },
+   "ask": "Bat. Find two pictures that are both called bat.",
+   "goal": "The flying bat and the bat for hitting. The ball (goes with the bat) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-animal",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-stick",
+     "to": "#place-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-animal",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-ball",
+     "to": "#place-1"
+    }
+   ],
+   "scene": {
+    "centre": "the word bat (shown: bat)",
+    "places": [
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "baseball",
+     "bat, the animal",
+     "bat for hitting a ball"
+    ]
+   },
+   "proofScene": {
+    "centre": "the word bat (shown: bat)",
+    "places": [
+     "bat, the animal",
+     "bat for hitting a ball"
+    ],
+    "tray": [
+     "baseball"
+    ]
+   },
+   "missScene": {
+    "centre": "the word bat (shown: bat)",
+    "places": [
+     "bat, the animal",
+     "baseball"
+    ],
+    "tray": [
+     "bat for hitting a ball"
+    ]
+   }
+  },
+  {
+   "params": {
+    "title": "Two Meanings",
+    "center": {
+     "pic": "🗣️",
+     "name": "the word ring",
+     "label": "ring"
+    },
+    "slots": 2,
+    "cards": [
+     {
+      "id": "bell",
+      "pic": "🔔",
+      "name": "a bell that rings"
+     },
+     {
+      "id": "donut",
+      "pic": "🍩",
+      "name": "donut"
+     },
+     {
+      "id": "ring",
+      "pic": "💍",
+      "name": "ring for a finger"
+     },
+     {
+      "id": "gem",
+      "pic": "💎",
+      "name": "gem"
+     }
+    ],
+    "members": [
+     "ring",
+     "bell"
+    ]
+   },
+   "ask": "Ring. Find two pictures that go with the word ring.",
+   "goal": "The finger ring and the bell that rings. The donut (ring-shaped) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-ring",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-bell",
+     "to": "#place-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-ring",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-donut",
+     "to": "#place-1"
+    }
+   ],
+   "scene": {
+    "centre": "the word ring (shown: ring)",
+    "places": [
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "a bell that rings",
+     "donut",
+     "ring for a finger",
+     "gem"
+    ]
+   },
+   "proofScene": {
+    "centre": "the word ring (shown: ring)",
+    "places": [
+     "ring for a finger",
+     "a bell that rings"
+    ],
+    "tray": [
+     "donut",
+     "gem"
+    ]
+   },
+   "missScene": {
+    "centre": "the word ring (shown: ring)",
+    "places": [
+     "ring for a finger",
+     "donut"
+    ],
+    "tray": [
+     "a bell that rings",
+     "gem"
+    ]
+   }
+  },
+  {
+   "params": {
+    "title": "Two Meanings",
+    "center": {
+     "pic": "🗣️",
+     "name": "the word bow",
+     "label": "bow"
+    },
+    "slots": 2,
+    "cards": [
+     {
+      "id": "gift",
+      "pic": "🎁",
+      "name": "gift"
+     },
+     {
+      "id": "arrow",
+      "pic": "🏹",
+      "name": "bow and arrow"
+     },
+     {
+      "id": "target",
+      "pic": "🎯",
+      "name": "target"
+     },
+     {
+      "id": "ribbon",
+      "pic": "🎀",
+      "name": "bow in a ribbon"
+     }
+    ],
+    "members": [
+     "ribbon",
+     "arrow"
+    ]
+   },
+   "ask": "Bow. Find two pictures that are both called bow.",
+   "goal": "The ribbon bow and the bow for arrows. The gift (goes with the ribbon bow) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-ribbon",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-arrow",
+     "to": "#place-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-ribbon",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-gift",
+     "to": "#place-1"
+    }
+   ],
+   "scene": {
+    "centre": "the word bow (shown: bow)",
+    "places": [
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "gift",
+     "bow and arrow",
+     "target",
+     "bow in a ribbon"
+    ]
+   },
+   "proofScene": {
+    "centre": "the word bow (shown: bow)",
+    "places": [
+     "bow in a ribbon",
+     "bow and arrow"
+    ],
+    "tray": [
+     "gift",
+     "target"
+    ]
+   },
+   "missScene": {
+    "centre": "the word bow (shown: bow)",
+    "places": [
+     "bow in a ribbon",
+     "gift"
+    ],
+    "tray": [
+     "bow and arrow",
+     "target"
+    ]
+   }
+  },
+  {
+   "params": {
+    "title": "Two Meanings",
+    "center": {
+     "pic": "🗣️",
+     "name": "the word mouse",
+     "label": "mouse"
+    },
+    "slots": 2,
+    "cards": [
+     {
+      "id": "rat",
+      "pic": "🐀",
+      "name": "rat"
+     },
+     {
+      "id": "click",
+      "pic": "🖱️",
+      "name": "computer mouse"
+     },
+     {
+      "id": "cheese",
+      "pic": "🧀",
+      "name": "cheese"
+     },
+     {
+      "id": "animal",
+      "pic": "🐁",
+      "name": "mouse, the animal"
+     },
+     {
+      "id": "keys",
+      "pic": "⌨️",
+      "name": "keyboard"
+     }
+    ],
+    "members": [
+     "animal",
+     "click"
+    ]
+   },
+   "ask": "Mouse. Find two pictures that are both called mouse.",
+   "goal": "The animal mouse and the computer mouse. The rat (the same kind of animal) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-animal",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-click",
+     "to": "#place-1"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-animal",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-rat",
+     "to": "#place-1"
+    }
+   ],
+   "scene": {
+    "centre": "the word mouse (shown: mouse)",
+    "places": [
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "rat",
+     "computer mouse",
+     "cheese",
+     "mouse, the animal",
+     "keyboard"
+    ]
+   },
+   "proofScene": {
+    "centre": "the word mouse (shown: mouse)",
+    "places": [
+     "mouse, the animal",
+     "computer mouse"
+    ],
+    "tray": [
+     "rat",
+     "cheese",
+     "keyboard"
+    ]
+   },
+   "missScene": {
+    "centre": "the word mouse (shown: mouse)",
+    "places": [
+     "mouse, the animal",
+     "rat"
+    ],
+    "tray": [
+     "computer mouse",
+     "cheese",
+     "keyboard"
+    ]
+   }
+  }
+ ]
+}

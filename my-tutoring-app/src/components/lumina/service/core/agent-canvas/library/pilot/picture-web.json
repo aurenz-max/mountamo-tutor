@@ -1,0 +1,503 @@
+{
+ "id": "picture-web",
+ "title": "Picture Web",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child drags pictures into a word web around a topic (farm, pets, the sea) to group the things that belong and leave out the ones that do not, including look-alikes and things only seen nearby, and picks the topic for the centre when it is not named, which shows sorting words into categories and building thematic word webs."
+ },
+ "request": {
+  "topic": "Word webs: things that belong to one topic",
+  "grade": "kindergarten",
+  "objective": "Build a web of 3-4 pictures that belong to one topic and leave out the pictures that do not; when the topic is not named, put the topic that fits in the centre. (LA005-03-F)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A web: a centre card with lines out to empty places. Picture cards wait in the tray. Drag a card into a place;\n  // drop it on a full place to swap; drag it back to the tray to take it out. When the centre is empty, one of the\n  // tray cards goes in the centre too.\n  // params.center: { pic, name, label } or null (the centre is an empty place). params.slots: how many places (2-4).\n  // params.cards: [{ id, pic, name }] in tray order. params.members: the ids that belong (the key, for code only).\n  // params.topic: the id that belongs in an empty centre (the key, for code only).\n  const cards = (Array.isArray(params.cards) ? params.cards : [\n    { id: 'cow', pic: '🐄', name: 'cow' }, { id: 'pig', pic: '🐖', name: 'pig' }, { id: 'car', pic: '🚗', name: 'car' },\n  ]).slice(0, 7);\n  const N = Math.max(2, Math.min(4, Number(params.slots) || 2));\n  const center = params.center === null ? null : (params.center || { pic: '🚜', name: 'farm' });\n  const members = Array.isArray(params.members) ? params.members : ['cow', 'pig'];\n  const topic = params.topic || null;\n  const W = 680, H = 470, CX = 340, CY = 172, TRAY_Y = 400;\n  const LAYOUT = {\n    2: [[-210, 0], [210, 0]],\n    3: [[-220, 34], [220, 34], [0, -112]],\n    4: [[-220, -62], [220, -62], [-220, 82], [220, 82]],\n  }[N];\n\n  const [spots, setSpots] = useState(() => ({}));   // place key ('s0'.., 'c') -> card id\n  const [drag, setDrag] = useState(null);\n  const svgRef = useRef(null);\n  const byId = id => cards.find(c => c.id === id);\n  const keys = [...LAYOUT.map((_, i) => 's' + i), ...(center ? [] : ['c'])];\n  const inSpokes = LAYOUT.map((_, i) => spots['s' + i]).filter(Boolean);\n  const goalMet = inSpokes.length === members.length && members.every(m => inSpokes.includes(m)) &&\n    (center ? true : spots.c === topic);\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      centre: center ? (center.label ? center.name + ' (shown: ' + center.label + ')' : center.name) : (spots.c ? byId(spots.c).name : 'empty'),\n      places: LAYOUT.map((_, i) => spots['s' + i] ? byId(spots['s' + i]).name : 'empty'),\n      tray: cards.filter(c => !Object.values(spots).includes(c.id)).map(c => c.name),\n    });\n  }, [spots, goalMet]);\n\n  const spotXY = k => (k === 'c' ? { x: CX, y: CY } : { x: CX + LAYOUT[+k.slice(1)][0], y: CY + LAYOUT[+k.slice(1)][1] });\n  const trayW = Math.min(96, 640 / cards.length), tx0 = (W - cards.length * trayW) / 2;\n  const posOf = id => {\n    const k = keys.find(k => spots[k] === id);\n    if (k) return spotXY(k);\n    return { x: tx0 + cards.findIndex(c => c.id === id) * trayW + trayW / 2, y: TRAY_Y };\n  };\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = pointOf(e), id = drag.id;\n    setDrag(null);\n    if (drag.x === undefined) return;\n    const from = keys.find(k => spots[k] === id);\n    const to = keys.find(k => { const s = spotXY(k); return Math.abs(pt.x - s.x) < 62 && Math.abs(pt.y - s.y) < 62; });\n    setSpots(s => {\n      const n = { ...s };\n      if (to) { if (to === from) return s; const was = n[to]; n[to] = id; if (from) { if (was) n[from] = was; else delete n[from]; } }\n      else if (from && pt.y > TRAY_Y - 70) delete n[from];\n      return n;\n    });\n  };\n\n  const card = id => {\n    const it = byId(id);\n    const held = drag && drag.id === id && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : posOf(id);\n    return <g key={id} id={'card-' + id} transform={`translate(${p.x}, ${p.y}) scale(${held ? 1.08 : 1})`}\n      style={{ cursor: 'grab', touchAction: 'none' }} onPointerDown={e => grab(id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      <rect x=\"-42\" y=\"-42\" width=\"84\" height=\"84\" rx=\"14\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\n      <text y=\"3\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"50\">{it.pic}</text>\n    </g>;\n  };\n\n  return (\n    <Panel title={params.title || 'Picture Web'} caption=\"Drag a picture into a place. Drag it back to take it out.\">\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        {LAYOUT.map(([dx, dy], i) => <line key={i} x1={CX} y1={CY} x2={CX + dx} y2={CY + dy} stroke=\"#475569\" strokeWidth=\"4\" />)}\n        {LAYOUT.map(([dx, dy], i) => <rect key={i} id={'place-' + i} x={CX + dx - 48} y={CY + dy - 48} width=\"96\" height=\"96\" rx=\"16\"\n          fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 5\" />)}\n        {center\n          ? <g id=\"centre\">\n              <circle cx={CX} cy={CY} r=\"62\" fill=\"#334155\" stroke=\"#64748b\" strokeWidth=\"3\" />\n              <text x={CX} y={CY + (center.label ? -10 : 3)} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={center.label ? 46 : 60}>{center.pic}</text>\n              {center.label ? <text x={CX} y={CY + 38} textAnchor=\"middle\" fontSize=\"22\" fontWeight=\"700\" fill=\"#e2e8f0\">{center.label}</text> : null}\n            </g>\n          : <circle id=\"place-c\" cx={CX} cy={CY} r=\"62\" fill=\"#0f172a\" stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 5\" />}\n        <rect x=\"16\" y={TRAY_Y - 56} width={W - 32} height=\"112\" rx=\"18\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {cards.map(c => c.id).filter(id => !(drag && drag.id === id)).map(card)}\n        {drag ? card(drag.id) : null}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "center": {
+     "pic": "🌾",
+     "name": "farm",
+     "label": "farm"
+    },
+    "slots": 3,
+    "cards": [
+     {
+      "id": "pig",
+      "pic": "🐖",
+      "name": "pig"
+     },
+     {
+      "id": "rocket",
+      "pic": "🚀",
+      "name": "rocket"
+     },
+     {
+      "id": "cow",
+      "pic": "🐄",
+      "name": "cow"
+     },
+     {
+      "id": "hen",
+      "pic": "🐔",
+      "name": "hen"
+     }
+    ],
+    "members": [
+     "cow",
+     "pig",
+     "hen"
+    ]
+   },
+   "ask": "Make a farm web. Put in the things that belong on a farm.",
+   "goal": "Cow, pig and hen around the farm; the rocket stays out.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-cow",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-pig",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-hen",
+     "to": "#place-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-cow",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-pig",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-rocket",
+     "to": "#place-2"
+    }
+   ],
+   "scene": {
+    "centre": "farm (shown: farm)",
+    "places": [
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "pig",
+     "rocket",
+     "cow",
+     "hen"
+    ]
+   },
+   "proofScene": {
+    "centre": "farm (shown: farm)",
+    "places": [
+     "cow",
+     "pig",
+     "hen"
+    ],
+    "tray": [
+     "rocket"
+    ]
+   },
+   "missScene": {
+    "centre": "farm (shown: farm)",
+    "places": [
+     "cow",
+     "pig",
+     "rocket"
+    ],
+    "tray": [
+     "hen"
+    ]
+   }
+  },
+  {
+   "params": {
+    "center": {
+     "pic": "🏠",
+     "name": "pets",
+     "label": "pets"
+    },
+    "slots": 3,
+    "cards": [
+     {
+      "id": "wolf",
+      "pic": "🐺",
+      "name": "wolf"
+     },
+     {
+      "id": "cat",
+      "pic": "🐈",
+      "name": "cat"
+     },
+     {
+      "id": "fish",
+      "pic": "🐠",
+      "name": "goldfish"
+     },
+     {
+      "id": "dog",
+      "pic": "🐕",
+      "name": "dog"
+     }
+    ],
+    "members": [
+     "dog",
+     "cat",
+     "fish"
+    ]
+   },
+   "ask": "Make a pets web. Put in the animals that can be pets at home.",
+   "goal": "Dog, cat and goldfish; the wolf (looks like the dog) stays out.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-dog",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-cat",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-fish",
+     "to": "#place-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-wolf",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-cat",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-fish",
+     "to": "#place-2"
+    }
+   ],
+   "scene": {
+    "centre": "pets (shown: pets)",
+    "places": [
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "wolf",
+     "cat",
+     "goldfish",
+     "dog"
+    ]
+   },
+   "proofScene": {
+    "centre": "pets (shown: pets)",
+    "places": [
+     "dog",
+     "cat",
+     "goldfish"
+    ],
+    "tray": [
+     "wolf"
+    ]
+   },
+   "missScene": {
+    "centre": "pets (shown: pets)",
+    "places": [
+     "wolf",
+     "cat",
+     "goldfish"
+    ],
+    "tray": [
+     "dog"
+    ]
+   }
+  },
+  {
+   "params": {
+    "center": {
+     "pic": "🌊",
+     "name": "sea animals",
+     "label": "sea"
+    },
+    "slots": 4,
+    "cards": [
+     {
+      "id": "crab",
+      "pic": "🦀",
+      "name": "crab"
+     },
+     {
+      "id": "umbrella",
+      "pic": "⛱️",
+      "name": "beach umbrella"
+     },
+     {
+      "id": "whale",
+      "pic": "🐳",
+      "name": "whale"
+     },
+     {
+      "id": "cow",
+      "pic": "🐄",
+      "name": "cow"
+     },
+     {
+      "id": "octopus",
+      "pic": "🐙",
+      "name": "octopus"
+     },
+     {
+      "id": "fish",
+      "pic": "🐟",
+      "name": "fish"
+     }
+    ],
+    "members": [
+     "octopus",
+     "whale",
+     "crab",
+     "fish"
+    ]
+   },
+   "ask": "Make a web of animals that live in the sea.",
+   "goal": "Octopus, whale, crab and fish; the beach umbrella (seen at the sea) and the cow stay out.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-octopus",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-whale",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-crab",
+     "to": "#place-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-fish",
+     "to": "#place-3"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-octopus",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-whale",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-crab",
+     "to": "#place-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-umbrella",
+     "to": "#place-3"
+    }
+   ],
+   "scene": {
+    "centre": "sea animals (shown: sea)",
+    "places": [
+     "empty",
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "crab",
+     "beach umbrella",
+     "whale",
+     "cow",
+     "octopus",
+     "fish"
+    ]
+   },
+   "proofScene": {
+    "centre": "sea animals (shown: sea)",
+    "places": [
+     "octopus",
+     "whale",
+     "crab",
+     "fish"
+    ],
+    "tray": [
+     "beach umbrella",
+     "cow"
+    ]
+   },
+   "missScene": {
+    "centre": "sea animals (shown: sea)",
+    "places": [
+     "octopus",
+     "whale",
+     "crab",
+     "beach umbrella"
+    ],
+    "tray": [
+     "cow",
+     "fish"
+    ]
+   }
+  },
+  {
+   "params": {
+    "center": null,
+    "slots": 3,
+    "cards": [
+     {
+      "id": "pencil",
+      "pic": "✏️",
+      "name": "pencil"
+     },
+     {
+      "id": "beach",
+      "pic": "🏖️",
+      "name": "beach"
+     },
+     {
+      "id": "bag",
+      "pic": "🎒",
+      "name": "school bag"
+     },
+     {
+      "id": "shell",
+      "pic": "🐚",
+      "name": "shell"
+     },
+     {
+      "id": "books",
+      "pic": "📚",
+      "name": "books"
+     },
+     {
+      "id": "school",
+      "pic": "🏫",
+      "name": "school"
+     }
+    ],
+    "members": [
+     "pencil",
+     "bag",
+     "books"
+    ],
+    "topic": "school"
+   },
+   "ask": "Make a web of things that go together, with the place they all belong in the middle.",
+   "goal": "School in the centre with pencil, school bag and books; the beach and the shell stay out.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#card-pencil",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-bag",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-books",
+     "to": "#place-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-school",
+     "to": "#place-c"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#card-pencil",
+     "to": "#place-0"
+    },
+    {
+     "do": "drag",
+     "target": "#card-bag",
+     "to": "#place-1"
+    },
+    {
+     "do": "drag",
+     "target": "#card-books",
+     "to": "#place-2"
+    },
+    {
+     "do": "drag",
+     "target": "#card-beach",
+     "to": "#place-c"
+    }
+   ],
+   "scene": {
+    "centre": "empty",
+    "places": [
+     "empty",
+     "empty",
+     "empty"
+    ],
+    "tray": [
+     "pencil",
+     "beach",
+     "school bag",
+     "shell",
+     "books",
+     "school"
+    ]
+   },
+   "proofScene": {
+    "centre": "school",
+    "places": [
+     "pencil",
+     "school bag",
+     "books"
+    ],
+    "tray": [
+     "beach",
+     "shell"
+    ]
+   },
+   "missScene": {
+    "centre": "beach",
+    "places": [
+     "pencil",
+     "school bag",
+     "books"
+    ],
+    "tray": [
+     "shell",
+     "school"
+    ]
+   }
+  }
+ ]
+}

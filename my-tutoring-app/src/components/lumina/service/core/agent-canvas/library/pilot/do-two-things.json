@@ -1,0 +1,537 @@
+{
+ "id": "do-two-things",
+ "title": "Listen and Do",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child hears a spoken instruction with one, two or three steps once and then does the steps in order in a picture (put the hat on the dog, open the box and then put the ball in, put the star in the small red cup), which shows listening to and following multi-step oral directions with position and describing words."
+ },
+ "request": {
+  "topic": "Listening to and following spoken directions with two steps",
+  "grade": "kindergarten",
+  "objective": "Listen to a two-step instruction once, then do both actions in the order given, on the right objects. (LA003-01-A, LA005-04-C)"
+ },
+ "source": "function Display({ params, lumina }) {\n  // A room with places (animals, cups, a box, a basket) and a shelf of things. The child hears the steps once (the\n  // lesson speaks the ask) and does them: drag a thing onto a place, tap the box to open or close it. A closed box\n  // will not take a thing: it slides back to the shelf. Nothing on the page repeats or numbers the steps.\n  // params.places: [{ id, kind: animal|cup|box|spot, pic, name, x, head, color, size }] (cup: color + size small|big;\n  //   animal: head = [dx, dy] where a thing sits on its head).\n  // params.items: [{ id, pic, name }] on the shelf in this order.\n  // params.steps: the actions in order, as 'put:<item>:<place>' or 'open:<box>' (the key, for code only).\n  const places = (Array.isArray(params.places) ? params.places : [\n    { id: 'dog', kind: 'animal', pic: '🐕', name: 'dog', x: 220 },\n    { id: 'cat', kind: 'animal', pic: '🐈', name: 'cat', x: 460 },\n  ]).slice(0, 5);\n  const items = (Array.isArray(params.items) ? params.items : [{ id: 'hat', pic: '🎩', name: 'hat' }]).slice(0, 5);\n  const steps = Array.isArray(params.steps) ? params.steps : ['put:hat:dog'];\n  const W = 680, H = 460, FLOOR = 260, SHELF_Y = 380;\n\n  const [at, setAt] = useState(() => ({}));       // item id -> place id\n  const [open, setOpen] = useState(() => ({}));   // box id -> true when open\n  const [log, setLog] = useState(() => []);       // every change the child made, in order\n  const [drag, setDrag] = useState(null);\n  const [bump, setBump] = useState(null);         // a box that refused a thing, for a short shake\n  const svgRef = useRef(null);\n  const byPlace = id => places.find(p => p.id === id);\n  const byItem = id => items.find(i => i.id === id);\n  const goalMet = log.length === steps.length && log.every((a, i) => a === steps[i]);\n\n  const placeName = p => p.kind === 'cup' ? (p.size === 'big' ? 'big ' : 'small ') + (p.colorName || '') + ' cup' : p.name;\n  const say = a => {\n    const [verb, x, y] = a.split(':');\n    if (verb === 'put') return 'put the ' + byItem(x).name + ' ' + (byPlace(y).kind === 'animal' ? 'on the ' : 'in the ') + placeName(byPlace(y));\n    if (verb === 'take') return 'took the ' + byItem(x).name + ' back to the shelf';\n    return (verb === 'open' ? 'opened the ' : 'closed the ') + placeName(byPlace(x));\n  };\n\n  useEffect(() => {\n    lumina.goal(goalMet);\n    lumina.scene({\n      places: places.map(p => placeName(p) + (p.kind === 'box' ? (open[p.id] ? ' (open)' : ' (closed)') : '') + ': ' +\n        (items.filter(i => at[i.id] === p.id).map(i => i.name).join(', ') || 'nothing')),\n      onShelf: items.filter(i => !at[i.id]).map(i => i.name),\n      doneSoFar: log.map(say),\n    });\n  }, [at, open, log, goalMet]);\n\n  const slotW = 600 / places.length;\n  const px = (p, i) => (typeof p.x === 'number' ? p.x : 40 + slotW * i + slotW / 2);\n  const placeXY = p => ({ x: px(p, places.indexOf(p)), y: FLOOR });\n  const shelfW = Math.min(110, 560 / items.length), sx0 = (W - items.length * shelfW) / 2;\n  const itemXY = it => {\n    const pid = at[it.id];\n    if (!pid) { const k = items.indexOf(it); return { x: sx0 + k * shelfW + shelfW / 2, y: SHELF_Y }; }\n    const p = byPlace(pid), c = placeXY(p);\n    const here = items.filter(i => at[i.id] === pid), k = here.indexOf(it), off = (k - (here.length - 1) / 2) * 34;\n    if (p.kind === 'animal') { const hd = Array.isArray(p.head) ? p.head : [-24, -110]; return { x: c.x + hd[0] + off, y: c.y + hd[1] }; }\n    if (p.kind === 'cup') return { x: c.x + off, y: c.y - (p.size === 'big' ? 96 : 62) };\n    if (p.kind === 'box') return { x: c.x + off, y: c.y - 70 };\n    return { x: c.x + off, y: c.y - 70 };\n  };\n\n  const pointOf = e => svgPoint(svgRef.current, e);\n  const grab = (id, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id }); };\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\n  const onUp = e => {\n    if (!drag || !svgRef.current) return;\n    const pt = pointOf(e), id = drag.id;\n    setDrag(null);\n    if (drag.x === undefined) return;\n    let best = null, bestD = 95;\n    places.forEach(p => { const c = placeXY(p), d = Math.hypot(pt.x - c.x, pt.y - (c.y - 50)); if (d < bestD) { best = p; bestD = d; } });\n    const from = at[id];\n    if (best && best.kind === 'box' && !open[best.id]) { setBump(best.id); setTimeout(() => setBump(null), 400); return; }\n    if (best) {\n      if (from === best.id) return;\n      setAt(a => ({ ...a, [id]: best.id }));\n      setLog(l => [...l, 'put:' + id + ':' + best.id]);\n    } else if (from && pt.y > SHELF_Y - 70) {\n      setAt(a => { const n = { ...a }; delete n[id]; return n; });\n      setLog(l => [...l, 'take:' + id]);\n    }\n  };\n  const toggleBox = p => {\n    const now = !open[p.id];\n    setOpen(o => ({ ...o, [p.id]: now }));\n    setLog(l => [...l, (now ? 'open:' : 'close:') + p.id]);\n  };\n\n  const place = (p, i) => {\n    const c = placeXY(p);\n    if (p.kind === 'cup') {\n      const big = p.size === 'big', w = big ? 96 : 62, h = big ? 104 : 66;\n      return <g key={p.id} id={'place-' + p.id}>\n        <path d={`M ${c.x - w / 2} ${c.y - h} L ${c.x + w / 2} ${c.y - h} L ${c.x + w * 0.36} ${c.y} L ${c.x - w * 0.36} ${c.y} Z`}\n          fill={p.color || '#ef4444'} stroke=\"#0f172a\" strokeWidth=\"2\" />\n        <ellipse cx={c.x} cy={c.y - h} rx={w / 2} ry=\"7\" fill=\"#0f172a\" opacity=\"0.45\" />\n      </g>;\n    }\n    if (p.kind === 'box') {\n      const isOpen = !!open[p.id], shake = bump === p.id ? 6 : 0;\n      return <g key={p.id} id={'place-' + p.id} onClick={() => toggleBox(p)} style={{ cursor: 'pointer' }} transform={`translate(${shake}, 0)`}>\n        <rect x={c.x - 62} y={c.y - 80} width=\"124\" height=\"80\" rx=\"6\" fill=\"#b45309\" stroke=\"#78350f\" strokeWidth=\"3\" />\n        <line x1={c.x} y1={c.y - 80} x2={c.x} y2={c.y} stroke=\"#78350f\" strokeWidth=\"2\" opacity=\"0.5\" />\n        {isOpen\n          ? <rect x={c.x - 62} y={c.y - 140} width=\"16\" height=\"62\" rx=\"4\" fill=\"#d97706\" stroke=\"#78350f\" strokeWidth=\"3\" />\n          : <rect x={c.x - 68} y={c.y - 96} width=\"136\" height=\"20\" rx=\"6\" fill=\"#d97706\" stroke=\"#78350f\" strokeWidth=\"3\" />}\n      </g>;\n    }\n    return <g key={p.id} id={'place-' + p.id}>\n      <text x={c.x} y={c.y - 44} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={p.kind === 'animal' ? 96 : 84}>{p.pic}</text>\n    </g>;\n  };\n\n  const thing = it => {\n    const held = drag && drag.id === it.id && drag.x !== undefined;\n    const p = held ? { x: drag.x, y: drag.y } : itemXY(it);\n    const onShelf = !at[it.id] && !held;\n    return <g key={it.id} id={'item-' + it.id} transform={`translate(${p.x}, ${p.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\n      onPointerDown={e => grab(it.id, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\n      {onShelf ? <rect x=\"-42\" y=\"-42\" width=\"84\" height=\"84\" rx=\"14\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" /> : <circle r=\"30\" fill=\"transparent\" />}\n      <text y=\"3\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"48\">{it.pic}</text>\n    </g>;\n  };\n\n  return (\n    <Panel title=\"Listen and Do\" caption=\"Drag a thing onto a place. Tap the box to open it.\">\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\n        <rect x=\"16\" y={FLOOR} width={W - 32} height=\"14\" rx=\"7\" fill=\"#334155\" />\n        {places.map(place)}\n        <rect x=\"16\" y={SHELF_Y - 56} width={W - 32} height=\"112\" rx=\"18\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n        {items.filter(i => !(drag && drag.id === i.id)).map(thing)}\n        {drag ? thing(byItem(drag.id)) : null}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "places": [
+     {
+      "id": "cat",
+      "kind": "animal",
+      "pic": "🐈",
+      "name": "cat",
+      "x": 180
+     },
+     {
+      "id": "dog",
+      "kind": "animal",
+      "pic": "🐕",
+      "name": "dog",
+      "x": 340
+     },
+     {
+      "id": "pig",
+      "kind": "animal",
+      "pic": "🐖",
+      "name": "pig",
+      "x": 500
+     }
+    ],
+    "items": [
+     {
+      "id": "hat",
+      "pic": "🎩",
+      "name": "hat"
+     }
+    ],
+    "steps": [
+     "put:hat:dog"
+    ]
+   },
+   "ask": "Listen: put the hat on the dog.",
+   "goal": "The hat on the dog. The hat on another animal (any animal will do) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#place-dog"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#place-cat"
+    }
+   ],
+   "scene": {
+    "places": [
+     "cat: nothing",
+     "dog: nothing",
+     "pig: nothing"
+    ],
+    "onShelf": [
+     "hat"
+    ],
+    "doneSoFar": []
+   },
+   "proofScene": {
+    "places": [
+     "cat: nothing",
+     "dog: hat",
+     "pig: nothing"
+    ],
+    "onShelf": [],
+    "doneSoFar": [
+     "put the hat on the dog"
+    ]
+   },
+   "missScene": {
+    "places": [
+     "cat: hat",
+     "dog: nothing",
+     "pig: nothing"
+    ],
+    "onShelf": [],
+    "doneSoFar": [
+     "put the hat on the cat"
+    ]
+   }
+  },
+  {
+   "params": {
+    "places": [
+     {
+      "id": "basket",
+      "kind": "spot",
+      "pic": "🧺",
+      "name": "basket",
+      "x": 200
+     },
+     {
+      "id": "chair",
+      "kind": "spot",
+      "pic": "🪑",
+      "name": "chair",
+      "x": 480
+     }
+    ],
+    "items": [
+     {
+      "id": "ball",
+      "pic": "⚽",
+      "name": "ball"
+     },
+     {
+      "id": "apple",
+      "pic": "🍎",
+      "name": "apple"
+     }
+    ],
+    "steps": [
+     "put:apple:basket",
+     "put:ball:chair"
+    ]
+   },
+   "ask": "Listen: put the apple in the basket, then put the ball on the chair.",
+   "goal": "Apple to the basket, then ball to the chair. Only the ball to the chair (the last thing heard) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-apple",
+     "to": "#place-basket"
+    },
+    {
+     "do": "drag",
+     "target": "#item-ball",
+     "to": "#place-chair"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-ball",
+     "to": "#place-chair"
+    }
+   ],
+   "scene": {
+    "places": [
+     "basket: nothing",
+     "chair: nothing"
+    ],
+    "onShelf": [
+     "ball",
+     "apple"
+    ],
+    "doneSoFar": []
+   },
+   "proofScene": {
+    "places": [
+     "basket: apple",
+     "chair: ball"
+    ],
+    "onShelf": [],
+    "doneSoFar": [
+     "put the apple in the basket",
+     "put the ball in the chair"
+    ]
+   },
+   "missScene": {
+    "places": [
+     "basket: nothing",
+     "chair: ball"
+    ],
+    "onShelf": [
+     "apple"
+    ],
+    "doneSoFar": [
+     "put the ball in the chair"
+    ]
+   }
+  },
+  {
+   "params": {
+    "places": [
+     {
+      "id": "box",
+      "kind": "box",
+      "name": "box",
+      "x": 220
+     },
+     {
+      "id": "bear",
+      "kind": "animal",
+      "pic": "🧸",
+      "name": "teddy bear",
+      "x": 470
+     }
+    ],
+    "items": [
+     {
+      "id": "car",
+      "pic": "🚗",
+      "name": "car"
+     },
+     {
+      "id": "ball",
+      "pic": "🏀",
+      "name": "ball"
+     }
+    ],
+    "steps": [
+     "open:box",
+     "put:ball:box"
+    ]
+   },
+   "ask": "Listen: open the box, then put the ball in the box.",
+   "goal": "Box opened, then the ball in it. The ball first (the closed box sends it back) and then the box opened is the miss.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#place-box",
+     "shot": "opened"
+    },
+    {
+     "do": "drag",
+     "target": "#item-ball",
+     "to": "#place-box"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-ball",
+     "to": "#place-box"
+    },
+    {
+     "do": "click",
+     "target": "#place-box"
+    }
+   ],
+   "scene": {
+    "places": [
+     "box (closed): nothing",
+     "teddy bear: nothing"
+    ],
+    "onShelf": [
+     "car",
+     "ball"
+    ],
+    "doneSoFar": []
+   },
+   "proofScene": {
+    "places": [
+     "box (open): ball",
+     "teddy bear: nothing"
+    ],
+    "onShelf": [
+     "car"
+    ],
+    "doneSoFar": [
+     "opened the box",
+     "put the ball in the box"
+    ]
+   },
+   "missScene": {
+    "places": [
+     "box (open): nothing",
+     "teddy bear: nothing"
+    ],
+    "onShelf": [
+     "car",
+     "ball"
+    ],
+    "doneSoFar": [
+     "opened the box"
+    ]
+   }
+  },
+  {
+   "params": {
+    "places": [
+     {
+      "id": "bigred",
+      "kind": "cup",
+      "size": "big",
+      "color": "#ef4444",
+      "colorName": "red",
+      "x": 130
+     },
+     {
+      "id": "smallblue",
+      "kind": "cup",
+      "size": "small",
+      "color": "#3b82f6",
+      "colorName": "blue",
+      "x": 270
+     },
+     {
+      "id": "smallred",
+      "kind": "cup",
+      "size": "small",
+      "color": "#ef4444",
+      "colorName": "red",
+      "x": 410
+     },
+     {
+      "id": "bigblue",
+      "kind": "cup",
+      "size": "big",
+      "color": "#3b82f6",
+      "colorName": "blue",
+      "x": 550
+     }
+    ],
+    "items": [
+     {
+      "id": "moon",
+      "pic": "🌙",
+      "name": "moon"
+     },
+     {
+      "id": "star",
+      "pic": "⭐",
+      "name": "star"
+     }
+    ],
+    "steps": [
+     "put:star:smallred",
+     "put:moon:bigblue"
+    ]
+   },
+   "ask": "Listen: put the star in the small red cup, then put the moon in the big blue cup.",
+   "goal": "Star in the small red cup, then moon in the big blue cup. The star in the big red cup (any red cup) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#item-star",
+     "to": "#place-smallred"
+    },
+    {
+     "do": "drag",
+     "target": "#item-moon",
+     "to": "#place-bigblue"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-star",
+     "to": "#place-bigred"
+    },
+    {
+     "do": "drag",
+     "target": "#item-moon",
+     "to": "#place-bigblue"
+    }
+   ],
+   "scene": {
+    "places": [
+     "big red cup: nothing",
+     "small blue cup: nothing",
+     "small red cup: nothing",
+     "big blue cup: nothing"
+    ],
+    "onShelf": [
+     "moon",
+     "star"
+    ],
+    "doneSoFar": []
+   },
+   "proofScene": {
+    "places": [
+     "big red cup: nothing",
+     "small blue cup: nothing",
+     "small red cup: star",
+     "big blue cup: moon"
+    ],
+    "onShelf": [],
+    "doneSoFar": [
+     "put the star in the small red cup",
+     "put the moon in the big blue cup"
+    ]
+   },
+   "missScene": {
+    "places": [
+     "big red cup: star",
+     "small blue cup: nothing",
+     "small red cup: nothing",
+     "big blue cup: moon"
+    ],
+    "onShelf": [],
+    "doneSoFar": [
+     "put the star in the big red cup",
+     "put the moon in the big blue cup"
+    ]
+   }
+  },
+  {
+   "params": {
+    "places": [
+     {
+      "id": "dog",
+      "kind": "animal",
+      "pic": "🐕",
+      "name": "dog",
+      "x": 130
+     },
+     {
+      "id": "box",
+      "kind": "box",
+      "name": "box",
+      "x": 340
+     },
+     {
+      "id": "cat",
+      "kind": "animal",
+      "pic": "🐈",
+      "name": "cat",
+      "x": 550
+     }
+    ],
+    "items": [
+     {
+      "id": "hat",
+      "pic": "👒",
+      "name": "hat"
+     },
+     {
+      "id": "bear",
+      "pic": "🧸",
+      "name": "teddy bear"
+     },
+     {
+      "id": "bone",
+      "pic": "🦴",
+      "name": "bone"
+     }
+    ],
+    "steps": [
+     "open:box",
+     "put:bear:box",
+     "put:hat:cat"
+    ]
+   },
+   "ask": "Listen: open the box, put the teddy bear in it, then put the hat on the cat.",
+   "goal": "Box opened, bear in the box, hat on the cat, in that order. Hat on the cat first, then the box and the bear, is the miss.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#place-box"
+    },
+    {
+     "do": "drag",
+     "target": "#item-bear",
+     "to": "#place-box",
+     "shot": "bear-in"
+    },
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#place-cat"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#item-hat",
+     "to": "#place-cat"
+    },
+    {
+     "do": "click",
+     "target": "#place-box"
+    },
+    {
+     "do": "drag",
+     "target": "#item-bear",
+     "to": "#place-box"
+    }
+   ],
+   "scene": {
+    "places": [
+     "dog: nothing",
+     "box (closed): nothing",
+     "cat: nothing"
+    ],
+    "onShelf": [
+     "hat",
+     "teddy bear",
+     "bone"
+    ],
+    "doneSoFar": []
+   },
+   "proofScene": {
+    "places": [
+     "dog: nothing",
+     "box (open): teddy bear",
+     "cat: hat"
+    ],
+    "onShelf": [
+     "bone"
+    ],
+    "doneSoFar": [
+     "opened the box",
+     "put the teddy bear in the box",
+     "put the hat on the cat"
+    ]
+   },
+   "missScene": {
+    "places": [
+     "dog: nothing",
+     "box (open): teddy bear",
+     "cat: hat"
+    ],
+    "onShelf": [
+     "bone"
+    ],
+    "doneSoFar": [
+     "put the hat on the cat",
+     "opened the box",
+     "put the teddy bear in the box"
+    ]
+   }
+  }
+ ]
+}

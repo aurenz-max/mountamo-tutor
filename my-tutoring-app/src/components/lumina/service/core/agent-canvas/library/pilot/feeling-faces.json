@@ -1,0 +1,494 @@
+{
+ "id": "feeling-faces",
+ "title": "Feeling Faces",
+ "serves": {
+  "grades": [
+   "K"
+  ],
+  "summary": "The child drags feeling faces (happy, sad, mad, scared, surprised, worried) onto children in a picture, matching a spoken feeling word to its face and reading from a situation (a dropped ice cream, a dog running up) how each child feels, including two children who feel differently about the same thing, which shows understanding of words for feelings."
+ },
+ "request": {
+  "topic": "Feeling words: matching a feeling to a face and to what caused it",
+  "grade": "kindergarten",
+  "objective": "Match a feeling word to the face that shows it, and a situation to the face of the child in it, including two children who feel differently about the same thing. (LA005-01-G, LA006-02-A)"
+ },
+ "source": "function Display({ params, lumina }) {\r\n  // Children stand in a small scene with blank faces. A row of face stamps waits in the tray. Drag a face onto a child's\r\n  // head to give the child that face; drag it to another child to move it, or off the child to take it away. A stamp\r\n  // never runs out, so two children can wear the same face.\r\n  // params.people: [{ id, shirt, shirtName, skin, x, dir, pose, does, want }] pose: stand | reach | back | slump.\r\n  //   want: the face kinds that fit (the key, for code only; never drawn or reported).\r\n  // params.faces: face kinds in tray order. params.props: [{ pic, name, x, y, size, rot }] or [{ puddle: colour, x, y, size }].\r\n  const FACE = {\r\n    happy: { pic: '😀', name: 'happy face' },\r\n    sad: { pic: '😢', name: 'sad face' },\r\n    mad: { pic: '😠', name: 'mad face' },\r\n    scared: { pic: '😨', name: 'scared face' },\r\n    surprised: { pic: '😮', name: 'surprised face' },\r\n    worried: { pic: '😟', name: 'worried face' },\r\n  };\r\n  const people = (Array.isArray(params.people) ? params.people : [\r\n    { id: 'kid', shirt: '#3b82f6', shirtName: 'blue', skin: '#e0ac69', x: 340, dir: 1, pose: 'stand', does: 'standing', want: ['happy'] },\r\n  ]).slice(0, 3);\r\n  const faces = (Array.isArray(params.faces) ? params.faces : ['happy', 'sad']).filter(k => FACE[k]).slice(0, 6);\r\n  const props = Array.isArray(params.props) ? params.props : [];\r\n  const W = 680, H = 470, GROUND = 300, HEAD_Y = 110, TRAY_Y = 400;\r\n\r\n  const [worn, setWorn] = useState(() => ({}));\r\n  const [drag, setDrag] = useState(null);\r\n  const svgRef = useRef(null);\r\n  const goalMet = people.every(p => (Array.isArray(p.want) ? p.want : []).includes(worn[p.id]));\r\n\r\n  useEffect(() => {\r\n    lumina.goal(goalMet);\r\n    lumina.scene({\r\n      children: people.map(p => 'child in the ' + (p.shirtName || 'plain') + ' shirt, ' + (p.does || 'standing') + ': ' +\r\n        (worn[p.id] ? FACE[worn[p.id]].name : 'no face yet')),\r\n      things: props.map(t => t.name).filter(Boolean),\r\n      faceStamps: faces.map(k => FACE[k].name),\r\n    });\r\n  }, [worn, goalMet]);\r\n\r\n  const pointOf = e => svgPoint(svgRef.current, e);\r\n  const grab = (kind, from, e) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ kind, from }); };\r\n  const onMove = e => { if (drag && svgRef.current) { const p = pointOf(e); setDrag(d => (d ? { ...d, x: p.x, y: p.y } : null)); } };\r\n  const headAt = p => {\r\n    const lean = p.pose === 'back' ? -14 * (p.dir || 1) : 0;\r\n    const r = lean * Math.PI / 180, dy = HEAD_Y - GROUND;\r\n    return { x: p.x - Math.sin(r) * dy, y: GROUND + Math.cos(r) * dy };\r\n  };\r\n  const onUp = e => {\r\n    if (!drag || !svgRef.current) return;\r\n    const pt = pointOf(e), d = drag;\r\n    setDrag(null);\r\n    if (d.x === undefined) return;\r\n    const hit = people.find(p => { const h = headAt(p); return Math.hypot(pt.x - h.x, pt.y - h.y) < 70; });\r\n    setWorn(w => {\r\n      const n = { ...w };\r\n      if (d.from !== 'tray') delete n[d.from];\r\n      if (hit) n[hit.id] = d.kind;\r\n      return n;\r\n    });\r\n  };\r\n\r\n  const SKIN_LINE = '#0f172a';\r\n  const person = p => {\r\n    const dir = p.dir || 1, x = p.x, skin = p.skin || '#e0ac69', shirt = p.shirt || '#3b82f6';\r\n    const lean = p.pose === 'back' ? -14 * dir : 0;\r\n    const sh = { l: x - 30, r: x + 30, y: 178 };\r\n    let hands;\r\n    if (p.pose === 'reach') hands = [[x + dir * 92, 182], [x + dir * 84, 204]];\r\n    else if (p.pose === 'back') hands = [[x + dir * 66, 146], [x + dir * 60, 182]];\r\n    else if (p.pose === 'slump') hands = [[x - 38, 254], [x + 38, 254]];\r\n    else hands = [[x - 40, 236], [x + 40, 236]];\r\n    const fromL = p.pose === 'reach' || p.pose === 'back' ? (dir > 0 ? sh.r : sh.l) : sh.l;\r\n    const fromR = p.pose === 'reach' || p.pose === 'back' ? (dir > 0 ? sh.l : sh.r) : sh.r;\r\n    const headY = HEAD_Y + (p.pose === 'slump' ? 10 : 0);\r\n    return <g key={p.id} transform={`rotate(${lean} ${x} ${GROUND})`}>\r\n      <line x1={x - 14} y1={250} x2={x - 18} y2={GROUND} stroke=\"#334155\" strokeWidth=\"14\" strokeLinecap=\"round\" />\r\n      <line x1={x + 14} y1={250} x2={x + 18} y2={GROUND} stroke=\"#334155\" strokeWidth=\"14\" strokeLinecap=\"round\" />\r\n      {[fromL, fromR].map((sx, i) => <g key={i}>\r\n        <line x1={sx} y1={sh.y} x2={hands[i][0]} y2={hands[i][1]} stroke={shirt} strokeWidth=\"13\" strokeLinecap=\"round\" />\r\n        <circle cx={hands[i][0]} cy={hands[i][1]} r=\"9\" fill={skin} stroke={SKIN_LINE} strokeWidth=\"1\" />\r\n      </g>)}\r\n      <rect x={x - 34} y={162} width=\"68\" height=\"94\" rx=\"22\" fill={shirt} />\r\n      <rect x={x - 7} y={146} width=\"14\" height=\"20\" fill={skin} />\r\n      <circle id={'head-' + p.id} cx={x} cy={headY} r=\"44\" fill={skin} stroke=\"#475569\" strokeWidth=\"2.5\" strokeDasharray=\"6 5\" />\r\n    </g>;\r\n  };\r\n\r\n  const faceAt = (kind, at, key, from, idAttr, opacity = 1) => (\r\n    <g key={key} id={idAttr} opacity={opacity} transform={`translate(${at.x}, ${at.y})`} style={{ cursor: 'grab', touchAction: 'none' }}\r\n      onPointerDown={e => grab(kind, from, e)} onPointerUp={onUp} onPointerCancel={() => setDrag(null)}>\r\n      {from === 'tray'\r\n        ? <rect x=\"-44\" y=\"-44\" width=\"88\" height=\"88\" rx=\"14\" fill=\"#1e293b\" stroke=\"#64748b\" strokeWidth=\"2\" />\r\n        : <circle r=\"46\" fill=\"transparent\" />}\r\n      <text y=\"4\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={from === 'tray' ? 56 : 82}>{FACE[kind].pic}</text>\r\n    </g>\r\n  );\r\n\r\n  const trayW = Math.min(104, (W - 60) / Math.max(1, faces.length)), tx0 = (W - faces.length * trayW) / 2;\r\n  const held = drag && drag.x !== undefined;\r\n\r\n  return (\r\n    <Panel title=\"Feeling Faces\" caption=\"Drag a face onto a child. Drag it off to take it away.\">\r\n      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}\r\n        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>\r\n        <rect x=\"0\" y=\"0\" width={W} height={H} fill=\"#0f172a\" />\r\n        <rect x=\"16\" y={GROUND} width={W - 32} height=\"18\" rx=\"9\" fill=\"#14532d\" />\r\n        {props.filter(t => t.puddle).map((t, i) => <ellipse key={'pd' + i} cx={t.x} cy={t.y} rx={t.size || 40} ry={(t.size || 40) * 0.32} fill={t.puddle} />)}\r\n        {props.filter(t => !t.puddle).map((t, i) => <text key={i} x={t.x} y={t.y} textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize={t.size || 48}\r\n          transform={t.rot ? `rotate(${t.rot} ${t.x} ${t.y})` : undefined}>{t.pic}</text>)}\r\n        {people.map(person)}\r\n        {people.filter(p => worn[p.id]).map(p => {\r\n          const h = headAt(p);\r\n          return faceAt(worn[p.id], { x: h.x, y: h.y + (p.pose === 'slump' ? 10 : 0) }, 'on-' + p.id, p.id, 'on-' + p.id, held && drag.from === p.id ? 0 : 1);\r\n        })}\r\n        <rect x=\"16\" y={TRAY_Y - 58} width={W - 32} height=\"116\" rx=\"18\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\r\n        {faces.map((k, i) => faceAt(k, { x: tx0 + i * trayW + trayW / 2, y: TRAY_Y }, 'tray-' + k, 'tray', 'face-' + k))}\r\n        {held ? <g style={{ pointerEvents: 'none' }} transform={`translate(${drag.x}, ${drag.y})`}>\r\n          <text y=\"4\" textAnchor=\"middle\" dominantBaseline=\"middle\" fontSize=\"76\">{FACE[drag.kind].pic}</text>\r\n        </g> : null}\r\n      </svg>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "people": [
+     {
+      "id": "kid",
+      "shirt": "#3b82f6",
+      "shirtName": "blue",
+      "skin": "#e0ac69",
+      "x": 340,
+      "dir": 1,
+      "pose": "slump",
+      "does": "standing with arms down",
+      "want": [
+       "sad"
+      ]
+     }
+    ],
+    "faces": [
+     "happy",
+     "sad"
+    ]
+   },
+   "ask": "This child feels sad. Give the child the sad face.",
+   "goal": "The sad face on the child. The happy face is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#face-sad",
+     "to": "#head-kid"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#face-happy",
+     "to": "#head-kid"
+    }
+   ],
+   "scene": {
+    "children": [
+     "child in the blue shirt, standing with arms down: no face yet"
+    ],
+    "things": [],
+    "faceStamps": [
+     "happy face",
+     "sad face"
+    ]
+   },
+   "proofScene": {
+    "children": [
+     "child in the blue shirt, standing with arms down: sad face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "happy face",
+     "sad face"
+    ]
+   },
+   "missScene": {
+    "children": [
+     "child in the blue shirt, standing with arms down: happy face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "happy face",
+     "sad face"
+    ]
+   }
+  },
+  {
+   "params": {
+    "people": [
+     {
+      "id": "kid",
+      "shirt": "#ef4444",
+      "shirtName": "red",
+      "skin": "#8d5524",
+      "x": 340,
+      "dir": 1,
+      "pose": "stand",
+      "does": "standing",
+      "want": [
+       "mad"
+      ]
+     }
+    ],
+    "faces": [
+     "sad",
+     "happy",
+     "scared",
+     "mad"
+    ]
+   },
+   "ask": "This child feels mad. Give the child the mad face.",
+   "goal": "The mad face on the child. The sad face (mad and sad swapped) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#face-mad",
+     "to": "#head-kid"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#face-sad",
+     "to": "#head-kid"
+    }
+   ],
+   "scene": {
+    "children": [
+     "child in the red shirt, standing: no face yet"
+    ],
+    "things": [],
+    "faceStamps": [
+     "sad face",
+     "happy face",
+     "scared face",
+     "mad face"
+    ]
+   },
+   "proofScene": {
+    "children": [
+     "child in the red shirt, standing: mad face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "sad face",
+     "happy face",
+     "scared face",
+     "mad face"
+    ]
+   },
+   "missScene": {
+    "children": [
+     "child in the red shirt, standing: sad face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "sad face",
+     "happy face",
+     "scared face",
+     "mad face"
+    ]
+   }
+  },
+  {
+   "params": {
+    "people": [
+     {
+      "id": "kid",
+      "shirt": "#a855f7",
+      "shirtName": "purple",
+      "skin": "#f1c27d",
+      "x": 300,
+      "dir": 1,
+      "pose": "slump",
+      "does": "looking down at their ice cream on the ground",
+      "want": [
+       "sad",
+       "mad"
+      ]
+     }
+    ],
+    "faces": [
+     "happy",
+     "scared",
+     "sad",
+     "mad"
+    ],
+    "props": [
+     {
+      "puddle": "#fce7f3",
+      "name": "",
+      "x": 420,
+      "y": 296,
+      "size": 46
+     },
+     {
+      "pic": "🍦",
+      "name": "ice cream fallen on the ground, melting",
+      "x": 440,
+      "y": 280,
+      "size": 56,
+      "rot": 115
+     }
+    ]
+   },
+   "ask": "Oh no! This child dropped their ice cream. Give the child a face that shows how they feel.",
+   "goal": "A sad or a mad face (both fit losing the ice cream). The happy face, chosen because ice cream is a happy thing, is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#face-sad",
+     "to": "#head-kid"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#face-happy",
+     "to": "#head-kid"
+    }
+   ],
+   "scene": {
+    "children": [
+     "child in the purple shirt, looking down at their ice cream on the ground: no face yet"
+    ],
+    "things": [
+     "ice cream fallen on the ground, melting"
+    ],
+    "faceStamps": [
+     "happy face",
+     "scared face",
+     "sad face",
+     "mad face"
+    ]
+   },
+   "proofScene": {
+    "children": [
+     "child in the purple shirt, looking down at their ice cream on the ground: sad face"
+    ],
+    "things": [
+     "ice cream fallen on the ground, melting"
+    ],
+    "faceStamps": [
+     "happy face",
+     "scared face",
+     "sad face",
+     "mad face"
+    ]
+   },
+   "missScene": {
+    "children": [
+     "child in the purple shirt, looking down at their ice cream on the ground: happy face"
+    ],
+    "things": [
+     "ice cream fallen on the ground, melting"
+    ],
+    "faceStamps": [
+     "happy face",
+     "scared face",
+     "sad face",
+     "mad face"
+    ]
+   }
+  },
+  {
+   "params": {
+    "people": [
+     {
+      "id": "left",
+      "shirt": "#eab308",
+      "shirtName": "yellow",
+      "skin": "#e0ac69",
+      "x": 160,
+      "dir": 1,
+      "pose": "reach",
+      "does": "reaching out to pet the dog",
+      "want": [
+       "happy"
+      ]
+     },
+     {
+      "id": "right",
+      "shirt": "#22c55e",
+      "shirtName": "green",
+      "skin": "#c68642",
+      "x": 520,
+      "dir": -1,
+      "pose": "back",
+      "does": "leaning away from the dog with hands up",
+      "want": [
+       "scared"
+      ]
+     }
+    ],
+    "faces": [
+     "sad",
+     "scared",
+     "mad",
+     "happy"
+    ],
+    "props": [
+     {
+      "pic": "🐕",
+      "name": "a dog running between the children",
+      "x": 340,
+      "y": 262,
+      "size": 70
+     }
+    ]
+   },
+   "ask": "A dog runs up to two children. Give each child the face that shows how they feel.",
+   "goal": "Happy on the child reaching for the dog, scared on the child backing away. Happy on both (the feeling is whatever I would feel) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#face-happy",
+     "to": "#head-left"
+    },
+    {
+     "do": "drag",
+     "target": "#face-scared",
+     "to": "#head-right"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#face-happy",
+     "to": "#head-left"
+    },
+    {
+     "do": "drag",
+     "target": "#face-happy",
+     "to": "#head-right"
+    }
+   ],
+   "scene": {
+    "children": [
+     "child in the yellow shirt, reaching out to pet the dog: no face yet",
+     "child in the green shirt, leaning away from the dog with hands up: no face yet"
+    ],
+    "things": [
+     "a dog running between the children"
+    ],
+    "faceStamps": [
+     "sad face",
+     "scared face",
+     "mad face",
+     "happy face"
+    ]
+   },
+   "proofScene": {
+    "children": [
+     "child in the yellow shirt, reaching out to pet the dog: happy face",
+     "child in the green shirt, leaning away from the dog with hands up: scared face"
+    ],
+    "things": [
+     "a dog running between the children"
+    ],
+    "faceStamps": [
+     "sad face",
+     "scared face",
+     "mad face",
+     "happy face"
+    ]
+   },
+   "missScene": {
+    "children": [
+     "child in the yellow shirt, reaching out to pet the dog: happy face",
+     "child in the green shirt, leaning away from the dog with hands up: happy face"
+    ],
+    "things": [
+     "a dog running between the children"
+    ],
+    "faceStamps": [
+     "sad face",
+     "scared face",
+     "mad face",
+     "happy face"
+    ]
+   }
+  },
+  {
+   "params": {
+    "people": [
+     {
+      "id": "left",
+      "shirt": "#eab308",
+      "shirtName": "yellow",
+      "skin": "#f1c27d",
+      "x": 200,
+      "dir": 1,
+      "pose": "stand",
+      "does": "standing",
+      "want": [
+       "surprised"
+      ]
+     },
+     {
+      "id": "right",
+      "shirt": "#3b82f6",
+      "shirtName": "blue",
+      "skin": "#8d5524",
+      "x": 480,
+      "dir": -1,
+      "pose": "stand",
+      "does": "standing",
+      "want": [
+       "worried"
+      ]
+     }
+    ],
+    "faces": [
+     "worried",
+     "happy",
+     "scared",
+     "surprised",
+     "sad",
+     "mad"
+    ]
+   },
+   "ask": "The child in the yellow shirt is surprised. The child in the blue shirt is worried. Give each child their face.",
+   "goal": "Surprised on yellow, worried on blue. Scared on yellow (surprised read as scared) is the miss.",
+   "proof": [
+    {
+     "do": "drag",
+     "target": "#face-surprised",
+     "to": "#head-left"
+    },
+    {
+     "do": "drag",
+     "target": "#face-worried",
+     "to": "#head-right"
+    }
+   ],
+   "miss": [
+    {
+     "do": "drag",
+     "target": "#face-scared",
+     "to": "#head-left"
+    },
+    {
+     "do": "drag",
+     "target": "#face-worried",
+     "to": "#head-right"
+    }
+   ],
+   "scene": {
+    "children": [
+     "child in the yellow shirt, standing: no face yet",
+     "child in the blue shirt, standing: no face yet"
+    ],
+    "things": [],
+    "faceStamps": [
+     "worried face",
+     "happy face",
+     "scared face",
+     "surprised face",
+     "sad face",
+     "mad face"
+    ]
+   },
+   "proofScene": {
+    "children": [
+     "child in the yellow shirt, standing: surprised face",
+     "child in the blue shirt, standing: worried face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "worried face",
+     "happy face",
+     "scared face",
+     "surprised face",
+     "sad face",
+     "mad face"
+    ]
+   },
+   "missScene": {
+    "children": [
+     "child in the yellow shirt, standing: scared face",
+     "child in the blue shirt, standing: worried face"
+    ],
+    "things": [],
+    "faceStamps": [
+     "worried face",
+     "happy face",
+     "scared face",
+     "surprised face",
+     "sad face",
+     "mad face"
+    ]
+   }
+  }
+ ]
+}
