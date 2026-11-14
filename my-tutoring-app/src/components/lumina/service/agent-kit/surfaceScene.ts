@@ -17,6 +17,7 @@ const cardName = (item: SurfaceItem, id: string) => {
 
 /** What the learner has set, in words. */
 export function describeSurfaceWork(item: SurfaceItem, a: SurfaceAnswer): string {
+  if (item.surface === 'teach') return a.said ? `said: "${a.said}"` : 'nothing said yet';
   if (item.surface === 'point') return a.part ? `tapped "${a.part}" on the picture` : 'nothing tapped yet';
   if (item.surface === 'choose') return a.choice ? `chose ${cardName(item, a.choice)}` : 'nothing chosen yet';
   if (item.surface === 'set') return a.board ? `the board now: ${displayWords(a.board)}` : 'the board is as it started';
@@ -31,6 +32,20 @@ const boardFacts = (words: string): Record<string, string> =>
   Object.fromEntries((words.match(/[\s\S]{1,480}(?:\s|$)/g) ?? [words]).slice(0, 4).map((part, i) => [i ? `board${i + 1}` : 'board', part.trim()]));
 
 export function surfaceScene(item: SurfaceItem, view: { answer: SurfaceAnswer; tries: readonly SurfaceTry[]; solved: boolean }): SceneOf {
+  // A teach item: the tutor is the character. The scene says who it is, what it wrongly thinks and what it says when a
+  // try is thin; the idea itself travels only in the key (`teachSpokenKey`), never here.
+  if (item.surface === 'teach' && item.teach) {
+    const t = item.teach;
+    return { objects: [], facts: {
+      task: `the learner explains out loud to ${t.character}; you play ${t.character}`,
+      prompt: item.prompt,
+      character: `${t.character}, who thinks: "${t.holds}"`.slice(0, 400),
+      ...(t.presses.length ? { presses: t.presses.map((p, i) => `press ${i + 1}: "${p}"`).join('; ').slice(0, 500) } : {}),
+      shown: (item.stimulus ?? []).map(displayWords).join('; ').slice(0, 500) || 'nothing but the character',
+      step: view.solved ? `${t.character} gets it now` : view.tries.length ? `${t.character} is still not sure` : 'not started',
+      constraints: `You are ${t.character}. Open in character with the wrong idea, in your own words. Judge each try against the key the task gives you, on meaning. A thin try gets one press, in character; never say the idea yourself before it is credited. When it is credited, say in ${t.character}'s voice that you get it now and what changed your mind.`,
+    } };
+  }
   const facts: Record<string, string | number> = {
     task: item.surface === 'point' ? 'tap one part of the picture, then press Check' : item.surface === 'choose' ? 'choose one card' : item.surface === 'set' ? 'change the board until it meets the goal the prompt gives; more than one finished board can be right' : item.surface === 'make' ? 'put pieces on the tray until they meet the goal the prompt gives; more than one set can be right' : item.surface === 'order' ? 'put the cards in order in the numbered boxes' : `sort each card into a box: ${(item.categories ?? []).join(', ')}`,
     prompt: item.prompt,

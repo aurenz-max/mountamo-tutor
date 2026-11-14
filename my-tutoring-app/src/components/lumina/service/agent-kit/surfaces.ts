@@ -13,6 +13,7 @@ import { optionsTooClose } from '../insets/chartView';
 import type { AuthoredLever } from './levers';
 import { systemShortcuts } from './system';
 import { setApply, setControls, setErrors, setHint, setSolve, setSteps, setUnmet, type ControlSpec, type Derive, type SetGoal } from './setting';
+import { TEACH_MISSES, saysIdea, teachDifficulty, teachErrors, teachHarnessMiss, type TeachMiss, type TeachSpec } from './teachSurface';
 
 /** The surfaces where the child picks among ready-made cards. */
 export const CARD_SURFACES = ['choose', 'categorize', 'order'] as const;
@@ -31,7 +32,13 @@ export const CARD_SURFACES = ['choose', 'categorize', 'order'] as const;
  * step, a place. There are no option cards, so there are no wrong options to write and none to give the answer away;
  * the wrong answers are the display's other parts. Any display that names its parts (`displayParts`) is a board.
  */
-export const SURFACES = [...CARD_SURFACES, 'make', 'set', 'point'] as const;
+/**
+ * `teach` (2026-11-13): the child explains an idea out loud to a character who holds a wrong one, and the live tutor
+ * plays the character and judges the explanation on meaning (`teachSurface.ts`). The kit's surface for the `explain`
+ * act, which no tap surface collects: on the Primer bench an "explain why 8 + 5 can be solved by making ten" objective
+ * got only card picks and a worked example to read (`qa/topic-traces/primer-bench-2026-11-13.md`).
+ */
+export const SURFACES = [...CARD_SURFACES, 'make', 'set', 'point', 'teach'] as const;
 export type CardSurface = typeof CARD_SURFACES[number];
 export type Surface = typeof SURFACES[number];
 export type Tier = 'easy' | 'medium' | 'hard';
@@ -64,7 +71,9 @@ export interface SurfaceItem {
   derive?: Derive;
   /** set only: what must hold at the end (`setting.ts`), which is how an answer is judged. */
   setGoal?: SetGoal;
-  /** point: the name of the right part; choose: the right option id; order: option ids in order; categorize: option id to category name; make: one set that meets the goal, computed by code for the harness (an answer is judged by the goal, never by this). */
+  /** teach only: the character, the wrong idea it holds, the idea the child must get across, and its pushback. */
+  teach?: TeachSpec;
+  /** point: the name of the right part; choose: the right option id; order: option ids in order; categorize: option id to category name; make: one set that meets the goal, computed by code for the harness (an answer is judged by the goal, never by this); teach: the idea (a meaning the tutor judges by, never shown). */
   key: string | string[] | Record<string, string>;
   /** The wrong idea that picks each wrong option (choose), or puts a card in the wrong place; shown as a hint after a miss. */
   misconceptions?: Record<string, string>;
@@ -75,10 +84,11 @@ export interface SurfaceItem {
 }
 
 /** What the child has done on an item. */
-export interface SurfaceAnswer { /** point: the part the child tapped. */ part?: string | null; choice?: string | null; order?: string[]; placed?: Record<string, string>; made?: string[]; /** set: the board as the child left it. */ board?: Display }
+export interface SurfaceAnswer { /** point: the part the child tapped. */ part?: string | null; choice?: string | null; order?: string[]; placed?: Record<string, string>; made?: string[]; /** set: the board as the child left it. */ board?: Display; /** teach: what was said (the harness and the reader; the child's words go to the tutor). */ said?: string }
 
-export type SurfaceMiss = 'wrong_choice' | 'misplaced' | 'out_of_order' | 'off_goal';
-export const SURFACE_MISSES: readonly SurfaceMiss[] = ['wrong_choice', 'misplaced', 'out_of_order', 'off_goal'];
+/** The tap misses the activity's check names, then the teach misses the spoken-miss observer names. */
+export type SurfaceMiss = 'wrong_choice' | 'misplaced' | 'out_of_order' | 'off_goal' | TeachMiss;
+export const SURFACE_MISSES: readonly SurfaceMiss[] = ['wrong_choice', 'misplaced', 'out_of_order', 'off_goal', ...TEACH_MISSES];
 
 // ── make: a goal over the pieces on the tray ────────────────────────────────
 
@@ -175,6 +185,12 @@ export function itemErrors(item: SurfaceItem): string[] {
       else if (!Array.isArray(item.key) || !item.key.length || goalMiss(item, item.key)) e.push('make: the stored key is not a set that meets the goal');
     }
   }
+  if (item.surface === 'teach') {
+    if (opts.length) e.push('teach: the child explains out loud, so the item has no option cards');
+    if (item.board) e.push('teach: a teach item has no board; put what the character and the child look at in stimulus');
+    e.push(...teachErrors(item.teach, item.prompt, (item.stimulus ?? []).filter(d => d.kind === 'text').map(d => (d as { text: string }).text)));
+    if (item.teach && !e.length && item.key !== item.teach.idea) e.push('teach: the key is the idea');
+  }
   if (item.surface === 'categorize') {
     range(2, 8, 'categorize');
     const cats = item.categories ?? [];
@@ -191,6 +207,12 @@ export function itemErrors(item: SurfaceItem): string[] {
 
 /** The surface's one definition of right, and the miss a wrong answer is. */
 export function gradeAnswer(item: SurfaceItem, a: SurfaceAnswer): { correct: boolean; miss?: SurfaceMiss } {
+  if (item.surface === 'teach') {
+    // Code's reading of words, for the harness and the tests. The child's explanation is judged by the tutor on meaning.
+    const t = item.teach!, said = a.said ?? '';
+    const correct = saysIdea(t, said);
+    return correct ? { correct } : { correct, miss: teachHarnessMiss(t, said) };
+  }
   if (item.surface === 'point') {
     const correct = !!a.part && a.part === item.key;
     return correct ? { correct } : { correct, miss: 'wrong_choice' };
@@ -219,6 +241,7 @@ export function gradeAnswer(item: SurfaceItem, a: SurfaceAnswer): { correct: boo
 
 /** The answer that is right (the harness plays it), and one that is wrong. */
 export function rightAnswer(item: SurfaceItem): SurfaceAnswer {
+  if (item.surface === 'teach') return { said: item.teach?.idea ?? '' };
   if (item.surface === 'point') return { part: item.key as string };
   if (item.surface === 'choose') return { choice: item.key as string };
   if (item.surface === 'order') return { order: [...(item.key as string[])] };
@@ -227,6 +250,7 @@ export function rightAnswer(item: SurfaceItem): SurfaceAnswer {
   return { placed: { ...(item.key as Record<string, string>) } };
 }
 export function wrongAnswer(item: SurfaceItem): SurfaceAnswer {
+  if (item.surface === 'teach') return { said: item.teach?.holds ?? '' };
   if (item.surface === 'point') return { part: displayParts(item.board).find(p => p !== item.key) ?? null };
   if (item.surface === 'choose') return { choice: item.options.find(o => o.id !== item.key)?.id ?? null };
   if (item.surface === 'order') { const k = [...(item.key as string[])]; [k[0], k[1]] = [k[1], k[0]]; return { order: k }; }
@@ -254,6 +278,8 @@ export const pointTarget = (part: string) => `part-${part}`;
 
 /** True when the child has given a whole answer, so Check can run. */
 export function answerReady(item: SurfaceItem, a: SurfaceAnswer): boolean {
+  // A teach item has no Check: the tutor's verdict on what the child said is the record.
+  if (item.surface === 'teach') return false;
   if (item.surface === 'point') return !!a.part;
   if (item.surface === 'choose') return !!a.choice;
   if (item.surface === 'order') return (a.order?.length ?? 0) === item.options.length;
@@ -266,6 +292,8 @@ export function answerReady(item: SurfaceItem, a: SurfaceAnswer): boolean {
 export function surfaceTaps(item: SurfaceItem, a: SurfaceAnswer, checkLabel: string): Array<{ type: 'touch'; target: string } | { type: 'choose'; label: string }> {
   const touch = (target: string) => ({ type: 'touch' as const, target });
   const taps: Array<{ type: 'touch'; target: string } | { type: 'choose'; label: string }> = [];
+  // A teach item is answered out loud (the boss plays `say`), so there is nothing to tap and no Check.
+  if (item.surface === 'teach') return taps;
   if (item.surface === 'point' && a.part) taps.push(touch(pointTarget(a.part)));
   if (item.surface === 'choose' && a.choice) taps.push(touch(`card-${a.choice}`));
   if (item.surface === 'order') for (const id of a.order ?? []) taps.push(touch(`card-${id}`));
@@ -281,6 +309,7 @@ export function surfaceTaps(item: SurfaceItem, a: SurfaceAnswer, checkLabel: str
 
 /** A hint after a miss: the misconception behind what the child did, in the author's words. Never the answer. */
 export function missHint(item: SurfaceItem, a: SurfaceAnswer): string | undefined {
+  if (item.surface === 'teach') return undefined;
   const m = item.misconceptions ?? {};
   if (item.surface === 'set') { const off = item.board && setUnmet(item, a.board ?? item.board); return off ? setHint(item, off) : undefined; }
   // A make miss is a fact about the tray, so code can say which part of the goal to look at without giving a set away.
@@ -489,6 +518,7 @@ export function difficultyOf(item: SurfaceItem): Difficulty {
     add(0.25 * n, `${n} cards to sort`);
     if ((item.categories?.length ?? 0) >= 3) add(0.5, '3 categories');
   }
+  if (item.surface === 'teach' && item.teach) for (const part of teachDifficulty(item.teach)) add(part.score, part.why);
   const wrongIds = new Set(item.surface === 'point' ? displayParts(item.board).filter(p => p !== item.key)
     : item.surface === 'choose' ? item.options.filter(o => o.id !== item.key).map(o => o.id) : item.options.map(o => o.id));
   const traps = item.surface === 'make' ? 0 : Object.keys(item.misconceptions ?? {}).filter(id => wrongIds.has(id)).length;

@@ -139,6 +139,34 @@ describe('flattenManifestToLayout misconception threading', () => {
     ]);
   });
 
+  it('stamps the objective\'s evidence spec into every component of its block, the final check and the generation context', () => {
+    const evidence = { act: 'explain' as const, on: 'a friend who counts on from eight', credit: 'the child says ten plus three is quicker', notCredit: 'names making ten without saying what it does' };
+    const twoBlocks: ExhibitManifest = {
+      ...manifest,
+      objectiveBlocks: [
+        { ...manifest.objectiveBlocks![0], components: [
+          { componentId: 'ten-frame', instanceId: 'tf-1', title: 'Fill', intent: 'Make ten', config: { evidence: { act: 'set', credit: 'a tester sent this', notCredit: 'x' } } },
+          { componentId: 'practice-studio', instanceId: 'ps-1', title: 'Say', intent: 'Explain it' },
+        ] },
+        { objectiveId: 'obj-other', objectiveText: 'Count to ten', objectiveVerb: 'apply', components: [
+          { componentId: 'counting-board', instanceId: 'cb-1', title: 'Count', intent: 'Count' },
+        ] },
+      ],
+      finalAssessment: { componentId: 'knowledge-check', instanceId: 'kc-1', title: 'Check', intent: 'Check' },
+    };
+    const layout = flattenManifestToLayout(twoBlocks, [{ ...objectives[0], evidence }, { id: 'obj-other', text: 'Count to ten', verb: 'apply' }]);
+    // The lesson's spec wins over a per-item one; a block whose objective has none stamps none.
+    expect(layout[0].config?.evidence).toEqual(evidence);
+    expect(layout[1].config?.evidence).toEqual(evidence);
+    expect(layout[2].config?.evidence).toBeUndefined();
+    expect(layout[3].config?.lessonObjectives).toEqual([
+      expect.objectContaining({ id: 'obj-compare', evidence }),
+      expect.not.objectContaining({ evidence: expect.anything() }),
+    ]);
+    expect(resolveGenerationContext(layout[1], manifest.topic, 'band prose', 'elementary').objective.evidence).toEqual(evidence);
+    expect(resolveGenerationContext(layout[2], manifest.topic, 'band prose', 'elementary').objective.evidence).toBeUndefined();
+  });
+
   it('matches skill scope only inside the canonical skill', () => {
     const misconception = {
       text: 'Private diagnosis',

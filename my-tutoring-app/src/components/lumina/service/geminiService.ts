@@ -181,15 +181,43 @@ export const generateComponentContent = async (
     const consumer = entry?.learningObservations;
     // `notes` (fit gate redraw): why the previous attempt missed the objective,
     // appended to the intent every context-native generator already reads.
-    const run = async (notes: string[]) => {
-      const it = notes.length ? withRedrawNotes(item, notes) : item;
+    // Learner notes come only from the verified launch packet; a client-sent `learnerNotes` is dropped.
+    const { withLearnerNotes } = await import('./attemptNotes/withLearnerNotes');
+    const pinnedMode = typeof item.config?.targetEvalMode === 'string' ? item.config.targetEvalMode : undefined;
+    const noted = await withLearnerNotes(item, topic, { name: item.componentId, does: entry?.description,
+      mode: entry?.evalModes?.find((m: { evalMode: string; label: string }) => m.evalMode === pinnedMode)?.label ?? pinnedMode });
+    const { withNoteFocus } = await import('./attemptNotes/focus');
+    const { checkLearnerNotes, cleanLearnerNotes, scrubLearnerNotes } = await import('./attemptNotes/notes');
+    const { appendLearnerNotesLedger } = await import('./fitGate/fitLedger');
+    const focus = cleanLearnerNotes(noted.config?.learnerNotes);
+    // Code check after generation: are the items the picks named in the content? Named and absent earns one
+    // redraw that says so; the outcome goes to the learner-notes ledger either way.
+    const run = async (notes: string[]): Promise<any> => {
+      const first = await draw(notes);
+      if (!focus.length || !first) return first;
+      let out = first;
+      let check = checkLearnerNotes(focus, first?.data ?? first);
+      const redrawn = check.outcome === 'absent';
+      if (redrawn) {
+        const again = await draw([...notes, `The activity must include these exact items among what the child works on: ${check.named.join(', ')}.`]);
+        const recheck = again ? checkLearnerNotes(focus, again?.data ?? again) : check;
+        if (again && recheck.present.length > check.present.length) { out = again; check = recheck; }
+      }
+      appendLearnerNotesLedger({ componentId: item.componentId, evalMode: pinnedMode, subskillId: item.config?.subskillId,
+        picked: focus.length, named: check.named, present: check.present, outcome: check.outcome, redrawn });
+      return out;
+    };
+    const draw = (notes: string[]) => withNoteFocus(focus, async () => {
+      const it = notes.length ? withRedrawNotes(noted, notes) : noted;
+      // The notes are prompt input only: nothing a generator copied from them may reach the client.
+      const clean = (out: any) => (focus.length ? scrubLearnerNotes(out) : out);
       if (consumer) {
         const { generateWithLearningObservations } = await import('./generation/learningObservationServer');
-        return generateWithLearningObservations({ ...it, topic }, consumer,
-          async config => await generator({ ...it, config }, topic, gradeLevelContext, normalizedGrade) as any);
+        return clean(await generateWithLearningObservations({ ...it, topic }, consumer,
+          async config => await generator({ ...it, config }, topic, gradeLevelContext, normalizedGrade) as any));
       }
-      return await generator(it, topic, gradeLevelContext, normalizedGrade);
-    };
+      return clean(await generator(it, topic, gradeLevelContext, normalizedGrade));
+    });
 
     // Graded content is checked against its objective before it ships (fitGate/).
     // Ungraded teaching surfaces have no tasks to check.
@@ -288,11 +316,13 @@ export const generateIntroBriefing = async (
   topic: string,
   gradeLevel: string,
   persona?: StudentPersona | null,
-  sessionHandoff?: string | null
+  sessionHandoff?: string | null,
+  /** Curriculum-launched objectives: the brief uses them verbatim and writes their evidence. */
+  objectives?: Array<{ id: string; text: string; verb: string }>,
 ): Promise<any> => {
   // Auto-infer subject as "General" - the curator brief will adapt to the topic
   return generateIntroBriefingWithSubject(
-    topic, 'General', gradeLevel, undefined, persona, undefined, sessionHandoff
+    topic, 'General', gradeLevel, undefined, persona, undefined, sessionHandoff, objectives
   );
 };
 

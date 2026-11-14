@@ -1,5 +1,7 @@
 # Evidence spec — queue
 
+Executor skill: `/lesson-evidence` (the spec contract, the bench, adding a surface for an act).
+
 **What it is (user 2026-11-09):** each objective carries the evidence a lesson must collect (`act`, `on`, `credit`,
 `notCredit`, `observed`; `service/agent-kit/evidence.ts`). The author is told it, the item loop's blind reader judges
 every item against it, and the run record counts the items that collect it (`agentDebug.evidence`). The count is the
@@ -26,6 +28,34 @@ yet seen in a browser (part of EV-1).
   the checks, 4 of 4 items were locks ("boom equals 3") with a still drawing; after, 4 of 4 are a jointed arm that moves
   with rules a child can work out (boom plus stick at least the dirt's reach). $0.10-0.12, 150-183 s. Not seen in the
   component yet.
+
+**The lesson writes the spec, once per objective (11-13; from the Primer bench, `qa/topic-traces/primer-bench-2026-11-13.md`).**
+`ObjectiveData.evidence`: the curator brief writes `act/on/credit/notCredit` for every objective under
+`EVIDENCE_WRITING_RULES` (kit, `evidence.ts`; acts include `say` and `explain`, which no surface collects yet, so the
+run record counts them). Curriculum-launched lessons pass `preBuiltObjectives` into the brief, which keeps them
+verbatim and writes only the evidence (`objectiveEvidence.ts`: given objects win on identity, evidence by id then
+position). `flattenManifestToLayout` stamps `config.evidence` on every component of the block and on the final
+check's `lessonObjectives`; `resolveGenerationContext` exposes `objective.evidence`; practice-studio takes it over its
+own planned spec; `livePlan` carries it on each item's objective for the tutor. Verified on :3000: free-form make-ten
+trace wrote `build` and `explain` specs; practice-studio ran with the given spec and recorded 0 of 4 `make` items
+meeting "moves counters to fill a ten-frame" (card picks); the given-objective call kept ids/subskill/grade and
+attached `say` and `explain` specs. Tests: `objectiveEvidence.test.ts`, `flattenManifest.test.ts`.
+
+**`teach`: the kit's surface for the explain act (11-13, Primer bench item 2).** `service/agent-kit/teachSurface.ts`: the
+child explains an idea out loud to a character who holds a wrong one; the live tutor plays the character and judges
+the explanation on meaning. The author writes the character, the wrong idea (`holds`), the idea (one proposition,
+4-16 words) and 0-2 presses; code derives the spoken key (`teachSpokenKey`, a meaning key as the DI pack's
+`explain_concept` uses), the misses (`agreed_with_character`, `read_back`, `named_only`, `opposite_idea`), the
+harness answers, the difficulty (1.2 + 0.4 per press + reading load) and refuses an item whose prompt, presses or
+screen text say the idea. `ACT_SURFACES.explain = ['teach']`, so an explain objective is no longer counted as a kit
+gap. practice-studio moved from `tapBoss`/TAP_ONE to `spokenBoss`/SAY_OR_SHOW with `SPOKEN_AUDIO` (wonder-walk's
+wiring): a tap item still carries no key and plays its taps; a teach item carries the key. The look stage's blind
+reader answers in words and `teachAgrees` judges them on meaning (a word count would send a paraphrase back). The
+component shows the character and its wrong idea, no Check. Catalog `answers: ['tap', 'spoken']`. Gates: Lumina
+typecheck 0; `teachSurface.test.ts` (6), kit + manifest tests (650), `test:primitive practice-studio` (767 + the dry
+journey on `w1-payloads/practice-studio.practice-teach.json`), `misses.test.ts` (177). NOT yet seen: an author run
+building a teach item (Google's monthly Gemini spend cap returned 429 at 22:57; the run is EV-16), the component in a
+browser (EV-17), and a real spoken session (EV-18, user-run).
 
 **`set` is one engine for every display (user 11-09: "did we just wire a single assignment?").** The first build had a
 hand-written board per display and the author could pick from two. It was replaced the same day by
@@ -58,6 +88,10 @@ sit; neither is needed to be a board.
 | EV-13 | The drawn scene and the model disagree: on excavators the solved arm folds toward the cab and never touches the dirt. Flash writes the bindings but not their geometry. Options, in order: a blind look at the solved, run board that asks whether the picture shows the result (kit look stage); then a stronger model for the scene only. | `/agent-primitive` |
 | EV-14 | First write is 150-220 s with four drawn scenes, past the 140 s budget, so items get at most the one forced revise round. Reuse one scene across a session's items, or write the scene in its own call. | `/agent-primitive` |
 | EV-15 | The planned spec can ask for more than the model does (credit said "scoop and lift", the models only scoop: 1 of 4 counted). Tell the planner to keep credit to one observable result. | `/agent-primitive` |
+| EV-16 | **DONE 11-14** (traces in `qa/topic-traces/primer-bench-2026-11-13/teach-run-1.json`, `teach-freeform.json`). Forced explain spec: the author built 4 of 4 items as `teach` (Mia, Sam, Mia, Pip; each with a ten frame, 1-2 presses, no idea leak), the look stage kept all 4 after one round, `teachAgrees` agreed on every solve, evidence met 2 of 4 with the two gaps named (one asks why 5 splits 2 and 3 rather than why ten is faster; one character's misconception is about 10 > 8, not counting on); $0.14, 116 s; 3 of 4 shipped with a simplify lever but no help lever. Free-form lesson, same topic: the brief wrote `build` and `explain` on its own; the manifest put practice-studio in the explain block; the author built 1 teach + order/choose/categorize there (evidence 1 of 4, the three card items flagged "Use teach") and 1 teach inside the build block; $0.07 and $0.08, 115-140 s, one revise round each before the time budget. Follow-ups: the first write for an explain spec should mostly be teach items (the reader's gap arrives after the budget is spent: EV-14), and a teach item needs a help lever the author can write (a display the character and child look at). | `/agent-primitive` |
+| EV-17 | Browser check of a teach item on the teaching workspace (it renders only there, so it needs a tutor connection: open a make-ten lesson or the Practice Studio tester with an explain objective): the character bubble and ten frame fit at phone width, no Check or Clear, the help lever adds a second frame, the simplify shows the same character with no presses. Seen 11-14 headlessly in the look stage's own render of the authored items (`qa/topic-traces/primer-bench-2026-11-13/teach-pip-look-390.png`, `teach-sam-look-760.png`: prompt, frame, name, bubble, "explains out loud" line, all legible at 390 px); the component itself is not yet seen. | user |
+| EV-18 | One spoken session on the teach payload, the only evidence of what the tutor does as the character: `cd backend/tests/tutor_live && ../../venv/Scripts/python run_live_runtime.py --primitive practice-studio --mode practice --input ../../../my-tutoring-app/src/components/lumina/components/live-activity/runtime/testing/w1-payloads/practice-studio.practice-teach.json --runs 1 --audio`. Questions: does the tutor open as Pip with the wrong idea; does it press with the scene's lines and never say the idea first; does a paraphrase ("two go over, then it's ten and three") get credit; does "just count them all" get `agreed_with_character`; does it say in Pip's voice that it gets it now. | user |
+| EV-19 | Lesson tail: a feedback / reflection / transfer stage after practice, reading the session's evidence (verdicts, misses, levers): one self-assessment ask, one cited moment, one next action, one transfer question, never a moment that did not happen (Primer bench item 3). Needs a lesson-shape design: a kit stage or a tutor boss on the lesson's close, not a new page. | user ruling, then `/add-live-tutor-tools` |
 | EV-9 | A credit condition with two parts (cut the circle AND name a share) is judged per item, so a lesson that collects each part on its own item counts as 0. Give the spec parts, each with its act, and count a lesson by the parts some item collects. | `/agent-primitive` |
 | EV-10 | A display that refuses an empty state cannot start a build from nothing: `base_ten` needs at least one block, so "show 34" starts from one. Decide per display whether empty is drawable. | `/agent-primitive` |
 | EV-11 | The board's buttons sit under the drawing. Tapping the drawing itself (a bar, a point on the line) is a `marks` function per display, as `shares` has. Add one only where the browser check shows the buttons are not enough. | `/agent-primitive` |

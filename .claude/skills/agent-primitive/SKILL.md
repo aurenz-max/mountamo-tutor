@@ -51,6 +51,8 @@ primitive on it: one catalog entry, one mode. A new kind of item is a new surfac
 code cannot compute (which picture), the blind solve is the independent reader (I4): on 11-07 it agreed with the
 author 18/18; its value is catching shortcuts (7 to 4 after revising). Agent-claimed tiers do not hold; difficulty
 stays computed (I6). Evidence: `scripts/agent-surface-probe.mjs`, `qa/agent-surfaces/`.
+An act of evidence the kit cannot collect (`unsupportedAct`) becomes a surface through `/lesson-evidence`, which also owns
+the objective-level spec the brief writes and the bench that reads what a lesson collects (`teach` for `explain`, 11-13).
 
 **A subject primitive is the framework plus its subject's capabilities (USER 2026-11-08, life-lab).** It stays its own
 entry, follows this framework and generalizes across most any concept in its subject: the agent decides what to show,

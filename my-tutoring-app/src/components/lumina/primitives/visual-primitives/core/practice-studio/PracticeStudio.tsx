@@ -64,6 +64,7 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   make: { label: 'Make', icon: '🧺', accentColor: 'cyan' },
   set: { label: 'Set', icon: '✂️', accentColor: 'cyan' },
   point: { label: 'Find it', icon: '📍', accentColor: 'cyan' },
+  teach: { label: 'Teach', icon: '🗣️', accentColor: 'amber' },
 };
 
 const useStudioProgress = useWorkspaceProgressFor('practice-studio');
@@ -179,10 +180,13 @@ const PracticeStudioSurface: React.FC<PracticeStudioProps> = ({ data, className,
             <>
               <SurfaceBoard item={current} board={board} locked={locked} checked={verdict !== null} onChanged={() => setFeedback(null)} />
 
-              <div className="flex flex-wrap items-center gap-2">
-                {current.surface !== 'choose' && current.surface !== 'point' && <LuminaButton tone="ghost" onClick={() => { if (!locked) { board.reset(); setFeedback(null); } }} disabled={locked}>Clear</LuminaButton>}
-                <LuminaActionButton action="check" onClick={check} disabled={locked || !ready}>Check</LuminaActionButton>
-              </div>
+              {/* A teach item is answered out loud and judged by the tutor: nothing to clear or check on screen. */}
+              {current.surface !== 'teach' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {current.surface !== 'choose' && current.surface !== 'point' && <LuminaButton tone="ghost" onClick={() => { if (!locked) { board.reset(); setFeedback(null); } }} disabled={locked}>Clear</LuminaButton>}
+                  <LuminaActionButton action="check" onClick={check} disabled={locked || !ready}>Check</LuminaActionButton>
+                </div>
+              )}
             </>
           )}
           {feedback && <LuminaFeedbackCard status={feedback.status}><p>{feedback.text}</p></LuminaFeedbackCard>}

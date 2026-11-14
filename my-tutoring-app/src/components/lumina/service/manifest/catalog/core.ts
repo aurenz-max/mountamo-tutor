@@ -594,17 +594,20 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     id: 'practice-studio',
     description:
       'Custom practice written for exactly this objective and topic: 3-4 short items about the lesson\'s own content (the parts of THIS '
-      + 'machine, what THIS animal eats), each answered by choosing one card, sorting cards into 2-3 boxes, or putting cards in order. '
+      + 'machine, what THIS animal eats), each answered by choosing one card, sorting cards into 2-3 boxes, putting cards in order, '
+      + 'putting pieces on a tray, changing a picture until it is right, tapping a part of a picture, or, for an EXPLAIN objective, '
+      + 'teaching the idea out loud to a character who has it wrong (the live tutor plays the character and judges the explanation on meaning). '
       + 'An author agent draws the pictures or uses code-drawn bar graphs, number lines and tables, and short texts, picks wrong options '
       + 'from real misconceptions, and looks at each item as the learner will see it, fixing anything a child could guess. '
       + 'ESSENTIAL for the K-5 Apply step of an objective, on any subject: identifying parts and jobs, cause and effect, comparing, reading a graph, placing '
-      + 'fractions, sorting by a property, sequencing events or stages. The most closely fitted practice in the catalog; use it '
-      + 'rather than a general quiz inside an objective.',
+      + 'fractions, sorting by a property, sequencing events or stages, and explaining why or how to a confused friend. The most closely fitted practice in the catalog; use it '
+      + 'rather than a general quiz inside an objective, and for an explain objective in preference to a spoken drill.',
     constraints:
-      'Grades K-5. Items are choose, sort or order only: not for answers a learner must say, write, draw, build or measure. '
+      'Grades K-5. Items are answered on screen (choose, sort, order, tray, change a picture, tap a part) or, on a teach item, out loud to the tutor: '
+      + 'not for answers a learner must write, draw or measure. '
       + 'The manifest must NOT supply items, pictures or answers: the author agent writes them and code checks them. '
       + 'config.difficulty sets the target tier.',
-    affordances: { representation: 'pictorial', reader: 'emerging', answers: ['tap'], role: ['apply'], minutes: 5 },
+    affordances: { representation: 'pictorial', reader: 'emerging', answers: ['tap', 'spoken'], role: ['apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'practice',

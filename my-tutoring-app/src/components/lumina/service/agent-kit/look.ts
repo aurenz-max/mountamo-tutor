@@ -20,6 +20,7 @@ import { DISPLAY_CSS, displayHtml, displayParts, displaySeen, displayWords, esc,
 import { getAt, setAt, setControlSpecs, setHow } from './setting';
 import { evidenceAsk, surfaceGap, unsupportedAct, type EvidenceSpec } from './evidence';
 import { gradeAnswer, itemErrors, shortcutChecks, type SurfaceAnswer, type SurfaceItem, type Tier } from './surfaces';
+import { teachWords, type TeachSpec } from './teachSurface';
 import { KIT_MODEL, type LookPlan } from './reviewVariants';
 
 const SOLVER_MODEL = KIT_MODEL;
@@ -40,6 +41,7 @@ export function itemHtml(item: SurfaceItem, before = ''): string {
   const body = `${before}<p class="prompt">${esc(item.prompt)}</p>
 <div class="stim">${(item.stimulus ?? []).map(d => `<div>${displayHtml(d)}</div>`).join('')}</div>
 ${item.board ? `<div class="stim"><div>${displayHtml(item.board)}</div></div><p class="prompt" style="font-weight:400;font-size:14px">${item.surface === 'point' ? 'The child taps one part of the picture above.' : 'The child changes the picture above by tapping it.'}</p>` : ''}
+${item.surface === 'teach' && item.teach ? `<div class="stim"><div style="max-width:560px"><div class="tag" style="font-weight:700;color:#fcd34d;font-size:13px">${esc(item.teach.character)}</div><div style="border:1px solid rgba(252,211,77,.3);background:rgba(251,191,36,.1);border-radius:14px;padding:10px 14px;font-size:16px">&ldquo;${esc(item.teach.holds)}&rdquo;</div></div></div><p class="prompt" style="font-weight:400;font-size:14px">The child explains out loud to ${esc(item.teach.character)}.</p>` : ''}
 <div class="opts">${item.options.map((o, i) => `<div class="card"><div class="tag">Card ${i + 1}</div>${o.display ? displayHtml(o.display) : ''}${o.label ? `<div>${esc(o.label)}</div>` : ''}</div>`).join('')}</div>
 ${item.surface === 'categorize' ? `<div class="cats">${(item.categories ?? []).map(c => `<div class="cat">${esc(c)}</div>`).join('')}</div>` : ''}
 ${item.surface === 'make' ? '<div class="cats"><div class="cat">Tray: tap a card to put it on</div></div>' : ''}
@@ -53,6 +55,7 @@ export function itemWords(item: SurfaceItem): string {
     ...item.options.map((o, i) => `Card ${i + 1}: ${[o.label, o.display ? displayWords(o.display) : ''].filter(Boolean).join(', ')}`),
     ...(item.categories ? [`Categories: ${item.categories.join(', ')}`] : []),
     ...(item.surface === 'make' ? ['The child taps cards to put them on a tray.'] : []),
+    ...(item.surface === 'teach' && item.teach ? teachWords(item.teach) : []),
     ...(item.board ? [item.surface === 'point' ? `The picture the child taps one part of: ${displaySeen(item.board)}` : `The board the child changes: ${displayWords(item.board)}`] : [])].join('\n');
 }
 
@@ -125,9 +128,10 @@ export function solverPrompt(item: SurfaceItem, grade: string, seen: boolean, ev
     : item.surface === 'set' ? '"answer": the board as you would leave it, as the same JSON object with your values'
     : item.surface === 'make' ? '"answer": the card numbers you would put on the tray, as an array'
     : item.surface === 'order' ? '"answer": the card numbers in order, as an array'
+    : item.surface === 'teach' ? `"answer": what you, as the child, would say to ${item.teach?.character ?? 'the character'} to make the idea clear, in one or two sentences`
     : `"answer": an object from each card number to one of ${JSON.stringify(item.categories)}`;
   return `You are checking a learning item for a ${grade} child. ${seen ? 'The image shows exactly what the child sees.' : 'The item is described below.'} The tutor says: "${item.prompt}"
-${item.surface === 'set' ? setAsk(item) : item.surface === 'point' ? 'There are no cards. The child taps one part of the picture.' : `The option cards are Card ${n.join(', Card ')}.`}
+${item.surface === 'set' ? setAsk(item) : item.surface === 'point' ? 'There are no cards. The child taps one part of the picture.' : item.surface === 'teach' && item.teach ? `There are no cards. ${teachWords(item.teach).join(' ')}` : `The option cards are Card ${n.join(', Card ')}.`}
 ${item.surface === 'make' ? 'The child taps cards to put them on the tray; more than one set of cards can be right.\n' : ''}${ev ? ev.context : ''}Solve it${seen ? ' from the image' : ''}. Then judge it.
 Return JSON: {${how}, "difficulty_for_grade": "easy"|"medium"|"hard", "shortcut": "how a child could get it right WITHOUT the skill (position, odd one out, one picture more detailed, the words give it away), or null", "issues": "anything wrong: false facts, ambiguous pictures, two right answers, an unreadable drawing, words that do not match the pictures, or null"${ev ? `, ${ev.field}` : ''}}`;
 }
@@ -138,6 +142,7 @@ const setAsk = (item: SurfaceItem) => `There are no cards. The child changes a p
 /** The solver's answer in option ids. */
 function toAnswer(item: SurfaceItem, raw: unknown): SurfaceAnswer {
   const idOf = (v: unknown) => item.options[Number(String(v).replace(/card/i, '').trim()) - 1]?.id;
+  if (item.surface === 'teach') return { said: typeof raw === 'string' ? raw : raw == null ? '' : JSON.stringify(raw) };
   if (item.surface === 'point') { const said = String(raw ?? '').trim().toLowerCase(); return { part: displayParts(item.board).find(p => p.trim().toLowerCase() === said) ?? null }; }
   if (item.surface === 'choose') return { choice: idOf(raw) ?? null };
   if (item.surface === 'order') return { order: Array.isArray(raw) ? raw.map(idOf).filter((x): x is string => !!x) : [] };
@@ -175,12 +180,38 @@ export function surfaceView(item: SurfaceItem, opts: { before?: string; design?:
   const shown = [...(item.stimulus ?? []), ...item.options.map(o => o.display), item.board];
   const n = item.options.length;
   const how = item.surface === 'point' ? `the name of the part you would tap, copied exactly from ${JSON.stringify(displayParts(item.board))}` : item.surface === 'choose' ? `one card number (1-${n})` : item.surface === 'set' ? 'the board as you would leave it, as the same JSON object with your values' : item.surface === 'make' ? 'the card numbers you would put on the tray, as an array' : item.surface === 'order' ? 'the card numbers in order, as an array'
+    : item.surface === 'teach' ? `what you, as the child, would say to ${item.teach?.character ?? 'the character'}, in one or two sentences`
     : `an object from each card number to one of ${JSON.stringify(item.categories)}`;
   return {
     ask: item.prompt, html: itemHtml(item, opts.before ?? ''), words: itemWords(item), ...(opts.design ? { design: opts.design } : {}),
     drawn: shown.some(d => d?.kind === 'svg'),
-    solve: { how, agrees: raw => gradeAnswer(item, toAnswer(item, raw)).correct, key: item.surface === 'set' ? `any board with ${JSON.stringify(item.setGoal)}` : item.surface === 'make' ? `any set that meets ${JSON.stringify(item.goal)}` : JSON.stringify(item.key) },
+    // teach: this sync reading counts the idea's words (`saysIdea`); the item loop's own look judges meaning (`teachAgrees`).
+    solve: { how, agrees: raw => gradeAnswer(item, toAnswer(item, raw)).correct, key: item.surface === 'set' ? `any board with ${JSON.stringify(item.setGoal)}` : item.surface === 'make' ? `any set that meets ${JSON.stringify(item.goal)}` : item.surface === 'teach' ? `any wording that means: ${item.key}` : JSON.stringify(item.key) },
   };
+}
+
+/**
+ * Whether a blind reader's explanation carries a teach item's idea, judged on meaning (the way the tutor judges the
+ * child): "they match" carries "both sides are the same", which a word count cannot see. One small call; a failure
+ * reads as agreement, so a judge outage never sends an item back.
+ */
+export async function teachAgrees(t: TeachSpec, said: string): Promise<{ agrees: boolean; costUsd: number; why: string | null }> {
+  if (!said.trim()) return { agrees: false, costUsd: 0, why: 'nothing was said' };
+  try {
+    const res = await ai.models.generateContent({
+      model: SOLVER_MODEL,
+      contents: [{ role: 'user', parts: [{ text: `A child is explaining something to ${t.character}, who wrongly thinks: "${t.holds}".
+The idea the child must get across: "${t.idea}".
+The child said: "${said}"
+Does what the child said EXPRESS that idea, in any wording (judge the meaning, not the words)? Saying the opposite, agreeing with ${t.character}, naming the topic without saying why, or reading the question back does not.
+Return JSON: {"expresses": true|false, "why": "one short sentence"}` }] }],
+      config: { responseMimeType: 'application/json' },
+    });
+    const j = JSON.parse(res.text ?? '{}') as { expresses?: unknown; why?: unknown };
+    return { agrees: j.expresses === true, costUsd: priceCall(SOLVER_MODEL, res.usageMetadata), why: nil(j.why) };
+  } catch (e) {
+    return { agrees: true, costUsd: 0, why: `meaning judge failed: ${(e as Error).message}` };
+  }
 }
 
 export interface ViewReading {
@@ -314,9 +345,14 @@ export async function lookAt(item: SurfaceItem, opts: { grade: string; looker: L
   } catch (e) {
     solved = { shortcut: null, issues: null, error: (e as Error).message };
   }
-  const agree = !solved.error && gradeAnswer(item, toAnswer(item, solved.answer)).correct;
+  // teach: the reader's explanation is judged on meaning, as the tutor judges the child's; a word count would send back a paraphrase.
+  const meaning = !solved.error && item.surface === 'teach' && item.teach ? await teachAgrees(item.teach, toAnswer(item, solved.answer).said ?? '') : null;
+  if (meaning) costUsd += meaning.costUsd;
+  const agree = !solved.error && (meaning ? meaning.agrees : gradeAnswer(item, toAnswer(item, solved.answer)).correct);
   if (!agree && !solved.error)
-    blocking.push(item.surface === 'set'
+    blocking.push(item.surface === 'teach'
+      ? `a careful reader who saw only the screen would tell ${item.teach?.character} ${JSON.stringify(toAnswer(item, solved.answer).said)}, which does not carry your idea${meaning?.why ? ` (${meaning.why})` : ''}. The prompt or the picture may not make clear what the child is to explain.`
+      : item.surface === 'set'
       ? `a careful solver who saw only the screen left the board as ${JSON.stringify(toAnswer(item, solved.answer).board ?? 'something it could not write')}, which does not have your goal's facts ${JSON.stringify(item.setGoal)}. The prompt may not say clearly what to make.`
       : item.surface === 'make'
       ? `a careful solver who saw only the screen put ${JSON.stringify(toAnswer(item, solved.answer).made)} on the tray, which does not meet your goal ${JSON.stringify(item.goal)}. The prompt may not say the goal clearly, or a piece's value cannot be read.`

@@ -46,7 +46,9 @@ const ACT_SURFACES: Record<EvidenceAct, readonly Surface[]> = {
   set: ['set'],
   // A set item on a `system` board: the child sets the parts, Check runs the model, and the result is on the screen.
   'run-read': ['set'],
-  say: [], explain: [],
+  say: [],
+  // A teach item (`teachSurface.ts`): the child explains to a character who holds a wrong idea; the live tutor judges meaning.
+  explain: ['teach'],
 };
 
 const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -74,8 +76,21 @@ export const evidencePrompt = (e: EvidenceSpec) => `EVIDENCE THIS LESSON MUST CO
 ${evidenceLines(e)}
 Build items where a right answer is this evidence. An item whose right answer is something under "does not count" teaches the topic and proves nothing.`;
 
+/**
+ * How whoever plans a lesson writes the spec, one per objective (the curator brief today; a lesson record later). These
+ * are the rules the kit's reader will hold every item to, so the writer and the reader agree on what counts. The acts
+ * are not limited to what the kit can collect: an objective whose verb is "explain" gets `explain`, and the run record
+ * counts the items that cannot collect it. That count is the measure of what the kit still lacks, by act.
+ */
+export const EVIDENCE_WRITING_RULES = `### Evidence per objective
+For EACH objective, write the evidence a lesson must collect: what the child does that shows they can do it.
+- act: one of ${EVIDENCE_ACTS.join(', ')}. ${EVIDENCE_ACTS.map(a => `${a}: the child ${ACT_WORDS[a]}`).join('; ')}. Prefer doing to picking: recognize only when the objective is to name or tell things apart; say when the answer is a word or number the child produces; explain when the objective asks the child to tell why or how.
+- on: what they do it on ("a whole, uncut circle", "two groups of counters", "a friend who thinks heavy things always sink").
+- credit: ONE observable result, as a condition a reader could check on the screen or in what the child said ("the three cuts leave four equal parts"; "the child says that ten plus three is quicker than counting on from eight"). Never "shows understanding", "is ready", "participates" or "completes the activity".
+- notCredit: what a child could do instead that must not count ("picks the one picture drawn differently", "reads the answer back from the screen", "names making ten without saying what it does").`;
+
 /** The acts some kit surface can collect, strongest first: what a planned spec chooses from. */
-export const COLLECTABLE_ACTS = (['run-read', 'build', 'set', 'arrange', 'recognize'] as const).filter(a => ACT_SURFACES[a].length);
+export const COLLECTABLE_ACTS = (['run-read', 'build', 'set', 'explain', 'arrange', 'recognize'] as const).filter(a => ACT_SURFACES[a].length);
 
 /**
  * What a planner is asked when a lesson arrives with no spec (USER 2026-11-09): without one the author is free to ask

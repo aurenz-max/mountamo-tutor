@@ -300,9 +300,11 @@ export const generateIntroBriefing = async (
   gradeLevel: string,
   persona?: StudentPersona | null,
   /** Mid-session continuity fact ("just finished a Social Studies lesson…"). */
-  sessionHandoff?: string | null
+  sessionHandoff?: string | null,
+  /** Curriculum-launched objectives: the brief keeps them verbatim and writes the evidence each must collect. */
+  objectives?: Array<{ id: string; text: string; verb: string }>,
 ): Promise<IntroBriefingData> => {
-  return callAPI('generateIntroBriefing', { topic, gradeLevel, persona, sessionHandoff });
+  return callAPI('generateIntroBriefing', { topic, gradeLevel, persona, sessionHandoff, objectives });
 };
 
 // ============================================

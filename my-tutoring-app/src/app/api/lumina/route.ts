@@ -136,7 +136,7 @@ async function handlePost(body: Record<string, unknown>) {
       case 'generateIntroBriefing':
         console.log('📚 API ROUTE: generateIntroBriefing called for topic:', params.topic);
         const introBriefing = await generateIntroBriefing(
-          params.topic, params.gradeLevel, params.persona, params.sessionHandoff
+          params.topic, params.gradeLevel, params.persona, params.sessionHandoff, params.objectives
         );
         return NextResponse.json(introBriefing);
 
@@ -485,6 +485,13 @@ async function handlePost(body: Record<string, unknown>) {
       // ============================================
       // MISCONCEPTION LOOP — S2 distiller (Diagnosis Lab / capture hook)
       // ============================================
+
+      case 'writeAttemptNote': {
+        const { attemptNotesOff } = await import('@/components/lumina/service/attemptNotes/notes');
+        if (attemptNotesOff() || !params?.record?.work) return NextResponse.json(null);
+        const { writeAttemptNote } = await import('@/components/lumina/service/attemptNotes/writeAttemptNote');
+        return NextResponse.json(await writeAttemptNote(params.record));
+      }
 
       case 'distillLearningObservation': {
         const { distillLearningObservation } = await import(

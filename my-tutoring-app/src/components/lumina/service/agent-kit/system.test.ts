@@ -115,6 +115,8 @@ describe('evidence for running a model', () => {
   it('plans from acts the kit can collect', () => {
     const ask = evidencePlanAsk('excavators', 'grade 2');
     expect(ask).toContain('- run-read:');
-    expect(ask).not.toContain('- explain:');
+    // `explain` is collectable since 11-13 (the `teach` surface); `say` still is not.
+    expect(ask).toContain('- explain:');
+    expect(ask).not.toContain('- say:');
   });
 });

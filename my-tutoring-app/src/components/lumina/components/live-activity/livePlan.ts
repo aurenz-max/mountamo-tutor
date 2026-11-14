@@ -11,7 +11,20 @@
  */
 import type { LessonPackage } from '../../service/qa/lessonBench/lessonPackage';
 import { normalizeObjectiveGrade } from '../../service/generation/resolveGenerationContext';
+import { readEvidence, type EvidenceSpec } from '../../service/agent-kit/evidence';
 import { LIVE_ADAPTERS, isLivePrimitive, type LivePrimitiveId, type LiveActivityData } from './activityContract';
+
+/**
+ * The evidence an objective block must collect: the flatten stamps it on every component of the block as
+ * `config.evidence`, so the first component that carries one speaks for the block.
+ */
+function evidenceOf(block: { components: Array<{ config?: Record<string, unknown> }> }): EvidenceSpec | undefined {
+  for (const c of block.components) {
+    const e = readEvidence(c.config?.evidence);
+    if (e) return e;
+  }
+  return undefined;
+}
 import { pinnedModes } from './pinnedModes';
 
 export interface LivePlanItem {
@@ -22,7 +35,8 @@ export interface LivePlanItem {
   intent: string;
   /** The manifest's resolved `config.targetEvalMode`, verbatim (single, `a|b` blend, or `mixed`). */
   evalMode: string;
-  objective: { id: string; text: string; verb: string };
+  /** The objective this item serves, with the evidence the lesson must collect for it when the lesson wrote one. */
+  objective: { id: string; text: string; verb: string; evidence?: EvidenceSpec };
   data: LiveActivityData;
   provenance: {
     packageId: string;
@@ -45,7 +59,7 @@ export interface LiveSessionPlan {
   topic: string;
   /** Display grade ('Kindergarten' | 'Grade N'), or the manifest's own string when it is not a single grade. */
   gradeLevel: string;
-  objectives: Array<{ id: string; text: string; verb: string }>;
+  objectives: Array<{ id: string; text: string; verb: string; evidence?: EvidenceSpec }>;
   items: LivePlanItem[];
   unavailable: UnavailablePlanComponent[];
 }
@@ -99,7 +113,7 @@ export function projectLessonPlan(pkg: LessonPackage, options: { objectiveIds?: 
         title: component.title,
         intent: component.intent,
         evalMode: pin,
-        objective: { id: block.objectiveId, text: block.objectiveText, verb: block.objectiveVerb },
+        objective: { id: block.objectiveId, text: block.objectiveText, verb: block.objectiveVerb, ...(evidenceOf(block) ? { evidence: evidenceOf(block) } : {}) },
         data,
         provenance: { packageId: pkg.id, source: pkg.provenance.source, generatedAt: pkg.provenance.generatedAt,
           manifestInstanceId: component.instanceId, modeSource: 'manifest-resolved' },
@@ -111,7 +125,7 @@ export function projectLessonPlan(pkg: LessonPackage, options: { objectiveIds?: 
     planId: pkg.id,
     topic: pkg.manifest.topic,
     gradeLevel: gradeLabel(pkg.manifest.gradeLevel),
-    objectives: blocks.map(b => ({ id: b.objectiveId, text: b.objectiveText, verb: b.objectiveVerb })),
+    objectives: blocks.map(b => ({ id: b.objectiveId, text: b.objectiveText, verb: b.objectiveVerb, ...(evidenceOf(b) ? { evidence: evidenceOf(b) } : {}) })),
     items,
     unavailable,
   };

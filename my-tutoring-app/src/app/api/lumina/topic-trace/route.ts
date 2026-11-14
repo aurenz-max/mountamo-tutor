@@ -18,6 +18,7 @@ import { AFFORDANCE_TAGS_DEFAULT, resolveAffordances } from '@/components/lumina
 import type { ExhibitManifest, IntroBriefingData, ManifestItem } from '@/components/lumina/types';
 import { buildLessonPackage } from '@/components/lumina/service/qa/lessonBench/lessonPackage';
 import type { StudentGenerationContext } from '@/components/lumina/service/studentContext/types';
+import type { EvidenceSpec } from '@/components/lumina/service/agent-kit/evidence';
 
 // Full pipeline (brief → manifest → N generators) can take a while.
 export const maxDuration = 300;
@@ -48,9 +49,12 @@ export const dynamic = 'force-dynamic';
  * POST (JSON body — adds personalization support):
  *   {
  *     topic, gradeLevel?, componentId?, images?, manifestOnly?,
- *     objectives?:    [{ id, text, verb, icon }],  // FIXED objectives — skips the
+ *     objectives?:    [{ id, text, verb, icon, grade?, evidence? }],  // FIXED objectives — skips the
  *                                                  // brief so repeat runs compare the
- *                                                  // same lesson, not brief variance
+ *                                                  // same lesson, not brief variance.
+ *                                                  // `evidence` {act,on,credit,notCredit} is
+ *                                                  // stamped on the block's components as
+ *                                                  // config.evidence (flattenManifest).
  *     studentContext?: StudentGenerationContext,   // from POST /api/student-profile/
  *                                                  // generation-context (FastAPI)
  *   }
@@ -177,7 +181,7 @@ interface TraceParams {
    *  block, images kept, componentId filter ignored. Replayable as-is. */
   emitPackage: boolean;
   /** Fixed objectives — when provided, the brief is skipped entirely */
-  fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string; grade?: string }> | null;
+  fixedObjectives: Array<{ id: string; text: string; verb: string; icon: string; grade?: string; evidence?: EvidenceSpec }> | null;
   /**
    * Feed the curator per-objective specialist candidates from the TypeSafe
    * ranker (one suggestion block in the manifest prompt; see

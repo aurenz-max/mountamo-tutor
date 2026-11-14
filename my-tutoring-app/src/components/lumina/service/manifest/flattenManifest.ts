@@ -9,7 +9,15 @@
 
 import { ExhibitManifest, ManifestItem } from "../../types";
 import type { StudentGenerationContext } from "../studentContext/types";
+import type { EvidenceSpec } from '../agent-kit/evidence';
 import { getComponentById } from './catalog';
+
+/** The lesson's objectives as the flatten joins them: identity, curriculum keys and the evidence each must collect. */
+export interface LessonObjective {
+  id: string; text: string; verb: string;
+  subskillId?: string; skillId?: string; grade?: string;
+  evidence?: EvidenceSpec;
+}
 
 export function misconceptionMatchesComponent(
   misconception: NonNullable<StudentGenerationContext['activeMisconceptions']>[number],
@@ -37,7 +45,7 @@ export function misconceptionMatchesComponent(
  */
 export const flattenManifestToLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
+  objectives?: LessonObjective[],
   studentContext?: StudentGenerationContext | null,
 ): ManifestItem[] => {
   const layout: ManifestItem[] = [];
@@ -88,6 +96,11 @@ export const flattenManifestToLayout = (
       // ctx.grade so generators never parse grade out of prose. Falls back to the
       // lesson-uniform grade when the synthetic-id JOIN misses (see above).
       grade: auth?.grade ?? lessonGrade,
+      // The evidence this objective must collect (written by the brief, or carried
+      // by the launcher). Stamped into every component of the block as
+      // `config.evidence`: generators read it (the kit's item loop holds each item
+      // to it) and the live plan carries it to the tutor.
+      evidence: auth?.evidence,
     };
   };
 
@@ -105,7 +118,7 @@ export const flattenManifestToLayout = (
   // 2. Add all components from each objective block
   if (manifest.objectiveBlocks) {
     for (const block of manifest.objectiveBlocks) {
-      const { objectiveText, objectiveVerb, subskillId, skillId, grade } = resolveObjective(block);
+      const { objectiveText, objectiveVerb, subskillId, skillId, grade, evidence } = resolveObjective(block);
       for (const component of block.components) {
         const declaredScope = getComponentById(component.componentId)?.misconceptionScope;
         const matchingMisconception = activeMisconceptions.find(m =>
@@ -131,6 +144,9 @@ export const flattenManifestToLayout = (
             // Canonical grade for this objective → ctx.grade at the generator boundary.
             objectiveGrade: grade,
             objectiveSubject: lessonSubject,
+            // The lesson's evidence spec wins over a curator echo; a tester's
+            // explicit config.evidence stands when the lesson carries none.
+            ...(evidence ? { evidence } : {}),
             // Private per-objective generation signal. Components must never
             // render this raw diagnosis.
             ...(matchingMisconception
@@ -177,6 +193,7 @@ export const flattenManifestToLayout = (
           subskillId: o.subskillId,
           skillId: o.skillId,
           grade: o.grade ?? lessonGrade,
+          ...(o.evidence ? { evidence: o.evidence } : {}),
         })),
       },
       // A check with no objective blocks (the Daily Pulse beat) still spans the lesson's
@@ -195,7 +212,7 @@ export const flattenManifestToLayout = (
  */
 export const enrichManifestWithLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
+  objectives?: LessonObjective[],
   studentContext?: StudentGenerationContext | null,
 ): ExhibitManifest => {
   return {

@@ -112,7 +112,8 @@ describe('the evidence a lesson must collect', () => {
 
   it('names an act the kit has no surface for as the kit\'s gap, never the author\'s', () => {
     // run-read left this list on 11-09: a set item on a `system` board collects it (`system.test.ts`).
-    for (const act of ['say', 'explain'] as const) {
+    // `explain` has a surface since 11-13 (`teach`); `say` still has none.
+    for (const act of ['say'] as const) {
       expect(unsupportedAct({ ...build, act })).toMatch(/no kit surface/);
       expect(surfaceGap({ ...build, act }, 'choose')).toBeNull();
     }

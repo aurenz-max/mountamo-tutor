@@ -1,0 +1,128 @@
+{
+  "source": "hand-built 2026-11-13 for the teach surface (service/agent-kit/teachSurface.ts): one teach item answered out loud, one choose item answered on screen",
+  "primitiveId": "practice-studio",
+  "evalMode": "practice",
+  "data": {
+    "title": "Making Ten to Add 8 + 5",
+    "description": "Help a friend see why making ten first makes adding quick.",
+    "gradeBand": "grade 1",
+    "challengeType": "practice",
+    "challenges": [
+      {
+        "id": "studio-1",
+        "surface": "teach",
+        "prompt": "Help Pip see why 8 + 5 is quick when you make ten first.",
+        "stimulus": [{ "kind": "ten_frame", "filled": 8, "extra": 5 }],
+        "options": [],
+        "teach": {
+          "character": "Pip",
+          "holds": "I have to count all of them one at a time, 1, 2, 3, all the way up.",
+          "idea": "Two from the five fills the ten, and ten and three is thirteen.",
+          "presses": ["But why move any counters? I can just count them.", "Okay, but how do you know what is left over?"]
+        },
+        "key": "Two from the five fills the ten, and ten and three is thirteen.",
+        "tier": "medium",
+        "difficulty": { "band": "medium", "score": 2.0, "reasons": ["an idea said in the child's own words +1.2", "Pip presses back 2 times +0.8"] },
+        "levers": [
+          {
+            "id": "help_1", "kind": "help", "when": "the learner misses once or is stuck",
+            "says": "Look at the frame. How many empty squares are in the ten?",
+            "item": {
+              "id": "studio-1", "surface": "teach",
+              "prompt": "Help Pip see why 8 + 5 is quick when you make ten first.",
+              "stimulus": [{ "kind": "ten_frame", "filled": 8, "extra": 5 }, { "kind": "ten_frame", "filled": 8, "highlight": "empty" }],
+              "options": [],
+              "teach": {
+                "character": "Pip",
+                "holds": "I have to count all of them one at a time, 1, 2, 3, all the way up.",
+                "idea": "Two from the five fills the ten, and ten and three is thirteen.",
+                "presses": ["But why move any counters? I can just count them.", "Okay, but how do you know what is left over?"]
+              },
+              "key": "Two from the five fills the ten, and ten and three is thirteen.",
+              "tier": "medium",
+              "difficulty": { "band": "medium", "score": 2.0, "reasons": ["an idea said in the child's own words +1.2", "Pip presses back 2 times +0.8"] }
+            }
+          },
+          {
+            "id": "simpler_1", "kind": "simplify", "when": "the learner misses twice",
+            "says": "Pip will listen to one clear try. Tell Pip what the two counters do.",
+            "item": {
+              "id": "studio-1", "surface": "teach",
+              "prompt": "Help Pip see why 8 + 5 is quick when you make ten first.",
+              "stimulus": [{ "kind": "ten_frame", "filled": 8, "extra": 5 }],
+              "options": [],
+              "teach": {
+                "character": "Pip",
+                "holds": "I have to count all of them one at a time, 1, 2, 3, all the way up.",
+                "idea": "Two from the five fills the ten, and ten and three is thirteen.",
+                "presses": []
+              },
+              "key": "Two from the five fills the ten, and ten and three is thirteen.",
+              "tier": "easy",
+              "difficulty": { "band": "easy", "score": 1.2, "reasons": ["an idea said in the child's own words +1.2"] }
+            }
+          }
+        ]
+      },
+      {
+        "id": "studio-2",
+        "surface": "choose",
+        "prompt": "Which way splits 5 so that 8 gets a full ten?",
+        "stimulus": [{ "kind": "ten_frame", "filled": 8 }],
+        "options": [
+          { "id": "split_1_4", "label": "1 and 4" },
+          { "id": "split_2_3", "label": "2 and 3" },
+          { "id": "split_5_0", "label": "5 and 0" }
+        ],
+        "key": "split_2_3",
+        "misconceptions": {
+          "split_1_4": "Adding 1 to 8 only makes 9, not a full ten.",
+          "split_5_0": "Leaving 5 whole gives no counters to fill the ten frame."
+        },
+        "tier": "easy",
+        "difficulty": { "band": "medium", "score": 1.6, "reasons": ["3 options +0.8", "2 wrong options from a named misconception +0.5", "reading a ten frame +0.3"] },
+        "levers": [
+          {
+            "id": "help_1", "kind": "help", "when": "the learner misses once or is stuck",
+            "says": "Here is a full ten. How many more did the eight need?",
+            "item": {
+              "id": "studio-2", "surface": "choose",
+              "prompt": "Which way splits 5 so that 8 gets a full ten?",
+              "stimulus": [{ "kind": "ten_frame", "filled": 8 }, { "kind": "ten_frame", "filled": 10 }],
+              "options": [
+                { "id": "split_1_4", "label": "1 and 4" },
+                { "id": "split_2_3", "label": "2 and 3" },
+                { "id": "split_5_0", "label": "5 and 0" }
+              ],
+              "key": "split_2_3",
+              "misconceptions": {
+                "split_1_4": "Adding 1 to 8 only makes 9, not a full ten.",
+                "split_5_0": "Leaving 5 whole gives no counters to fill the ten frame."
+              },
+              "tier": "easy",
+              "difficulty": { "band": "medium", "score": 1.6, "reasons": ["3 options +0.8", "2 wrong options from a named misconception +0.5", "reading a ten frame +0.3"] }
+            }
+          },
+          {
+            "id": "simpler_1", "kind": "simplify", "when": "the learner misses twice",
+            "says": "Two ways left. Which one fills the empty squares?",
+            "item": {
+              "id": "studio-2", "surface": "choose",
+              "prompt": "Which way splits 5 so that 8 gets a full ten?",
+              "stimulus": [{ "kind": "ten_frame", "filled": 8 }],
+              "options": [
+                { "id": "split_1_4", "label": "1 and 4" },
+                { "id": "split_2_3", "label": "2 and 3" }
+              ],
+              "key": "split_2_3",
+              "misconceptions": { "split_1_4": "Adding 1 to 8 only makes 9, not a full ten." },
+              "tier": "easy",
+              "difficulty": { "band": "easy", "score": 0.55, "reasons": ["2 options +0", "1 wrong option from a named misconception +0.25", "reading a ten frame +0.3"] }
+            }
+          }
+        ]
+      }
+    ],
+    "agentDebug": { "note": "hand-built fixture; no author run" }
+  }
+}

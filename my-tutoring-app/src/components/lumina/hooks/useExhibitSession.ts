@@ -9,6 +9,7 @@ import { GameState, type ExhibitData, type IntroBriefingData } from '../types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
 import { fetchGenerationContext, fetchStudentPersona } from '../service/studentContext/fetchGenerationContext';
 import type { StudentGenerationContext } from '../service/studentContext/types';
+import type { EvidenceSpec } from '../service/agent-kit/evidence';
 import { buildPulseCheckManifest, buildPulseBrief } from '../service/manifest/pulse-check-manifest';
 import { exhibitFromPackage, type LessonPackage } from '../service/qa/lessonBench/lessonPackage';
 import { setActiveLessonPackage } from '../service/qa/lessonBench/lessonBenchSession';
@@ -47,6 +48,8 @@ export interface GenerateOptions {
     subskillId?: string; skillId?: string;
     /** Canonical curriculum grade ('K'|'1'..'12') — flows to generators as ctx.grade. */
     grade?: string;
+    /** The evidence this objective must collect, when the launcher already knows it; else the brief writes it. */
+    evidence?: EvidenceSpec;
   }>;
   /**
    * Set when the lesson was launched from a single known curriculum node (the
@@ -197,18 +200,28 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
 
       // STEP 1: Curator brief
       setMessage('🎯 Generating lesson introduction...');
+      // Curriculum-launched lessons pass their objectives in: the brief keeps them
+      // verbatim and writes the evidence each one must collect (and aims the hook
+      // and roadmap at them instead of at the bare topic).
       let generatedBrief = await generateIntroBriefing(
-        topic, gradeLevel, persona, options.sessionHandoff
+        topic, gradeLevel, persona, options.sessionHandoff, preBuiltObjectives
       );
       console.log('📚 Curator brief generated:', generatedBrief);
 
       let objectives = generatedBrief.objectives;
 
       if (preBuiltObjectives) {
-        // Lesson Group Builder path — replace Gemini's objectives with user's selections,
-        // but keep all the other brief content (hook, big idea, mindset, roadmap, etc.)
-        objectives = preBuiltObjectives as typeof generatedBrief.objectives;
-        generatedBrief = { ...generatedBrief, objectives: preBuiltObjectives as typeof generatedBrief.objectives };
+        // Lesson Group Builder path — the user's selections are the objectives,
+        // with the brief's evidence attached (by id, then by position); every
+        // other brief field (hook, big idea, mindset, roadmap) is kept.
+        const written = Array.isArray(generatedBrief.objectives) ? generatedBrief.objectives : [];
+        const merged = preBuiltObjectives.map((o, i) => {
+          if (o.evidence) return o;
+          const w = written.find(x => x.id === o.id) ?? written[i];
+          return w?.evidence ? { ...o, evidence: w.evidence } : o;
+        }) as typeof generatedBrief.objectives;
+        objectives = merged;
+        generatedBrief = { ...generatedBrief, objectives: merged };
         console.log('📚 Overriding objectives with lesson group selections:', objectives);
       }
 

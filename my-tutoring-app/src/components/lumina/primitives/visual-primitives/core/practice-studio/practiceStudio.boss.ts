@@ -1,12 +1,15 @@
 /**
- * practice-studio's boss on the tap preset: every item is answered on screen and the activity's own check judges it
- * (`gradeAnswer` in `service/agent-kit/surfaces.ts`). This file validates a lesson (every item, and every lever item,
+ * practice-studio's boss on the spoken preset (2026-11-13; the tap preset before): a tap item is answered on screen and
+ * the activity's own check judges it (`gradeAnswer` in `service/agent-kit/surfaces.ts`), so it carries no key and the
+ * harness plays its taps; a `teach` item is answered out loud and carries the meaning key code derives from it
+ * (`teachSurface.ts`), which the tutor judges by. This file validates a lesson (every item, and every lever item,
  * re-checked from its stored structure), asks one item, and plays the harness from the item's key.
  */
 import { authoredLeverSet } from '../../../../service/agent-kit/levers';
-import { hasText, tapBoss } from '../../../../components/live-activity/boss';
+import { hasText, spokenBoss } from '../../../../components/live-activity/boss';
 import type { DriverInput } from '../../../../components/live-activity/liveJourneySpec';
 import { SURFACE_MISSES, inAnswerOrder, itemErrors, rightAnswer, surfaceTaps, wrongAnswer, type SurfaceAnswer, type SurfaceItem } from '../../../../service/agent-kit/surfaces';
+import { teachMisses, teachSay, teachSpokenKey } from '../../../../service/agent-kit/teachSurface';
 import { practiceStudioCard } from './practiceStudio.card';
 import type { PracticeStudioData } from './PracticeStudio';
 
@@ -47,14 +50,18 @@ export const practiceStudioLevers = authoredLeverSet<SurfaceItem>({
   missesOf: () => SURFACE_MISSES,
 });
 
-export const practiceStudioBoss = tapBoss<PracticeStudioData, SurfaceItem, (typeof SURFACE_MISSES)[number]>({
+export const practiceStudioBoss = spokenBoss<PracticeStudioData, SurfaceItem, (typeof SURFACE_MISSES)[number]>({
   levers: practiceStudioLevers,
   card: practiceStudioCard,
   validate: validatePracticeStudioData,
   items: d => d.challenges,
-  choice: {
+  speech: {
     ask: c => c.prompt,
-    play: (right, item) => studioTaps(item, right ? rightAnswer(item) : wrongAnswer(item)),
+    // A tap item has no key (the activity judges it) and plays its taps; a teach item's key is the idea, as a meaning.
+    key: c => (c.surface === 'teach' && c.teach ? teachSpokenKey(c.teach) : null),
+    misses: c => (c.surface === 'teach' && c.teach ? teachMisses(c.teach) : []),
+    say: c => (c.surface === 'teach' && c.teach ? teachSay(c.teach) : { correct: '', plainWrong: '' }),
+    show: (right, item) => studioTaps(item, right ? rightAnswer(item) : wrongAnswer(item)),
   },
   drive: {
     component: 'primitives/visual-primitives/core/practice-studio/PracticeStudio.tsx',

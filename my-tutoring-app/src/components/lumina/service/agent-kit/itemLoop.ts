@@ -27,6 +27,7 @@ import {
   SURFACES, TIERS, difficultyOf, itemErrors, makeSolutions, shortcutChecks, shownOrder,
   type MakeGoal, type Surface, type SurfaceItem, type SurfaceOption, type Tier,
 } from './surfaces';
+import { readTeach } from './teachSurface';
 
 type Args = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -40,7 +41,8 @@ export const SURFACE_LIST = `- choose: pick the one right option (2-5 options).
 - order: put the options in the right order (3-6 options).
 - make: put pieces on a tray until they meet a goal (3-12 pieces, each an option card). Any set that meets the goal is right, and code finds them all. Use it when the child should build a thing and not pick one: an amount from coins, a number from base ten blocks, a total from number cards.
 - point: the child taps one part of a picture (the board): a bar or a point on a chart, a row of a picture graph, an event on a timeline, a step in a flow, a place on a map, a level of a zoom, a living thing in a food web, a row of a table, a mark on a number line, a part of a cell (with no names on it, to ask which part does a job), a sentence of a passage (the claim, the evidence). No options. Use it when the answer is somewhere on a display and finding it there is the skill: which year the line crosses 300, which step comes before the pupa, which animal the hawk depends on. The prompt asks for what the part shows or does and never says the name written on it.
-- set: the child changes a picture (the board) until a goal holds. Use it when the child should do the thing to a model and not pick a finished one: cut a shape into equal shares, set a clock, build a number from tens and ones, make an array, put a point on a number line, make a graph show something. For a topic about how something works (a machine, a force, a circuit, what a living thing needs, a recipe, a budget), the board is a system display: the child sets its parts and runs it.`;
+- set: the child changes a picture (the board) until a goal holds. Use it when the child should do the thing to a model and not pick a finished one: cut a shape into equal shares, set a clock, build a number from tens and ones, make an array, put a point on a number line, make a graph show something. For a topic about how something works (a machine, a force, a circuit, what a living thing needs, a recipe, a budget), the board is a system display: the child sets its parts and runs it.
+- teach: the child explains an idea OUT LOUD to a character who has it wrong, and the tutor plays that character and judges the explanation on meaning. No cards. Use it when the objective asks the child to explain why or how, or when the evidence says "explain": the child must say the idea in their own words to make the character understand. You write the character (a first name), the wrong idea it holds in its own words (a real misconception from the lesson, or what must not earn credit), the idea the child must get across (ONE proposition, 4-16 words, true for what is shown), and 0-2 presses: what the character says back when the first try is thin ("But why not just count them all?"). The idea must not appear in the prompt, the presses or any text on screen: the character presses, it never tells. A display in stimulus gives both of them something to point at.`;
 
 /**
  * What every author of surface items is told about the parts it can use. A primitive adds the lesson around it.
@@ -59,18 +61,19 @@ When a code-drawn display can show the content, use it, including inside option 
 
 AN ITEM: {
   tier: "easy"|"medium"|"hard",
-  surface: "choose"|"categorize"|"order"|"make"|"set"|"point",
+  surface: "choose"|"categorize"|"order"|"make"|"set"|"point"|"teach",
   prompt: "what the tutor asks the child (never the answer)",
+  teach: {character, holds, idea, presses: [..]}  (teach only; no options, no board),
   stimulus: [displays shown above the options, may be empty],
   options: [{id, label?, display?, value?}]  each option is a card: a label, a display, or both,
   categories: [names]  (categorize only),
   goal: {total, count}  (make only) what the tray must come to: the pieces' values add to total, there are exactly count pieces, or both. A piece's value is what its display shows (coins in cents, base ten, a ten frame) or the number in its "value",
   board, controls, goal, derive: (set only) see A SET ITEM above,
   board: (point only) one display with at least 3 named parts and no highlight; no options,
-  key: point: the name of the right part, as its display names it | choose: option id | order: [option ids in order] | categorize: {optionId: category name} | make: none, code works out every set that meets the goal | set: none,
+  key: point: the name of the right part, as its display names it | choose: option id | order: [option ids in order] | categorize: {optionId: category name} | make: none, code works out every set that meets the goal | set: none | teach: none, the idea is the key,
   misconceptions: {optionId (point: the name of a wrong part): "the wrong idea that leads a child to this option, said as a hint to look again; it never describes the right option"},
   help: {says: "what the tutor says", add_stimulus: [displays that show more: an example, a worked first step, or the same display again with its highlight set, which replaces it], highlight_cards: "a highlight value applied the same way to every card's display (optional)"},
-  simplify: {says: "what the tutor says", remove_options: [ids]}  the same task with fewer cards; on a set item give board instead: the same board with part of the work already done; on a point item give board: the same board with fewer parts, the right one still on it,
+  simplify: {says: "what the tutor says", remove_options: [ids]}  the same task with fewer cards; on a set item give board instead: the same board with part of the work already done; on a point item give board: the same board with fewer parts, the right one still on it; on a teach item give drop_presses: true: the character accepts a first clear try without pressing back,
   why: "why this item teaches the objective"
 }
 
@@ -83,13 +86,14 @@ RULES:
 - A make item says its goal in the prompt (the total, and the number of pieces when there is one), gives more pieces than a right set needs, and includes pieces that tempt a wrong set. One card is one piece.
 - A set item's prompt says what to make in the words of the lesson ("Cut the circle into 3 equal shares"). Its board starts short of the goal and never shows it, and nothing above the board shows a finished answer.
 - A system board uses a real rule of the topic, and the item asks for a result ("Make the arm lift the rock"), never for a part's number. The prompt and the labels do not say which part to change or by how much.
+- A teach item's prompt tells the child whom to help and what about ("Help Pip see why 8 + 5 is quick when you make ten"), never the idea. The character's wrong idea is a real misconception a child holds, not the idea with "not" in it. A press asks for more; it never hints at the idea.
 - Vary the surfaces and displays across the session when the objective allows.`;
 
 // ── Reading a draft ─────────────────────────────────────────────────────────
 
 const displays = (v: unknown) => (Array.isArray(v) ? v : []).map(readDisplay).filter((d): d is Display => !!d);
 
-export interface SurfaceDraft { item: SurfaceItem; help?: { says: string; add: Display[]; highlightCards?: string }; simplify?: { says: string; remove: string[]; board?: Display }; why: string }
+export interface SurfaceDraft { item: SurfaceItem; help?: { says: string; add: Display[]; highlightCards?: string }; simplify?: { says: string; remove: string[]; board?: Display; /** teach: the character stops pressing back. */ dropPresses?: boolean }; why: string }
 
 /** A draft as code reads it: the item (options in a shown order), its lever requests and its rationale. */
 export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft {
@@ -112,7 +116,8 @@ export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft 
   }));
   const paths = (v: unknown) => (Array.isArray(v) ? v.map(String) : undefined);
   const derive: Derive = Object.fromEntries(Object.entries((a.derive ?? {}) as Args).map(([k, v]) => [k, { ...(paths((v as Args)?.sum) ? { sum: paths((v as Args).sum) } : {}), ...(paths((v as Args)?.diff) ? { diff: paths((v as Args).diff) } : {}) }]));
-  const key = surface === 'make' ? [] : surface === 'set' ? ''
+  const teach = surface === 'teach' ? readTeach(a.teach) : undefined;
+  const key = surface === 'make' ? [] : surface === 'set' ? '' : surface === 'teach' ? (teach?.idea ?? '')
     : surface === 'order' ? (Array.isArray(a.key) ? a.key.map(String) : [])
     : surface === 'categorize' ? Object.fromEntries(Object.entries((a.key ?? {}) as Args).map(([k, v]) => [k, String(v)]))
     : String(a.key ?? '').trim();
@@ -123,6 +128,7 @@ export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft 
     ...(surface === 'make' ? { goal } : {}),
     ...(surface === 'set' ? { ...(board ? { board } : {}), ...(controls.length ? { controls } : {}), ...(Object.keys(derive).length ? { derive } : {}), setGoal } : {}),
     ...(surface === 'point' && board ? { board } : {}),
+    ...(surface === 'teach' && teach ? { teach } : {}),
     key, ...(Object.keys(misconceptions).length ? { misconceptions } : {}),
     tier: (TIERS as readonly string[]).includes(str(a.tier)) ? str(a.tier) as Tier : 'medium',
     difficulty: { band: 'easy', score: 0, reasons: [] },
@@ -132,7 +138,7 @@ export function readDraft(raw: unknown, id: string, seed: number): SurfaceDraft 
   return {
     item,
     ...(str(h.says) ? { help: { says: str(h.says), add: displays(h.add_stimulus), ...(str(h.highlight_cards) ? { highlightCards: str(h.highlight_cards) } : {}) } } : {}),
-    ...(str(s.says) ? { simplify: { says: str(s.says), remove: (Array.isArray(s.remove_options) ? s.remove_options : []).map(String), ...(readDisplay(s.board) ? { board: readDisplay(s.board)! } : {}) } } : {}),
+    ...(str(s.says) ? { simplify: { says: str(s.says), remove: (Array.isArray(s.remove_options) ? s.remove_options : []).map(String), ...(readDisplay(s.board) ? { board: readDisplay(s.board)! } : {}), ...(s.drop_presses === true ? { dropPresses: true } : {}) } } : {}),
     why: str(a.why),
   };
 }
@@ -183,11 +189,14 @@ export function buildSurfaceLevers(d: SurfaceDraft, seed: number): { levers: Dra
     if (item.misconceptions) simpler = { ...simpler, misconceptions: Object.fromEntries(Object.entries(item.misconceptions).filter(([id]) => !drop.has(id))) };
     // set: the simpler item is the same goal from a board with part of the work done; the checks below are the same.
     if ((item.surface === 'set' || item.surface === 'point') && d.simplify.board) simpler = { ...item, board: d.simplify.board };
+    // teach: the same idea to the same character, who now accepts a first clear try (no presses), which the difficulty counts.
+    if (item.surface === 'teach' && item.teach && d.simplify.dropPresses) simpler = { ...item, teach: { ...item.teach, presses: [] } };
     simpler = settle(simpler, seed + 7);
     if (item.surface === 'choose' && drop.has(item.key as string)) refused.push('simplify: it removes the right answer');
     else if (item.surface === 'set' && !d.simplify.board) refused.push('simplify: on a set item it gives a board with part of the work done');
     else if (item.surface === 'point' && !d.simplify.board) refused.push('simplify: on a point item it gives the same board with fewer parts');
-    else if (item.surface !== 'set' && item.surface !== 'point' && !drop.size) refused.push('simplify: it removes nothing');
+    else if (item.surface === 'teach' && !(d.simplify.dropPresses && item.teach?.presses.length)) refused.push('simplify: on a teach item it gives drop_presses: true, and the item needs a press to drop');
+    else if (item.surface !== 'set' && item.surface !== 'point' && item.surface !== 'teach' && !drop.size) refused.push('simplify: it removes nothing');
     else if (itemErrors(simpler).length) refused.push(`simplify: ${itemErrors(simpler)[0]}`);
     else if (simpler.difficulty.score >= item.difficulty.score) refused.push('simplify: it is not easier by the computed difficulty');
     else if (item.surface === 'make' && shortcutChecks(simpler).some(f => !shortcutChecks(item).includes(f))) refused.push(`simplify: ${shortcutChecks(simpler).find(f => !shortcutChecks(item).includes(f))}`);

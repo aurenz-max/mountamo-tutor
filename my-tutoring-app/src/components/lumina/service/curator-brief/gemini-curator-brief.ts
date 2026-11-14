@@ -6,6 +6,11 @@ import { HOOK_VISUAL_THEMES, emojiForHookTheme } from "../../utils/hookVisual";
 import type { StudentPersona } from "../studentContext/types";
 import { capObjectivesForGrade, maxObjectivesForGrade } from "./objectiveBudget";
 import { finishOpeningFields } from "./briefOpening";
+import { EVIDENCE_ACTS, EVIDENCE_WRITING_RULES } from "../agent-kit/evidence";
+import { attachEvidenceToGiven, parseWrittenObjectives, type ObjectiveLike } from "./objectiveEvidence";
+
+/** A curriculum-launched objective as the launcher passes it (ids, text, verb, curriculum keys, maybe evidence). */
+export type GivenObjective = ObjectiveLike & { evidence?: import('../agent-kit/evidence').EvidenceSpec; [key: string]: unknown };
 
 /**
  * Build the personal-framing block for the brief prompt — WORDS ONLY.
@@ -94,14 +99,23 @@ export const generateIntroBriefing = async (
   intent?: string,
   /** Mid-session continuity: what the student finished moments ago (daily
    *  session blocks). Supersedes streak/last-session facts in the voice. */
-  sessionHandoff?: string | null
+  sessionHandoff?: string | null,
+  /**
+   * Curriculum-launched lessons arrive with their objectives (`preBuiltObjectives`).
+   * The brief then uses them verbatim and writes only the evidence each one must
+   * collect; the given objects win on every identity field in the result.
+   */
+  givenObjectives?: GivenObjective[],
 ): Promise<IntroBriefingData> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const voiceBlock = buildBriefVoiceBlock(persona, sessionHandoff);
   const maxObjectives = maxObjectivesForGrade(gradeLevel);
-  const objectiveCountText = maxObjectives === 1
-    ? 'exactly ONE learning objective'
-    : `at most ${maxObjectives} learning objectives`;
+  const given = givenObjectives?.length ? givenObjectives : undefined;
+  const objectiveCountText = given
+    ? `exactly the ${given.length} given objective${given.length === 1 ? '' : 's'}`
+    : maxObjectives === 1
+      ? 'exactly ONE learning objective'
+      : `at most ${maxObjectives} learning objectives`;
 
   const schema: Schema = {
     type: Type.OBJECT,
@@ -198,9 +212,20 @@ export const generateIntroBriefing = async (
             icon: {
               type: Type.STRING,
               description: 'Icon hint: search, message, pencil, lightbulb, scale, puzzle, check'
-            }
+            },
+            evidence: {
+              type: Type.OBJECT,
+              description: 'The evidence a lesson must collect for this objective (see Evidence per objective)',
+              properties: {
+                act: { type: Type.STRING, enum: [...EVIDENCE_ACTS], description: 'The kind of thing the child does' },
+                on: { type: Type.STRING, description: 'What they do it on' },
+                credit: { type: Type.STRING, description: 'ONE observable result that earns credit, as a condition' },
+                notCredit: { type: Type.STRING, description: 'What a child could do instead that must not count' },
+              },
+              required: ['act', 'on', 'credit', 'notCredit'],
+            },
           },
-          required: ['id', 'text', 'verb', 'icon']
+          required: ['id', 'text', 'verb', 'icon', 'evidence']
         },
         description: `${objectiveCountText} — specific and achievable`
       },
@@ -330,7 +355,10 @@ Younger students often respond better to scenarios and stories; older students e
 For **visualTheme**, pick the single menu value closest to what the hook is ABOUT (a hook about counting marbles is \`counting\`, not \`game\`). It is a category label, not student-facing text — the interface renders an icon for it.
 
 ### Objective Writing
-- Write ${objectiveCountText} for this grade level. Each objective becomes its own block of activities, so this number sets how long the lesson is.
+${given ? `**THE OBJECTIVES ARE GIVEN.** This lesson was launched from the curriculum with these objectives. Emit EXACTLY these, in this order, with these ids, this text and these verbs, changing nothing; your work on them is the evidence block each one carries (below) and aiming the hook, big idea and roadmap at them:
+${given.map((o, i) => `${i + 1}. id "${o.id}" — ${o.text} [${o.verb}]`).join('\n')}
+` : `- Write ${objectiveCountText} for this grade level. Each objective becomes its own block of activities, so this number sets how long the lesson is.`}
+${EVIDENCE_WRITING_RULES}
 - Start each objective with a measurable action verb
 - Keep objectives achievable within the estimated time
 - Use age-appropriate language
@@ -457,12 +485,20 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
     // Band load cap, in code: the prompt asks for the count, but a prompt
     // count is a request, and every extra objective adds 2-4 components.
-    if (Array.isArray(result.objectives)) {
-      const kept = capObjectivesForGrade(result.objectives, gradeLevel);
+    if (given) {
+      // Given objectives win on identity; the brief contributes only their evidence.
+      result.objectives = attachEvidenceToGiven(given, result.objectives);
+    } else if (Array.isArray(result.objectives)) {
+      const kept = capObjectivesForGrade(parseWrittenObjectives(result.objectives), gradeLevel);
       if (kept.length < result.objectives.length) {
         console.log(`[CuratorBrief] ${gradeLevel}: kept ${kept.length} of ${result.objectives.length} objectives`);
-        result.objectives = kept;
       }
+      result.objectives = kept;
+    }
+    {
+      const objs = Array.isArray(result.objectives) ? result.objectives : [];
+      const withEvidence = objs.filter((o: { evidence?: unknown }) => !!o.evidence).length;
+      if (withEvidence < objs.length) console.warn(`[CuratorBrief] evidence written for ${withEvidence} of ${objs.length} objectives`);
     }
 
     // Attach the hook's emoji code-side from the theme the model picked. The

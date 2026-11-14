@@ -5,6 +5,7 @@
 
 import type { PrimitiveEvaluationResult, WordBuilderMetrics } from './evaluation/types';
 import type { AffixBuildItem } from './primitives/visual-primitives/literacy/affixBuild';
+import type { EvidenceSpec } from './service/agent-kit/evidence';
 
 export enum GameState {
   IDLE = 'IDLE',
@@ -1029,6 +1030,14 @@ export interface ObjectiveData {
   /** Canonical curriculum grade for this objective ('K'|'1'..'12'). Precise where
    *  the lesson gradeLevel is only a band — flows to generators as ctx.grade. */
   grade?: string;
+  /**
+   * The evidence a lesson must collect for this objective: what the child does that
+   * counts, and what does not (`service/agent-kit/evidence.ts`). Written once per
+   * objective by the curator brief, stamped by the manifest flatten into every
+   * component's `config.evidence`, read by generators (the kit's item loop holds
+   * each item to it) and carried to the live tutor with the item's objective.
+   */
+  evidence?: EvidenceSpec;
 }
 
 export interface QuickCheckData {
@@ -1538,6 +1547,7 @@ export type ComponentId =
   | 'distribution-explorer' // Live workbench for probability distributions: explore parameters, identify family, compute probabilities
   | 'math-fact-fluency'  // Interactive math fact fluency practice
   | 'addition-fact-strategies' // Addition fact strategy practice
+  | 'dot-cards' // Quick-look two-color dot cards: see the parts, say the total (K-1)
   | 'ratio-table'        // Table showing equivalent ratios
   | 'percent-bar'        // Horizontal bar model with percentage markings
   | 'balance-scale'      // Interactive balance scale for equation solving
@@ -2493,6 +2503,7 @@ export type { NumberTracerData } from './primitives/visual-primitives/math/Numbe
 export type { ThreeDShapeExplorerData } from './primitives/visual-primitives/math/ThreeDShapeExplorer';
 export type { MathFactFluencyData } from './primitives/visual-primitives/math/MathFactFluency';
 export type { AdditionFactStrategiesData } from './primitives/visual-primitives/math/AdditionFactStrategies';
+export type { DotCardsData } from './primitives/visual-primitives/math/DotCards';
 export type { StrategyPickerData } from './primitives/visual-primitives/math/StrategyPicker';
 export type { HundredsChartData } from './primitives/visual-primitives/math/HundredsChart';
 export type { LengthLabData } from './primitives/visual-primitives/math/LengthLab';
