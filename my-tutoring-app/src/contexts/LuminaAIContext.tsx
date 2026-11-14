@@ -19,6 +19,7 @@ import { PipSurfaceContext } from '@/components/lumina/pip/PipSurfaceContext';
 import { LiveRuntimeContext } from '@/components/lumina/components/live-activity/runtime/LiveRuntimeContext';
 import { runtimePacket } from '@/components/lumina/components/live-activity/runtime/runtimeTransport';
 import type { LiveLessonRuntime } from '@/components/lumina/components/live-activity/runtime/LiveLessonRuntime';
+import { appendLearnerFrame, learnerTurnClosed, learnerTurnOpened } from '@/components/lumina/utils/learnerClip';
 import {
   resolveLessonAudioInput,
   resolveLessonVoiceTurnConfig,
@@ -559,6 +560,7 @@ export const LuminaAIProvider: React.FC<{
           ]);
           setIsAIResponding(false);
         } else if (messageType === 'ai_audio') {
+          learnerTurnClosed();
           processAndPlayRawAudio(message.data, message.sampleRate || 24000);
         } else if (messageType === 'ai_transcription') {
           if (transcriptStreamRef.current.role !== 'assistant') transcriptStreamRef.current.id++;
@@ -596,9 +598,11 @@ export const LuminaAIProvider: React.FC<{
           transcriptStreamRef.current.role = null;
           setIsAIResponding(false);
           resetForNextTurn();
+          learnerTurnOpened();
           if (runtimeEnabledRef.current) activityEventRef.current?.({ type: 'runtime_turn_end', audioPending: pendingAudioRef.current() });
         } else if (messageType === 'ai_interrupted') {
           transcriptStreamRef.current.role = null;
+          learnerTurnOpened();
           // Gemini dropped the rest of its turn because the student spoke over
           // it (barge-in). The buffered tail is speech the model already
           // abandoned — flush it so isAudioPlaying falls with the model.
@@ -727,6 +731,7 @@ export const LuminaAIProvider: React.FC<{
         },
         onError: (error) => console.error('Audio capture error:', error),
         onAudioData: (frame) => {
+          appendLearnerFrame(frame);
           let sum = 0;
           for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
           publishMicLevel(frame.length ? Math.sqrt(sum / frame.length) : 0);

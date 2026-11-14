@@ -29,6 +29,8 @@ interface Usage {
 
 // [input, output] USD per 1M tokens. First match wins; aliases resolve as Google bills them (10-17).
 const PRICES: Array<[RegExp, number, number]> = [
+  [/gemini-decision/, 0.1, 0],
+  [/gemini-4-hydrogen/, 1.5, 7.5],
   [/image/, 0.3, 30],
   [/2\.5-flash-lite/, 0.1, 0.4],
   [/flash-lite/, 0.3, 2.5],

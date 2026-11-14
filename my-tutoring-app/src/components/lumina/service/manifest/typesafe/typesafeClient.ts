@@ -15,6 +15,8 @@ import 'server-only';
  * never reaches a client bundle.
  */
 
+import { geminiDecisions, isGeminiDecisionModel, type MediaBlock } from './geminiDecisions';
+
 const ENDPOINT = process.env.TYPESAFE_ENDPOINT || 'https://api.typesafe.ai/v1/systemone';
 const MODEL = process.env.TYPESAFE_MODEL || 'jev-latest';
 
@@ -94,8 +96,12 @@ export function typesafeConfigured(): boolean {
 export async function systemOne<Q extends Record<string, Question>>(
   state: unknown,
   questions: Q,
-  opts: { signal?: AbortSignal; model?: string } = {},
+  opts: { signal?: AbortSignal; model?: string; media?: MediaBlock[] } = {},
 ): Promise<SystemOneResponse<Q>> {
+  const model = opts.model ?? process.env.LUMINA_SYSTEM_ONE_MODEL;
+  if (isGeminiDecisionModel(model)) {
+    return geminiDecisions(state, questions, { signal: opts.signal, model: model!, media: opts.media }) as Promise<SystemOneResponse<Q>>;
+  }
   const apiKey = process.env.TYPESAFE_API_KEY;
   if (!apiKey) throw new Error('TYPESAFE_API_KEY is not set');
   const t0 = performance.now();

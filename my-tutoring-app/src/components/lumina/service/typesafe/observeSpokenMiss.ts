@@ -23,7 +23,7 @@ const described = (m: SpokenMissRequest['misses'][number]) =>
  *   skipped walk read as `one_over` 17/18). So the Choice decides WHETHER the answer is a known miss, and code
  *   names the first listed miss whose Noul says it fits: the domain's list order is the precedence.
  */
-export function spokenMissQuestions(input: SpokenMissRequest): Record<string, Question> {
+export function spokenMissQuestions(input: SpokenMissRequest, read: string = READ): Record<string, Question> {
   const criteria: Record<string, string> = {};
   for (const m of input.misses) criteria[m.id] = described(m);
   criteria.correct = 'The learner\'s answer is a correct answer to `task` as `expectedAnswer` describes it, in any wording, '
@@ -34,11 +34,11 @@ export function spokenMissQuestions(input: SpokenMissRequest): Record<string, Qu
     + 'a request to stop, filler such as "um", talk about something else, an answer to a different question the tutor just asked '
     + '(one part or step of the task), or a transcript too garbled to tell.';
   const which: ChoiceQuestion = { type: 'choice', criteria,
-    instructions: `${READ} Decide which description fits the learner's answer. When an answer fits more than one listed `
+    instructions: `${read} Decide which description fits the learner's answer. When an answer fits more than one listed `
       + 'wrong answer, choose the one listed first.' };
   const questions: Record<string, Question> = { which };
   for (const m of input.misses) questions[`fits_${m.id}`] = { type: 'noul',
-    instructions: `${READ} Does the learner's answer fit this description? ${described(m)}`,
+    instructions: `${read} Does the learner's answer fit this description? ${described(m)}`,
     criteria: { true: 'The learner\'s answer fits the description.',
       false: 'It does not fit the description, or the learner gave a correct answer or no answer.' } } satisfies NoulQuestion;
   return questions;

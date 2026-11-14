@@ -1,5 +1,6 @@
 import 'server-only';
 import { systemOne, typesafeConfigured, type Question } from '../manifest/typesafe/typesafeClient';
+import { isGeminiDecisionModel, type MediaBlock } from '../manifest/typesafe/geminiDecisions';
 import type { ObservationAssessment } from '../../components/live-activity/runtime/observationContract';
 
 /**
@@ -20,20 +21,25 @@ export interface ObservationKind<Request, Decision> {
   state: (request: Request) => unknown;
   decide: (request: Request, answers: any, ms: number, model?: string) => Decision;
   abstain: (reason: string, ms?: number) => Decision;
+  /** A kind that runs on another System One model (`gemini-decision-1`) instead of Jev. */
+  model?: string;
+  /** Media the model reads beside the state (the learner's own audio). Only a Gemini Decisions model reads it. */
+  media?: (request: Request) => MediaBlock[];
 }
 
 export type Assessed = { assessment?: ObservationAssessment };
 /** `cancelled` is the caller's own abort (a superseded turn), so the upstream call stops with it. */
 export async function runObservation<Request, Decision extends Assessed>(kind: ObservationKind<Request, Decision>, request: Request,
     cancelled?: AbortSignal): Promise<Decision> {
-  if (!typesafeConfigured()) return kind.abstain('not_configured');
+  if (!(isGeminiDecisionModel(kind.model) ? !!process.env.GEMINI_API_KEY : typesafeConfigured())) return kind.abstain('not_configured');
   const start = performance.now(), controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), kind.timeoutMs);
   try {
     const state = kind.state(request);
     const questions = typeof kind.questions === 'function' ? kind.questions(request) : kind.questions;
     const result = await systemOne(state, questions,
-      { signal: cancelled ? AbortSignal.any([cancelled, controller.signal]) : controller.signal });
+      { signal: cancelled ? AbortSignal.any([cancelled, controller.signal]) : controller.signal,
+        ...(kind.model ? { model: kind.model } : {}), ...(kind.media ? { media: kind.media(request) } : {}) });
     return { ...kind.decide(request, result.answers, result.ms, result.model),
       assessment: { state, questions, answers: result.answers } };
   } catch { return kind.abstain(controller.signal.aborted ? 'timeout' : 'unavailable', Math.round(performance.now() - start)); }
