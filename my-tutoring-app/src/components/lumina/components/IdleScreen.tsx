@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import type { GradeLevel } from './GradeLevelSelector';
 import { CurriculumBrowser, type CurriculumContext } from './CurriculumBrowser';
 import { LessonGroupTray, assignBloomPhase, type SelectedSubskill, type BloomPhase } from './LessonGroupBuilder';
-import { SpotlightCard } from './SpotlightCard';
 import { ParticleField } from './ParticleField';
 import { SoundManager } from '../utils/SoundManager';
 import { useStudent } from '../contexts/StudentContext';
@@ -508,66 +507,155 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-slate-700"></div>
           </summary>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-            {([
-              { panel: 'media-player-tester', icon: '\uD83C\uDFAC', title: 'Media Player', color: '139, 92, 246', cardClass: 'bg-gradient-to-br from-purple-900/20 to-violet-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
-              { panel: 'knowledge-check-tester', icon: '\uD83D\uDCDD', title: 'Knowledge Check', color: '59, 130, 246', cardClass: 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20', iconClass: 'bg-blue-500/20', hoverTitle: 'group-hover:text-blue-200', hoverArrow: 'group-hover:text-blue-400' },
-              { panel: 'math-primitives-tester', icon: '\uD83E\uDDEE', title: 'Math Primitives', color: '236, 72, 153', cardClass: 'bg-gradient-to-br from-pink-900/20 to-rose-900/20', iconClass: 'bg-pink-500/20', hoverTitle: 'group-hover:text-pink-200', hoverArrow: 'group-hover:text-pink-400' },
-              { panel: 'engineering-primitives-tester', icon: '\u2699\uFE0F', title: 'Engineering', color: '249, 115, 22', cardClass: 'bg-gradient-to-br from-orange-900/20 to-red-900/20', iconClass: 'bg-orange-500/20', hoverTitle: 'group-hover:text-orange-200', hoverArrow: 'group-hover:text-orange-400' },
-              { panel: 'creation-primitives-tester', icon: '🏗️', title: 'Creation Primitives', color: '245, 158, 11', cardClass: 'bg-gradient-to-br from-amber-900/20 to-yellow-900/20', iconClass: 'bg-amber-500/20', hoverTitle: 'group-hover:text-amber-200', hoverArrow: 'group-hover:text-amber-400' },
-              { panel: 'astronomy-primitives-tester', icon: '\uD83E\uDE90', title: 'Astronomy', color: '59, 130, 246', cardClass: 'bg-gradient-to-br from-blue-900/20 to-indigo-900/20', iconClass: 'bg-blue-500/20', hoverTitle: 'group-hover:text-blue-200', hoverArrow: 'group-hover:text-blue-400' },
-              { panel: 'physics-primitives-tester', icon: '\u269B\uFE0F', title: 'Physics', color: '99, 102, 241', cardClass: 'bg-gradient-to-br from-indigo-900/20 to-violet-900/20', iconClass: 'bg-indigo-500/20', hoverTitle: 'group-hover:text-indigo-200', hoverArrow: 'group-hover:text-indigo-400' },
-              { panel: 'feature-exhibit-tester', icon: '\uD83D\uDCF0', title: 'Feature Exhibit', color: '14, 165, 233', cardClass: 'bg-gradient-to-br from-sky-900/20 to-blue-900/20', iconClass: 'bg-sky-500/20', hoverTitle: 'group-hover:text-sky-200', hoverArrow: 'group-hover:text-sky-400' },
-              { panel: 'deep-dive-tester', icon: '\uD83E\uDDAE', title: 'Deep Dive', color: '129, 140, 248', cardClass: 'bg-gradient-to-br from-violet-900/20 to-indigo-900/20', iconClass: 'bg-violet-500/20', hoverTitle: 'group-hover:text-violet-200', hoverArrow: 'group-hover:text-violet-400' },
-              { panel: 'wonder-walk-tester', icon: '🚶', title: 'Wonder Walk (K)', color: '167, 139, 250', cardClass: 'bg-gradient-to-br from-violet-900/20 to-indigo-900/20', iconClass: 'bg-violet-500/20', hoverTitle: 'group-hover:text-violet-200', hoverArrow: 'group-hover:text-violet-400' },
-              { panel: 'practice-studio-tester', icon: '🧩', title: 'Practice Studio (agent)', color: '167, 139, 250', cardClass: 'bg-gradient-to-br from-violet-900/20 to-indigo-900/20', iconClass: 'bg-violet-500/20', hoverTitle: 'group-hover:text-violet-200', hoverArrow: 'group-hover:text-violet-400' },
-              { panel: 'canvas-tester', icon: '🛠️', title: 'Canvas (agent)', color: '167, 139, 250', cardClass: 'bg-gradient-to-br from-violet-900/20 to-indigo-900/20', iconClass: 'bg-violet-500/20', hoverTitle: 'group-hover:text-violet-200', hoverArrow: 'group-hover:text-violet-400' },
-              { panel: 'biology-primitives-tester', icon: '\uD83E\uDDEC', title: 'Biology', color: '34, 197, 94', cardClass: 'bg-gradient-to-br from-green-900/20 to-emerald-900/20', iconClass: 'bg-green-500/20', hoverTitle: 'group-hover:text-green-200', hoverArrow: 'group-hover:text-green-400' },
-              { panel: 'chemistry-primitives-tester', icon: '\uD83E\uDDEA', title: 'Chemistry', color: '16, 185, 129', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
-              { panel: 'language-arts-tester', icon: '\uD83D\uDCDA', title: 'Language Arts', color: '244, 114, 182', cardClass: 'bg-gradient-to-br from-pink-900/20 to-fuchsia-900/20', iconClass: 'bg-pink-500/20', hoverTitle: 'group-hover:text-pink-200', hoverArrow: 'group-hover:text-pink-400' },
-              { panel: 'passage-studio-tester', icon: '📖', title: 'Passage Studio', color: '244, 114, 182', cardClass: 'bg-gradient-to-br from-pink-900/20 to-rose-900/20', iconClass: 'bg-pink-500/20', hoverTitle: 'group-hover:text-pink-200', hoverArrow: 'group-hover:text-pink-400' },
-              { panel: 'annotated-example-tester', icon: '\uD83D\uDCDD', title: 'Annotated Example', color: '96, 165, 250', cardClass: 'bg-gradient-to-br from-blue-900/20 to-indigo-900/20', iconClass: 'bg-blue-500/20', hoverTitle: 'group-hover:text-blue-200', hoverArrow: 'group-hover:text-blue-400' },
-              { panel: 'practice-problem-tester', icon: '✏️', title: 'Practice Problem', color: '52, 211, 153', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
-              { panel: 'distribution-explorer-tester', icon: '📊', title: 'Distribution Explorer', color: '99, 102, 241', cardClass: 'bg-gradient-to-br from-indigo-900/20 to-violet-900/20', iconClass: 'bg-indigo-500/20', hoverTitle: 'group-hover:text-indigo-200', hoverArrow: 'group-hover:text-indigo-400' },
-              { panel: 'lumina-tutor-tester', icon: '\uD83E\uDD16', title: 'Lumina Tutor', color: '129, 140, 248', cardClass: 'bg-gradient-to-br from-indigo-900/20 to-violet-900/20', iconClass: 'bg-indigo-500/20', hoverTitle: 'group-hover:text-indigo-200', hoverArrow: 'group-hover:text-indigo-400' },
-              { panel: 'calibration-simulator', icon: '\uD83D\uDCC8', title: 'IRT Simulator', color: '251, 146, 60', cardClass: 'bg-gradient-to-br from-orange-900/20 to-amber-900/20', iconClass: 'bg-orange-500/20', hoverTitle: 'group-hover:text-orange-200', hoverArrow: 'group-hover:text-orange-400' },
-              { panel: 'atom-registry', icon: '\uD83D\uDD2C', title: 'Atom Registry', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-sky-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'sound-lab', icon: '\uD83D\uDD0A', title: 'Sound Lab', color: '20, 184, 166', cardClass: 'bg-gradient-to-br from-teal-900/20 to-cyan-900/20', iconClass: 'bg-teal-500/20', hoverTitle: 'group-hover:text-teal-200', hoverArrow: 'group-hover:text-teal-400' },
-              { panel: 'pip-lab', icon: '\uD83E\uDD16', title: 'Pip Lab', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-indigo-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'blend-judge-lab', icon: '\uD83C\uDF99\uFE0F', title: 'Blend Judge Lab', color: '52, 211, 153', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
-              { panel: 'di-bench', icon: '\uD83C\uDFAF', title: 'DI Bench', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-indigo-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'direct-instruction-tester', icon: '\uD83D\uDDE3\uFE0F', title: 'Direct Instruction Lab', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-blue-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'history-primitives-tester', icon: '🏛️', title: 'History Primitives', color: '245, 158, 11', cardClass: 'bg-gradient-to-br from-amber-900/20 to-orange-900/20', iconClass: 'bg-amber-500/20', hoverTitle: 'group-hover:text-amber-200', hoverArrow: 'group-hover:text-amber-400' },
-              { panel: 'design-studio', icon: '\uD83C\uDFA8', title: 'Design Studio', color: '168, 85, 247', cardClass: 'bg-gradient-to-br from-purple-900/20 to-fuchsia-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
-              { panel: 'diagnosis-lab', icon: '\uD83E\uDE7A', title: 'Diagnosis Lab', color: '244, 63, 94', cardClass: 'bg-gradient-to-br from-rose-900/20 to-amber-900/20', iconClass: 'bg-rose-500/20', hoverTitle: 'group-hover:text-rose-200', hoverArrow: 'group-hover:text-rose-400' },
-              { panel: 'misconception-loop-tester', icon: '\uD83E\uDE7A', title: 'Misconception Loop', color: '244, 63, 94', cardClass: 'bg-gradient-to-br from-rose-900/20 to-amber-900/20', iconClass: 'bg-rose-500/20', hoverTitle: 'group-hover:text-rose-200', hoverArrow: 'group-hover:text-rose-400' },
-              { panel: 'analytics-dashboard', icon: '📊', title: 'Analytics', color: '139, 92, 246', cardClass: 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
-              { panel: 'student-activity-panel', icon: '📈', title: 'Student Activity', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-teal-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'lesson-bench', icon: '\uD83D\uDCE6', title: 'Lesson Bench', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-sky-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-              { panel: 'typesafe-select-tester', icon: '🧭', title: 'TypeSafe Select', color: '52, 211, 153', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-cyan-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
-              { panel: 'live-activity-tester', icon: '\uD83C\uDF99\uFE0F', title: 'Live Activity', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-indigo-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
-            ] as const).filter(({ panel }) => panel !== 'live-activity-tester' || process.env.NODE_ENV !== 'production').map(({ panel, icon, title, color, cardClass, iconClass, hoverTitle, hoverArrow }) => (
-              <SpotlightCard
-                key={panel}
-                color={color}
-                onClick={() => onNavigate(panel)}
-                className={cardClass}
-              >
-                <div className="p-4 flex items-center gap-3">
-                  <div className={`w-10 h-10 ${iconClass} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                    <span className="text-lg">{icon}</span>
-                  </div>
-                  <h3 className={`text-sm font-semibold text-white ${hoverTitle} transition-colors`}>
-                    {title}
-                  </h3>
-                  <svg className={`w-4 h-4 ml-auto text-slate-600 ${hoverArrow} transition-all group-hover:translate-x-1 flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                  </svg>
-                </div>
-              </SpotlightCard>
-            ))}
-          </div>
+          <DevToolsPanel onNavigate={onNavigate} />
         </details>
+      </div>
+    </div>
+  );
+};
+
+// ── Developer tools ────────────────────────────────────────────────────
+// Grouped by what the tool is for, alphabetical inside each group. One accent
+// per group so color carries the grouping instead of varying card by card.
+
+interface DevTool { panel: string; icon: string; title: string; devOnly?: boolean }
+interface DevToolGroup { label: string; accent: string; tools: DevTool[] }
+
+const DEV_TOOL_GROUPS: DevToolGroup[] = [
+  {
+    label: 'Subject primitives',
+    accent: 'text-pink-300 bg-pink-500/15 border-pink-500/20',
+    tools: [
+      { panel: 'astronomy-primitives-tester', icon: '🪐', title: 'Astronomy' },
+      { panel: 'biology-primitives-tester', icon: '🧬', title: 'Biology' },
+      { panel: 'chemistry-primitives-tester', icon: '🧪', title: 'Chemistry' },
+      { panel: 'creation-primitives-tester', icon: '🏗️', title: 'Creation' },
+      { panel: 'engineering-primitives-tester', icon: '⚙️', title: 'Engineering' },
+      { panel: 'history-primitives-tester', icon: '🏛️', title: 'History' },
+      { panel: 'language-arts-tester', icon: '📚', title: 'Language Arts' },
+      { panel: 'math-primitives-tester', icon: '🧮', title: 'Math' },
+      { panel: 'passage-studio-tester', icon: '📖', title: 'Passage Studio' },
+      { panel: 'physics-primitives-tester', icon: '⚛️', title: 'Physics' },
+    ],
+  },
+  {
+    label: 'Agent primitives',
+    accent: 'text-violet-300 bg-violet-500/15 border-violet-500/20',
+    tools: [
+      { panel: 'annotated-example-tester', icon: '📝', title: 'Annotated Example' },
+      { panel: 'canvas-tester', icon: '🛠️', title: 'Canvas' },
+      { panel: 'deep-dive-tester', icon: '🦮', title: 'Deep Dive' },
+      { panel: 'practice-studio-tester', icon: '🧩', title: 'Practice Studio' },
+      { panel: 'wonder-walk-tester', icon: '🚶', title: 'Wonder Walk (K)' },
+    ],
+  },
+  {
+    label: 'Lesson formats',
+    accent: 'text-sky-300 bg-sky-500/15 border-sky-500/20',
+    tools: [
+      { panel: 'distribution-explorer-tester', icon: '📊', title: 'Distribution Explorer' },
+      { panel: 'feature-exhibit-tester', icon: '📰', title: 'Feature Exhibit' },
+      { panel: 'knowledge-check-tester', icon: '✅', title: 'Knowledge Check' },
+      { panel: 'media-player-tester', icon: '🎬', title: 'Media Player' },
+      { panel: 'practice-problem-tester', icon: '✏️', title: 'Practice Problem' },
+    ],
+  },
+  {
+    label: 'Tutor & voice',
+    accent: 'text-cyan-300 bg-cyan-500/15 border-cyan-500/20',
+    tools: [
+      { panel: 'blend-judge-lab', icon: '🎙️', title: 'Blend Judge Lab' },
+      { panel: 'di-bench', icon: '🎯', title: 'DI Bench' },
+      { panel: 'direct-instruction-tester', icon: '🗣️', title: 'Direct Instruction Lab' },
+      { panel: 'live-activity-tester', icon: '📡', title: 'Live Activity', devOnly: true },
+      { panel: 'lumina-tutor-tester', icon: '🤖', title: 'Lumina Tutor' },
+      { panel: 'pip-lab', icon: '🫧', title: 'Pip Lab' },
+    ],
+  },
+  {
+    label: 'Adaptive engine',
+    accent: 'text-amber-300 bg-amber-500/15 border-amber-500/20',
+    tools: [
+      { panel: 'atom-registry', icon: '🔬', title: 'Atom Registry' },
+      { panel: 'diagnosis-lab', icon: '🩺', title: 'Diagnosis Lab' },
+      { panel: 'calibration-simulator', icon: '📈', title: 'IRT Simulator' },
+      { panel: 'lesson-bench', icon: '📦', title: 'Lesson Bench' },
+      { panel: 'misconception-loop-tester', icon: '🔁', title: 'Misconception Loop' },
+      { panel: 'typesafe-select-tester', icon: '🧭', title: 'TypeSafe Select' },
+    ],
+  },
+  {
+    label: 'Students & studio',
+    accent: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/20',
+    tools: [
+      { panel: 'analytics-dashboard', icon: '📊', title: 'Analytics' },
+      { panel: 'design-studio', icon: '🎨', title: 'Design Studio' },
+      { panel: 'sound-lab', icon: '🔊', title: 'Sound Lab' },
+      { panel: 'student-activity-panel', icon: '📈', title: 'Student Activity' },
+    ],
+  },
+];
+
+const DevToolsPanel: React.FC<{ onNavigate: (panel: string) => void }> = ({ onNavigate }) => {
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+
+  const groups = DEV_TOOL_GROUPS
+    .map(g => ({
+      ...g,
+      tools: g.tools.filter(t =>
+        (!t.devOnly || process.env.NODE_ENV !== 'production') &&
+        (!q || t.title.toLowerCase().includes(q) || t.panel.includes(q) || g.label.toLowerCase().includes(q)),
+      ),
+    }))
+    .filter(g => g.tools.length > 0);
+  const firstMatch = groups[0]?.tools[0];
+
+  return (
+    <div className="mt-5 space-y-6">
+      <input
+        type="search"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && q && firstMatch) onNavigate(firstMatch.panel); }}
+        placeholder="Filter tools…  (Enter opens the first match)"
+        className="mx-auto block w-full max-w-sm rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:border-white/25 focus:outline-none"
+      />
+
+      {groups.length === 0 && (
+        <p className="text-center text-xs text-slate-600">No tool matches “{query}”.</p>
+      )}
+
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
+        {groups.map(group => (
+          <section key={group.label}>
+            <h4 className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {group.label}
+              <span className="text-slate-700">{group.tools.length}</span>
+            </h4>
+            <ul className="space-y-1">
+              {group.tools.map(tool => (
+                <li key={tool.panel}>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(tool.panel)}
+                    className="group flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:border-white/10 hover:bg-white/[0.04]"
+                  >
+                    <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border text-sm ${group.accent}`}>
+                      {tool.icon}
+                    </span>
+                    <span className="text-sm text-slate-300 transition-colors group-hover:text-white">
+                      {tool.title}
+                    </span>
+                    <svg className="ml-auto h-3.5 w-3.5 flex-shrink-0 text-slate-700 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:text-slate-400 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </div>
   );
