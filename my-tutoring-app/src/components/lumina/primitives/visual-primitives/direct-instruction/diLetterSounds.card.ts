@@ -26,7 +26,11 @@ export const diLetterSoundsCard = defineCard<SpokenDiLetterSoundMiss>({
     // and the screen rule are the shared doctrine's.
     special: 'The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item '
       + 'only as the keyword_picture lever. Never route this item\'s sound through its picture before the learner tries. '
-      + 'Your feedback is the only record of the sound. demonstrate takes "stimulus" or "picture".',
+      + 'Your feedback is the only record of the sound. demonstrate takes "stimulus" or "picture". '
+      // USER 11-13: the tutor called a short "s"/"m" the letter's name and asked for a longer hold.
+      + 'Judge the letter-to-sound link, not the length: a short sound is a right answer, so say so and move on. '
+      + 'Call it the letter\'s name only when you heard the name with its vowel ("ess", "em"), not a short sound. '
+      + 'Right after you ask, a hum like "mhm" or "mm" is the learner answering with the sound, never a yes.',
   },
   audio: SPOKEN_AUDIO,
   levers: true,

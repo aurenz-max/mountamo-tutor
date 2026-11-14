@@ -136,7 +136,7 @@ it('asks a short vowel for its sound and accepts its keyword (R5), and accepts a
   expect(vowel.state().task!.task).toBe('What sound does the letter "a" make?');
   expect(vowel.state().task!.task).not.toMatch(/apple/);
   expect(vowel.state().task!.workspace!.expectedAnswer).toMatch(/^"aaa" \(also accept "apple"\)/);
-  expect(String(vowel.state().task!.workspace!.expectedAnswer)).toMatch(/letter's name is not the answer/);
+  expect(String(vowel.state().task!.workspace!.expectedAnswer)).toMatch(/letter's NAME, "\w+" \(with its vowel\), is not the answer/);
   cleanup();
   const stop = mount('letter_sound_review');
   stop.say('sss'); stop.feedback('correct', 'advance');
@@ -154,7 +154,10 @@ it('draws the WORD and never the lone grapheme on an onset-isolation item', () =
 
 it('blocks the letter name as the answer on a grapheme item', () => {
   const h = mount('letter_sound');
-  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/name is not the answer/);
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/NAME, "em" \(with its vowel\), is not the answer/);
+  // USER 11-13: the link, not the hold; and a short m hum is the sound, not a "mhm" yes.
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/a short "m" sound counts exactly like a long "mmm"/);
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/"mhm".*not a yes or a filler/);
   expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/naming the picture "moon" is a step/i);
 });
 

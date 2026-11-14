@@ -175,7 +175,10 @@ function acceptedFor(c: DiLetterSoundChallenge): string {
  * answer, while a short vowel or a stop accepts its keyword (`alsoAccept`).
  */
 function keyFor(c: DiLetterSoundChallenge): SpokenKey {
-  const name = "The letter's name is not the answer.";
+  // Named by its value, as letter-sound-link does: a bare "the name is not the answer" let the tutor call a short
+  // "s" or "m" the letter's name (live 11-13, twice in a row on m and s).
+  const said = LETTER_NAME[c.letter.toLowerCase()];
+  const name = `The letter's NAME${said ? `, "${said}" (with its vowel),` : ''} is not the answer.`;
   if (isOnset(c)) return ({ answer: c.spoken, alsoAccept: [],
     signatureError: `Saying the whole word "${c.keyword}" back, or naming a letter, is a step toward the answer and is not it.` });
   if (c.elicitation === 'keyword') return ({ answer: c.spoken, alsoAccept: [c.keyword],
@@ -184,8 +187,14 @@ function keyFor(c: DiLetterSoundChallenge): SpokenKey {
   if (c.articulation === 'clipped') return ({ answer: c.spoken, alsoAccept: [c.keyword],
     acceptRule: 'It is a clipped sound: a small "uh" after it counts, and so does another word starting with that sound.',
     signatureError: name });
+  // The skill is the letter-to-sound link, not the length of the hold (USER 11-13): a short sound is right.
   return ({ answer: c.spoken, alsoAccept: [],
-    signatureError: `It is a continuous sound. ${name} Naming the picture "${c.keyword}" is a step toward the sound rather than the sound itself.` });
+    acceptRule: `Judge whether the learner links "${c.letter}" to its sound, not how long they hold it: a short `
+      + `"${c.letter}" sound counts exactly like a long "${c.spoken}". Never mark a short sound wrong or ask for a longer one.`
+      // Live 11-13: a short m or n hum came through as "Mhm." and the tutor took it for a yes, three sessions running.
+      + (NASAL.has(c.letter.toLowerCase())
+        ? ` A hum that sounds like "mhm", "hmm" or "mm" is this sound said briefly, not a yes or a filler: credit it.` : ''),
+    signatureError: `${name} Naming the picture "${c.keyword}" is a step toward the sound rather than the sound itself.` });
 }
 
 /** Expand a generated pool into the assignments the workspace actually asks.
@@ -220,6 +229,7 @@ export type SpokenDiLetterSoundMiss = 'keyword_word' | 'letter_name' | 'added_vo
 
 const HELD = new Set(['s', 'n', 'm', 'f', 'l', 'r', 'v', 'z']);
 const NAME_HEARD_AS_SOUND = new Set(['s', 'f', 'r']);
+const NASAL = new Set(['m', 'n']);
 const VOWELS = ['a', 'e', 'i', 'o', 'u'];
 
 /**
