@@ -5,7 +5,8 @@
  *   2. evidence that code produces (`expand` maps what a primitive observed onto ids from that list);
  *   3. a screen that shows it (`display`, a component under `lumina/components/`).
  * A kind also has to recur across several subskills or primitives. A problem shape, a question type or anything
- * a subskill or eval mode already names is not a kind.
+ * a subskill or eval mode already names is not a kind. A kind is an inventory of memorised
+ * atoms (a letter-sound pair, a single fact) that many subskills share; conceptual understanding stays at the subskill.
  *
  * Server-only: the libraries are (the word library is 500 KB).
  */
@@ -24,6 +25,10 @@ export interface ComponentKind {
   library: string;
   /** The component that shows it, under `lumina/components/`. */
   display: string;
+  /** What the grid's total counts ("reads counted, from words read aloud"). */
+  counted: string;
+  /** What a correct observation is, after "3 of 4" ("read correctly"). */
+  outcome: string;
   /** Every component of the kind, in display order. */
   components: () => ComponentInfo[];
   /** What a primitive observed, as evidence rows on ids from `components()`. A unit the library lacks gives none. */
@@ -122,12 +127,52 @@ const LETTER_SOUND: ComponentKind = {
   unit: 'a printed word read aloud, `printed>said` for a word read as another, or `letter:<letters>` for a printed letter whose sound was said',
   library: 'service/wordSpace/lexicon.json',
   display: 'ComponentMasteryGrid',
+  counted: 'reads counted, from words read aloud',
+  outcome: 'read correctly',
   components: letterSoundComponents,
   expand: units => mergeEvidence(units.flatMap(u => unitPairs(u.unit)
     .map(id => ({ kind: 'letter_sound', id, attempts: u.attempts, correct: u.correct })))),
 };
 
-export const COMPONENT_KINDS: readonly ComponentKind[] = [LETTER_SOUND];
+/**
+ * A word the child built from letters, as its pairs and whether each was spelled. A plain word is a correct build.
+ * `word>built` is a wrong one (`cat>kat`): when the build has the word's length and every pair is a run of letters
+ * (no split digraph), each pair is checked in its own boxes, so `cat>kat` is c wrong, a and t right. Otherwise the
+ * whole word counts as missed. A word the library lacks gives none.
+ */
+export function spelledPairs(unit: string): Array<{ id: string; right: boolean }> {
+  const cut = unit.indexOf('>');
+  const word = cut > 0 ? unit.slice(0, cut) : unit, built = cut > 0 ? unit.slice(cut + 1) : word;
+  const pairs = lexWord(word)?.gpcs ?? [];
+  const letters = pairs.map(id => id.split('/')[0]);
+  const boxed = built.length === word.length && letters.join('') === word;
+  let at = 0;
+  return pairs.map((id, i) => {
+    const span = built.slice(at, at + letters[i].length);
+    at += letters[i].length;
+    return { id, right: built === word || (boxed && span === letters[i]) };
+  });
+}
+
+/**
+ * Spelling: the same letter-sound pairs as `letter_sound`, counted in the other direction (the child hears the word
+ * and picks the letters). Kept as its own kind (user ruling 2026-11-11): a child can read c in "cat" and still spell
+ * it with k, so a spelling miss must not mark the pair as misread, and the reading draw must not chase it.
+ */
+const SPELLING: ComponentKind = {
+  kind: 'spelling',
+  title: 'Spelling',
+  unit: 'a word built from letters on the first try, or `word>built` for a wrong build',
+  library: 'service/wordSpace/lexicon.json',
+  display: 'ComponentMasteryGrid',
+  counted: 'spellings counted, first builds only',
+  outcome: 'spelled correctly',
+  components: letterSoundComponents,
+  expand: units => mergeEvidence(units.flatMap(u => spelledPairs(u.unit).map(p => ({ kind: 'spelling', id: p.id,
+    attempts: u.attempts, correct: u.unit.includes('>') ? (p.right ? u.attempts : 0) : u.correct })))),
+};
+
+export const COMPONENT_KINDS: readonly ComponentKind[] = [LETTER_SOUND, SPELLING];
 
 export const componentKind = (kind: string): ComponentKind | undefined => COMPONENT_KINDS.find(k => k.kind === kind);
 

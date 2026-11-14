@@ -18,5 +18,6 @@ export async function GET(request: Request) {
   if (!kind) return NextResponse.json({ kinds: COMPONENT_KINDS.map(k => ({ kind: k.kind, title: k.title })) });
   const found = componentKind(kind);
   if (!found) return NextResponse.json({ error: 'Unknown kind' }, { status: 404 });
-  return NextResponse.json({ kind: found.kind, title: found.title, components: found.components() });
+  return NextResponse.json({ kind: found.kind, title: found.title, counted: found.counted, outcome: found.outcome,
+    components: found.components() });
 }

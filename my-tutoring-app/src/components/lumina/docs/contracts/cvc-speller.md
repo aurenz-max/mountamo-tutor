@@ -106,6 +106,11 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Property:** with `config.difficulty` set and no `ctx.remediationFocus`, fill-vowel, spell-word and word-sort draw from `service/wordSpace/cvcSpellerSpaces.ts`: 3-letter CVC words spelled only with the cumulative group's letters (R1), on the vowel focus when one is named, in the word family when one is named, no repeated rime (`enforceCvcScopeAndVariety` drops nothing). fill-vowel ranks by the word (e/i vowels, a nasal after the vowel, stops on both sides); word-sort's tier picks the vowel PAIR (a/i at easy → e/i at hard) and draws half its words from each vowel; spell-word ranks by spelling choices (c or k, x, b/d) and keeps R6's letter bank. Each challenge carries a `wordSpace` stamp (not sent to the tutor). A session that cannot fill 5 words (or 4 for one mode) takes the model path. make_word unchanged.
 - **Probe:** `npm test -- src/components/lumina/service/wordSpace/cvcSpellerSpaces.test.ts`; `scripts/word-space-lab/probe.sh cvc-speller after ...`.
 
+### R14 — Spelling evidence and the weak-pair lean · OBSERVED 2026-11-11
+- **Property:** `spell_word` puts `componentTallies` of kind `spelling` on its metrics: one unit per session item from its FIRST build (`cat`, or `cat>kat`), never a later build or the practice word. The spoken modes and `make_word` report none. The spell-word space marks each item `spells`, so the picker draws words with the learner's weak `spelling` pairs first inside the requested tier, at most half a session; it never reads the `letter_sound` tallies.
+- **Demanded by:** component mastery (user ruling 2026-11-11: spelling is its own kind).
+- **Probe:** `npm test -- CvcSpeller.workspace src/components/lumina/service/componentMastery`; `node scripts/spelling-kind-bench.mjs`.
+
 ## Conflicts
 
 None open.
@@ -118,6 +123,7 @@ None open.
 - **tutoring:** deleted 2026-10-20 with `cvcSpellerScript.ts` and `CvcSpeller.di-script.test.ts` (boss migration).
 
 ## Changelog
+- 2026-11-11 — **R14 added** (spelling kind, QUEUE 8.3j). No requirement edited: the metrics gain a field, the space gains `spells`; R1, R6 and R13 hold (the lean orders equal items inside the tier).
 - 2026-10-20 — **boss migration** (`/add-live-tutor-tools`, wave 2 bucket D). Runner-era wiring re-based, no requirement dropped: R2 (card modes), R3 (`cvcKey` null on a spelling; askLeaks), R4 (`runner.requestHear`), R7 (probe), R8 (bossAdapter; tutoring block deleted), R9 (never-say rule now scene `constraints`; dead leak tokens dropped), R12 (one lever set; scene fact `onScreen` replaces `levers_on_screen`). Deleted: `cvcSpellerWorkspace.ts`, `cvcSpellerScript.ts`, `adapters/cvcSpellerLive.ts`, `pip/cvcSpellerPipPose.ts`, the per-primitive Pip surface test and the di-script test. Description corrected (see Catalog projection).
 - 2026-10-13 — **R13 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/cvc-speller/before.txt`): cat bed pig mop/dog bug/sun at every tier in every mode; rug pictured as yarn. After: fill-vowel easy rat/hug/log → hard hen/him/dig; word-sort easy a/i → medium e/u → hard e/i; spell-word hard draws c/k words (cat, cop, kid). R6 narrowed to the model path. `resolveCvcVowelFocus` now reads "Short 'o'" (the quote defeated the match on both paths).
 

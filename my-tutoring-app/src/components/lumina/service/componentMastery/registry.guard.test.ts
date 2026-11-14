@@ -101,6 +101,29 @@ describe('letter_sound', () => {
   });
 });
 
+describe('spelling', () => {
+  const k = componentKind('spelling')!;
+  const by = (units: Array<{ unit: string; attempts: number; correct: number }>) =>
+    Object.fromEntries(k.expand(units).map(r => [r.id, [r.attempts, r.correct]]));
+
+  it('has the letter-sound pairs as its ids and is stored under its own kind', () => {
+    expect(k.components().map(c => c.id)).toEqual(componentKind('letter_sound')!.components().map(c => c.id));
+    expect(k.expand([{ unit: 'cat', attempts: 1, correct: 1 }]).every(r => r.kind === 'spelling')).toBe(true);
+  });
+
+  it('a wrong build counts against the boxes that were wrong and for the boxes that were right', () => {
+    expect(by([{ unit: 'cat>kat', attempts: 1, correct: 0 }])).toEqual({ 'c/K': [1, 0], 'a/AE': [1, 1], 't/T': [1, 1] });
+    expect(by([{ unit: 'cat', attempts: 1, correct: 1 }, { unit: 'cat>cet', attempts: 1, correct: 0 }]))
+      .toEqual({ 'c/K': [2, 2], 'a/AE': [2, 1], 't/T': [2, 2] });
+  });
+
+  it('a build of another length, or of a word with a split pair, counts against the whole word', () => {
+    expect(by([{ unit: 'cat>ca', attempts: 1, correct: 0 }])).toEqual({ 'c/K': [1, 0], 'a/AE': [1, 0], 't/T': [1, 0] });
+    expect(Object.values(by([{ unit: 'cake>kake', attempts: 1, correct: 0 }])).every(([, correct]) => correct === 0)).toBe(true);
+    expect(k.expand([{ unit: 'zzzznotaword>zzz', attempts: 1, correct: 0 }])).toEqual([]);
+  });
+});
+
 describe('tally validation', () => {
   it('accepts a well-formed tally and refuses a malformed one', () => {
     expect(validTallies([{ kind: 'letter_sound', units: [{ unit: 'ship', attempts: 2, correct: 1 }] }])).toBe(true);

@@ -51,7 +51,7 @@ import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
 import {
-  cvcItem, cvcMiss, cvcScene, cvcWords, describeSpelling, hearWordRequest, spellingMatches, vowelKeyword,
+  cvcItem, cvcMiss, cvcScene, cvcWords, describeSpelling, hearWordRequest, spellingMatches, spellingTally, vowelKeyword,
   type CvcTask, type CvcWord,
 } from './cvcSpellerDomain';
 import {
@@ -208,6 +208,8 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
   /** Sound-level accuracy, accumulated from checked builds. */
   const soundStatsRef = useRef({ vowelOk: 0, vowelTried: 0, consonantOk: 0, consonantTried: 0 });
   const errorPatternsRef = useRef<string[]>([]);
+  /** Each session item's first build, for the spelling tallies (`spellingTally`). */
+  const firstBuildsRef = useRef(new Map<string, string>());
   const hearTapsRef = useRef(0);
 
   // In-item levers (`cvcSpellerLevers.ts`), keyed by the session item they were pulled on, and the
@@ -254,6 +256,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
       // The stretch ladder is deleted (it isolated the middle sound on demand); Hear It rides in details.
       stretchUsed: 0,
       attemptsCount: outcomes.reduce((s, o) => s + 1 + o.corrections, 0),
+      componentTallies: spellingTally(challenges, firstBuildsRef.current),
     };
     const diagnosisEvidence = summary.accuracy < 60 ? summary.diagnosisEvidence : undefined;
     evaluation.submitResult(summary.accuracy >= 60, summary.accuracy, metrics,
@@ -346,6 +349,9 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
       runner.commitGesture({ response: describeSpelling(placed), correct, cue: () => '',
         miss: correct ? undefined : cvcMiss(currentChallenge, placed) });
       return;
+    }
+    if (!firstBuildsRef.current.has(currentChallenge.id)) {
+      firstBuildsRef.current.set(currentChallenge.id, placed.map(l => (l ?? '_').toLowerCase()).join(''));
     }
     const stats = soundStatsRef.current;
     placed.forEach((letter, i) => {

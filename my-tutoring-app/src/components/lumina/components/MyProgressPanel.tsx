@@ -99,6 +99,7 @@ export default function MyProgressPanel({ studentId, onBack }: MyProgressPanelPr
       <StudentProfileSummary studentId={studentId} />
       {/* ── Letter sounds: per-child tallies below the subskill (service/componentMastery) ── */}
       <ComponentMasteryGrid key={`cm-${studentId}`} studentId={studentId} kind="letter_sound" />
+      <ComponentMasteryGrid key={`cm-sp-${studentId}`} studentId={studentId} kind="spelling" />
       {/* ── What you know — two-layer learner model, stored state (shadow preview) ── */}
       <LearnerModelSection key={`lm-${studentId}`} studentId={studentId} />
       <SavedLearningObservations key={studentId} studentId={studentId} />

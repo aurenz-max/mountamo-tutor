@@ -82,6 +82,8 @@ export function cvcSpellerSpace(mode: 'fill-vowel' | 'spell-word', scope: Letter
       structure: mode === 'spell-word' ? `${v}:${/[ck]/.test(x.w) ? 'c-or-k' : 'plain'}` : `${v}:${nasal ? 'nasal' : 'oral'}`,
       key: v,
       words: [x.w, `-${x.w.slice(1)}`],
+      // spell-word is sound to print: the draw leans to the pairs this child misspells (component kind `spelling`).
+      ...(mode === 'spell-word' ? { spells: [x.w] } : {}),
       payload: payloadOf(x),
     };
   });

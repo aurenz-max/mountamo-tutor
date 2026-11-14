@@ -41,7 +41,7 @@ const CELL_CLASS: Record<CellState, string> = {
 };
 
 const LEGEND: Array<[CellState, string]> = [
-  ['secure', '9 in 10 or better'], ['growing', '7 in 10 or better'], ['shaky', 'under 7 in 10'], ['seen', 'fewer than 3 reads'],
+  ['secure', '9 in 10 or better'], ['growing', '7 in 10 or better'], ['shaky', 'under 7 in 10'], ['seen', 'fewer than 3 counted'],
 ];
 
 /** A cell's tally: its own id plus every id shown with it (`also`). */
@@ -63,7 +63,7 @@ export function gridRows(components: readonly ComponentInfo[], tallies: Componen
 }
 
 export default function ComponentMasteryGrid({ studentId, kind }: ComponentMasteryGridProps) {
-  const [catalog, setCatalog] = useState<{ title: string; components: ComponentInfo[] } | null>(null);
+  const [catalog, setCatalog] = useState<{ title: string; counted: string; outcome: string; components: ComponentInfo[] } | null>(null);
   const [mastery, setMastery] = useState<ComponentMasteryResponse | null>(null);
 
   useEffect(() => {
@@ -74,7 +74,8 @@ export default function ComponentMasteryGrid({ studentId, kind }: ComponentMaste
       analyticsApi.getComponentMastery(studentId, kind),
     ]).then(([c, m]) => {
       if (cancelled || !c || !Array.isArray(c.components)) return;
-      setCatalog({ title: c.title, components: c.components }); setMastery(m);
+      setCatalog({ title: c.title, counted: c.counted ?? 'counted', outcome: c.outcome ?? 'correct', components: c.components });
+      setMastery(m);
     }).catch(() => { /* quiet: the rest of the profile works without this card */ });
     return () => { cancelled = true; };
   }, [studentId, kind]);
@@ -96,7 +97,7 @@ export default function ComponentMasteryGrid({ studentId, kind }: ComponentMaste
         <div className="flex flex-wrap items-center gap-3">
           <LuminaSectionLabel accent="emerald">{catalog.title}</LuminaSectionLabel>
           <LuminaBadge accent="emerald">{observed.length} seen</LuminaBadge>
-          <span className="text-xs text-slate-400">{total.toLocaleString()} reads counted, from words read aloud</span>
+          <span className="text-xs text-slate-400">{total.toLocaleString()} {catalog.counted}</span>
         </div>
         <div className="space-y-3">
           {rows.map(row => (
@@ -108,8 +109,8 @@ export default function ComponentMasteryGrid({ studentId, kind }: ComponentMaste
                   const state = cellState(tally);
                   return (
                     <div key={c.id} data-component={c.id} data-state={state}
-                      title={`${c.label}${c.detail ? ` as in ${c.detail}` : ''}: ${tally ? `${tally.correct} of ${tally.attempts} read correctly` : 'not read yet'}`}
-                      className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg border ${CELL_CLASS[state]}`}>
+                      title={`${c.label}${c.detail ? ` as in ${c.detail}` : ''}: ${tally ? `${tally.correct} of ${tally.attempts} ${catalog.outcome}` : 'not seen yet'}`}
+                      className={`flex h-12 min-w-12 flex-col items-center justify-center whitespace-nowrap rounded-lg border px-2 ${CELL_CLASS[state]}`}>
                       <span className="text-sm font-semibold leading-none">{c.label}</span>
                       <span className="mt-1 text-[10px] leading-none opacity-70">
                         {tally ? `${tally.correct}/${tally.attempts}` : c.detail}

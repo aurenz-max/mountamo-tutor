@@ -52,7 +52,9 @@ it('spell-word: the third letter commits; a wrong build keeps its right letters 
   expect(h.state().status).toBe('completed');
   await flushScoring();
   expect(seam.submit).toHaveBeenCalledOnce();
-  expect(seam.submit.mock.calls[0][2]).toMatchObject({ wordsSpelledCorrectly: 1, commonErrors: ['mat'], vowelAccuracy: 100 });
+  expect(seam.submit.mock.calls[0][2]).toMatchObject({ wordsSpelledCorrectly: 1, commonErrors: ['mat'], vowelAccuracy: 100,
+    // The first build only, as the spelling kind's unit: the corrected second build is not counted.
+    componentTallies: [{ kind: 'spelling', units: [{ unit: 'cat>mat', attempts: 1, correct: 0 }] }] });
 });
 
 it('fill-vowel: the blank stays a blank until the middle sound is credited', () => {

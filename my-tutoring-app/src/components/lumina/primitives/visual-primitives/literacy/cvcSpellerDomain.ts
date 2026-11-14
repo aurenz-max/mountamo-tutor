@@ -14,6 +14,7 @@ import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import type { SpokenKey } from '../../../components/live-activity/spokenKey';
 import type { SupportTier } from '../../../components/live-activity/supportFact';
 import { validateChallengePool } from '../../../components/live-activity/adapters/adapterContract';
+import type { ComponentTally } from '../../../service/componentMastery/contract';
 import type { CvcSpellerChallenge, CvcSpellerData } from './CvcSpeller';
 import type { CvcMiss } from './cvcSpeller.card';
 import { letterAssignment, letterItemsFrom, type LetterBuildItem } from './letterBuild';
@@ -155,7 +156,22 @@ export function cvcMiss(c: CvcSpellerChallenge, placed: ReadonlyArray<string | n
   return (['first_letter', 'middle_letter', 'last_letter'] as const)[wrong.indexOf(true)];
 }
 
-export const describeSpelling = (placed: ReadonlyArray<string | null>) =>
+/**
+ * The session's spelling evidence (component kind `spelling`): each spell-word item's FIRST build, as the word when
+ * it was right and `word>built` when it was not, so the kind can count each box on its own pair. Later builds are
+ * left out (the screen has shown which boxes were wrong), and so is the ungraded practice word.
+ */
+export function spellingTally(challenges: readonly CvcSpellerChallenge[], firstBuilds: ReadonlyMap<string, string>): ComponentTally[] {
+  const units = challenges.flatMap(c => {
+    const built = firstBuilds.get(c.id);
+    if (c.taskType !== 'spell-word' || !built) return [];
+    const word = cvcItem(c).letters.join('');
+    return [{ unit: built === word ? word : `${word}>${built}`, attempts: 1, correct: built === word ? 1 : 0 }];
+  });
+  return units.length ? [{ kind: 'spelling', units }] : [];
+}
+
+export const describeSpelling =(placed: ReadonlyArray<string | null>) =>
   `Put letters in the boxes: ${placed.map(l => l ?? '_').join(' ')}`;
 
 // ── The scene ────────────────────────────────────────────────────────────────
