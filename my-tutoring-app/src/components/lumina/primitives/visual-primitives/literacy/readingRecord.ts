@@ -8,11 +8,8 @@
  * transcript cannot locate them (it matches the print exactly, or fewer than half the printed words appear in it),
  * the read is `unlocated`: it names no word and is left out of the word count, never guessed.
  *
- * DISPUTED READS. The attempts are the scored session: `correct` is each spoken answer re-graded from its
- * transcript, and `flowCorrect` is the verdict of the tutor, who heard the audio. When the two disagree the read is
- * disputed and counts for nothing here, right or wrong (user ruling 2026-10-14: a disagreement is uncertain). Found
- * on the first real session (2026-11-10): the tutor credited "sun", the transcript said "sign", and the word was
- * tallied as misread.
+ * `correct` is the tutor's verdict, who heard the audio (USER RULING 2026-11-13): a credited read transcribed "sign"
+ * for "sun" (the first real session, 2026-11-10) counts "sun" as read correctly.
  */
 import type { ComponentTally } from '../../../service/componentMastery/contract';
 
@@ -33,12 +30,7 @@ export interface ReadAttempt {
   correct: boolean;
   practice?: true;
   answerExposure?: 'none' | 'partial' | 'full';
-  /** The tutor's verdict in the lesson, when the attempt was re-graded afterwards. */
-  flowCorrect?: boolean;
 }
-
-/** The tutor and the re-grade disagree on this read. */
-const disputed = (a: ReadAttempt): boolean => a.flowCorrect !== undefined && a.flowCorrect !== a.correct;
 
 export interface Miscue {
   lineId: string;
@@ -65,8 +57,6 @@ export interface ReadingRecord {
   miscues: Miscue[];
   /** Reads the tutor did not credit whose words the transcript could not locate. */
   unlocated: number;
-  /** Reads the tutor and the re-grade disagree on: left out of every count above. */
-  disputed: number;
 }
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
@@ -164,11 +154,11 @@ export function wordReadTally(lines: readonly ReadLine[], attempts: readonly Rea
 
 /**
  * An item's first spoken answer, when it can count as evidence: not practice, not after the answer was shown or said
- * (a lever, a demonstration: that is not the learner's own decoding), and not disputed.
+ * (a lever, a demonstration: that is not the learner's own decoding).
  */
 function countedFirstRead(itemId: string, attempts: readonly ReadAttempt[]): ReadAttempt | null {
   const first = attempts.find(a => a.itemId === itemId && a.source === 'speech' && !a.practice);
-  return !first || first.answerExposure === 'full' || disputed(first) ? null : first;
+  return !first || first.answerExposure === 'full' ? null : first;
 }
 
 /** The unit for a printed letter or letter team whose sound the learner said; the kind maps it to the taught pair. */
@@ -193,12 +183,11 @@ export function letterSoundTally(items: ReadonlyArray<{ id: string; letters: str
 
 /** The session's reading record: every located miscue, and word accuracy over cold first reads. */
 export function readingRecord(lines: readonly ReadLine[], attempts: readonly ReadAttempt[]): ReadingRecord {
-  const record: ReadingRecord = { wordsCounted: 0, wordsCorrect: 0, wordAccuracy: null, miscues: [], unlocated: 0, disputed: 0 };
+  const record: ReadingRecord = { wordsCounted: 0, wordsCorrect: 0, wordAccuracy: null, miscues: [], unlocated: 0 };
   for (const line of lines) {
     const cold = line.cold !== false, words = readWords(line.text).length;
     const reads = attempts.filter(a => a.itemId === line.id && a.source === 'speech' && !a.practice);
     reads.forEach((read, index) => {
-      if (disputed(read)) { record.disputed++; return; }
       const found = read.correct ? [] : locateMiscues(line.text, read.response);
       if (found === null) record.unlocated++;
       else record.miscues.push(...found.map(m => ({ lineId: line.id, ...m, attempt: index + 1, cold })));

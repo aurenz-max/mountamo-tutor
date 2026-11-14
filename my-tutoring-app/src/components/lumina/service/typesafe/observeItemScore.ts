@@ -1,15 +1,35 @@
 import 'server-only';
 import type { NoulQuestion } from '../manifest/typesafe/typesafeClient';
 import { runObservation, type ObservationKind } from './observationKinds';
-import { abstainItemScore, type ItemScoreDecision, type ItemScoreRequest }
-  from '../../components/live-activity/runtime/itemScoringContract';
-import { probability } from '../../components/live-activity/runtime/observationContract';
+import { probability, type ItemScope, type ObservationAssessment } from '../../components/live-activity/runtime/observationContract';
 
 /**
- * The scoring pass: was the learner's own answer right? It grades the LEARNER's answer, where the
- * dialogue observer grades the TUTOR's feedback, so a misheard correct answer or an affirmed wrong one
- * is recorded as what the learner actually said. Advisory to the record only; it never moves a lesson.
+ * Was the learner's own answer right? Bench-only since USER RULING 2026-11-13 retired the app's scoring pass (the
+ * tutor's verdict is the record): `decisions-bench.mjs` and `decisions-audio-bench.mjs` use it to compare models on
+ * spoken grading, transcript against audio.
  */
+export interface ItemScoreRequest {
+  scope: ItemScope;
+  attemptIndex: number;
+  task: string;
+  expectedAnswer: string;
+  /** What the learner said, as transcribed (may be noisy). */
+  learner: string;
+  /** The tutor's reply to that answer. The tutor heard the audio. */
+  tutor: string;
+  /** What the tutor said just before the learner answered, when known. */
+  priorTutor?: string;
+}
+export interface ItemScoreDecision {
+  /** P(the learner's own answer in this turn is a correct answer to the task); null when abstained. */
+  learnerCorrect: number | null;
+  accepted: boolean;
+  reason: string;
+  ms: number;
+  model?: string;
+  assessment?: ObservationAssessment;
+}
+export const abstainItemScore = (reason: string, ms = 0): ItemScoreDecision => ({ learnerCorrect: null, accepted: false, reason, ms });
 export const ITEM_SCORE_QUESTIONS: Record<'learnerCorrect', NoulQuestion> = {
   learnerCorrect: { type: 'noul',
     instructions: 'A young learner answered `task` aloud. `learner` is a speech transcript of that answer: it may be '

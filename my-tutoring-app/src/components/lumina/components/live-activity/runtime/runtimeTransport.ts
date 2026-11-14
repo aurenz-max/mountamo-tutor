@@ -32,7 +32,8 @@ export function leverPulledMessage(lever: { id: string; kind: string; does: stri
   return `${LEVER_CAUSES[cause]}, so the host pulled ${lever.id} `
     + `(${lever.kind}). It is on screen now: ${lever.does} First point the learner to it: say what is now drawn and where to look, `
     + 'as a change to the picture; never call it a lever or a tool. '
-    + (lever.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.');
+    + (lever.kind === 'simplify' ? 'Then let them try the easier item on screen.' : 'Then let them try the same question again; do not work it through for them.')
+    + ' If the learner has answered since, answer that first: a right answer is credited, never covered by the help.';
 }
 
 /**
@@ -73,7 +74,6 @@ export class RuntimeTransport {
       // Only a newly raised request is worth a packet of its own. Everything else rides the next publish.
       if (report.status === 'observed' && runtime.learner.intent(itemScopeKey(report.request.scope), report.observation!, report.flags!))
         this.publish();
-      if (report.status === 'observed' && report.flags!.helpRequested) void this.pullLever('help');
     });
     if (classify === classifyDialogue) warmObservationRoutes();
     this.dialogue = new DialogueObserver(runtime.getSnapshot, classify, command => this.dispatch(command, true), message => {
@@ -94,6 +94,9 @@ export class RuntimeTransport {
   /** One entry for learner words: the outcome observer's context, and the advisory learner-turn observation. */
   learnerText(text: string, finished: boolean) {
     if (this.closed) return;
+    // The learner is speaking again before the lever announcement went out: they are trying, so the tutor
+    // answers them, not the help. The change stays on screen and in the scene facts.
+    if (text.trim() && this.afterTurn) this.dropAfterTurn('the learner spoke before it went out');
     this.dialogue.learnerText(text, finished);
     if (this.learnerObserver.learnerText(text, finished)) this.runtime.learner.learnerFinished();
   }
@@ -128,6 +131,12 @@ export class RuntimeTransport {
     release?.();
     this.dialogue.audio(audioPending);
     if (release) this.sendAfterTurn();
+  }
+  private dropAfterTurn(reason: string) {
+    if (this.afterTurnFallback) { clearTimeout(this.afterTurnFallback); this.afterTurnFallback = null; }
+    const held = this.afterTurn;
+    this.afterTurn = null;
+    if (held) this.runtime.trace.record({ stage: 'observer_lever', status: 'superseded', reason, input: { itemId: held.itemId } });
   }
   private sendAfterTurn() {
     if (this.afterTurnFallback) { clearTimeout(this.afterTurnFallback); this.afterTurnFallback = null; }
@@ -173,8 +182,10 @@ export class RuntimeTransport {
     queueMicrotask(() => { void this.pullLever('wrong'); });
   }
   /**
-   * The observer pulls the lever the ladder names (`leverTrigger`) when the learner says they are stuck or
-   * commits a wrong answer. The tutor is told what changed once it is on screen, as facts.
+   * The observer pulls the lever the ladder names (`leverTrigger`) when the learner commits a wrong answer. A
+   * learner turn read as "I'm stuck" pulls nothing (USER 2026-11-13): the transcript is not reliable beside the
+   * tutor, who heard the audio, and a "¿Qué?" read pulled a model card over her "That's right!". `help` stays for
+   * the lever bench's Stuck button. The tutor is told what changed once it is on screen, as facts.
    *
    * The pull is immediate; the message is not. With audio the tutor is usually already answering
    * "I'm stuck" when the pull lands (lever bench LB-8: cue 29.1s, reply 29.8s), and a message sent

@@ -382,10 +382,9 @@ it('sends learner signals with the packet, and a classified help request reaches
   const packet = lastPacket(h.sent.slice(before));
   expect(packet.learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0, turnsWithoutAnswer: 1 });
   expect(packet.learner.observations).toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true, attemptedAnswer: false })]);
-  // Nothing is graded. "Stuck" before any attempt pulls a help lever (handoff 21 ladder: stuck-first = help only),
-  // so the scene changes by that lever and nothing else.
+  // Nothing is graded, and a turn read as "stuck" pulls no lever (USER 2026-11-13): help comes from wrong answers.
   expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0, correctness: 'unknown' } });
-  expect((h.state().task!.workspace!.levers ?? []).filter(l => l.pulled).map(l => [l.id, l.kind])).toEqual([['line_up', 'help']]);
+  expect((h.state().task!.workspace!.levers ?? []).filter(l => l.pulled)).toEqual([]);
   expect(h.runtime.trace.getSnapshot().some(e => e.stage === 'learner_intent' && e.status === 'observed')).toBe(true);
   h.transport.close();
 });

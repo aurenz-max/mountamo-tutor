@@ -90,6 +90,23 @@ guidance says the learner may say or tap it; workspace test + one verdict-probe 
 | VB-4 | science/literacy: `habitat-diorama`, `molecule-constructor`, `poetry-lab`, `story-bridge`, `letter-sound-link`, `knowledge-check` (check: options may be rendered math) | queued |
 | — | `letter-spotter`, `periodic-table`: gesture by design (the item names the target) | not converted |
 
+## Hear the answer (HA, user 2026-11-13)
+
+Every spoken boss item with a closed key gets its learner clip heard BLIND by gemini-decision-1 (`spoken_hear`,
+`runtime/spokenHearContract.ts`): the audio form of `spoken_miss`, on the same key and misses. The spoken preset sets
+it (`hearKeyOf` in `boss.ts`); no primitive declares it. Options come from the key's shape (`hearCandidates`): a
+letter's sound among every letter's sound and name, one word among its misreads and every CVC word one sound away, any
+other answer among its misses' examples and menu words. A meaning key, or one with fewer than 3 wrong options, is not
+heard. The model is never told the answer; code reads the pick as correct or a miss. That reading names the miss; the
+transcript `spoken_miss` is the fallback (no clip, or a pick below 0.5). Credit stays with the tutor's verdict; a
+credit the clip confidently heard as a named wrong option (P ≥ 0.8) is traced `spoken_audio: disagrees` for review. Clip
+capture is on by default (`lumina.decisionsAudio` = '0' turns it off). Evidence: `qa/typesafe/decisions-bench-2026-11-12-addendum.md`.
+
+| Row | Primitives | Status |
+| --- | --- | --- |
+| HA-1 | Pilot: `letter-sound-link` see_hear, `phonics-blender` cvc | built 11-13, vitest `spokenHear.workspace.test.tsx`; route probe 16/20 on synthetic clips (330-550 ms). Owed: one Live run (user) on each, to confirm the reading lands before the tutor's verdict |
+| HA-2 | Sweep the closed-set spoken families: `di-word-reading`, `word-workout` word reads, `di-letter-sounds`, `letter-spotter` name_it, `phoneme-explorer` isolate/blend, `sound-swap`; then math number answers (needs a number option builder). Not: read-aloud, decodable-reader, story-ribbon, oral-sentence-studio (open answers). `/add-live-tutor-tools` | queued after HA-1's Live run |
+
 ## Queue
 
 **Resumed 2026-10-15 (user: R1 first).** Recount: 235 catalog ids, 134 `teachingWorkspace` blocks. C23-C34 hold 52 unbound ids: 26 with eval modes (wave **R1**, W1 + levers, batches by domain: astro+bio, chemistry 8, physics 4, flight/engineering, exhibits 5) and 26 with none (wave **R2**: triage for a code-checked task, `/add-eval-modes`, then W1; else HELD). Skipped in R1 until ruled: C31 `dump-truck-loader`, `excavator-arm-simulator`, `hydraulics-lab` (job-board reimaginings; user moved to excavator + dump truck dioramas 10-15) and `bridge-builder` (OB-4 next pilot). Evidence for the ladder (10-15): in batches 1 and 2a the automatic replay checks scored 0 flags on every primitive, while reading the replies found the tutor pointing at the right card by description or stating the fix on all seven; T3 (responsiveness judge) is the tier that would catch it, so it moves up to right after R1. After R1/R2: VB-F1 then VB-2, then the Phase 2 ladder (T2 observer tier, 1.3 miss patterns, T3 responsiveness). R1 batch 1 done 10-15 (`constellation-builder`, `planetary-explorer`, `cell-builder`). Batches 2a and 2b done 10-15 (chemistry, all eight). Replay harness fixed 10-15: `TUTOR_REPLAY_ITEMS=all` records every item (mixing + equation-balancer later items: 1/75 automatic flag; by reading, equation-balancer guided/complex name the unbalanced element 4/15, `guided#3` 3/5, open). Lever turns closed 10-15 (a replay-harness artifact). R1 batch 3 done 10-15. R1 batch 4 done 10-16. R2 triaged 10-16 ([R2 triage](R2-triage-2026-10-16.md): 14 BUILD + 3 ruled BUILD, 1 UNGRADED, 5 HELD); B1 (`telescope-simulator`, `orbit-mechanics-lab`, `rocket-builder`, `mission-planner`) done 10-16. Next: R2 B2 biology (`dna-explorer`, `bio-compare-contrast`, `bio-process-animator`, `evolution-timeline`). Was: R1 batch 4, the rest with modes (`propulsion-lab`, `transport-challenge`, `construction-sequence-planner`, `vehicle-comparison-lab`, `digital-skills-sim`, `fact-file`, `how-it-works`, `timeline-explorer`, `vocabulary-explorer`). Was: R1 batch 3, physics (`gravity-drop-tower`, `race-track-lab`, `sound-wave-explorer`, `flight-forces-explorer`).

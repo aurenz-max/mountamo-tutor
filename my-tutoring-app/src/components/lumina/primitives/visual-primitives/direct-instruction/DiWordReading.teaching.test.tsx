@@ -388,3 +388,20 @@ it('rejects a pool whose items cannot be asked, and one whose blend does not spe
   expect(broken([{ ...CHALLENGES.cvc_reading[0], word: 'Sam' }])).toThrow();
   expect(broken([{ ...CHALLENGES.cvc_reading[0], challengeType: 'letter_sound' as any }])).toThrow();
 });
+
+it('credits a correct read transcribed "¿Qué?" when the tutor says it is right (USER RULING 2026-11-13)', () => {
+  const h = mount('read_word');
+  const first = h.state().task!.itemId;
+  h.say('¿Qué?');
+  h.feedback('correct', 'advance');
+  expect(h.state().task!.workspace!.attempts[0]).toMatchObject({ itemId: first, correct: true });
+  expect(h.state().task!.itemId).not.toBe(first);
+});
+
+it('records a "¿Qué?" read as wrong when the tutor says it is wrong, and names no miss from the noise', () => {
+  const h = mount('read_word');
+  h.say('¿Qué?');
+  h.feedback('incorrect', 'retry');
+  expect(h.state().task!.workspace!.attempts[0]).toMatchObject({ correct: false });
+  expect(h.state().task!.workspace!.attempts[0].miss).toBeUndefined();
+});

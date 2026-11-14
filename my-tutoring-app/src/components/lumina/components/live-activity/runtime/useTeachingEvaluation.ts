@@ -28,7 +28,7 @@ export function useTeachingEvaluation<M extends PrimitiveMetrics>({ primitiveTyp
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined });
   useEffect(() => {
-    // Waits for the scoring pass: the record is the re-graded session, not the flow verdicts.
+    // Waits for the session to complete; the record is its verdicts (`scoreSession`).
     if (!evaluationContext || !lesson.scored || evaluation.hasSubmitted) return;
     const result = teachingEvaluation(assignments, lesson.state, lesson.scored, evalMode);
     evaluation.submitResult(result.passed, result.accuracy, metrics(result),

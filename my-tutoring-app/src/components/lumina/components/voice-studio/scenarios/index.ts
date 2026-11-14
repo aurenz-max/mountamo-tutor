@@ -2,6 +2,7 @@ import type { StudioScenario } from '../types';
 import SayWordScenario from './SayWordScenario';
 import ChoiceQueueScenario from './ChoiceQueueScenario';
 import LetterNameScenario from './LetterNameScenario';
+import HearWordScenario from './HearWordScenario';
 
 /**
  * Scenario registry — the plug-and-play seam.
@@ -17,6 +18,12 @@ export const STUDIO_SCENARIOS: StudioScenario[] = [
     label: 'Say the word',
     blurb: 'Production judging: did the student say the target word? (yes/no ladder)',
     Component: SayWordScenario,
+  },
+  {
+    id: 'hear-word',
+    label: 'Hear the word (Decisions)',
+    blurb: 'gemini-decision-1 judges your clip three ways: told the answer, the app\'s spoken_miss, and blind "which word?". Say right and wrong words; the scoreboard compares.',
+    Component: HearWordScenario,
   },
   {
     id: 'choice-queue',

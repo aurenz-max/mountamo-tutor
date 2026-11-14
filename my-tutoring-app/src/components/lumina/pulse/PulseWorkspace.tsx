@@ -14,6 +14,8 @@ interface PulseWorkspaceProps {
   topic: string;
   gradeLevel: string;
   children: React.ReactNode;
+  /** Rendered beside the section, outside the learner surface (a tester's inspector); reads the host. */
+  aside?: React.ReactNode;
 }
 
 /**
@@ -26,7 +28,7 @@ interface PulseWorkspaceProps {
  * (AIHelper connects standalone on mount), and a run-wide lesson session would switch those items
  * onto the lesson path. Pulse items are independent skills, so no conversation is lost between them.
  */
-export function PulseWorkspace({ binding, data, sessionId, topic, gradeLevel, children }: PulseWorkspaceProps) {
+export function PulseWorkspace({ binding, data, sessionId, topic, gradeLevel, children, aside }: PulseWorkspaceProps) {
   const items = useMemo(() => new Map([[binding.instanceId, binding]]), [binding]);
   return <WorkspaceHostProvider scope="pulse" items={items} initialActiveId={binding.instanceId}>
     <PulseTutorSession binding={binding} data={data} sessionId={sessionId} topic={topic} gradeLevel={gradeLevel} />
@@ -34,6 +36,7 @@ export function PulseWorkspace({ binding, data, sessionId, topic, gradeLevel, ch
     {/* Connection state and the reconnect control: the surface stays disabled until the tutor is
         connected, and this is what tells the learner why. */}
     <CuratorCompanion />
+    {aside}
   </WorkspaceHostProvider>;
 }
 

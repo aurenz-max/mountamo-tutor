@@ -75,7 +75,7 @@ describe('a pull makes the next try assisted work on the same item (rulings 3 an
     expect(session.advance()).toBe(true);
     const state = session.getSnapshot();
     expect(state.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['drop_far_choice'] });
-    const result = teachingEvaluation(items, state, scoreSession(['a'], state, state.attempts.map(() => undefined)), 'compare');
+    const result = teachingEvaluation(items, state, scoreSession(['a'], state), 'compare');
     expect(result.solvedCount).toBe(1);
     expect(result.diagnosisEvidence.firstResponseScore).toBe(0);
   });

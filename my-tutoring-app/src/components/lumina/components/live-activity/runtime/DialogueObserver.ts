@@ -129,7 +129,7 @@ export class DialogueObserver {
       const spoken = !!request.pendingResponse && request.activity?.facts.response === 'speech';
       // A below-gate "not credited" resolution may only ever reopen the item, never credit it.
       const notCredited = decision.resolution === 'not_credited' && decision.verdict === 'incorrect' && decision.transition === 'retry';
-      // A tutor's plain confirmation, asked for by the host, may advance below the gate: the record is re-graded.
+      // A tutor's plain confirmation, asked for by the host, may advance below the gate: her verdict is the record.
       const confirmed = decision.resolution === 'confirmed_by_tutor' && request.confirming === true
         && decision.verdict === 'correct' && decision.transition === 'advance';
       const verdictValid = notCredited || confirmed || ['correct', 'incorrect'].includes(decision.verdict) && Number.isFinite(decision.verdictConfidence)

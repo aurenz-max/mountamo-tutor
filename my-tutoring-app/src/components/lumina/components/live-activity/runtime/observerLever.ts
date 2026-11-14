@@ -7,8 +7,9 @@
  * - The second wrong answer on the same item pulls help, never simplify.
  * - A wrong answer with a help lever already pulled for this learner pulls simplify (a help an easy tier
  *   starts with is the item's presentation, not a pull).
- * - "I'm stuck" after a wrong answer pulls the next lever of either kind.
- * - "I'm stuck" before any attempt pulls help only. The pull records the item as assisted, so the next
+ * - A learner turn read as "I'm stuck" pulls nothing (USER 2026-11-13): help comes from wrong answers and the
+ *   tutor's own tool. The `help` event remains for the lever bench's Stuck button: after a wrong answer it pulls
+ *   the next lever of either kind; before any attempt, help only. The pull records the item as assisted, so the next
  *   attempt is assisted work, never a first-response success.
  *
  * Every item on the workspace can be tried again after a miss (the observer's retry), so a pull always

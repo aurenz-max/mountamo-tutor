@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { decisionsAudioEnabled, setDecisionsAudioEnabled, subscribeDecisionsAudio } from '../utils/learnerClip';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 import { EvaluationProvider } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
@@ -255,7 +256,8 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
             <p className="mt-1 max-w-2xl text-sm text-slate-400">Run a curated example for every production evaluation mode, or build an objective-scoped run of your own.</p>
           </div>
         </div>
-        <div className="flex shrink-0 gap-2 pl-0 sm:pl-4">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 pl-0 sm:pl-4">
+          <AudioJudgeSwitch />
           <span className="rounded-full border border-white/10 bg-slate-900/60 px-3 py-1.5 text-xs text-slate-300">{DI_TESTER_PRIMITIVES.length} primitives</span>
           <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-200">{DI_TESTER_PRESETS.length} eval modes</span>
         </div>
@@ -424,7 +426,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
               {/* A bound pack gets its own Live session and tutor face from the host. */}
               <TesterWorkspace key={runKey} primitiveId={generated.id} instanceId={`di-tester-${runKey}`}
                 evalMode={completedRun.evalMode} data={generated.data} topic={completedRun.objective} offline={tutorMode === 'offline'}
-                gradeLevel={completedRun.gradeLevel} onEvaluationSubmit={logEvaluation}>
+                gradeLevel={completedRun.gradeLevel} onEvaluationSubmit={logEvaluation} inspector>
                 <RenderedPrimitive generated={generated} runKey={runKey} />
                 <CuratorCompanion />
               </TesterWorkspace>
@@ -446,6 +448,25 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
     </div>
   );
 };
+
+/** Header toggle for the spoken-miss reader: Jev reads the transcript; Gemini Decisions (the default) also hears the
+ *  clip blind on items that declare `hear`, and that reading names the miss. Credit is the tutor's either way. */
+function AudioJudgeSwitch() {
+  const on = useSyncExternalStore(subscribeDecisionsAudio, decisionsAudioEnabled, () => true);
+  const option = (value: boolean, label: string, title: string) => (
+    <button type="button" role="radio" aria-checked={on === value} title={title} onClick={() => setDecisionsAudioEnabled(value)}
+      className={`rounded-full px-3 py-1 text-xs transition ${on === value
+        ? (value ? 'bg-amber-500/20 text-amber-100' : 'bg-cyan-500/15 text-cyan-100') : 'text-slate-400 hover:text-slate-200'}`}>
+      {label}
+    </button>
+  );
+  return (
+    <div role="radiogroup" aria-label="Spoken answer judge" className="inline-flex items-center rounded-full border border-white/10 bg-slate-900/60 p-0.5">
+      {option(false, 'Jev only', 'Jev reads the transcript of each spoken answer; no audio is captured.')}
+      {option(true, 'Gemini Decisions', 'Hear each spoken answer from its audio clip, blind (gemini-decision-1): on items that declare what the answer can be, the clip names the miss and the transcript is the fallback. Credits nothing; the tutor does. Starts at the next tutor turn.')}
+    </div>
+  );
+}
 
 const DirectInstructionPrimitivesTester: React.FC<Props> = (props) => (
   <EvaluationProvider>

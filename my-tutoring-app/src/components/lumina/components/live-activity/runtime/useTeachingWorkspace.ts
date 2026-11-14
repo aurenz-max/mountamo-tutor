@@ -5,17 +5,18 @@ import { flushSync } from 'react-dom';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLiveRuntimeActive, usePrimitiveRuntime } from './LiveRuntimeContext';
 import { TeachingSession, teachingSummary } from './TeachingSession';
-import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemScoreDecision, type ItemScoreRequest,
-  type ScoredSession } from './itemScoringContract';
+import { scoreSession } from './itemScoringContract';
 import { OBSERVATION_TIMEOUT_MS, postObservation } from './observationContract';
 import { abstainSpokenMiss, type KnownMiss, type SpokenMissDecision, type SpokenMissRequest } from './spokenMissContract';
 import { SoundManager } from '../../../utils/SoundManager';
-import { isFillerUtterance, latestLearnerUtterance } from './learnerUtterance';
+import { latestLearnerUtterance } from './learnerUtterance';
 import { lastMiss, nextLever } from './observerLever';
 import { useWorkspacePin } from './workspacePin';
 import { useReportPracticeCredit } from './practiceCredit';
 import { pinAllowsMissFromWords } from '../pinnedModes';
 import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
+import { latestLearnerClip } from '../../../utils/learnerClip';
+import { abstainSpokenHear, HEAR_FLAG, type HearKey, type SpokenHearDecision, type SpokenHearRequest } from './spokenHearContract';
 
 export interface TeachingItem {
   id: string;
@@ -37,6 +38,12 @@ export interface TeachingItem {
    * attempt's `miss`, as a gesture check does. Never published to the tutor: the patterns state the key.
    */
   misses?: KnownMiss[];
+  /**
+   * The closed key the learner's clip is heard blind against (`spoken_hear`: the model picks what was said among
+   * options code builds from this key and `misses`, never told the answer); that reading names the miss, and the
+   * transcript reading stands when there is no clip or no pick. Set by the spoken preset (`hearKeyOf`), not a primitive.
+   */
+  hear?: HearKey;
 }
 /**
  * What a primitive sets on `workspace.current` in a layout effect; the hook publishes it after every
@@ -107,10 +114,10 @@ export interface TeachingWorkspaceOptions {
 const noSubscription = () => () => {};
 /** No scene yet is not ready; a scene that does not say otherwise is. */
 const isReady = (w: TeachingWorkspace | null | undefined) => !!w && w.readyForResponse !== false;
-const scoreAttempt = postObservation<ItemScoreRequest, ItemScoreDecision>('/api/lumina/observe-item-score', abstainItemScore);
 const nameSpokenMiss = postObservation<SpokenMissRequest, SpokenMissDecision>('/api/lumina/observe-spoken-miss', abstainSpokenMiss);
-/** The whole scoring pass waits at most this long; an attempt not graded by then keeps its flow verdict. */
-export const SCORING_BUDGET_MS = 5000;
+const hearSpoken = postObservation<SpokenHearRequest, SpokenHearDecision>('/api/lumina/observe-spoken-hear', abstainSpokenHear);
+/** A blind hearing takes 0.5-2 s; one later than this is no help to the verdict it would inform. */
+const HEAR_TIMEOUT_MS = 6000;
 /**
  * A number's path through its turning points: a move in the same direction extends the last step, a reversal adds
  * one, and the host's own change (a lever, a demonstration) replaces the last value without making a turn. Six at most.
@@ -154,9 +161,10 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   const wasReady = useRef(false);
   const examinedSpeech = useRef(new Set<string>());
   const pendingSpeech = useRef<{ id: string; text: string } | null>(null);
-  /** The `spoken_miss` reading of the pending answer; `miss` is set once it lands (median 165 ms, before the tutor's reply). */
-  const spokenMiss = useRef<{ speechId: string; miss: string | null; abort: AbortController } | null>(null);
-  const dropSpokenMiss = () => { spokenMiss.current?.abort.abort(); spokenMiss.current = null; };
+  /** The miss reading of the pending answer; `miss` is set once it lands, before the tutor's reply. `heard`: the blind
+   *  audio reading (`spoken_hear`) settled it, and the transcript reading (median 165 ms) no longer may. */
+  const spokenMiss = useRef<{ speechId: string; miss: string | null; abort: AbortController; heard?: SpokenHearDecision } | null>(null);
+  const dropSpokenMiss = () => { const dropped = spokenMiss.current; spokenMiss.current = null; dropped?.abort.abort(); };
   /** The simpler item a simplify lever put on screen; the session holds only its id. */
   const practiceItem = useRef<TeachingItem | null>(null);
   const itemAt = (s: { index: number; practice: string | null }) =>
@@ -306,6 +314,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             if (!speech) return false;
             // Only a reading of THIS answer that has already landed; a late one is dropped, never attached afterwards.
             const miss = d.verdict !== 'correct' && spokenMiss.current?.speechId === speech.id ? spokenMiss.current.miss ?? undefined : undefined;
+            if (d.verdict === 'correct' && spokenMiss.current?.speechId === speech.id) flagCreditedMiss(spokenMiss.current.heard);
             // RP-2: a verdict from the learner's words stands only on a named miss, in a mode whose pilot allows it.
             if (d.fromWords && (!miss || !pinAllowsMissFromWords(options.primitiveId, evalMode))) return false;
             return commit(() => {
@@ -360,39 +369,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     settledSummary.current = teachingSummary(options.items.map(i => i.id), state);
   }
   const summary = settledSummary.current;
-  // The scoring pass (user direction 09-24): the flow verdicts moved the lesson; the RECORD comes from
-  // re-grading each spoken attempt's own answer once the session completes. Submissions wait for it;
-  // the practice summary on screen does not. Gesture attempts keep their code check.
-  const [gradedScore, setGradedScore] = useState<ScoredSession | null>(null);
-  const scoringStarted = useRef(false);
-  const spokenToGrade = !!summary && state.attempts.some(a => a.source === 'speech');
-  useEffect(() => {
-    if (!summary || !spokenToGrade || scoringStarted.current) return;
-    scoringStarted.current = true;
-    const items = new Map(latest.current.items.map(i => [i.id, i]));
-    const ids = latest.current.items.map(i => i.id), attempts = state, epoch = runtime?.getSnapshot().sessionEpoch || 'session';
-    const abort = new AbortController(), timer = setTimeout(() => abort.abort(), SCORING_BUDGET_MS);
-    const grades = attempts.attempts.map((a, attemptIndex): Promise<AttemptGrade | undefined> => {
-      const item = items.get(a.itemId);
-      if (a.source !== 'speech' || item?.expectedAnswer === undefined || !a.response.trim()) return Promise.resolve(undefined);
-      return scoreAttempt({ scope: { sessionEpoch: epoch, instanceId: latest.current.instanceId, itemId: a.itemId }, attemptIndex,
-        task: item.task.slice(0, 1500), expectedAnswer: String(item.expectedAnswer).slice(0, 2000),
-        learner: a.response.slice(-2000), tutor: (a.tutorResponse ?? '').slice(-4000) }, abort.signal)
-        .then(gradeOf, () => 'unclear' as const);
-    });
-    void Promise.all(grades).then(g => {
-      const scoredSession = scoreSession(ids, attempts, g);
-      // Inspectable like every observation: what each spoken attempt was graded, and where the record departs from the flow.
-      runtime?.trace.record({ stage: 'item_scoring', status: 'context', reason: `Scoring pass: ${scoredSession.disagreements} `
-        + `attempt(s) recorded differently from the flow verdict.`, input: { grades: g.map((grade, i) => ({
-          itemId: attempts.attempts[i].itemId, source: attempts.attempts[i].source, flowCorrect: attempts.attempts[i].correct,
-          grade: grade ?? (attempts.attempts[i].source === 'speech' ? 'unclear' : 'activity_check') })) } });
-      if (mounted.current) setGradedScore(scoredSession);
-    })
-      .finally(() => clearTimeout(timer));
-  }, [summary, spokenToGrade, state, runtime]);
-  const scored = useMemo(() => !summary ? null : spokenToGrade ? gradedScore
-    : scoreSession(options.items.map(i => i.id), state, []), [summary, spokenToGrade, gradedScore, state, options.items]);
+  // The record is the verdicts that moved the lesson (`scoreSession`); nothing re-grades a spoken answer afterwards.
+  const scored = useMemo(() => summary ? scoreSession(options.items.map(i => i.id), state) : null, [summary, state, options.items]);
   useEffect(() => {
     if (!active || !runtime || !settledSummary.current) return;
     const restoreCompletion = () => {
@@ -429,14 +407,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         && (session.getSnapshot().phase === 'working' || session.getSnapshot().phase === 'checked' && session.getSnapshot().lastResponse?.correct === false) && speech
         && !examinedSpeech.current.has(speech.id)) {
       examinedSpeech.current.add(speech.id);
-      // Filler or noise is no answer: it neither opens a pending answer (nothing for a tutor reply to credit) nor
-      // replaces one already waiting, so the record keeps what the learner actually said.
-      if (isFillerUtterance(speech.text)) {
-        runtime?.trace.record({ stage: 'learner_response', status: 'context', reason: 'Not an answer: filler or noise transcript.',
-          input: { utterance: speech.text, scope: { instanceId: latest.current.instanceId, itemId: currentItem().id } } });
-        trackWork(); changed();
-        return;
-      }
+      // Every finished turn opens the answer the tutor's verdict lands on, whatever the transcript reads: she heard the
+      // audio (USER RULING 2026-11-13: if the tutor says right, it is right; wrong, it is wrong).
       pendingSpeech.current = { id: speech.id, text: speech.text };
       runtime?.trace.record({ stage: 'learner_response', status: 'context', reason: 'Awaiting tutor feedback; transcript is supporting context.',
         input: { task: currentItem().task, utterance: speech.text,
@@ -498,7 +470,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     dropSpokenMiss();
     const i = currentItem(), epoch = runtime?.getSnapshot().sessionEpoch;
     if (!i.misses?.length || i.expectedAnswer === undefined || !epoch) return;
-    const abort = new AbortController(), entry = { speechId: speech.id, miss: null as string | null, abort };
+    const abort = new AbortController(), entry: NonNullable<typeof spokenMiss.current> = { speechId: speech.id, miss: null, abort };
     spokenMiss.current = entry;
     const request: SpokenMissRequest = { scope: { sessionEpoch: epoch, instanceId: latest.current.instanceId, itemId: i.id },
       task: i.task.slice(0, 1500), expectedAnswer: String(i.expectedAnswer).slice(0, 2000), learner: speech.text.slice(-2000), misses: i.misses,
@@ -508,11 +480,47 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     void nameSpokenMiss(request, abort.signal).catch(() => abstainSpokenMiss(abort.signal.aborted ? 'timeout' : 'unavailable'))
       .then(decision => {
         if (spokenMiss.current !== entry) return;
-        entry.miss = decision.miss;
+        // The clip outranks the transcript: once the blind hearing has settled the answer, the words do not reopen it.
+        if (!entry.heard) entry.miss = decision.miss;
         runtime?.trace.record({ stage: 'spoken_miss', status: decision.miss ? 'named' : decision.accepted ? 'unnamed' : 'abstained',
-          reason: decision.reason, input: request, result: decision });
+          reason: entry.heard ? `${decision.reason} (the audio reading already settled this answer)` : decision.reason,
+          input: request, result: decision });
       })
       .finally(() => clearTimeout(timer));
+    hearSpokenAnswer(entry, i, request.scope);
+  };
+  /**
+   * The primary reading of an item with `hear`: the learner's clip, heard blind by gemini-decision-1. A pick
+   * at the gate sets the miss (null when it heard the right answer), over the transcript reading; below the gate, or
+   * with no clip, the transcript reading stands. It names misses only; credit is the tutor's verdict.
+   */
+  const hearSpokenAnswer = (entry: NonNullable<typeof spokenMiss.current>, i: TeachingItem, scope: SpokenHearRequest['scope']) => {
+    if (!i.hear) return;
+    const clip = latestLearnerClip();
+    const input = { scope, hear: i.hear, misses: i.misses ?? [] };
+    if (!clip) { runtime?.trace.record({ stage: 'spoken_audio', status: 'skipped', reason: 'No learner audio captured for this turn; the transcript reading stands.', input }); return; }
+    // Its own clock: the transcript reading's 4 s timeout must not cut it off. A dropped answer still cancels it.
+    const abort = new AbortController(), timer = setTimeout(() => abort.abort(), HEAR_TIMEOUT_MS);
+    entry.abort.signal.addEventListener('abort', () => { if (spokenMiss.current !== entry) abort.abort(); });
+    void hearSpoken({ ...input, audioBase64: clip.base64 }, abort.signal)
+      .catch(() => abstainSpokenHear(abort.signal.aborted ? 'timeout' : 'unavailable'))
+      .then(decision => {
+        if (spokenMiss.current !== entry) return;
+        if (decision.accepted) { entry.heard = decision; entry.miss = decision.miss; }
+        runtime?.trace.record({ stage: 'spoken_audio', status: decision.miss ? 'named' : decision.accepted ? 'unnamed' : 'abstained',
+          reason: `gemini-decision-1 heard a ${(clip.ms / 1000).toFixed(1)} s clip blind: ${decision.reason}`,
+          input: { ...input, clipMs: clip.ms }, result: decision });
+      })
+      .finally(() => clearTimeout(timer));
+  };
+  /** The tutor credited an answer the clip confidently heard as something else: recorded for review, credit unchanged
+   *  (USER RULING 2026-11-13: the tutor's verdict is the record). */
+  const flagCreditedMiss = (heard?: SpokenHearDecision) => {
+    // "Something else" is no confident other answer: a key with an accept rule takes words no option lists.
+    if (!heard?.reading || heard.reading === 'correct' || heard.reading === 'other' || (heard.p ?? 0) < HEAR_FLAG) return;
+    runtime?.trace.record({ stage: 'spoken_audio', status: 'disagrees',
+      reason: `The tutor credited this answer; the clip was heard as "${heard.heard}" (${heard.reading}, ${heard.p!.toFixed(2)}). Credit stands.`,
+      result: heard });
   };
 
   const submitGestureResponse = (response: string, miss?: string) => {

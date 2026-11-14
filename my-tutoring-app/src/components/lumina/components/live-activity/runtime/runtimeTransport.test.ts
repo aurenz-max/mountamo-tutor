@@ -76,3 +76,67 @@ it('counts one settled tutor turn per held turn, however many output chunks and 
   expect('learner' in (s.sent.filter(m => m.type === 'runtime_state').at(-1)!.state as object)).toBe(false);
   s.transport.close();
 });
+
+/**
+ * di-word-reading 2026-11-13: four "what?" turns on one unread word pulled four levers (fox card, blend slide, sound
+ * dots, arrow), and a held "point to the card" message went out over the learner's right answer.
+ */
+function leverSetup(classifyLearner: any = () => new Promise<never>(() => {})) {
+  const levers = [
+    { id: 'model_word', kind: 'help', pulled: false, answers: [], when: '', does: 'A card.' },
+    { id: 'blend_slide', kind: 'help', pulled: false, answers: [], when: '', does: 'Slides.' },
+    { id: 'sound_dots', kind: 'help', pulled: false, answers: [], when: '', does: 'Dots.' },
+  ];
+  const attempts: { itemId: string; correct: boolean }[] = [];
+  let revision = 1;
+  const trace: { stage: string; status: string }[] = [];
+  const snapshot = () => ({ sessionEpoch: 'e', instanceId: 'i', status: 'active', revision, visibleRevision: revision,
+    task: { itemId: 'cat', phase: 'working', evidence: { attemptNumber: attempts.length },
+      workspace: { progression: 'observer', levers: levers.map(l => ({ ...l })), attempts } },
+    affordances: [{ action: { type: 'workspace', operation: 'pull_lever' } }] }) as any;
+  const runtime = {
+    getSnapshot: snapshot, subscribe: () => () => {}, acceptsMissFromWords: () => false,
+    trace: { record: (r: any) => trace.push(r) },
+    dispatch: (input: any) => {
+      levers.find(l => l.id === input.action.input.lever)!.pulled = true; revision++;
+      return { status: 'committed', commandId: input.commandId, state: snapshot() };
+    },
+    confirmVisibleResponse: () => {},
+    learner: { intent: () => false, learnerFinished: () => {}, read: () => null, observations: () => [], tutorSettled: () => {} },
+    speech: { output: () => {}, end: () => {}, audio: () => {} },
+    holdTeachingTurn: () => () => {},
+  } as any;
+  const sent: Record<string, any>[] = [];
+  const never = () => new Promise<never>(() => {});
+  const transport = new RuntimeTransport(runtime, m => sent.push(m), never as any, classifyLearner);
+  return { transport, levers, attempts, trace, sent };
+}
+
+it('pulls no lever from a learner turn read as a help request: help comes from wrong answers (USER 2026-11-13)', async () => {
+  const s = leverSetup(async () => ({ asksForHelp: .95, wantsToStop: .02, attemptsAnswer: .05, accepted: true, reason: 'observed', ms: 1 }));
+  s.transport.learnerText('¿Qué?', true);
+  await new Promise(r => setTimeout(r, 0));
+  expect(s.trace.some(t => t.stage === 'learner_intent' && t.status === 'observed')).toBe(true);
+  expect(s.levers.some(l => l.pulled)).toBe(false);
+  s.transport.close();
+});
+
+it('drops the held lever announcement when the learner speaks before it goes out', async () => {
+  const s = leverSetup();
+  s.transport.beginTurn('Let us look.');
+  await s.transport.pullLever('help');
+  s.transport.learnerText('cat', false);
+  s.transport.endTurn(false); s.transport.audioChanged(false);
+  expect(s.sent.filter(m => m.type === 'text')).toHaveLength(0);
+  expect(s.trace.some(t => t.status === 'superseded')).toBe(true);
+  s.transport.close();
+});
+
+it('still sends the announcement when the learner stays quiet', async () => {
+  const s = leverSetup();
+  s.transport.beginTurn('Let us look.');
+  await s.transport.pullLever('help');
+  s.transport.endTurn(false); s.transport.audioChanged(false);
+  expect(s.sent.filter(m => m.type === 'text')).toHaveLength(1);
+  s.transport.close();
+});

@@ -355,9 +355,9 @@ it('sends learner signals with the packet, and counts the tutor’s own turn sep
   expect(packet().learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0 });
   expect(packet().learner.observations)
     .toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true })]);
-  // No attempt is recorded. "I'm stuck" before a try pulls help only (handoff 21 S2): letter_model, recorded as help.
-  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 2 } });
-  expect(h.state().task!.workspace!.levers!.map(l => [l.id, l.pulled])).toEqual([['letter_model', true]]);
+  // No attempt is recorded, and a turn read as "I'm stuck" pulls no lever (USER 2026-11-13): help comes from wrong answers.
+  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 0 } });
+  expect(h.state().task!.workspace!.levers!.map(l => [l.id, l.pulled])).toEqual([['letter_model', false]]);
   h.transport.close();
 });
 

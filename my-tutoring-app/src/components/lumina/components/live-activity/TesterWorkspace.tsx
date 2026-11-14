@@ -3,7 +3,8 @@
 import React, { useMemo } from 'react';
 import { getPrimitive } from '../../config/primitiveRegistry';
 import { PulseWorkspace } from '../../pulse/PulseWorkspace';
-import { workspaceMountProps } from './LessonWorkspace';
+import { useLessonWorkspace, workspaceMountProps } from './LessonWorkspace';
+import JevInspector from './JevInspector';
 import { workspaceBinding } from './lessonWorkspacePlan';
 import { TesterLeverBench } from './TesterLeverBench';
 
@@ -23,6 +24,14 @@ interface TesterWorkspaceProps {
   offline?: boolean;
   /** The tester's own render, used when the catalog does not bind this family. */
   children: React.ReactNode;
+  /** Show the JEV inspector (trace, verdicts, the audio-shadow toggle) under a Live run. */
+  inspector?: boolean;
+}
+
+/** The host's runtime, read from outside the learner surface so the inspector's clicks are not learner actions. */
+function HostInspector() {
+  const host = useLessonWorkspace();
+  return host ? <div className="mt-4"><JevInspector runtime={host.runtime} /></div> : null;
 }
 
 /**
@@ -31,7 +40,7 @@ interface TesterWorkspaceProps {
  * own Live session (the Pulse host). A tester never shows a retired scripted path for a bound family.
  */
 export function TesterWorkspace({ primitiveId, instanceId, evalMode, data, topic, gradeLevel,
-  onEvaluationSubmit, offline, children }: TesterWorkspaceProps) {
+  onEvaluationSubmit, offline, children, inspector }: TesterWorkspaceProps) {
   const binding = useMemo(() => workspaceBinding({ instanceId, primitiveId, pin: evalMode ?? undefined,
     objectiveIds: [TESTER_OBJECTIVE], data }), [instanceId, primitiveId, evalMode, data]);
   if (!binding) return <>{children}</>;
@@ -43,7 +52,7 @@ export function TesterWorkspace({ primitiveId, instanceId, evalMode, data, topic
       {...workspaceMountProps(binding)} />
   </TesterLeverBench>;
   return <PulseWorkspace key={instanceId} binding={binding} data={payload} sessionId={instanceId}
-    topic={topic} gradeLevel={gradeLevel}>
+    topic={topic} gradeLevel={gradeLevel} aside={inspector ? <HostInspector /> : undefined}>
     <Component data={{ ...payload, instanceId, objectiveId: binding.objectiveId, onEvaluationSubmit }}
       {...workspaceMountProps(binding)} />
   </PulseWorkspace>;

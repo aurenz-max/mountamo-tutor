@@ -24,9 +24,11 @@
 import type { AudioInputConfig, BossMode, BossModeWiring, BossWords, ComponentDefinition, EvalModeDefinition } from '../../types';
 import type { DriverInput, JourneyContext, JourneyProbe } from './liveJourneySpec';
 import type { TeachingAssignment } from './runtime/useTeachingWorkspace';
+import type { HearKey } from './runtime/spokenHearContract';
+import { hearCandidates } from '../../service/typesafe/blindWordCandidates';
 import type { KnownMiss, OffByMiss } from './runtime/spokenMissContract';
 import type { LeverSet } from './bossLevers';
-import { askLeaks, spokenKeyText, type SpokenKey } from './spokenKey';
+import { askLeaks, keyAnswers, spokenKeyText, type SpokenKey } from './spokenKey';
 
 // ── The card ────────────────────────────────────────────────────────────────
 
@@ -184,9 +186,20 @@ export function defineBoss<D extends { title: string }, I, M extends string>(bos
   } };
 }
 
-/** The one spoken assignment: the ask, the key as the judge reads it (`spokenKeyText`), and the known misses. */
+/** What the clip is heard blind against (`spoken_hear`), from the key and misses every spoken item already has: set on
+ *  any closed key with enough options (`hearCandidates`), never on a meaning key. No primitive declares it. */
+export function hearKeyOf(key: SpokenKey, misses: readonly KnownMiss[]): HearKey | undefined {
+  if (key.meaning) return undefined;
+  const hear: HearKey = { answers: keyAnswers(key), ...(key.menu?.length ? { menu: [...key.menu] } : {}) };
+  return hear.answers.length && hearCandidates(hear, misses) ? hear : undefined;
+}
+
+/** The one spoken assignment: the ask, the key as the judge reads it (`spokenKeyText`), the known misses, and what
+ *  the clip is heard against (`hearKeyOf`). */
 export function spokenAssignment(id: string, task: string, key: SpokenKey, misses: readonly KnownMiss[] = []): TeachingAssignment {
-  return { id, task, response: 'speech', expectedAnswer: spokenKeyText(key), ...(misses.length ? { misses: [...misses] } : {}) };
+  const hear = hearKeyOf(key, misses);
+  return { id, task, response: 'speech', expectedAnswer: spokenKeyText(key), ...(misses.length ? { misses: [...misses] } : {}),
+    ...(hear ? { hear } : {}) };
 }
 
 /**

@@ -17,7 +17,7 @@ export interface DialogueRequest {
   lastResponse: { response: string; correct: boolean; assisted: boolean } | null;
   pendingResponse?: { id: string; text: string };
   /** This reply answers the host's request to say plainly whether the learner solved the task
-   *  (`confirm_credit`). The tutor's judgment then decides the flow; the scoring pass decides the record. */
+   *  (`confirm_credit`). The tutor's judgment then decides the flow and the record. */
   confirming?: boolean;
   activity?: {
     responseSource: 'speech' | 'gesture' | null;

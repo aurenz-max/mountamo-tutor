@@ -64,16 +64,9 @@ describe('wordReadTally', () => {
     expect(wordReadTally([{ id: 'w1', text: 'cat' }], [read('w1', 'cat', true, { answerExposure: 'full' })])).toEqual([]);
     expect(wordReadTally([{ id: 'w1', text: 'cat' }], [read('w1', 'cat', true, { answerExposure: 'partial' })])).toHaveLength(1);
   });
-  it('leaves out a read the tutor and the re-grade disagree on, right or wrong (the first real session: sun heard as sign)', () => {
-    const words = [{ id: 'w1', text: 'cat' }, { id: 'w3', text: 'sun' }, { id: 'w4', text: 'bus' }];
-    const [tally] = wordReadTally(words, [
-      read('w1', 'cat', true, { flowCorrect: true }),
-      read('w3', 'sign', false, { flowCorrect: true }),
-      read('w4', 'das', false, { flowCorrect: false }), read('w4', 'bus', true, { flowCorrect: true }),
-    ]);
-    expect(tally.units).toEqual([{ unit: 'cat', attempts: 1, correct: 1 }, { unit: 'bus>das', attempts: 1, correct: 0 }]);
-    const record = readingRecord([{ id: 'l1', text: 'The cat sat on a mat.' }], [read('l1', 'the cat sat on mat', false, { flowCorrect: true })]);
-    expect(record).toMatchObject({ wordsCounted: 0, wordAccuracy: null, miscues: [], unlocated: 0, disputed: 1 });
+  it('takes the tutor verdict over the transcript (the first real session: a credited "sun" transcribed "sign")', () => {
+    const [tally] = wordReadTally([{ id: 'w3', text: 'sun' }], [read('w3', 'sign', true)]);
+    expect(tally.units).toEqual([{ unit: 'sun', attempts: 1, correct: 1 }]);
   });
   it('gives nothing for an unlocated first read or a session with no reads', () => {
     expect(wordReadTally(lines, [read('l1', 'the cat sits on the mat', false)])).toEqual([]);

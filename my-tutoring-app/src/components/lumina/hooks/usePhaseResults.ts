@@ -197,9 +197,9 @@ export function phaseResultsFromSummary<Item extends { id: string }>(
 
 /**
  * The overall score a workspace summary screen shows: the mean of the practice summary's own item
- * scores, the same aggregation the rows show. The submitted record is the re-graded session and can
- * disagree with it (user ruling 10-10: a 75% ring over four 100% rows); the screen never shows that
- * number. Undefined off the workspace path, so a caller falls back to its own score.
+ * scores, the same aggregation the rows show (user ruling 10-10: a 75% ring over four 100% rows, when the record
+ * was re-graded; since 2026-11-13 the record is the same verdicts). Undefined off the workspace path, so a caller
+ * falls back to its own score.
  */
 export function practiceScore(summary: { outcomes: readonly { score: number }[] } | null | undefined): number | undefined {
   if (!summary?.outcomes.length) return undefined;

@@ -1,6 +1,7 @@
 'use client';
 import React, { useSyncExternalStore } from 'react';
 import type { LiveLessonRuntime } from './runtime/LiveLessonRuntime';
+import { decisionsAudioEnabled, setDecisionsAudioEnabled, subscribeDecisionsAudio } from '../../utils/learnerClip';
 import { useRuntimeSnapshot } from './runtime/LiveRuntimeContext';
 
 export default function JevInspector({ runtime }: { runtime: LiveLessonRuntime }) {
@@ -8,9 +9,15 @@ export default function JevInspector({ runtime }: { runtime: LiveLessonRuntime }
   const state = useRuntimeSnapshot(runtime);
   // Read at render: elapsed seconds are as fresh as the last runtime publish, which is also what the tutor last received.
   const signals = runtime.learner.read(state);
+  const audioShadow = useSyncExternalStore(subscribeDecisionsAudio, decisionsAudioEnabled, () => true);
   return <details open className="rounded-xl border border-cyan-900 p-4" data-testid="jev-inspector">
     <summary className="cursor-pointer font-semibold">JEV inspector</summary>
     <p className="mt-2 text-xs text-slate-400">Live inputs and decisions from this browser session. Decisions require 90% selected-option probability. Model scores are not guarantees.</p>
+    <label className="mt-2 flex items-center gap-2 text-xs text-amber-200" data-testid="decisions-audio-toggle">
+      <input type="checkbox" checked={audioShadow}
+        onChange={e => setDecisionsAudioEnabled(e.target.checked)} />
+      Hear the learner&apos;s audio (gemini-decision-1, blind): names the miss on items that declare what the answer can be. Starts at the next tutor turn.
+    </label>
     <div className="mt-3 text-sm" aria-live="polite">
       <p>Activity: {state.task?.itemId ?? 'not mounted'} · {state.task?.phase ?? state.status}</p>
       <p>Recorded verdict: {state.task?.evidence.correctness ?? 'none'}</p>
@@ -31,7 +38,7 @@ export default function JevInspector({ runtime }: { runtime: LiveLessonRuntime }
         const answers = result?.assessment?.answers as Record<string, any> | undefined;
         const assessed = !['waiting', 'observing', 'skipped', 'cancelled'].includes(entry.status);
         return <li key={entry.id} className="rounded border border-slate-700 p-3">
-          <p className="font-semibold">{entry.stage === 'learner_response' ? 'Learner context' : entry.stage === 'learner_intent' ? 'Observe learner turn' : entry.stage === 'demonstration' ? 'Demonstration diagnosis' : entry.stage === 'spoken_miss' ? 'Name the spoken miss' : entry.stage === 'learner_progress' ? 'Next challenge / Try again' : 'Observe tutor reply'}: {entry.status}</p>
+          <p className="font-semibold">{entry.stage === 'learner_response' ? 'Learner context' : entry.stage === 'learner_intent' ? 'Observe learner turn' : entry.stage === 'demonstration' ? 'Demonstration diagnosis' : entry.stage === 'spoken_miss' ? 'Name the spoken miss (Jev, transcript)' : entry.stage === 'spoken_audio' ? 'Hear the answer blind (gemini-decision-1, audio)' : entry.stage === 'learner_progress' ? 'Next challenge / Try again' : 'Observe tutor reply'}: {entry.status}</p>
           <time className="text-slate-500">{new Date(entry.at).toLocaleTimeString()}</time>
           {(input?.scope?.itemId || result?.scope?.itemId) && <p>Item: {input?.scope?.itemId || result?.scope?.itemId}</p>}
           {entry.reason && <p className="mt-1 break-words">{entry.reason}</p>}

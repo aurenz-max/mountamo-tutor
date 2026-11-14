@@ -245,7 +245,9 @@ describe('the ask never says the answer (askLeaks)', () => {
 
   it('one spoken boss mixes said, shown and say-or-show items, each from its card mode', () => {
     const boss = mixed({ say: { ...SPOKEN, misses: [] }, show: { ...SAY_OR_SHOW, misses: [] }, build: { ...TAP_ONE, misses: [] } }, i => i.mode);
-    expect(boss.assignment({ id: 'a', mode: 'say', word: 'cat' })).toEqual({ id: 'a', task: 'Show or say say.', response: 'speech', expectedAnswer: '"cat".' });
+    expect(boss.assignment({ id: 'a', mode: 'say', word: 'cat' })).toEqual({ id: 'a', task: 'Show or say say.', response: 'speech', expectedAnswer: '"cat".',
+      // The preset hears every closed key blind (`hearKeyOf`): "cat" among its CVC neighbours, with no primitive asking.
+      hear: { answers: ['cat'] } });
     expect(boss.assignment({ id: 'b', mode: 'show', word: 'cat' })).toMatchObject({ response: 'speech', acceptsGesture: true });
     expect(boss.assignment({ id: 'c', mode: 'build', word: 'cat' })).toEqual({ id: 'c', task: 'Show or say build.', response: 'gesture' });
     expect(boss.drive.play(true, { id: 'c', mode: 'build', word: 'cat' }, ctx)).toEqual([{ type: 'touch', target: 'cat' }]);

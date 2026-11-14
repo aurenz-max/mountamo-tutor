@@ -72,18 +72,14 @@ it('a multiple-choice problem worked on screen is credited from the answer said 
   expect(h.state().status).toBe('completed');
 });
 
-it('"¿Qué?" is no answer: it opens nothing to credit and does not replace the answer already waiting', () => {
+it('"¿Qué?" leaves the verdict to the tutor: it opens an answer only her reply credits', () => {
   seam.evaluationContext = recordingEvaluationContext();
   const h = mount([TF, LEAKY]);
-  // 2026-10-13 pulse check p1-tf: echo transcribed as "¿Qué?" was credited as a true/false answer.
+  // USER RULING 2026-11-13: the transcript is not reliable beside the tutor, who heard the audio. A correct read
+  // transcribed "¿Qué?" is credited when she says it is right (it once sat open after "That's right! cat").
   h.say('¿Qué?');
-  expect(h.state().task!.workspace!.pendingResponse).toBeUndefined();
-  expect(h.offer('apply_tutor_verdict')).toBeUndefined();
-  // p0-mc: the real answer stays the one the tutor's reply is judged against.
-  h.say('yes');
-  const waiting = h.state().task!.workspace!.pendingResponse;
-  h.say('¿Qué?');
-  expect(h.state().task!.workspace!.pendingResponse).toEqual(waiting);
+  expect(h.state().task!.workspace!.pendingResponse?.text).toBe('¿Qué?');
+  expect(h.offer('apply_tutor_verdict')).toBeDefined();
   h.feedback('correct', 'advance'); h.confirmVisible();
-  expect(h.state().task!.workspace!.attempts[0]).toMatchObject({ itemId: 'p0-tf', response: 'yes', correct: true });
+  expect(h.state().task!.workspace!.attempts[0]).toMatchObject({ itemId: 'p0-tf', response: '¿Qué?', correct: true });
 });

@@ -698,7 +698,7 @@ interface FunctionMachineScreenProps {
   hasSubmittedEvaluation: boolean;
   phaseResults: ReturnType<typeof usePhaseResults>;
   submittedResult: { score?: number } | null | undefined;
-  /** The practice summary's own score on the workspace path; the screen shows it over the re-graded record. */
+  /** The practice summary's own score on the workspace path; the screen shows it over the submitted record. */
   shownScore: number | undefined;
   elapsedMs: number;
   currentChallenge: FunctionMachineChallenge;

@@ -180,30 +180,16 @@ it('a simplify pull opens an ungraded easier jump, then returns to the full item
   expect(attempts.at(-1)).toMatchObject({ levers: ['simpler_jump'], assisted: true });
 });
 
-it('the observer pulls the next lever when a learner who answered wrong says they are stuck, and tells the tutor what changed', async () => {
+it('a learner turn read as "I\'m stuck" pulls no lever: help comes from wrong answers (USER 2026-11-13)', async () => {
   const h = mount();
-  const sent: any[] = [];
   const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
-  const transport = new RuntimeTransport(h.runtime, m => sent.push(m), vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
+  const transport = new RuntimeTransport(h.runtime, () => {}, vi.fn(async () => ({ verdict: 'none' as const, transition: 'none' as const,
     confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
   h.tap(6); h.check();
-  // One wrong answer names the miss and pulls nothing.
-  await act(async () => { await new Promise(r => setTimeout(r, 20)); });
-  expect(levers(h).some(l => l.pulled)).toBe(false);
-  // The surface certifies a paint with two animation frames, which this environment does not run: paint by hand.
-  const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
-    await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
   act(() => { transport.learnerText("I don't get it", true); });
-  await paint();
-  expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
-  expect(h.hopLabels('learner-hops')).toEqual(['1', '2']);
-  // The tutor's reply to "I don't get it" comes first; the message opens the turn after it.
-  act(() => { transport.beginTurn('Let us look again.'); transport.endTurn(false); });
-  expect(sent.find(m => m.type === 'text' && /numbered_hops/.test(m.content))?.content).toMatch(/on screen now/);
-  // Stuck again: the simplify lever is next.
-  act(() => { transport.learnerText('I still do not get it', true); });
-  await paint();
-  expect(h.state().task!.itemId).toBe('j0~simpler');
+  await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+  expect(stuck).toHaveBeenCalled();
+  expect(levers(h).some(l => l.pulled)).toBe(false);
   transport.close();
 });
 
@@ -243,7 +229,7 @@ it('the second wrong answer pulls help on its own, once, and tells the tutor why
   transport.close();
 });
 
-it('stuck before any attempt pulls help only; a wrong answer with that help on screen pulls simplify', async () => {
+it('a help pull before any attempt (the bench\'s Stuck) pulls help only; a wrong answer with that help on screen pulls simplify', async () => {
   const h = mount();
   const sent: any[] = [];
   const stuck = vi.fn(async () => ({ asksForHelp: .95, wantsToStop: .01, attemptsAnswer: .02, accepted: true, reason: 'observed', ms: 1 }));
@@ -251,7 +237,7 @@ it('stuck before any attempt pulls help only; a wrong answer with that help on s
     confidence: 0, grounded: 0, accepted: false, reason: 'test', ms: 1 })), stuck);
   const paint = async () => { for (let i = 0; i < 5; i++) await act(async () => {
     await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
-  act(() => { transport.learnerText("I'm stuck", true); });
+  act(() => { void transport.pullLever('help'); });
   await paint();
   expect(levers(h).filter(l => l.pulled).map(l => l.id)).toEqual(['numbered_hops']);
   expect(h.state().task!.itemId).toBe('j0');
@@ -276,7 +262,7 @@ it('a pull whose reply never begins still tells the tutor, after the fallback', 
     await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
   const told = () => sent.filter(m => m.type === 'text' && /numbered_hops/.test(m.content));
   h.tap(6); h.check();
-  act(() => { transport.learnerText("I'm stuck", true); });
+  act(() => { void transport.pullLever('help'); });
   await paint();
   expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);
   expect(told()).toHaveLength(0);
@@ -295,7 +281,8 @@ it('a pull that lands while the tutor is replying waits for that reply to settle
     await new Promise(r => setTimeout(r, 20)); h.runtime.acknowledgeVisible(h.state().revision); }); };
   const told = () => sent.filter(m => m.type === 'text' && /numbered_hops/.test(m.content));
   h.tap(6); h.check();
-  act(() => { transport.learnerText("I'm stuck", true); transport.beginTurn('I can help with that!'); });
+  act(() => { transport.beginTurn('I can help with that!'); });
+  act(() => { void transport.pullLever('help'); });
   await paint();
   // The screen helps at once; the tutor is not told while its reply is still playing.
   expect(levers(h).find(l => l.id === 'numbered_hops')!.pulled).toBe(true);

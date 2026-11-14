@@ -422,9 +422,9 @@ it('sends learner signals with the packet, and counts the tutor’s own turn sep
   expect(packet().learner.signals).toMatchObject({ learnerTurns: 1, helpRequests: 1, stopRequests: 0 });
   expect(packet().learner.observations)
     .toEqual([expect.objectContaining({ kind: 'learner_intent', helpRequested: true })]);
-  // No attempt moved. The help request pulled the next help lever (the 09-27 trigger ladder), so the item is assisted.
-  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 2 } });
-  expect(h.state().task!.workspace!.levers!.find(l => l.id === 'model_fact')?.pulled).toBe(true);
+  // No attempt moved, and a turn read as a help request pulls no lever (USER 2026-11-13): help comes from wrong answers.
+  expect(h.state().task).toMatchObject({ phase: 'working', evidence: { attemptNumber: 0 }, support: { level: 0 } });
+  expect(h.state().task!.workspace!.levers!.find(l => l.id === 'model_fact')?.pulled).toBeFalsy();
   h.transport.close();
 });
 

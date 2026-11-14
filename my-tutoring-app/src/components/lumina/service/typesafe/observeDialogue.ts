@@ -67,8 +67,7 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
   // an answer to the tutor's sub-question is kept out on the words side: `spoken_miss` reads it with `priorTutor`.
   const creditsNothing = spoken && !(gated && verdict.choice !== 'none') && !likeliest('correct');
   const words = creditsNothing ? { creditsNothing: true } : {};
-  // The tutor was asked to say plainly and did: its judgment moves the lesson (user direction 09-24: the
-  // tutor judges the flow, the scoring pass re-grades the learner's own answer for the record).
+  // The tutor was asked to say plainly and did: its judgment moves the lesson and is the record (USER RULING 2026-11-13).
   // At the gate too: a confirming reply that clears 0.9 is no less a confirmation, and requiring it to be
   // below the gate left a clearly credited step waiting on the feedback question (LA-13 part 2, C6 family).
   const confirming = spoken && replyFinished && !!input.confirming;
