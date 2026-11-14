@@ -59,7 +59,9 @@ const sessionRules = (items: readonly DeductionItem[]) => Array.from(new Map(ite
 /** The spare the model uses for an item: a cannot_tell item needs one with a lookalike. Re-checked at mount. */
 export function modelRuleFor(item: DeductionItem, items: readonly DeductionItem[], spares: readonly DeductionRuleSpec[]): DeductionRuleSpec | null {
   const rules = sessionRules(items);
-  return spares.find(s => !spareLeaks(s, rules) && (item.shape !== 'cannot_tell' || s.lookalikes.length > 0)) ?? null;
+  // A different spare on each item when there are several, so the model is not the same worked rule every time.
+  const fit = spares.filter(s => !spareLeaks(s, rules) && (item.shape !== 'cannot_tell' || s.lookalikes.length > 0));
+  return fit.length ? fit[Math.max(0, items.findIndex(i => i.id === item.id)) % fit.length] : null;
 }
 
 export interface ModelCase extends DeductionCase { reason: string }

@@ -54,11 +54,13 @@ const poolFor = (item: SentenceReadingItem): string[] => item.challengeType === 
 const sharesWord = (a: string, b: string) => { const bs = new Set(wordsOf(b)); return wordsOf(a).some(w => bs.has(w)); };
 const sameText = (a: string, b: string) => wordsOf(a).join(' ') === wordsOf(b).join(' ');
 
-/** The model sentence for an item, or null when no menu sentence passes. Deterministic. */
+/** The model sentence for an item, or null when no menu sentence passes. Deterministic per item, and a different
+ *  model on each item of the session (2026-11-13: one model on every item read as the same script each time). */
 export function modelFor(item: SentenceReadingItem, items: readonly SentenceReadingItem[]): string | null {
   const ok = poolFor(item).filter(t => !sharesWord(t, item.text) && !items.some(i => sameText(i.text, t)));
-  const clean = (t: string) => Number(items.some(i => sharesWord(t, i.text)));
-  return [...ok].sort((a, b) => clean(a) - clean(b) || wordsOf(a).length - wordsOf(b).length)[0] ?? null;
+  const clean = ok.filter(t => !items.some(i => sharesWord(t, i.text)));
+  const tier = [...(clean.length ? clean : ok)].sort((a, b) => wordsOf(a).length - wordsOf(b).length);
+  return tier.length ? tier[Math.max(0, items.findIndex(i => i.id === item.id)) % tier.length] : null;
 }
 
 const asItem = (item: SentenceReadingItem, text: string): SentenceReadingItem | null =>

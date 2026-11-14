@@ -74,7 +74,9 @@ export function countModelFor(item: SpokenPracticeItem, items: readonly SpokenPr
   if (item.mode !== 'count_and_say') return null;
   const n = item.stimulusCount, later = new Set(coming(item, items).map(i => i.stimulusCount));
   const used = new Set(items.map(i => i.stimulusEmoji));
-  const picture = MODEL_PICTURES.find(([e, noun]) => !used.has(e) && !items.some(i => low(i.stimulusText) === noun));
+  // A different picture on each item, so the model is not the same apples every time.
+  const free = MODEL_PICTURES.filter(([e, noun]) => !used.has(e) && !items.some(i => low(i.stimulusText) === noun));
+  const picture = free.length ? free[Math.max(0, items.findIndex(i => i.id === item.id)) % free.length] : undefined;
   const count = [2, 3, 4, 5, 6, 7, 8, 9, 10].filter(c => Math.abs(c - n) > 1 && !later.has(c))
     .sort((a, b) => Math.abs(a - n) - Math.abs(b - n) || a - b)[0];
   return picture && count ? { emoji: picture[0], noun: picture[1], count } : null;
