@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { join } from 'node:path';
 import { authorCanvas } from '@/components/lumina/service/agent-kit/canvas/canvasAuthor';
 import { withKitTrace } from '@/components/lumina/service/agent-kit/trace';
-import { canvasLesson } from '@/components/lumina/service/core/agent-canvas/canvasLesson';
+import { canvasLesson, wrongPlay } from '@/components/lumina/service/core/agent-canvas/canvasLesson';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,22 +31,24 @@ interface SavedCanvas {
 
 /**
  * Where one screenshot of a saved canvas lives. A spec keeps three files per problem (written by `canvas-check`); an
- * authored run keeps its plays inside the JSON; the first three runs kept two files beside the JSON.
+ * authored run keeps its plays inside the JSON; the first three runs kept two files beside the JSON. `load` reads the
+ * saved JSON (0.2-1 MB) only when the screenshot is not a spec file.
  */
-function findShot(name: string, saved: SavedCanvas, problem: number, kind: ShotKind): { file: string } | { b64: string } | null {
+function findShot(name: string, load: () => SavedCanvas, problem: number, kind: ShotKind): { file: string } | { b64: string } | null {
   const specFile = join(DIR(), 'specs', name, 'plays', `${problem}-${kind}.png`);
   if (existsSync(specFile)) return { file: specFile };
-  const plays = (saved.agentDebug?.playLog ?? []).filter(p => p.png);
+  const saved = load();
+  const plays = saved.agentDebug?.playLog ?? [];
   if (saved.problems?.length) {
     const play = plays.find(p => p.kept === `problem ${problem} ${kind}`);
     return play?.png ? { b64: play.png } : null;
   }
   if (problem !== 1) return null;
-  const clean = plays.filter(p => !p.errors?.length && !p.stepErrors?.length);
-  const last = Math.max(0, ...clean.map(p => p.version));
+  const clean = plays.filter(p => p.png && !p.errors?.length && !p.stepErrors?.length);
+  // The miss is the one the lesson serves (canvasLesson), so the gallery shows what the child would see.
   const play = kind === 'rest' ? clean.filter(p => !p.steps.length).at(-1)
     : kind === 'proof' ? clean.filter(p => p.afterGoal === true).at(-1)
-    : clean.filter(p => p.version === last && p.steps.length && p.afterGoal === false).at(-1);
+    : wrongPlay(plays);
   if (play?.png) return { b64: play.png };
   const legacy = join(DIR(), `${name}-${kind}.png`);
   return existsSync(legacy) ? { file: legacy } : null;
@@ -62,7 +64,7 @@ function listEntry(name: string): Record<string, unknown> | null {
     if (hit?.modified === modified) return { ...hit.entry, library: existsSync(join(LIBRARY(), `${name}.json`)) };
     const d = JSON.parse(readFileSync(file, 'utf8')) as SavedCanvas;
     const problems = (d.problems?.length ? d.problems : [{ ask: d.ask, goal: d.goal }]).map((p, i) => ({
-      ask: p.ask ?? d.ask ?? '', goal: p.goal ?? d.goal ?? '', shots: KINDS.filter(kind => findShot(name, d, i + 1, kind)),
+      ask: p.ask ?? d.ask ?? '', goal: p.goal ?? d.goal ?? '', shots: KINDS.filter(kind => findShot(name, () => d, i + 1, kind)),
     }));
     const entry = {
       name, title: d.title ?? name, topic: d.request?.topic ?? '', grade: d.request?.grade ?? '', objective: d.request?.objective ?? '',
@@ -84,9 +86,7 @@ export async function GET(request: NextRequest) {
     const kind = query.get('kind') as ShotKind;
     const problem = Number(query.get('problem') ?? 1);
     if (!NAME.test(shot) || !existsSync(file) || !KINDS.includes(kind) || !Number.isInteger(problem)) return NextResponse.json({ error: 'no such screenshot' }, { status: 404 });
-    // A spec's screenshot is a file, so the 0.2-0.8 MB JSON is read only for a run that keeps its plays inside it.
-    const specFile = join(DIR(), 'specs', shot, 'plays', `${problem}-${kind}.png`);
-    const found = existsSync(specFile) ? { file: specFile } : findShot(shot, JSON.parse(readFileSync(file, 'utf8')) as SavedCanvas, problem, kind);
+    const found = findShot(shot, () => JSON.parse(readFileSync(file, 'utf8')) as SavedCanvas, problem, kind);
     if (!found) return NextResponse.json({ error: 'no such screenshot' }, { status: 404 });
     const bytes = 'file' in found ? readFileSync(found.file) : Buffer.from(found.b64, 'base64');
     // The gallery adds the file's modified time to the URL, so a re-checked spec gets fresh screenshots.

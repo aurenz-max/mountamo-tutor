@@ -49,8 +49,23 @@ export interface PlayResult {
   /** Elements with an id, in page pixels, so the author can aim a drag. */
   boxes: Array<{ id: string; x: number; y: number; w: number; h: number }>;
   png: Buffer;
+  /** The stage at rest, before any step; taken only when `play` is asked for it. */
+  restPng?: Buffer;
   /** Screenshots taken after steps that carry `shot`, in step order. */
   shots: Array<{ name: string; png: Buffer }>;
+}
+
+/** Whether a program reports its goal at all. Both authors (the Gemini loop and `canvas-check`) refuse one that never does. */
+export const callsGoal = (source: string): boolean => /lumina\.goal\s*\(/.test(source);
+
+/** What the canvas at rest says is wrong with it, before anyone plays it. The one rule both authors' gates share. */
+export function restIssues(rest: Snapshot): string[] {
+  if (rest.errors.length) return [`it does not run clean: ${rest.errors.slice(0, 2).join('; ')}`];
+  const e: string[] = [];
+  if (rest.goal === null) e.push('it never calls lumina.goal, so the lesson cannot tell when the child succeeds');
+  if (rest.goal === true) e.push('the goal is met at rest, before the child does anything');
+  if (rest.scene == null) e.push('it never calls lumina.scene, so the tutor cannot see what is on screen');
+  return e;
 }
 
 const describe = (s: PlayStep) => `${s.do}${s.target ? ` ${s.target}` : ''}${s.label ? ` "${s.label}"` : ''}`;
@@ -73,7 +88,7 @@ export class CanvasStage {
   async close(): Promise<void> { const b = await this.browser; await b?.close(); this.browser = null; }
 
   /** Load the canvas fresh, do the steps, and report. Throws when the host has no browser. */
-  async play(html: string, steps: readonly PlayStep[] = []): Promise<PlayResult> {
+  async play(html: string, steps: readonly PlayStep[] = [], opts: { restShot?: boolean } = {}): Promise<PlayResult> {
     const browser = await this.open();
     if (!browser) throw new Error('no browser on this host: a canvas is authored where Chromium is installed (LUMINA_CHROME_PATH)');
     const context = await browser.newContext({ viewport: { width: STAGE_WIDTH, height: 900 }, deviceScaleFactor: 1 });
@@ -92,6 +107,7 @@ export class CanvasStage {
         return { ...s, text: s.text.replace(/\s+/g, ' ').trim().slice(0, 700), errors: Array.from(new Set([...pageErrors, ...s.errors])).map(e => e.slice(0, 300)) };
       };
       const rest = await snap();
+      const restPng = opts.restShot ? await page.locator('#root').screenshot({ timeout: 5000 }) : undefined;
       const stepErrors: string[] = [];
       const shots: PlayResult['shots'] = [];
       for (let i = 0; i < steps.length; i++) {
@@ -110,7 +126,7 @@ export class CanvasStage {
         return { id: el.id, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), w: Math.round(r.width), h: Math.round(r.height) };
       }));
       const png = await page.locator('#root').screenshot({ timeout: 5000 });
-      return { rest, after, stepErrors, boxes, png, shots };
+      return { rest, after, stepErrors, boxes, png, shots, ...(restPng ? { restPng } : {}) };
     } finally {
       await context.close();
     }

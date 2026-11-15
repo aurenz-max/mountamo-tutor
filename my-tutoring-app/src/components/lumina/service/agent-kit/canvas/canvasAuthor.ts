@@ -20,7 +20,7 @@ import { displayDocument } from '../../gen-display/document';
 import { SDK_REFERENCE } from '../../gen-display/sdkSource';
 import { arr, num, runAuthor, str, type AgentAuthor, type Args, type AuthorDebug } from '../authorLoop';
 import { CANVAS_EXAMPLE, CANVAS_STYLE, styleNotes } from './canvasStyle';
-import { CanvasStage, STAGE_WIDTH, type PlayStep, type Snapshot } from './stage';
+import { CanvasStage, STAGE_WIDTH, callsGoal, restIssues, type PlayStep, type Snapshot } from './stage';
 
 export interface CanvasAsk { topic: string; grade: string; objective?: string }
 
@@ -42,7 +42,7 @@ interface CanvasItem {
   plays: number;
 }
 /** One run of the canvas by its author, kept for the tester: what it did, what the page said, what it saw. */
-export interface PlayRecord { version: number; steps: PlayStep[]; restGoal: boolean | null; afterGoal: boolean | null; errors: string[]; stepErrors: string[]; kept: string; png: string }
+export interface PlayRecord { version: number; steps: PlayStep[]; restGoal: boolean | null; afterGoal: boolean | null; errors: string[]; stepErrors: string[]; kept: string; png?: string }
 interface CanvasState { ask: CanvasAsk; stage: CanvasStage; plan?: { idea: string; childDoes: string }; versions: number; playLog: PlayRecord[] }
 
 export interface CanvasData {
@@ -178,11 +178,8 @@ function readSteps(v: unknown): PlayStep[] {
 export function canvasIssues(item: Pick<CanvasItem, 'rest' | 'proof' | 'miss'>): string[] {
   const { rest } = item;
   if (!rest) return ['no one has run this canvas: call play'];
-  if (rest.errors.length) return [`it does not run clean: ${rest.errors.slice(0, 2).join('; ')}`];
-  const e: string[] = [];
-  if (rest.goal === null) e.push('it never calls lumina.goal, so the lesson cannot tell when the child succeeds');
-  if (rest.goal === true) e.push('the goal is met at rest, before the child does anything');
-  if (rest.scene == null) e.push('it never calls lumina.scene, so the tutor cannot see what is on screen');
+  const e = restIssues(rest);
+  if (rest.errors.length) return e;
   if (!item.proof) e.push('no play has ended with the goal met: play the steps a child would do to succeed');
   if (!item.miss) e.push('no play has shown a wrong attempt: play what a child would plausibly get wrong, and see the goal stay unmet');
   return e;
@@ -205,7 +202,7 @@ function spec(ask: CanvasAsk): AgentAuthor<CanvasState, CanvasItem, CanvasData> 
       if (!askText || !goal) return { error: 'ask and goal are both needed: what the tutor says, and what your program checks' };
       const compiled = compileDisplay(source);
       if (!compiled.ok) return { error: compiled.errors.join('; ') };
-      if (!/lumina\.goal\s*\(/.test(source)) return { error: 'the program never calls lumina.goal(met)' };
+      if (!callsGoal(source)) return { error: 'the program never calls lumina.goal(met)' };
       const raw = a.paramsJson ? parseJson(String(a.paramsJson)) : {};
       const params = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
       s.versions++;

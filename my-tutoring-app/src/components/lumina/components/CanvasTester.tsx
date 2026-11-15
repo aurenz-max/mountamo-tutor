@@ -57,6 +57,12 @@ const stepWords = (s: PlayStep) => s.do === 'wait' ? `wait ${s.ms ?? 300}ms` : s
 const goalWords = (g: boolean | null) => (g === null ? 'not reported' : g ? 'met' : 'not met');
 const shotUrl = (run: SavedRun, f: { problem: number; kind: ShotKind }) =>
   `/api/lumina/canvas?shot=${encodeURIComponent(run.name)}&problem=${f.problem}&kind=${f.kind}&v=${Math.round(run.modified)}`;
+/** A play's screenshot: inline for an authored run; for a checked spec, the file canvas-check wrote (named by its `kept` label). */
+const playSrc = (p: PlayRecord, savedAs?: string): string | undefined => {
+  if (p.png) return `data:image/png;base64,${p.png}`;
+  const m = /^problem (\d+) (proof|miss)$/.exec(p.kept ?? '');
+  return m && savedAs ? `/api/lumina/canvas?shot=${encodeURIComponent(savedAs)}&problem=${m[1]}&kind=${m[2]}` : undefined;
+};
 const agoWords = (ms: number) => {
   const min = Math.max(0, Math.round((Date.now() - ms) / 60000));
   return min < 1 ? 'just now' : min < 60 ? `${min} min ago` : min < 60 * 24 ? `${Math.round(min / 60)} h ago` : `${Math.round(min / 1440)} d ago`;
@@ -296,7 +302,7 @@ const RunRecord: React.FC<{ data: Loaded }> = ({ data }) => {
             <li key={i} className="rounded-xl border border-slate-700 bg-slate-900/50 p-2 text-xs">
               <p className="text-slate-400">Play {i + 1}, version {p.version}: goal {goalWords(p.restGoal)} at rest, <span className={p.afterGoal ? 'text-emerald-300' : 'text-slate-200'}>{goalWords(p.afterGoal)}</span> after. <span className="text-slate-500">{p.kept}</span></p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt={`What the agent saw after play ${i + 1}`} src={`data:image/png;base64,${p.png}`} className="mt-2 w-full rounded-lg border border-slate-700" />
+              {playSrc(p, data.savedAs) && <img alt={`What the agent saw after play ${i + 1}`} src={playSrc(p, data.savedAs)} className="mt-2 w-full rounded-lg border border-slate-700" />}
               <ol className="mt-2 list-decimal pl-5 text-slate-300">{p.steps.map((s, j) => <li key={j}>{stepWords(s)}</li>)}</ol>
               {!p.steps.length && <p className="mt-1 text-slate-500">No steps: the canvas at rest.</p>}
               {[...p.stepErrors, ...p.errors].map((e, j) => <p key={j} className="mt-1 text-rose-300">{e}</p>)}

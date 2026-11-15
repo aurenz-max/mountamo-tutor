@@ -22,6 +22,12 @@ export interface CanvasProblem {
   missScene?: unknown;
 }
 
+/** The wrong attempt a run saved before `miss` shipped keeps in its play log: the last clean one of the last version. */
+export function wrongPlay<P extends { version: number; steps: readonly unknown[]; afterGoal: boolean | null; errors?: readonly string[]; stepErrors?: readonly string[] }>(plays: readonly P[]): P | undefined {
+  const lastVersion = Math.max(0, ...plays.map(p => p.version));
+  return plays.filter(p => p.version === lastVersion && p.steps.length && p.afterGoal === false && !p.errors?.length && !p.stepErrors?.length).at(-1);
+}
+
 /**
  * A canvas run as a lesson: one challenge, with the author's two playthroughs. `rebuild` compiles the page again from
  * the saved source, so a run saved earlier carries the current page shell. A run saved before `miss` shipped keeps its
@@ -45,8 +51,7 @@ export function canvasLesson(c: Omit<CanvasData, 'miss' | 'proofScene' | 'missSc
       agentDebug: { ...debug, playLog: plays.map(({ png: _png, ...play }) => play) },
     });
   }
-  const lastVersion = Math.max(0, ...plays.map(p => p.version));
-  const wrong = plays.filter(p => p.version === lastVersion && p.steps.length && p.afterGoal === false && !p.errors.length && !p.stepErrors.length).at(-1);
+  const wrong = wrongPlay(plays);
   let html = c.html;
   if (opts.rebuild) {
     const compiled = compileDisplay(c.source);

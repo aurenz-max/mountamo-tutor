@@ -64,7 +64,7 @@ try {
   const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { compileDisplay } = await runner.import('/src/components/lumina/service/gen-display/compile.ts');
   const { displayDocument } = await runner.import('/src/components/lumina/service/gen-display/document.ts');
-  const { CanvasStage } = await runner.import('/src/components/lumina/service/agent-kit/canvas/stage.ts');
+  const { CanvasStage, callsGoal, restIssues } = await runner.import('/src/components/lumina/service/agent-kit/canvas/stage.ts');
   const { styleNotes } = await runner.import('/src/components/lumina/service/agent-kit/canvas/canvasStyle.ts');
   const compiled = compileDisplay(source);
   if (!compiled.ok) throw new Error(`the program does not compile: ${compiled.errors.join('; ')}`);
@@ -72,7 +72,7 @@ try {
   const blocking = [], advisories = [];
   // The shared look (canvasStyle.ts): advisory, since a canvas may need what the guide avoids.
   for (const n of styleNotes(source)) advisories.push(`style: ${n}`);
-  if (!/lumina\.goal\s*\(/.test(source)) blocking.push('the program never calls lumina.goal(met)');
+  if (!callsGoal(source)) blocking.push('the program never calls lumina.goal(met)');
   // Every value a problem sets must be one the program reads; otherwise the problems are the same canvas.
   const keys = [...new Set(spec.problems.flatMap(p => Object.keys(p.params ?? {})))];
   for (const k of keys) if (!new RegExp(`params\\??\\.${k}\\b|params\\[['"]${k}['"]\\]|\\b${k}\\b[^;]*=\\s*params`).test(source)) blocking.push(`the program never reads params.${k}`);
@@ -85,10 +85,10 @@ try {
     for (let i = 0; i < spec.problems.length; i++) {
       const p = spec.problems[i], n = i + 1, issues = [];
       const html = displayDocument(compiled.js, p.params ?? {});
-      const proof = await stage.play(html, p.proof ?? []);
-      const miss = await stage.play(html, p.miss ?? []);
+      // Proof and miss each load the page fresh; the proof's own rest screenshot is the problem's first screen.
+      const [proof, miss] = await Promise.all([stage.play(html, p.proof ?? [], { restShot: true }), stage.play(html, p.miss ?? [])]);
       const rest = proof.rest;
-      writeFileSync(resolve(plays, `${n}-rest.png`), (await stage.play(html)).png);
+      writeFileSync(resolve(plays, `${n}-rest.png`), proof.restPng);
       writeFileSync(resolve(plays, `${n}-proof.png`), proof.png);
       writeFileSync(resolve(plays, `${n}-miss.png`), miss.png);
       for (const [kind, run] of [['proof', proof], ['miss', miss]]) {
@@ -96,10 +96,7 @@ try {
       }
       // Advisory: a long proof passes through screens nobody looks at unless some steps are marked `shot`.
       if ((p.proof ?? []).length > 6 && !(p.proof ?? []).some(s => s.shot)) advisories.push(`problem ${n}: the proof has ${p.proof.length} steps and no "shot"; mark the step that ends each phase so its screen can be read`);
-      if (rest.errors.length) issues.push(`it does not run clean: ${rest.errors.slice(0, 2).join('; ')}`);
-      if (rest.goal === null) issues.push('it never reports a goal');
-      if (rest.goal === true) issues.push('the goal is met at rest');
-      if (rest.scene == null) issues.push('it never reports a scene');
+      issues.push(...restIssues(rest)); // the same rest rules the Gemini author ships under
       if (!(p.proof ?? []).length) issues.push('no proof steps');
       else if (proof.stepErrors.length || proof.after.errors.length) issues.push(`the proof did not run: ${[...proof.stepErrors, ...proof.after.errors].slice(0, 2).join('; ')}`);
       else if (proof.after.goal !== true) issues.push(`the proof ends with the goal unmet (scene ${JSON.stringify(proof.after.scene).slice(0, 200)})`);
@@ -114,7 +111,7 @@ try {
       // Advisory: the tutor reads the scene, so a verdict or an answer in it reaches the child through the tutor.
       const verdictKeys = Object.keys(rest.scene && typeof rest.scene === 'object' ? rest.scene : {}).filter(k => /goal|met$|correct|solved|answer|success/i.test(k));
       if (verdictKeys.length) advisories.push(`problem ${n}: the scene reports ${verdictKeys.join(', ')}; the scene must hold what is on screen, never the verdict`);
-      const record = (kind, run, steps) => playLog.push({ version: n, steps, restGoal: run.rest.goal, afterGoal: run.after.goal, errors: run.after.errors, stepErrors: run.stepErrors, kept: `problem ${n} ${kind}`, png: run.png.toString('base64') });
+      const record = (kind, run, steps) => playLog.push({ version: n, steps, restGoal: run.rest.goal, afterGoal: run.after.goal, errors: run.after.errors, stepErrors: run.stepErrors, kept: `problem ${n} ${kind}` });
       record('proof', proof, p.proof ?? []); record('miss', miss, p.miss ?? []);
       problems.push({ params: p.params ?? {}, ask: p.ask ?? spec.ask, goal: p.goal ?? spec.goal, proof: p.proof ?? [], miss: p.miss ?? [], scene: rest.scene, proofScene: proof.after.scene, missScene: miss.after.scene });
       console.log(`problem ${n} ${JSON.stringify(p.params ?? {})}: ${issues.length ? 'FAIL' : 'pass'}${issues.map(s => `\n   - ${s}`).join('')}`);
