@@ -49,12 +49,13 @@ function Display({ params, lumina }) {
   };
 
   const W = 680, n = labels.length;
-  const S = tool ? (n === 1 ? 300 : n === 2 ? 250 : 190) : 0;
+  // Squares and column tabs are at least 32px wide: one plot is 330, two plots 324 each with a 12px gap.
+  const S = tool ? (n === 1 ? 330 : n === 2 ? 324 : 190) : 0;
   const CELL = S / 10;
-  const H = tool ? S + 200 : 260;
+  const PY = 56;
+  const H = tool ? PY + S + 130 : 260;
   const slotW = (W - 40) / n;
-  const px = i => 20 + slotW * i + (slotW - S) / 2;
-  const PY = 100;
+  const px = i => (n === 2 ? 10 + i * (S + 12) : 20 + slotW * i + (slotW - S) / 2);
 
   const plot = i => {
     const x = px(i), list = cells[i];
@@ -62,8 +63,9 @@ function Display({ params, lumina }) {
       <g key={'plot' + i}>
         {Array.from({ length: 10 }, (_, c) => (
           <g key={'tab' + c} id={`col-${i}-${c}`} onClick={() => toggleCol(i, c)} style={{ cursor: 'pointer' }}>
-            <rect x={x + c * CELL + 1} y={PY - 34} width={CELL - 2} height="28" rx="5" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-            <path d={`M ${x + c * CELL + CELL / 2 - 5} ${PY - 24} l 5 8 l 5 -8`} stroke="#cbd5e1" strokeWidth="2" fill="none" />
+            <rect x={x + c * CELL} y={PY - 44} width={CELL} height="42" fill="transparent" />
+            <rect x={x + c * CELL + 1} y={PY - 36} width={CELL - 2} height="30" rx="5" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
+            <path d={`M ${x + c * CELL + CELL / 2 - 5} ${PY - 25} l 5 8 l 5 -8`} stroke="#cbd5e1" strokeWidth="2" fill="none" />
           </g>
         ))}
         <rect x={x - 3} y={PY - 3} width={S + 6} height={S + 6} rx="6" fill="#3f2a14" />
@@ -109,7 +111,7 @@ function Display({ params, lumina }) {
         <rect width={W} height={H} fill="#0f172a" />
         {tool && labels.map((_, i) => plot(i))}
         {!tool && labels.map((_, i) => cardTop(i, 20 + slotW * i + slotW / 2, 130, Math.min(170, slotW - 30)))}
-        {tool && <text x={W / 2} y={H - 14} textAnchor="middle" fontSize="14" fill="#94a3b8">Each plot is 1 whole garden.</text>}
+        {tool && <text x={W / 2} y={H - 12} textAnchor="middle" fontSize="14" fill="#94a3b8">Each plot is 1 whole garden.</text>}
       </svg>
     </Panel>
   );

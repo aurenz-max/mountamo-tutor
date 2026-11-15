@@ -233,7 +233,7 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel>
+    <Panel title="Shadow Maker" caption="Drag a sheet into the holder in front of the light.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>
@@ -245,6 +245,7 @@ function Display({ params, lumina }) {
             <stop offset="1" stopColor="#cbd5e1" />
           </linearGradient>
         </defs>
+        <rect width={W} height={H} fill="#0f172a" />
         {beams.map(lane)}
         <rect x="0" y={TRAY_Y} width={W} height={TRAY_H - 6} rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />
         {tray.map((k, i) => (

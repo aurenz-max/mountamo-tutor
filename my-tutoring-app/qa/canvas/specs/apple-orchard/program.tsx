@@ -268,7 +268,7 @@ function Display({ params, lumina }) {
         {/* Loose Apples on Mat */}
         {onMatApples.map(a => (
           <g key={a.id} id={'apple-' + a.id} style={{ cursor: 'pointer' }}>
-            <circle cx={a.x} cy={a.y} r="14" fill="transparent" />
+            <circle cx={a.x} cy={a.y} r="17" fill="transparent" />
             {drawApple(a.x, a.y, 10.5, scoopSelectedSet.has(a.id))}
           </g>
         ))}

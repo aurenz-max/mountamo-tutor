@@ -1,7 +1,5 @@
 function Display({ params, lumina }) {
-  // A tool dropped on the material does what it really does there: scissors on a dashed line cut; glue or tape on an
-  // overlap joins; a punch makes a hole; crayon and pencil mark; a ruler lies there. Freed parts move by hand.
-  // Nothing says whether the made thing is right: the child compares it with the picture.
+  // A tool on the material does what it really does there; nothing says if the made thing is right.
   // params.project: 'card' | 'star' | 'tag' | 'crown'. params.tools: tray order. params.steps: false = finished picture only.
   const project = ['card', 'star', 'tag', 'crown'].includes(params.project) ? params.project : 'card';
   const showSteps = params.steps !== false;
@@ -353,9 +351,10 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel>
+    <Panel title="Tool Table" caption="Drag a tool onto the paper to use it. Drag a cut piece or the string by hand.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
+        <rect width={W} height={H} fill="#0f172a" />
         {pics.map((pic, i) => <g key={'pic' + i} transform={`translate(${x0 + i * (BOX + GAP)}, 6)`}>
           <rect width={BOX} height="84" rx="10" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
           {pic()}

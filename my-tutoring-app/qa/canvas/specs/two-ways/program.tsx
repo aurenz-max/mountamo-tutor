@@ -196,7 +196,7 @@ function Display({ params, lumina }) {
               {pill(0)}
               {pill(1)}
               <div style={{ flex: 1 }} />
-              <button id="start-over" type="button" onClick={redo} style={{ ...keyStyle, width: 'auto', height: 40, padding: '0 14px', fontSize: 14 }}>Redo this way</button>
+              <button id="start-over" type="button" onClick={redo} style={{ ...keyStyle, width: 'auto', height: 44, padding: '0 14px', fontSize: 14 }}>Redo this way</button>
             </div>
             {tree()}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 5, opacity: typing ? 1 : 0.35 }}>

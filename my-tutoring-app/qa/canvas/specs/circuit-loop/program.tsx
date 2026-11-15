@@ -115,7 +115,7 @@ function Display({ params, lumina }) {
       onPointerUp={onHandleUp}
       onPointerCancel={() => setDragging(null)}
     >
-      <circle r="22" fill="transparent" />
+      <circle r="24" fill="transparent" />
       <circle r="13" fill={color} stroke="#ffffff" strokeWidth="2.5" />
       <circle r="4" fill="#ffffff" />
     </g>
@@ -123,13 +123,13 @@ function Display({ params, lumina }) {
 
   return (
     <Panel title="Circuit Workshop" caption="Drag the ends of each wire. Tap the switch lever to open or close it.">
-      <Stack gap={12}>
         <svg
           ref={svgRef}
           viewBox="0 0 680 340"
-          style={{ width: '100%', height: 'auto', background: '#090d16', borderRadius: 12, border: '1px solid #1e293b', touchAction: 'none', userSelect: 'none' }}
+          style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}
           onPointerMove={onMove}
         >
+          <rect width="680" height="340" fill="#0f172a" />
           {/* Tray */}
           <rect x="205" y="185" width="290" height="125" rx="10" fill="rgba(30,41,59,0.4)" stroke="#334155" strokeDasharray="4 4" />
           <text x="350" y="327" textAnchor="middle" fill="#64748b" fontSize="12" fontWeight="600">WIRE TRAY</text>
@@ -159,7 +159,7 @@ function Display({ params, lumina }) {
             {switchClosed
               ? <path d="M 30 30 L 130 30" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" />
               : <path d="M 30 30 L 112 4" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" />}
-            <text x="80" y="52" textAnchor="middle" fill="#94a3b8" fontSize="12" fontWeight="700">SWITCH: {switchClosed ? 'CLOSED' : 'OPEN'}</text>
+            <text x="80" y="80" textAnchor="middle" fill="#94a3b8" fontSize="13" fontWeight="700">SWITCH: {switchClosed ? 'CLOSED' : 'OPEN'}</text>
             <rect id="switch-lever" x="48" y="-8" width="64" height="66" fill="transparent" style={{ cursor: 'pointer' }} onClick={() => setSwitchClosed(v => !v)} />
           </g>
 
@@ -182,7 +182,7 @@ function Display({ params, lumina }) {
           {terminal('bat_neg', 'term-bat-neg', { y: 34 })}
           {terminal('switch_l', 'term-switch-l', { x: -38, y: 4, textAnchor: 'end' })}
           {terminal('switch_r', 'term-switch-r', { x: 38, y: 4, textAnchor: 'start' })}
-          {terminal('bulb_side', 'term-bulb-side', { x: -6, y: -22, textAnchor: 'end' })}
+          {terminal('bulb_side', 'term-bulb-side', { x: -12, y: -30, textAnchor: 'end' })}
           {terminal('bulb_foot', 'term-bulb-foot', { y: 34 })}
 
           {wires.map((w, idx) => {
@@ -197,7 +197,6 @@ function Display({ params, lumina }) {
             );
           })}
         </svg>
-      </Stack>
     </Panel>
   );
 }

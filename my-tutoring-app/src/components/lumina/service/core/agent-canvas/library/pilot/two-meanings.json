@@ -117,7 +117,7 @@
      {
       "id": "bell",
       "pic": "🔔",
-      "name": "a bell that rings"
+      "name": "bell"
      },
      {
       "id": "donut",
@@ -173,7 +173,7 @@
      "empty"
     ],
     "tray": [
-     "a bell that rings",
+     "bell",
      "donut",
      "ring for a finger",
      "gem"
@@ -183,7 +183,7 @@
     "centre": "the word ring (shown: ring)",
     "places": [
      "ring for a finger",
-     "a bell that rings"
+     "bell"
     ],
     "tray": [
      "donut",
@@ -197,7 +197,7 @@
      "donut"
     ],
     "tray": [
-     "a bell that rings",
+     "bell",
      "gem"
     ]
    }

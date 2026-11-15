@@ -159,13 +159,12 @@ function Display({ params, lumina }) {
               {!locked && (
                 <g>
                   <g id={`cut-minus-${p}`} onClick={() => setCut(p, -1)} style={{ cursor: 'pointer' }} opacity={n > 1 ? 1 : 0.35}>
-                    <rect x={cx - 62} y={150} width="44" height="44" rx="10" fill="#334155" stroke="#64748b" strokeWidth="2" />
-                    <text x={cx - 40} y={179} textAnchor="middle" fontSize="24" fill="#e2e8f0">−</text>
+                    <rect x={cx - 50} y={150} width="44" height="44" rx="10" fill="#334155" stroke="#64748b" strokeWidth="2" />
+                    <text x={cx - 28} y={179} textAnchor="middle" fontSize="24" fill="#e2e8f0">−</text>
                   </g>
-                  <text x={cx} y={178} textAnchor="middle" fontSize="16" fill="#cbd5e1">🔪 {n}</text>
                   <g id={`cut-plus-${p}`} onClick={() => setCut(p, 1)} style={{ cursor: 'pointer' }} opacity={n < MAXCUT ? 1 : 0.35}>
-                    <rect x={cx + 18} y={150} width="44" height="44" rx="10" fill="#334155" stroke="#64748b" strokeWidth="2" />
-                    <text x={cx + 40} y={179} textAnchor="middle" fontSize="24" fill="#e2e8f0">+</text>
+                    <rect x={cx + 6} y={150} width="44" height="44" rx="10" fill="#334155" stroke="#64748b" strokeWidth="2" />
+                    <text x={cx + 28} y={179} textAnchor="middle" fontSize="24" fill="#e2e8f0">+</text>
                   </g>
                 </g>
               )}

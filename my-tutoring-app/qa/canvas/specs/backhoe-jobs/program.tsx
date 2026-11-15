@@ -265,10 +265,10 @@ function Display({ params, lumina }) {
   const order = cards.map((_, i) => i).sort((a, b) => (drag && cards[a] === drag.key ? 1 : 0) - (drag && cards[b] === drag.key ? 1 : 0));
 
   return (
-    <Panel>
-      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
+    <Panel title="Backhoe Jobs" caption="Drag a card onto a part of the backhoe.">
+      <svg ref={svgRef} viewBox={`0 84 ${W} ${H - 84}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
-        <rect x="0" y="0" width={W} height={GROUND} rx="12" fill="#0b1224" />
+        <rect x="0" y="0" width={W} height={GROUND} rx="12" fill="#0f172a" />
         <rect x="0" y={GROUND} width={W} height="10" fill="#78350f" />
         {backhoe}
         <rect x="0" y={TRAY_Y} width={W} height={TRAY_H} rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />

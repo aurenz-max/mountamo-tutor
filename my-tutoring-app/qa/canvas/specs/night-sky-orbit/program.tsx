@@ -74,8 +74,8 @@ function Display({ params, lumina }) {
 
   return (
     <Panel title="Night Sky" caption="Drag Earth along its path.">
-      <div style={{ width: '100%', background: '#0b1226', borderRadius: 12, overflow: 'hidden' }}>
-        <svg viewBox={'0 0 ' + W + ' ' + H} style={{ width: '100%', display: 'block', userSelect: 'none', touchAction: 'none' }}>
+        <svg viewBox={'0 0 ' + W + ' ' + H} style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none', touchAction: 'none' }}>
+          <rect width={W} height={H} fill="#0f172a" />
           <circle cx={CX} cy={CY} r={ORBIT} fill="none" stroke="#475569" strokeWidth="2.5" strokeDasharray="6 8" />
 
           <g>
@@ -116,7 +116,6 @@ function Display({ params, lumina }) {
             </g>
           </Handle>
         </svg>
-      </div>
     </Panel>
   );
 }

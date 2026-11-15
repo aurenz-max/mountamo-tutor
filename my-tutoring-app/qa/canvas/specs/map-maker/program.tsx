@@ -161,8 +161,11 @@ function Display({ params, lumina }) {
       <circle r="24" fill="transparent" /><text textAnchor="middle" dominantBaseline="middle" fontSize={34 * (home.s || 1)}>{hidden.pic}</text></g>;
   };
 
+  const caption = task === 'make'
+    ? 'Drag a symbol from the key onto the map. Drag it off the map to take it away.'
+    : 'Drag the ' + hidden.name + ' into the picture.';
   return (
-    <Panel>
+    <Panel title="Map Maker" caption={caption}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <rect x="0" y="0" width={W} height={H} fill="#0f172a" />

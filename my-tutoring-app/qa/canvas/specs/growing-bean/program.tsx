@@ -44,7 +44,7 @@ function Display({ params, lumina }) {
       met = measuredRight && star != null && star > 0 && heights[star] === heights[star - 1];
     } else if (answer === 'grew') {
       const grew = heights[days - 1] - heights[0];
-      met = measuredRight && marked.length === grew && marked.every((m) => m.startsWith((days - 1) + '-'));
+      met = measuredRight && marked.length === grew && marked.every((m) => m.startsWith((days - 1) + '-') && Number(m.split('-')[1]) >= heights[0]);
     }
     lumina.goal(met);
     const scene = {

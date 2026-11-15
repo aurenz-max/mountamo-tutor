@@ -205,7 +205,7 @@ function Display({ params, lumina }) {
 
   const local = (e) => {
     const box = svgRef.current.getBoundingClientRect();
-    return { x: e.clientX - box.left, y: e.clientY - box.top };
+    return { x: ((e.clientX - box.left) * W) / box.width, y: ((e.clientY - box.top) * H) / box.height };
   };
 
   const grab = (e, what, contact) => {
@@ -326,7 +326,8 @@ function Display({ params, lumina }) {
 
   return (
     <Panel title="Shape Test" caption={caption}>
-      <svg ref={svgRef} id="world" width={W} height={H} style={{ display: 'block', touchAction: 'none', userSelect: 'none' }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>
+      <svg ref={svgRef} id="world" viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>
+        <rect width={W} height={H} fill="#0f172a" />
         <rect x={10} y={SHELF_Y} width={Math.max(200, shapeList.length * 84 + 10)} height={8} rx={3} fill="#64748b" />
         {hasRamp ? (
           <g>
@@ -358,7 +359,7 @@ function Display({ params, lumina }) {
 
         {hasStack ? (
           <g id="block" transform={`translate(${bp.x} ${bp.y}) rotate(${bp.angle})`} style={{ cursor: 'grab' }} onPointerDown={(e) => grab(e, 'block', { x: bp.x, y: bp.y })}>
-            <rect x={-30} y={-26} width={60} height={30} fill="transparent" />
+            <rect x={-32} y={-38} width={64} height={44} fill="transparent" />
             <rect x={-24} y={-20} width={48} height={20} rx={2} fill="#ef4444" stroke="#7f1d1d" strokeWidth={2} />
           </g>
         ) : null}

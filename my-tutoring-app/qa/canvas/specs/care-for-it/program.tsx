@@ -215,8 +215,11 @@ function Display({ params, lumina }) {
     {roomShade('light-kitchen', 0, 336)}{roomShade('light-living', 344, 336)}
   </g>;
 
+  const canDrag = things.some(t => KINDS[t.id].put);
+  const title = { classroom: 'Our Classroom', park: 'Our Park', home: 'Our House' }[place];
+  const caption = 'Tap a thing to change it.' + (canDrag ? ' Drag a thing to move it.' : '');
   return (
-    <Panel>
+    <Panel title={title} caption={caption}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         {{ classroom, park, home }[place]()}

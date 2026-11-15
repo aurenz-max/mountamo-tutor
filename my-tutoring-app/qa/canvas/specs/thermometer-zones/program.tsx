@@ -206,15 +206,15 @@ function Display({ params, lumina }) {
     const hy = SET_TOP + yOf(level);
     body = (
       <g>
-        <g id="thermo-set" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'ns-resize' }}>
+        <g id="thermo-set" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'grab' }}>
           {thermo('t', SET_X, SET_TOP, level, 1, null)}
         </g>
-        <g id="level-handle" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'ns-resize' }} transform={`translate(${SET_X - 70} ${hy})`}>
+        <g id="level-handle" onPointerDown={(e) => begin(e, 'level', { x: SET_X, y: hy })} style={{ cursor: 'grab' }} transform={`translate(${SET_X - 70} ${hy})`}>
           <rect x={-26} y={-24} width={52} height={48} fill="transparent" />
           <polygon points="-20,-16 12,0 -20,16" fill="#f8fafc" stroke="#0f172a" strokeWidth={2} />
           <line x1={12} y1={0} x2={44} y2={0} stroke="#f8fafc" strokeWidth={2} />
         </g>
-        {scenePic(target, 300, 70, 330, 250, 'day-' + target)}
+        {scenePic(target, 300, 40, 330, 210, 'day-' + target)}
       </g>
     );
   } else {
@@ -239,6 +239,7 @@ function Display({ params, lumina }) {
   return (
     <Panel title="Thermometer" caption={caption}>
       <svg ref={svgRef} id="world" width={W} height={H} style={{ display: 'block', touchAction: 'none', userSelect: 'none' }} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { dragRef.current = null; setDrag(null); }}>
+        <rect width={W} height={H} fill="#0f172a" />
         {body}
       </svg>
     </Panel>

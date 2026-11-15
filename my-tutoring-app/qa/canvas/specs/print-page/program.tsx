@@ -100,7 +100,7 @@ function Display({ params, lumina }) {
   });
 
   return (
-    <Panel title="Print Page">
+    <Panel title="Print Page" caption={count ? "Tap a word or the picture. Tap a number." : "Tap a word or the picture."}>
       <Stack gap={14}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 0 }}>
           {pages.map(page)}

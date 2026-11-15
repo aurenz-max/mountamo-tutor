@@ -15,14 +15,15 @@ function Display({ params, lumina }) {
   };
 
   useEffect(() => {
-    lumina.goal(parts === targetDen && markerPos === targetNum);
+    // Any partition into a multiple of the denominator is a fair partition: 6/8 marks 3/4 too.
+    lumina.goal(parts % targetDen === 0 && markerPos * targetDen === targetNum * parts);
     lumina.scene({ wholesOnLine: wholes, equalPartsInEachWhole: parts, markerOnTick: markerPos });
   }, [parts, markerPos, targetNum, targetDen, wholes]);
 
   const lineStart = 80;
   const lineEnd = 600;
   const lineWidth = lineEnd - lineStart;
-  const lineY = 160;
+  const lineY = 104;
 
   const tickPositions = useMemo(() => {
     const pos = [];
@@ -46,7 +47,7 @@ function Display({ params, lumina }) {
     <Panel title="Fractions on a Number Line" caption="Choose how many equal parts each whole has, then drag the marker.">
       <Stack gap={16}>
         <div>
-          <div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 8 }}>Equal parts in each whole:</div>
+          <div style={{ color: '#cbd5e1', fontSize: 14, marginBottom: 8 }}>Equal parts in each whole:</div>
           <Row gap={8}>
             {[2, 3, 4, 5, 6, 8].map((n) => (
               <button
@@ -55,9 +56,9 @@ function Display({ params, lumina }) {
                 onClick={() => handlePartsChange(n)}
                 style={{
                   minWidth: 44, minHeight: 44, padding: '8px 16px', borderRadius: 8,
-                  border: parts === n ? '2px solid #38bdf8' : '1px solid #334155',
-                  background: parts === n ? '#0284c7' : '#1e293b',
-                  color: '#ffffff', fontWeight: 'bold', fontSize: 16, cursor: 'pointer',
+                  border: parts === n ? '2px solid #22d3ee' : '2px solid #475569',
+                  background: parts === n ? '#334155' : '#1e293b',
+                  color: '#e2e8f0', fontWeight: 'bold', fontSize: 16, cursor: 'pointer',
                 }}
               >
                 {n}
@@ -66,17 +67,19 @@ function Display({ params, lumina }) {
           </Row>
         </div>
 
-        <div style={{ width: '100%', height: 280, background: '#1e293b', borderRadius: 12, overflow: 'hidden' }}>
-          <svg viewBox="0 0 680 280" style={{ width: '100%', height: '100%', userSelect: 'none', touchAction: 'none' }}>
+        <div>
+          <svg viewBox="0 0 680 180" style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none', touchAction: 'none' }}>
+            <rect width="680" height="180" fill="#0f172a" />
+            <rect x="10" y="10" width="660" height="160" rx="14" fill="#1e293b" stroke="#475569" strokeWidth="2" />
             {Array.from({ length: total }).map((_, i) => {
               const x1 = tickPositions[i];
               const x2 = tickPositions[i + 1];
               const isCovered = i < markerPos;
               return (
                 <g key={i}>
-                  <rect x={x1 + 3} y={lineY - 14} width={x2 - x1 - 6} height={28} rx={4} fill={isCovered ? '#0284c7' : '#334155'} opacity={0.5} />
+                  <rect x={x1 + 3} y={lineY - 14} width={x2 - x1 - 6} height={28} rx={4} fill={isCovered ? '#22d3ee' : '#334155'} opacity={isCovered ? 0.35 : 0.6} />
                   {showTicks && (
-                    <text x={(x1 + x2) / 2} y={lineY - 24} fill={isCovered ? '#38bdf8' : '#94a3b8'} fontSize="13" textAnchor="middle" fontWeight="600">
+                    <text x={(x1 + x2) / 2} y={lineY - 24} fill={isCovered ? '#22d3ee' : '#cbd5e1'} fontSize="14" textAnchor="middle" fontWeight="600">
                       1/{parts}
                     </text>
                   )}
@@ -105,9 +108,9 @@ function Display({ params, lumina }) {
 
             <Handle id="fraction-marker" x={currentMarkerX} y={lineY} r={24} color="cyan" onDrag={handleDrag} onDrop={handleDrag}>
               <g>
-                <circle cx="0" cy="0" r="10" fill="#38bdf8" stroke="#ffffff" strokeWidth="2.5" />
-                <line x1="0" y1="0" x2="0" y2="-44" stroke="#38bdf8" strokeWidth="3" />
-                <path d="M 0 -44 L 28 -34 L 0 -24 Z" fill="#38bdf8" />
+                <circle cx="0" cy="0" r="10" fill="#22d3ee" stroke="#f8fafc" strokeWidth="2.5" />
+                <line x1="0" y1="0" x2="0" y2="-44" stroke="#22d3ee" strokeWidth="3" />
+                <path d="M 0 -44 L 28 -34 L 0 -24 Z" fill="#22d3ee" />
               </g>
             </Handle>
           </svg>

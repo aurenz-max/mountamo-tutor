@@ -147,7 +147,6 @@ function Display({ params, lumina }) {
     <Panel title="Supply Gorge Crossing" caption={canTest ? "Choose the beam and its support. Drive the truck to test it." : "Choose the beam and its support."}>
       <Stack gap={12}>
       <Row gap={14}>
-        <Readout label="Truck" value={truckWeight} unit="tons" color="amber" />
         {budget !== null && <Readout label="Budget" value={"$" + budget} color="white" />}
         {budget !== null && <Readout label="This design" value={"$" + cost} color="white" />}
         {canTest && <button id="test-btn" onClick={handleTest} disabled={animState === "driving"} style={{ padding: "10px 20px", minHeight: 44, backgroundColor: animState === "driving" ? "#475569" : "#0284c7", color: "#fff", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>Drive the Truck</button>}
@@ -235,7 +234,7 @@ function Display({ params, lumina }) {
           {animState === "driving" && sag > 3 && (
             <g>
               <line x1={midX} y1={bridgeY} x2={midX} y2={midY} stroke="#ef4444" strokeWidth="2" strokeDasharray="3 3" />
-              <text x={midX + 8} y={midY - 4} fontSize="11" fill="#ef4444" fontWeight="bold">
+              <text x={midX + 8} y={midY - 4} fontSize="14" fill="#ef4444" fontWeight="bold">
                 Sag: {Math.round(sag)}cm
               </text>
             </g>
@@ -249,7 +248,7 @@ function Display({ params, lumina }) {
             {/* Cargo Box */}
             <rect x="0" y="0" width="46" height="24" rx="3" fill="#ea580c" />
             <rect x="4" y="4" width="38" height="16" fill="#f97316" rx="2" />
-            <text x="23" y="16" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">{truckWeight} T</text>
+            <text x="23" y="17" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="bold">{truckWeight} T</text>
             
             {/* Cab */}
             <path d="M 46 8 L 58 8 L 64 16 L 64 24 L 46 24 Z" fill="#2563eb" />

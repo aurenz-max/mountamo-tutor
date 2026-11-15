@@ -66,7 +66,7 @@ function Display({ params, lumina }) {
   };
 
   useEffect(() => {
-    lumina.goal(atpCharged >= targetATP);
+    lumina.goal(atpCharged >= targetATP && !leak);
     lumina.scene({
       protonsInSpace: reservoirProtons,
       protonsInMatrix: matrixProtons,
@@ -97,41 +97,39 @@ function Display({ params, lumina }) {
 
   return (
     <Panel title="Mitochondrion Power Plant" caption="Tap the pump, the turbine gate, or anything broken.">
-      <Stack gap={10}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, background: '#1e293b', padding: '10px 14px', borderRadius: 10, border: '1px solid #334155' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#cbd5e1' }}>ATP batteries</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {Array.from({ length: targetATP }).map((_, idx) => (
-              <div key={idx} id={`battery-${idx}`} style={{ width: 24, height: 32, borderRadius: 4, border: idx < atpCharged ? '2px solid #fbbf24' : '2px dashed #64748b', background: idx < atpCharged ? '#b45309' : '#0f172a' }} />
-            ))}
-          </div>
-          {protonsPerATP > 1 && <span style={{ fontSize: 13, color: '#cbd5e1' }}>Each battery takes {protonsPerATP} H⁺ through the turbine{partial ? ` (${partial} so far)` : ''}.</span>}
-        </div>
-
-        <div style={{ background: '#0b1120', borderRadius: 10, border: '1px solid #334155' }}>
-          <svg viewBox="0 0 680 370" style={{ width: '100%', display: 'block', userSelect: 'none' }}>
+      <svg viewBox="0 0 680 440" style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>
+        <rect width="680" height="440" fill="#0f172a" />
+        <rect x="16" y="10" width="648" height="52" rx="12" fill="#1e293b" stroke="#475569" strokeWidth="2" />
+        <text x="32" y="42" fill="#cbd5e1" fontSize="14" fontWeight="bold">ATP batteries</text>
+        {Array.from({ length: targetATP }).map((_, idx) => (
+          <rect key={idx} id={`battery-${idx}`} x={142 + idx * 34} y="18" width="24" height="36" rx="4" fill={idx < atpCharged ? '#b45309' : '#0f172a'} stroke={idx < atpCharged ? '#fbbf24' : '#64748b'} strokeWidth="2" strokeDasharray={idx < atpCharged ? undefined : '6 5'} />
+        ))}
+        {protonsPerATP > 1 && (
+          <text x={142 + targetATP * 34 + 14} y="42" fill="#cbd5e1" fontSize="14">Each battery takes {protonsPerATP} H⁺ through the turbine{partial ? ` (${partial} so far)` : ''}.</text>
+        )}
+        <g transform="translate(0, 66)">
             <rect x="25" y="20" width="630" height="330" rx="35" ry="35" fill="none" stroke="#6366f1" strokeWidth="4" />
-            <text x="48" y="44" fill="#a5b4fc" fontSize="12" fontWeight="bold">OUTER MEMBRANE</text>
+            <text x="48" y="44" fill="#a5b4fc" fontSize="13" fontWeight="bold">OUTER MEMBRANE</text>
 
             <path d="M 40 55 Q 340 50 640 55 L 640 135 Q 340 130 40 135 Z" fill="#1e1b4b" stroke="#4338ca" strokeWidth="1.5" />
-            <text x="205" y="127" fill="#a5b4fc" fontSize="12" fontWeight="bold">INTERMEMBRANE SPACE</text>
+            <text x="215" y="127" fill="#a5b4fc" fontSize="13" fontWeight="bold">INTERMEMBRANE SPACE</text>
 
             <path d="M 40 140 Q 340 135 640 140 L 640 335 Q 340 340 40 335 Z" fill="#111c30" stroke="#22d3ee" strokeWidth="3" />
-            <text x="205" y="162" fill="#67e8f9" fontSize="12" fontWeight="bold">INNER MEMBRANE</text>
-            <text x="48" y="325" fill="#94a3b8" fontSize="12" fontWeight="bold">MATRIX</text>
+            <text x="215" y="162" fill="#67e8f9" fontSize="13" fontWeight="bold">INNER MEMBRANE</text>
+            <text x="48" y="325" fill="#94a3b8" fontSize="13" fontWeight="bold">MATRIX</text>
 
-            <g id="btn-pump" transform="translate(120, 110)" style={{ cursor: 'pointer' }} onClick={handlePump}>
-              <rect x="-50" y="-30" width="100" height="72" rx="8" fill={pumpFlash ? '#f59e0b' : '#b45309'} stroke="#fbbf24" strokeWidth="2" />
-              <text x="0" y="-8" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">H⁺ PUMP</text>
-              <text x="0" y="8" textAnchor="middle" fill="#fef3c7" fontSize="11">runs on food energy</text>
-              <text x="0" y="28" textAnchor="middle" fill="#ffffff" fontSize="16" fontWeight="bold">↑</text>
+            <g id="btn-pump" transform="translate(115, 110)" style={{ cursor: 'pointer' }} onClick={handlePump}>
+              <rect x="-68" y="-32" width="136" height="76" rx="8" fill={pumpFlash ? '#f59e0b' : '#b45309'} stroke="#fbbf24" strokeWidth="2" />
+              <text x="0" y="-9" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="bold">H⁺ PUMP</text>
+              <text x="0" y="10" textAnchor="middle" fill="#fef3c7" fontSize="13">runs on food energy</text>
+              <text x="0" y="32" textAnchor="middle" fill="#ffffff" fontSize="17" fontWeight="bold">↑</text>
             </g>
 
             {leak && (
               <g id="btn-leak" transform="translate(395, 137)" style={{ cursor: 'pointer' }} onClick={() => setLeak(false)}>
                 <rect x="-34" y="-24" width="68" height="48" fill="transparent" />
                 <ellipse cx="0" cy="2" rx="28" ry="7" fill="#0b1120" stroke="#f87171" strokeWidth="2.5" strokeDasharray="4 3" />
-                <text x="0" y="22" textAnchor="middle" fill="#fca5a5" fontSize="12" fontWeight="bold">HOLE</text>
+                <text x="0" y="22" textAnchor="middle" fill="#fca5a5" fontSize="13" fontWeight="bold">HOLE</text>
               </g>
             )}
 
@@ -139,7 +137,7 @@ function Display({ params, lumina }) {
               <g id="btn-gate" style={{ cursor: 'pointer' }} onClick={() => setGateOpen((v) => !v)}>
                 <rect x="-48" y="-24" width="96" height="48" fill="transparent" />
                 <rect x="-38" y="-17" width="76" height="36" rx="6" fill={gateOpen ? '#0e7490' : '#334155'} stroke="#22d3ee" strokeWidth="2" />
-                <text x="0" y="6" textAnchor="middle" fill="#e0f2fe" fontSize="12" fontWeight="bold">{gateOpen ? 'GATE OPEN' : 'GATE SHUT'}</text>
+                <text x="0" y="6" textAnchor="middle" fill="#e0f2fe" fontSize="13" fontWeight="bold">{gateOpen ? 'GATE OPEN' : 'GATE SHUT'}</text>
               </g>
               <g transform={`translate(0, 56) rotate(${turbineAngle})`}>
                 <circle r="26" fill="#164e63" stroke="#22d3ee" strokeWidth="2.5" />
@@ -147,26 +145,25 @@ function Display({ params, lumina }) {
                 <rect x="-24" y="-4" width="48" height="8" rx="2" fill="#67e8f9" />
                 <circle r="7" fill="#ffffff" />
               </g>
-              <text x="0" y="106" textAnchor="middle" fill="#cbd5e1" fontSize="12" fontWeight="bold">TURBINE (ATP SYNTHASE)</text>
+              <text x="0" y="106" textAnchor="middle" fill="#cbd5e1" fontSize="13" fontWeight="bold">TURBINE (ATP SYNTHASE)</text>
               {spinning && <path d="M 0 -22 L 0 26" stroke="#60a5fa" strokeWidth="4" strokeDasharray="6 3" />}
             </g>
 
             {reservoirDots.map((d) => (
               <g key={d.id} id={d.id} transform={`translate(${d.x}, ${d.y})`}>
-                <circle r="13" fill="#3b82f6" stroke="#93c5fd" strokeWidth="2" />
-                <text x="0" y="4" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="bold">H⁺</text>
+                <circle r="14" fill="#3b82f6" stroke="#93c5fd" strokeWidth="2" />
+                <text x="0" y="5" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="bold">H⁺</text>
               </g>
             ))}
 
             {matrixDots.map((d) => (
               <g key={d.id} id={d.id} transform={`translate(${d.x}, ${d.y})`}>
-                <circle r="13" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
-                <text x="0" y="4" textAnchor="middle" fill="#bfdbfe" fontSize="11" fontWeight="bold">H⁺</text>
+                <circle r="14" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
+                <text x="0" y="5" textAnchor="middle" fill="#bfdbfe" fontSize="13" fontWeight="bold">H⁺</text>
               </g>
             ))}
-          </svg>
-        </div>
-      </Stack>
+        </g>
+      </svg>
     </Panel>
   );
 }

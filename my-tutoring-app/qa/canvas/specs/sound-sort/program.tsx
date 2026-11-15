@@ -94,18 +94,19 @@ function Display({ params, lumina }) {
     <Panel title="Sound Sort" caption="Tap a sound to hear it. Drag it into a box.">
       <svg
         viewBox="0 0 680 370"
-        style={{ width: '100%', height: 'auto', background: '#0b1220', borderRadius: 12, border: '1px solid #1e293b', touchAction: 'none', userSelect: 'none' }}
+        style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}
       >
+        <rect width="680" height="370" fill="#0f172a" />
         {bins.map(b => (
           <g key={b.key}>
-            <rect id={`bin-${b.key}`} x={b.x} y={b.y} width={b.w} height={b.h} rx="12" fill="#172033" stroke="#475569" strokeWidth="2" />
+            <rect id={`bin-${b.key}`} x={b.x} y={b.y} width={b.w} height={b.h} rx="12" fill="#1e293b" stroke="#475569" strokeWidth="2" />
             <text x={b.x + b.w / 2} y={b.y + 28} textAnchor="middle" fill="#f1f5f9" fontSize="20" fontWeight="700" style={{ pointerEvents: 'none' }}>
               {b.parts.map(p => `${p.icon} ${p.word}`).join('   ')}
             </text>
           </g>
         ))}
 
-        <rect x="20" y="272" width="640" height="88" rx="12" fill="rgba(30,41,59,0.5)" stroke="#334155" strokeDasharray="5 5" />
+        <rect x="20" y="272" width="640" height="88" rx="12" fill="none" stroke="#475569" strokeWidth="2" strokeDasharray="6 5" />
 
         {sounds.map((s, i) => {
           const at = drag && drag.id === s.id ? drag : rest(s);
@@ -127,7 +128,7 @@ function Display({ params, lumina }) {
               <circle r="26" fill="#6366f1" stroke="#e0e7ff" strokeWidth="3" />
               <path d="M -11 -5 L -5 -5 L 3 -12 L 3 12 L -5 5 L -11 5 Z" fill="#ffffff" />
               <path d="M 8 -6 Q 13 0 8 6" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-              <text y="42" textAnchor="middle" fill="#cbd5e1" fontSize="13" fontWeight="700">{i + 1}</text>
+              <text y="42" textAnchor="middle" fill="#cbd5e1" fontSize="14" fontWeight="700">{i + 1}</text>
             </Handle>
           );
         })}

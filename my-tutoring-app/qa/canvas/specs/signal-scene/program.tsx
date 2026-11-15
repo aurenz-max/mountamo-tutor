@@ -232,9 +232,10 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel>
+    <Panel title="Signal Across" caption={paths.length > 1 ? "Drag a thing from the box into each sender's hand." : "Drag a thing from the box into the sender's hand."}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
+        <rect width={W} height={H} fill="#0f172a" />
         {paths.map(lane)}
         <rect x="0" y={TRAY_Y} width={W} height="108" rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />
         {tray.map(device)}

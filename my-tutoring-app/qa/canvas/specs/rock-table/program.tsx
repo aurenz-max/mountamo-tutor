@@ -35,7 +35,7 @@ function Display({ params, lumina }) {
   // ---------- layout ----------
   const W = 720;
   const TABLE_Y = 8, TABLE_H = 232;
-  const TRAY_Y = 254, TRAY_H = 332;
+  const TRAY_Y = 254, TRAY_H = 306;
   const H = TRAY_Y + TRAY_H + 6;
   const LENS_R = 50;
   const PARK = { x: 652, y: 98 };
@@ -46,7 +46,7 @@ function Display({ params, lumina }) {
   const SLOT_TOP = TRAY_Y + 88;
   const slot = (t, k) => {
     const r = tray(t), cw = r.w / COLS;
-    return { x: r.x + cw * ((k % COLS) + 0.5), y: SLOT_TOP + 56 + Math.floor(k / COLS) * 118 };
+    return { x: r.x + cw * ((k % COLS) + 0.5), y: SLOT_TOP + 50 + Math.floor(k / COLS) * 104 };
   };
   const spotW = (hasLens ? 580 : 700) / samples.length;
   const spot = i => ({ x: 12 + spotW * (i + 0.5), y: TABLE_Y + 104 });
@@ -370,7 +370,7 @@ function Display({ params, lumina }) {
   const dragging = drag && drag.x != null ? samples.find(s => s.id === drag.id) : null;
 
   return (
-    <Panel>
+    <Panel title="Rock Table" caption={`Drag each ${soils ? 'pile' : 'rock'} into a tray.${hasLens ? ' Drag the magnifier over one to look closer.' : ''}`}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>

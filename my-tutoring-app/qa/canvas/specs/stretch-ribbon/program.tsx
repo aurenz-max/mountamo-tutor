@@ -116,7 +116,7 @@ function Display({ params, lumina }) {
         {cards.map((c, i) => {
           const held = drag && drag.i === i && drag.x !== undefined;
           const v = at[i];
-          const x = held ? drag.x : v === null ? trayX(i) : xOf(v) + 44;
+          const x = held ? drag.x : v === null ? trayX(i) : Math.min(xOf(v) + 44, W - 40); // a copy dropped near the far end keeps its card on the stage
           const y = held ? drag.y : v === null ? TRAY_Y + 28 : LANE0 + i * LANE_GAP;
           return cardBox(c, i, x, y, v !== null && !held, {
             onPointerDown: e => grab(i, e),

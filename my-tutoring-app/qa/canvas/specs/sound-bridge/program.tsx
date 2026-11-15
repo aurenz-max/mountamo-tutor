@@ -149,7 +149,7 @@ function Display({ params, lumina }) {
     const pr = postR(l);
     return (
       <g key={i}>
-        <rect x="0" y={top} width={W} height={LANE_H - 6} rx="12" fill="#0b1224" />
+        <rect x="0" y={top} width={W} height={LANE_H - 6} rx="12" fill="#1e293b" stroke="#475569" strokeWidth="2" />
         <rect x="0" y={y + 52} width={W} height={top + LANE_H - 6 - (y + 52)} rx="0" fill="#14532d" opacity="0.55" />
         {/* the tapper */}
         <text x="56" y={y + 14} textAnchor="middle" fontSize="44">🐿️</text>
@@ -198,7 +198,7 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel>
+    <Panel title="Tap Bridge" caption="Drag a bridge from the tray into a gap, or back to the tray.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>
@@ -208,6 +208,7 @@ function Display({ params, lumina }) {
             <stop offset="1" stopColor="#64748b" />
           </linearGradient>
         </defs>
+        <rect width={W} height={H} fill="#0f172a" />
         {lanes.map(lane)}
         <rect x="0" y={TRAY_Y} width={W} height={TRAY_H - 6} rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />
         {tray.map((k, i) => !inGap.includes(k) && (

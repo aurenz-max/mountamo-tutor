@@ -226,7 +226,7 @@ function Display({ params, lumina }) {
   </g>;
 
   return (
-    <Panel>
+    <Panel title="Market Stall" caption={task === 'compare' ? 'Drag a box from a shop into the basket.' : task === 'price' ? 'Tap − or + to change a price.' : task === 'restock' ? 'Drag a thing from the crate into the wagon, or out again.' : 'Drag a thing from the crate onto the shelf, or back to the crate.'}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <rect x="0" y="0" width={W} height={H} fill="#0f172a" />

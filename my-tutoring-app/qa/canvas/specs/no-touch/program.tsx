@@ -193,7 +193,7 @@ function Display({ params, lumina }) {
     const gx = END_X[l.goal];
     return (
       <g key={i}>
-        <rect x="0" y={top} width={W} height={LANE_H - 8} rx="12" fill="#0b1224" />
+        <rect x="0" y={top} width={W} height={LANE_H - 8} rx="12" fill="#1e293b" stroke="#475569" strokeWidth="2" />
         {l.water ? (
           <rect x="8" y={gy - 14} width={W - 16} height={top + LANE_H - 16 - (gy - 14)} rx="8" fill="#1d4ed8" opacity="0.55" />
         ) : (
@@ -237,7 +237,7 @@ function Display({ params, lumina }) {
 
   const anyPlaced = Object.keys(placed).length > 0;
   return (
-    <Panel>
+    <Panel title="Move It Without Touching" caption="Drag a magnet, fan or squirter from the tray to one end of a lane.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>
@@ -247,6 +247,7 @@ function Display({ params, lumina }) {
             <stop offset="1" stopColor="#475569" />
           </radialGradient>
         </defs>
+        <rect width={W} height={H} fill="#0f172a" />
         {lanes.map(lane)}
         <rect x="0" y={TRAY_Y} width={W} height={TRAY_H - 6} rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />
         {tray.map((k, j) => !placed[k] && (

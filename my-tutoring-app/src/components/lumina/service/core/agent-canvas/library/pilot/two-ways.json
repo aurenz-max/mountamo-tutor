@@ -1,0 +1,810 @@
+{
+ "id": "two-ways",
+ "title": "Two Ways",
+ "serves": {
+  "grades": [
+   "1"
+  ],
+  "summary": "The learner adds three piles two different ways, choosing which two go together first, and sees that the total stays the same, which shows the associative property of addition."
+ },
+ "request": {
+  "topic": "Grouping three addends two different ways",
+  "grade": "grade 1",
+  "objective": "Add three numbers by putting two together first, then add them again with a different two first, and see that the total stays the same."
+ },
+ "source": "function Display({ params, lumina }) {\r\n  const nums = params?.numbers ?? [2, 3, 4];\r\n  const given = params?.given ?? null; // a pair of indices already chosen for Way 1, or null\r\n  const predict = params?.predict ?? false; // Way 2 asks for the total before the first node\r\n  const showDots = params?.showDots ?? true;\r\n\r\n  const total = nums[0] + nums[1] + nums[2];\r\n  const blank = (pair) => ({ pair: pair ? pair.slice() : [], pairSum: '', whole: '' });\r\n\r\n  const [ways, setWays] = useState([blank(given)]);\r\n  const [typed, setTyped] = useState('');\r\n\r\n  const w = ways.length - 1;\r\n  const cur = ways[w];\r\n  const stepOf = (way, idx) => {\r\n    if (way.pair.length < 2) return 'pick';\r\n    const o = predict && idx === 1 ? ['whole', 'pairSum'] : ['pairSum', 'whole'];\r\n    return o.find((k) => way[k] === '') ?? 'done';\r\n  };\r\n  const step = stepOf(cur, w);\r\n  const compare = w === 1 && step === 'done';\r\n  const third = (pair) => [0, 1, 2].find((i) => !pair.includes(i));\r\n  const sumOf = (pair) => nums[pair[0]] + nums[pair[1]];\r\n\r\n  useEffect(() => {\r\n    const ok = (way) => way.pair.length === 2 && way.pairSum === String(sumOf(way.pair)) && way.whole === String(total);\r\n    const samePair = ways.length === 2 && ways[0].pair.length === 2 && ways[1].pair.length === 2\r\n      && ways[0].pair.slice().sort().join() === ways[1].pair.slice().sort().join();\r\n    lumina.goal(ways.length === 2 && ok(ways[0]) && ok(ways[1]) && !samePair);\r\n    lumina.scene({\r\n      numbers: nums,\r\n      ways: ways.map((way) => ({\r\n        addedFirst: way.pair.map((i) => nums[i]),\r\n        addedLast: way.pair.length === 2 ? nums[third(way.pair)] : null,\r\n        firstTyped: way.pairSum,\r\n        inAllTyped: way.whole,\r\n      })),\r\n      wayBeingBuilt: w + 1,\r\n      showing: compare ? 'both ways side by side' : 'way ' + (w + 1),\r\n      numberBeingTyped: typed,\r\n    });\r\n  }, [ways, typed]);\r\n\r\n  const pick = (i) => {\r\n    if (step !== 'pick' && !(cur.pair.includes(i) && cur.pairSum === '' && cur.whole === '')) return;\r\n    if (w === 0 && given) return;\r\n    setWays((ws) => {\r\n      const c = ws[ws.length - 1];\r\n      const pair = c.pair.includes(i) ? c.pair.filter((x) => x !== i) : c.pair.length < 2 ? c.pair.concat(i) : c.pair;\r\n      return ws.slice(0, -1).concat({ ...c, pair });\r\n    });\r\n  };\r\n  const typing = step === 'pairSum' || step === 'whole';\r\n  const press = (d) => { if (typing) setTyped((t) => (t.length < 2 ? t + d : t)); };\r\n  const erase = () => setTyped((t) => t.slice(0, -1));\r\n  const ok = () => {\r\n    if (typed === '' || !typing) return;\r\n    setWays((ws) => {\r\n      const c = { ...ws[ws.length - 1], [step]: typed };\r\n      const next = ws.slice(0, -1).concat(c);\r\n      return stepOf(c, ws.length - 1) === 'done' && ws.length === 1 ? next.concat(blank(null)) : next;\r\n    });\r\n    setTyped('');\r\n  };\r\n  const redo = () => {\r\n    setWays((ws) => ws.slice(0, -1).concat(blank(w === 0 ? given : null)));\r\n    setTyped('');\r\n  };\r\n\r\n  const COLORS = ['#f87171', '#60a5fa', '#fbbf24'];\r\n  const pairDone = cur.pair.length === 2;\r\n\r\n  // Tree geometry. Before two piles are chosen they sit in their own order; once chosen, the pair\r\n  // slides left above the \"first\" node and the third pile stays right, above \"in all\".\r\n  const PILE_W = 112;\r\n  const PILE_H = 86;\r\n  const pileX = (() => {\r\n    if (!pairDone) return [140, 340, 540];\r\n    const [a, b] = cur.pair.slice().sort((p, q) => p - q);\r\n    const pos = [];\r\n    pos[a] = 120; pos[b] = 290; pos[third(cur.pair)] = 550;\r\n    return pos;\r\n  })();\r\n  const BOX_X = 205;\r\n  const BOX_Y = 150;\r\n  const BOX_H = 70;\r\n  const ALL_X = 400;\r\n  const ALL_Y = 268;\r\n\r\n  const dots = (i, size) => (\r\n    <div key={'d' + i} style={{ display: 'grid', gridTemplateColumns: 'repeat(' + Math.max(1, Math.min(5, nums[i])) + ', ' + size + 'px)', gap: 3, justifyContent: 'center' }}>\r\n      {Array.from({ length: nums[i] }, (_, k) => <div key={k} style={{ width: size, height: size, borderRadius: size / 2, background: COLORS[i] }} />)}\r\n    </div>\r\n  );\r\n\r\n  const slot = (id, value, active) => (\r\n    <div id={id} style={{ width: 66, height: 48, borderRadius: 10, border: '2px solid ' + (active ? '#38bdf8' : '#475569'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 800, color: '#f1f5f9', background: '#0f172a' }}>{value}</div>\r\n  );\r\n\r\n  const pile = (i) => {\r\n    const inPair = cur.pair.includes(i);\r\n    const moved = inPair && pairDone; // its dots now sit in the \"first\" node\r\n    return (\r\n      <button key={'pile-' + i} id={'pile-' + i} type=\"button\" onClick={() => pick(i)}\r\n        style={{ position: 'absolute', left: pileX[i] - PILE_W / 2, top: 0, width: PILE_W, height: PILE_H, transition: 'left 320ms ease', padding: '8px 6px', borderRadius: 12, cursor: 'pointer', background: '#1e293b', border: (inPair ? 3 : 2) + 'px solid ' + (inPair ? '#e2e8f0' : COLORS[i]), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>\r\n        <span style={{ fontSize: 30, fontWeight: 800, color: COLORS[i], lineHeight: 1 }}>{nums[i]}</span>\r\n        {showDots ? <div style={{ visibility: moved ? 'hidden' : 'visible' }}>{dots(i, 10)}</div> : null}\r\n      </button>\r\n    );\r\n  };\r\n\r\n  const line = (x1, y1, x2, y2, k) => <line key={k} x1={x1} y1={y1} x2={x2} y2={y2} stroke=\"#64748b\" strokeWidth={3} strokeLinecap=\"round\" />;\r\n\r\n  const tree = () => {\r\n    const t = pairDone ? third(cur.pair) : null;\r\n    return (\r\n      <div style={{ position: 'relative', width: 680, height: 330, margin: '0 auto' }}>\r\n        {pairDone ? (\r\n          <svg width={680} height={330} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>\r\n            {cur.pair.map((i) => line(pileX[i], PILE_H, BOX_X, BOX_Y, 'p' + i))}\r\n            {line(BOX_X, BOX_Y + BOX_H, ALL_X, ALL_Y, 'b')}\r\n            {line(pileX[t], PILE_H, ALL_X, ALL_Y, 't')}\r\n          </svg>\r\n        ) : null}\r\n        {[0, 1, 2].map(pile)}\r\n        {pairDone ? (\r\n          <div id=\"first-box\" style={{ position: 'absolute', left: BOX_X - (showDots ? 130 : 50), top: BOX_Y, width: showDots ? 260 : 100, height: BOX_H, borderRadius: 14, border: '2px dashed #e2e8f0', background: '#0b1324', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>\r\n            {showDots ? cur.pair.map((i) => dots(i, 11)) : null}\r\n            {slot('first-box-count', step === 'pairSum' ? typed : cur.pairSum, step === 'pairSum')}\r\n          </div>\r\n        ) : null}\r\n        {pairDone ? (\r\n          <div style={{ position: 'absolute', left: ALL_X - 50, top: ALL_Y, width: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>\r\n            {slot('in-all', step === 'whole' ? typed : cur.whole, step === 'whole')}\r\n            <span style={{ color: '#94a3b8', fontSize: 14 }}>in all</span>\r\n          </div>\r\n        ) : null}\r\n      </div>\r\n    );\r\n  };\r\n\r\n  // A small, read-only tree of a finished way, for the side-by-side look at the end.\r\n  const miniTree = (way, idx) => {\r\n    const [a, b] = way.pair.slice().sort((p, q) => p - q);\r\n    const t = third(way.pair);\r\n    const X = []; X[a] = 50; X[b] = 130; X[t] = 250;\r\n    const bx = 90; const ax = 170;\r\n    const node = (x, y, text, color, k) => (\r\n      <g key={k}>\r\n        <rect x={x - 28} y={y - 20} width={56} height={40} rx={10} fill=\"#1e293b\" stroke={color} strokeWidth={2} />\r\n        <text x={x} y={y + 9} textAnchor=\"middle\" fontSize={24} fontWeight={800} fill={color === '#475569' ? '#f1f5f9' : color}>{text}</text>\r\n      </g>\r\n    );\r\n    return (\r\n      <div id={'way-' + (idx + 1)} key={idx} style={{ flex: 1, padding: 10, borderRadius: 14, background: '#111c30', border: '2px solid #334155' }}>\r\n        <div style={{ color: '#94a3b8', fontSize: 15, marginBottom: 4 }}>Way {idx + 1}</div>\r\n        <svg width={300} height={200} style={{ display: 'block', margin: '0 auto' }}>\r\n          {line(X[a], 44, bx, 96, 'a')}\r\n          {line(X[b], 44, bx, 96, 'b')}\r\n          {line(bx, 136, ax, 156, 'c')}\r\n          {line(X[t], 44, ax, 156, 'd')}\r\n          {[a, b, t].map((i) => node(X[i], 24, nums[i], COLORS[i], 'n' + i))}\r\n          {node(bx, 116, way.pairSum, '#475569', 'f')}\r\n          {node(ax, 176, way.whole, '#475569', 'w')}\r\n        </svg>\r\n      </div>\r\n    );\r\n  };\r\n\r\n  const caption = {\r\n    pick: cur.pair.length === 0 ? 'Tap two piles to put together first.' : 'Tap one more pile.',\r\n    pairSum: 'How many when those two go together?',\r\n    whole: predict && w === 1 && cur.pairSum === '' ? 'Before you add: how many will there be in all?' : 'Now the last pile joins. How many in all?',\r\n    done: 'Here are your two ways.',\r\n  }[step];\r\n\r\n  const keyStyle = { width: 44, height: 46, borderRadius: 10, border: '1px solid #475569', background: '#1e293b', color: '#f1f5f9', fontSize: 21, fontWeight: 700, cursor: 'pointer' };\r\n  const pill = (idx) => {\r\n    const on = idx === w;\r\n    return (\r\n      <div key={idx} style={{ padding: '6px 14px', borderRadius: 999, fontSize: 15, fontWeight: 700, color: on ? '#f1f5f9' : '#64748b', border: '2px solid ' + (on ? '#38bdf8' : '#334155') }}>Way {idx + 1}</div>\r\n    );\r\n  };\r\n\r\n  return (\r\n    <Panel title={'Two Ways: ' + nums.join(' + ')} caption={caption}>\r\n      <Stack gap={12}>\r\n        {compare ? (\r\n          <div style={{ display: 'flex', gap: 12 }}>\r\n            {miniTree(ways[0], 0)}\r\n            {miniTree(ways[1], 1)}\r\n          </div>\r\n        ) : (\r\n          <>\r\n            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>\r\n              {pill(0)}\r\n              {pill(1)}\r\n              <div style={{ flex: 1 }} />\r\n              <button id=\"start-over\" type=\"button\" onClick={redo} style={{ ...keyStyle, width: 'auto', height: 44, padding: '0 14px', fontSize: 14 }}>Redo this way</button>\r\n            </div>\r\n            {tree()}\r\n            <div style={{ display: 'flex', justifyContent: 'center', gap: 5, opacity: typing ? 1 : 0.35 }}>\r\n              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => (\r\n                <button key={d} id={'key-' + d} type=\"button\" style={keyStyle} onClick={() => press(String(d))}>{d}</button>\r\n              ))}\r\n              <button id=\"key-erase\" type=\"button\" style={{ ...keyStyle, width: 62, fontSize: 14 }} onClick={erase}>Erase</button>\r\n              <button id=\"key-ok\" type=\"button\" style={{ ...keyStyle, width: 52, fontSize: 16, borderColor: '#38bdf8' }} onClick={ok}>OK</button>\r\n            </div>\r\n          </>\r\n        )}\r\n      </Stack>\r\n    </Panel>\r\n  );\r\n}\r\n",
+ "problems": [
+  {
+   "params": {
+    "numbers": [
+     2,
+     3,
+     4
+    ],
+    "given": [
+     0,
+     1
+    ],
+    "predict": false,
+    "showDots": true
+   },
+   "ask": "Way 1 starts with 2 and 3. Finish it, then add the three piles a different way.",
+   "goal": "(2+3)+4 and (3+4)+2 both finished with 9 in all.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way1-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2",
+     "shot": "way2-picked"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way2-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     2,
+     3,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       2,
+       3
+      ],
+      "addedLast": 4,
+      "firstTyped": "",
+      "inAllTyped": ""
+     }
+    ],
+    "wayBeingBuilt": 1,
+    "showing": "way 1",
+    "numberBeingTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     2,
+     3,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       2,
+       3
+      ],
+      "addedLast": 4,
+      "firstTyped": "5",
+      "inAllTyped": "9"
+     },
+     {
+      "addedFirst": [
+       3,
+       4
+      ],
+      "addedLast": 2,
+      "firstTyped": "7",
+      "inAllTyped": "9"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   },
+   "missScene": {
+    "numbers": [
+     2,
+     3,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       2,
+       3
+      ],
+      "addedLast": 4,
+      "firstTyped": "5",
+      "inAllTyped": "9"
+     },
+     {
+      "addedFirst": [
+       3,
+       4
+      ],
+      "addedLast": 2,
+      "firstTyped": "7",
+      "inAllTyped": "8"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     1,
+     5,
+     2
+    ],
+    "given": null,
+    "predict": false,
+    "showDots": true
+   },
+   "ask": "Add these three numbers two different ways. Pick which two go together first each time.",
+   "goal": "Two different first pairs, each with its right first box and 8 in all.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way1-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2",
+     "shot": "way2-picked"
+    },
+    {
+     "do": "click",
+     "target": "#key-7"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way2-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-6"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     1,
+     5,
+     2
+    ],
+    "ways": [
+     {
+      "addedFirst": [],
+      "addedLast": null,
+      "firstTyped": "",
+      "inAllTyped": ""
+     }
+    ],
+    "wayBeingBuilt": 1,
+    "showing": "way 1",
+    "numberBeingTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     1,
+     5,
+     2
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       1,
+       5
+      ],
+      "addedLast": 2,
+      "firstTyped": "6",
+      "inAllTyped": "8"
+     },
+     {
+      "addedFirst": [
+       5,
+       2
+      ],
+      "addedLast": 1,
+      "firstTyped": "7",
+      "inAllTyped": "8"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   },
+   "missScene": {
+    "numbers": [
+     1,
+     5,
+     2
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       1,
+       5
+      ],
+      "addedLast": 2,
+      "firstTyped": "6",
+      "inAllTyped": "8"
+     },
+     {
+      "addedFirst": [
+       5,
+       1
+      ],
+      "addedLast": 2,
+      "firstTyped": "6",
+      "inAllTyped": "8"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "given": null,
+    "predict": false,
+    "showDots": true
+   },
+   "ask": "Add these three numbers two different ways. Can one way make a ten first?",
+   "goal": "Two different first pairs (one is 6 and 4), each finished with 15 in all.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way1-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1",
+     "shot": "way2-picked"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way2-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-0"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-0"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-1"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [],
+      "addedLast": null,
+      "firstTyped": "",
+      "inAllTyped": ""
+     }
+    ],
+    "wayBeingBuilt": 1,
+    "showing": "way 1",
+    "numberBeingTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       6,
+       4
+      ],
+      "addedLast": 5,
+      "firstTyped": "10",
+      "inAllTyped": "15"
+     },
+     {
+      "addedFirst": [
+       6,
+       5
+      ],
+      "addedLast": 4,
+      "firstTyped": "11",
+      "inAllTyped": "15"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   },
+   "missScene": {
+    "numbers": [
+     6,
+     5,
+     4
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       6,
+       4
+      ],
+      "addedLast": 5,
+      "firstTyped": "10",
+      "inAllTyped": "15"
+     },
+     {
+      "addedFirst": [
+       6,
+       5
+      ],
+      "addedLast": 4,
+      "firstTyped": "11",
+      "inAllTyped": "11"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   }
+  },
+  {
+   "params": {
+    "numbers": [
+     4,
+     2,
+     3
+    ],
+    "given": [
+     0,
+     1
+    ],
+    "predict": true,
+    "showDots": false
+   },
+   "ask": "Finish Way 1. For Way 2, put 2 and 3 together, and say how many in all before you add.",
+   "goal": "Way 1 makes 9; Way 2 total typed as 9 before its first box, which is 5.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#key-6"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way1-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2",
+     "shot": "way2-picked"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok",
+     "shot": "way2-half"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#key-6"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-9"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#pile-1"
+    },
+    {
+     "do": "click",
+     "target": "#pile-2"
+    },
+    {
+     "do": "click",
+     "target": "#key-8"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    },
+    {
+     "do": "click",
+     "target": "#key-5"
+    },
+    {
+     "do": "click",
+     "target": "#key-ok"
+    }
+   ],
+   "scene": {
+    "numbers": [
+     4,
+     2,
+     3
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       4,
+       2
+      ],
+      "addedLast": 3,
+      "firstTyped": "",
+      "inAllTyped": ""
+     }
+    ],
+    "wayBeingBuilt": 1,
+    "showing": "way 1",
+    "numberBeingTyped": ""
+   },
+   "proofScene": {
+    "numbers": [
+     4,
+     2,
+     3
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       4,
+       2
+      ],
+      "addedLast": 3,
+      "firstTyped": "6",
+      "inAllTyped": "9"
+     },
+     {
+      "addedFirst": [
+       2,
+       3
+      ],
+      "addedLast": 4,
+      "firstTyped": "5",
+      "inAllTyped": "9"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   },
+   "missScene": {
+    "numbers": [
+     4,
+     2,
+     3
+    ],
+    "ways": [
+     {
+      "addedFirst": [
+       4,
+       2
+      ],
+      "addedLast": 3,
+      "firstTyped": "6",
+      "inAllTyped": "9"
+     },
+     {
+      "addedFirst": [
+       2,
+       3
+      ],
+      "addedLast": 4,
+      "firstTyped": "5",
+      "inAllTyped": "8"
+     }
+    ],
+    "wayBeingBuilt": 2,
+    "showing": "both ways side by side",
+    "numberBeingTyped": ""
+   }
+  }
+ ]
+}

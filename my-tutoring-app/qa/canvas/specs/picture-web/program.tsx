@@ -12,10 +12,10 @@ function Display({ params, lumina }) {
   const center = params.center === null ? null : (params.center || { pic: '🚜', name: 'farm' });
   const members = Array.isArray(params.members) ? params.members : ['cow', 'pig'];
   const topic = params.topic || null;
-  const W = 680, H = 470, CX = 340, CY = 172, TRAY_Y = 400;
+  const W = 680, H = 470, CX = 340, CY = 186, TRAY_Y = 400;
   const LAYOUT = {
     2: [[-210, 0], [210, 0]],
-    3: [[-220, 34], [220, 34], [0, -112]],
+    3: [[-220, 34], [220, 34], [0, -128]],
     4: [[-220, -62], [220, -62], [-220, 82], [220, 82]],
   }[N];
 

@@ -64,7 +64,7 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel>
+    <Panel title="Coin Basket" caption="Drag a thing into the basket to buy it. Drag it back to the shelf to get its coins back.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <rect x="0" y="0" width={W} height={H} fill="#0f172a" />

@@ -72,8 +72,10 @@ function Display({ params, lumina }) {
   );
 
   if (mode === 'servings') {
-    const PW = 112, PH = 90, PY = 70;
-    const gap = 30, plateW = PW / b + 40;
+    // pans, gaps and the plate fit inside the card (612 wide); open pans get a wider gap so their cut steppers stay apart
+    const gap = cuttable > 1 ? 44 : 24;
+    const PW = Math.min(112, Math.floor((612 - 80 - (pans - 1) * gap) / (pans + 1 / b))), PH = 90, PY = 70;
+    const plateW = PW / b + 40;
     const total = pans * PW + (pans - 1) * gap + 40 + plateW;
     const left = (W - total) / 2;
     const px = i => left + i * (PW + gap);

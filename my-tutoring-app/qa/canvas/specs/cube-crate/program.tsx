@@ -33,7 +33,10 @@ function Display({ params, lumina }) {
   }, [base, layers, sign, dims]);
 
   const W = 680, H = 470;
-  const S = 26, C = S * 0.866, OX = 228, OY = 190;
+  // pack mode: the floor squares are the child's buttons, so the crate draws as big as the left side allows (44 at most)
+  const S = mode === 'pack' ? Math.min(44, Math.floor(380 / ((L + Wd) * 0.866)), Math.floor(380 / ((L + Wd) / 2 + Hh))) : 26;
+  const OX = mode === 'pack' ? Math.round(220 - (L - Wd) * S * 0.433) : 228;
+  const OY = mode === 'pack' ? Math.round(245 + (Hh * S - (L + Wd) * S / 2) / 2) : 190;
   const P = (i, j, k, s = S, ox = OX, oy = OY) => [ox + (i - j) * s * 0.866, oy + (i + j) * s * 0.5 - k * s];
   const poly = pts => pts.map(p => p.join(',')).join(' ');
 

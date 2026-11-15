@@ -117,9 +117,9 @@ function Display({ params, lumina }) {
   };
 
   return (
-    <Panel title="Electric Circuit Lab">
-      <div style={{ position: 'relative', width: '100%', background: '#090d16', borderRadius: 12, border: '1px solid #1e293b', overflow: 'hidden', touchAction: 'none', userSelect: 'none' }}>
-        <svg ref={svgRef} viewBox="0 0 720 480" style={{ width: '100%', height: 'auto', display: 'block', cursor: activeDrag ? 'crosshair' : 'default' }}
+    <Panel title="Electric Circuit Lab" caption="Drag from one dot to another to add a wire. Tap ✕ to cut a wire. Tap the switch blade to open or close it.">
+      <div style={{ position: 'relative', width: '100%', touchAction: 'none', userSelect: 'none' }}>
+        <svg ref={svgRef} viewBox="0 0 720 450" style={{ width: '100%', height: 'auto', display: 'block', cursor: activeDrag ? 'crosshair' : 'default' }}
           onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
           <defs>
             <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
@@ -141,7 +141,8 @@ function Display({ params, lumina }) {
               <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.8" opacity="0.6" />
             </pattern>
           </defs>
-          <rect width="720" height="480" fill="url(#workbenchGrid)" />
+          <rect width="720" height="450" fill="#0f172a" />
+          <rect width="720" height="450" fill="url(#workbenchGrid)" />
 
           {/* battery: a wire straight across it makes it hot */}
           <g id="battery-component">
@@ -158,7 +159,7 @@ function Display({ params, lumina }) {
           {/* knife switch: tap the blade */}
           <g id="switch-component">
             <rect x="290" y="125" width="180" height="85" rx="8" fill="#292524" stroke="#57534e" strokeWidth="2" />
-            <text x="380" y="195" textAnchor="middle" fill="#a8a29e" fontSize="12" fontWeight="600">KNIFE SWITCH</text>
+            <text x="380" y="195" textAnchor="middle" fill="#cbd5e1" fontSize="14" fontWeight="600">KNIFE SWITCH</text>
             <circle cx="330" cy="150" r="14" fill="#78350f" stroke="#ca8a04" strokeWidth="2" />
             <circle cx="430" cy="150" r="14" fill="#78350f" stroke="#ca8a04" strokeWidth="2" />
             <g id="switch-handle" onClick={() => setSwitchClosed(c => !c)} style={{ cursor: 'pointer' }}>
@@ -181,7 +182,7 @@ function Display({ params, lumina }) {
               <path d={d} fill="none" stroke="#0f172a" strokeWidth="8" strokeLinecap="round" />
               <path d={d} fill="none" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
               <g id={'cut-' + w.id} transform={`translate(${midX}, ${midY})`} style={{ cursor: 'pointer' }} onClick={e => cut(w.id, e)}>
-                <circle r="22" fill="transparent" />
+                <circle r="25" fill="transparent" />
                 <circle r="11" fill="#1e293b" stroke="#94a3b8" strokeWidth="1.5" />
                 <text x="0" y="4" textAnchor="middle" fill="#cbd5e1" fontSize="13" fontWeight="bold">✕</text>
               </g>
@@ -199,10 +200,9 @@ function Display({ params, lumina }) {
               <circle r="22" fill="transparent" />
               <circle r="14" fill="#0f172a" stroke={t.color} strokeWidth="3" />
               <circle r="8" fill={activeDrag && activeDrag.fromTerm === t.id ? '#ffffff' : t.color} />
-              {(showNames || t.id.startsWith('bat')) && <text x="0" y="-18" textAnchor="middle" fill="#f1f5f9" fontSize="12" fontWeight="700">{t.label}</text>}
+              {(showNames || t.id.startsWith('bat')) && <text x="0" y="-18" textAnchor="middle" fill="#f1f5f9" fontSize="14" fontWeight="700">{t.label}</text>}
             </g>))}
 
-          <text x="360" y="466" textAnchor="middle" fill="#64748b" fontSize="13">Drag from one dot to another to add a wire. Tap ✕ to cut a wire.</text>
         </svg>
       </div>
     </Panel>

@@ -281,7 +281,7 @@ function Display({ params, lumina }) {
 
   const dragging = drag && drag.x !== undefined ? drag.key : null;
   return (
-    <Panel>
+    <Panel title="Well Crank" caption={testTurn ? 'Drag a wheel onto the end of a roller. Tap it there to let the animal try.' : 'Drag a wheel onto the end of a roller, or back to the tray.'}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove} onPointerUp={onUp}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>
@@ -291,6 +291,7 @@ function Display({ params, lumina }) {
             <stop offset="1" stopColor="#475569" />
           </radialGradient>
         </defs>
+        <rect width={W} height={H} fill="#0f172a" />
         {wells.map(lane)}
         <rect x="0" y={TRAY_Y} width={W} height={TRAY_H - 6} rx="12" fill="rgba(30,41,59,0.6)" stroke="#334155" strokeDasharray="5 5" />
         {tray.map((k, i) => onAxle.includes(k) || dragging === k

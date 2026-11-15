@@ -165,7 +165,7 @@ function Display({ params, lumina }) {
   const earAt = drag ? drag : ear ? ear : TRAY;
 
   return (
-    <Panel>
+    <Panel title="Where to Listen" caption="Drag your ear to a spot on your side. Drag it back down to the tray to take it away.">
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} onPointerMove={onMove}
         style={{ width: '100%', height: 'auto', display: 'block', touchAction: 'none', userSelect: 'none' }}>
         <defs>
