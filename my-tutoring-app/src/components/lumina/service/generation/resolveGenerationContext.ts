@@ -15,7 +15,7 @@ import type { ManifestItem } from '../registry/contentRegistry';
 import { resolvePedagogicalScope } from '../scopeContext';
 import type { GenerationContext, SupportTier } from './generationContext';
 import { cleanLearnerNotes, learnerNotesBlock } from '../attemptNotes/notes';
-import { readEvidence } from '../agent-kit/evidence';
+import { evidenceIntentBlock, readEvidence, type EvidenceSpec } from '../agent-kit/evidence';
 
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
 
@@ -70,10 +70,16 @@ export function resolveGenerationContext(
   const baseIntent = (config.intent as string | undefined) ?? item.intent ?? item.title;
   // Learner notes ride the intent every generator already reads. Scope is resolved from the intent WITHOUT
   // them: a note that names a number or a word must not move the objective's range.
+  // The lesson's evidence spec rides it too, ahead of the notes (`splitLearnerNotes` cuts from the notes on).
   const learnerNotes = cleanLearnerNotes(config.learnerNotes);
-  const intent = learnerNotes.length ? `${baseIntent ?? ''}${learnerNotesBlock(learnerNotes)}` : baseIntent;
-
   const evidence = readEvidence(config.evidence);
+  // A final assessment carries no block objective: its specs come on `lessonObjectives`, one per objective.
+  const specs = evidence ? [{ evidence }] : (Array.isArray(config.lessonObjectives) ? config.lessonObjectives as Array<Record<string, unknown>> : [])
+    .map(o => ({ objective: typeof o?.text === 'string' ? o.text : undefined, evidence: readEvidence(o?.evidence) }))
+    .filter((s): s is { objective: string | undefined; evidence: EvidenceSpec } => !!s.evidence);
+  const withEvidence = specs.length ? `${baseIntent ?? ''}${evidenceIntentBlock(specs)}` : baseIntent;
+  const intent = learnerNotes.length ? `${withEvidence ?? ''}${learnerNotesBlock(learnerNotes)}` : withEvidence;
+
   const objective = {
     id: config.objectiveId as string | undefined,
     text: config.objectiveText as string | undefined,

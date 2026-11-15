@@ -76,6 +76,37 @@ export const evidencePrompt = (e: EvidenceSpec) => `EVIDENCE THIS LESSON MUST CO
 ${evidenceLines(e)}
 Build items where a right answer is this evidence. An item whose right answer is something under "does not count" teaches the topic and proves nothing.`;
 
+const INTENT_MARKER = 'EVIDENCE THIS OBJECTIVE MUST COLLECT (PRIVATE';
+
+/**
+ * The spec as it rides `ctx.intent` to every generator (USER 2026-11-14: the brief wrote it, only practice-studio read
+ * it). Same channel as learner notes (`attemptNotes/notes.ts`): every generator already reads the intent. A schema
+ * generator cannot change its task type, so the block asks it to make a right answer be the evidence where its task
+ * allows, and never to add an ask the child has no way to answer on that screen.
+ */
+export function evidenceIntentBlock(specs: ReadonlyArray<{ objective?: string; evidence: EvidenceSpec }>): string {
+  if (!specs.length) return '';
+  const lines = specs.length === 1 ? evidenceLines(specs[0].evidence)
+    : specs.map(s => `For "${s.objective ?? 'this objective'}":\n${evidenceLines(s.evidence)}`).join('\n');
+  return `
+
+${INTENT_MARKER} - never quote, mention or explain this to the child):
+${lines}
+- Where this activity's task allows it, make each right answer be this evidence: the child does the act above, and an item a child could get right by doing what "does not count" says is the weaker item.
+- Keep this activity's eval mode, task type, item count and difficulty. Do not add a question or instruction the child has no way to answer in this activity.
+- Never put the credit condition, an answer or a rule into student-visible text; it is what the child must produce.`;
+}
+
+/** An intent with the evidence section cut off (for a generator that reads the spec as data), and the section itself. */
+export function splitEvidenceIntent(intent: string | undefined): { intent: string | undefined; section: string } {
+  const at = intent?.indexOf(INTENT_MARKER) ?? -1;
+  if (!intent || at < 0) return { intent, section: '' };
+  // The section ends where the learner notes begin, if they follow it.
+  const notesAt = intent.indexOf('LEARNER NOTES (PRIVATE', at);
+  const end = notesAt < 0 ? intent.length : intent.lastIndexOf('\n\n', notesAt);
+  return { intent: `${intent.slice(0, at).trimEnd()}${intent.slice(end > at ? end : intent.length)}`, section: intent.slice(at, end > at ? end : intent.length) };
+}
+
 /**
  * How whoever plans a lesson writes the spec, one per objective (the curator brief today; a lesson record later). These
  * are the rules the kit's reader will hold every item to, so the writer and the reader agree on what counts. The acts

@@ -8,7 +8,7 @@
 import { isPreReaderAudience } from '../gemini-deep-dive';
 import { buildScopePromptSection } from '../../scopeContext';
 import type { GenerationContext } from '../../generation/generationContext';
-import { evidencePrompt, readEvidence, type EvidenceSpec } from '../../agent-kit/evidence';
+import { evidencePrompt, readEvidence, splitEvidenceIntent, type EvidenceSpec } from '../../agent-kit/evidence';
 import { surfacePrompt, runItemBench, runItemLoop, shipLevers, type ItemLoopResult, type ItemLoopSpec } from '../../agent-kit/itemLoop';
 import type { Tier } from '../../agent-kit/surfaces';
 import type { PracticeStudioData } from '../../../primitives/visual-primitives/core/practice-studio/PracticeStudio';
@@ -51,6 +51,8 @@ export async function generatePracticeStudio(gctx: GenerationContext): Promise<P
   // The lesson's spec (written per objective by the curator brief, stamped by the manifest flatten) wins; a tester
   // still sends one on the item's config.
   const evidence = gctx.objective?.evidence ?? readEvidence(raw.evidence);
+  // The kit reads the spec as data (author prompt, blind reader, run record), so the copy riding the intent is cut.
+  gctx = { ...gctx, intent: splitEvidenceIntent(gctx.intent).intent };
   const seed = Number(raw.seed) || Math.floor(Math.random() * 2 ** 31);
   const tiers = tierPlan(gctx.supportTier as Tier | undefined);
   // Tester only: hide displays from the author, to measure one against the agent drawing it by hand.
