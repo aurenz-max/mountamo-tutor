@@ -1,0 +1,248 @@
+{
+ "id": "bead-rack",
+ "title": "Bead Rack",
+ "serves": {
+  "grades": [
+   "K",
+   "1"
+  ],
+  "summary": "The learner shows numbers to 20 on a two-row bead rack in as few pushes as possible, using its groups of five and ten instead of counting by ones, and moves beads between rows to make a ten while keeping the total."
+ },
+ "request": {
+  "topic": "Numbers to 20 on a bead rack, by fives and tens",
+  "grade": "grade 1",
+  "objective": "Show numbers to 20 on a two-row bead rack in as few pushes as possible by using its fives and tens, and make a ten from two rows without changing the total."
+ },
+ "source": "function Display({ params, lumina }) {\n  const target = Number(params?.target ?? 7);\n  const pushLimit = Number(params?.pushLimit ?? 1);\n  const start = params?.start ?? [0, 0];\n  const topTen = params?.topTen ?? false;\n  const showCard = params?.showCard ?? true;\n  const flashMs = Number(params?.flashMs ?? 0);\n  const flashRows = params?.flashRows ?? [0, 0];\n\n  // left[r] = how many beads of row r sit on the left of the wire. Bead i (0 = leftmost) is on the left when i < left[r].\n  const [left, setLeft] = useState([Number(start[0]) || 0, Number(start[1]) || 0]);\n  const [pushes, setPushes] = useState(0);\n  const [flashUp, setFlashUp] = useState(flashMs > 0);\n\n  useEffect(() => {\n    if (flashMs <= 0) return undefined;\n    const t = setTimeout(() => setFlashUp(false), flashMs);\n    return () => clearTimeout(t);\n  }, [flashMs]);\n\n  useEffect(() => {\n    const total = left[0] + left[1];\n    lumina.goal(total === target && pushes <= pushLimit && (!topTen || left[0] === 10));\n    const scene = {\n      beadsOnLeftTopRow: left[0],\n      beadsOnLeftBottomRow: left[1],\n      pushesUsed: pushes,\n      pushesAllowed: pushLimit,\n    };\n    if (showCard && flashMs <= 0) scene.numberCard = target;\n    if (flashMs > 0) {\n      scene.picturedRackCard = flashUp ? 'showing' : 'turned over';\n      if (flashUp) { scene.cardTopRow = flashRows[0]; scene.cardBottomRow = flashRows[1]; }\n    }\n    lumina.scene(scene);\n  }, [left, pushes, flashUp]);\n\n  const tap = (r, i) => {\n    const next = i >= left[r] ? i + 1 : i;\n    if (next === left[r]) return;\n    setLeft((l) => (r === 0 ? [next, l[1]] : [l[0], next]));\n    setPushes((p) => p + 1);\n  };\n\n  const D = 44; // bead spacing: beads touch within a group\n  const R = 22; // bead radius: 44px target\n  const WIRE_L = 60;\n  const WIRE_R = 620;\n  const ROW_Y = [172, 262];\n  const beadX = (r, i) => (i < left[r] ? WIRE_L + R + 2 + i * D : WIRE_R - R - 2 - (9 - i) * D);\n\n  const bead = (r, i) => {\n    const red = i < 5;\n    return (\n      <g\n        key={r + '-' + i}\n        id={'bead-' + r + '-' + i}\n        onClick={() => tap(r, i)}\n        style={{ cursor: 'pointer', transform: 'translate(' + beadX(r, i) + 'px,' + ROW_Y[r] + 'px)', transition: 'transform .25s ease' }}\n      >\n        <circle r={R} fill={red ? '#dc2626' : '#f1f5f9'} stroke={red ? '#7f1d1d' : '#94a3b8'} strokeWidth=\"2\" />\n        <ellipse cx=\"-7\" cy=\"-8\" rx=\"7\" ry=\"4\" fill=\"#ffffff\" opacity={red ? 0.35 : 0.8} />\n      </g>\n    );\n  };\n\n  const miniRack = (x, y) => (\n    <g>\n      <rect x={x} y={y} width=\"270\" height=\"70\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n      {flashUp ? [0, 1].map((r) => (\n        <g key={r}>\n          <line x1={x + 12} x2={x + 258} y1={y + 23 + r * 24} y2={y + 23 + r * 24} stroke=\"#64748b\" strokeWidth=\"2\" />\n          {Array.from({ length: 10 }, (_, i) => {\n            const on = i < flashRows[r];\n            const cx = on ? x + 22 + i * 15 : x + 248 - (9 - i) * 15;\n            return <circle key={i} cx={cx} cy={y + 23 + r * 24} r=\"7\" fill={i < 5 ? '#dc2626' : '#f1f5f9'} />;\n          })}\n        </g>\n      )) : (\n        <text x={x + 135} y={y + 45} textAnchor=\"middle\" fontSize=\"30\" fill=\"#94a3b8\">?</text>\n      )}\n    </g>\n  );\n\n  return (\n    <Panel title=\"Bead Rack\" caption=\"Tap a bead to slide it, with the beads beside it, along the wire.\">\n      <svg viewBox=\"0 0 680 320\" style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}>\n        <rect width=\"680\" height=\"320\" fill=\"#0f172a\" />\n\n        {flashMs > 0 ? miniRack(30, 16) : showCard ? (\n          <g id=\"number-card\">\n            <rect x=\"30\" y=\"16\" width=\"110\" height=\"80\" rx=\"12\" fill=\"#1e293b\" stroke=\"#475569\" strokeWidth=\"2\" />\n            <text x=\"85\" y=\"72\" textAnchor=\"middle\" fontSize=\"44\" fontWeight=\"800\" fill=\"#e2e8f0\">{target}</text>\n          </g>\n        ) : null}\n\n        <g id=\"pushes\">\n          <text x={650} y=\"34\" textAnchor=\"end\" fontSize=\"14\" fill=\"#94a3b8\">pushes</text>\n          {Array.from({ length: pushLimit }, (_, k) => (\n            <text key={k} x={650 - (pushLimit - 1 - k) * 40 - 16} y=\"80\" textAnchor=\"middle\" fontSize=\"32\" opacity={k < pushes ? 0.22 : 1}>✋</text>\n          ))}\n        </g>\n\n        <rect x=\"40\" y=\"122\" width=\"600\" height=\"190\" rx=\"14\" fill=\"#7c4a24\" stroke=\"#4a2c14\" strokeWidth=\"3\" />\n        <rect x=\"58\" y=\"136\" width=\"564\" height=\"162\" rx=\"8\" fill=\"#1e293b\" />\n        {ROW_Y.map((y) => <line key={y} x1={WIRE_L - 12} x2={WIRE_R + 12} y1={y} y2={y} stroke=\"#94a3b8\" strokeWidth=\"4\" />)}\n        {[0, 1].map((r) => Array.from({ length: 10 }, (_, i) => bead(r, i)))}\n      </svg>\n    </Panel>\n  );\n}\n",
+ "problems": [
+  {
+   "params": {
+    "target": 7,
+    "pushLimit": 1,
+    "showCard": true
+   },
+   "ask": "Show this number on the rack with one push.",
+   "goal": "The rack shows 7 beads on the left after one push: the top row's 5 red and 2 white slid over together.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#bead-0-6"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#bead-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-1"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-2"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-3"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-4"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-5"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-6"
+    }
+   ],
+   "scene": {
+    "beadsOnLeftTopRow": 0,
+    "beadsOnLeftBottomRow": 0,
+    "pushesUsed": 0,
+    "pushesAllowed": 1,
+    "numberCard": 7
+   },
+   "proofScene": {
+    "beadsOnLeftTopRow": 7,
+    "beadsOnLeftBottomRow": 0,
+    "pushesUsed": 1,
+    "pushesAllowed": 1,
+    "numberCard": 7
+   },
+   "missScene": {
+    "beadsOnLeftTopRow": 7,
+    "beadsOnLeftBottomRow": 0,
+    "pushesUsed": 7,
+    "pushesAllowed": 1,
+    "numberCard": 7
+   }
+  },
+  {
+   "params": {
+    "target": 13,
+    "pushLimit": 2,
+    "showCard": true
+   },
+   "ask": "Show this number on the rack with no more than two pushes.",
+   "goal": "The two rows together show 13 on the left, in at most two pushes (a full ten and 3, or any two-row split such as 5 and 8). The miss reads the digits: 1 on top and 3 below.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#bead-0-9"
+    },
+    {
+     "do": "click",
+     "target": "#bead-1-2"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#bead-0-0"
+    },
+    {
+     "do": "click",
+     "target": "#bead-1-2"
+    }
+   ],
+   "scene": {
+    "beadsOnLeftTopRow": 0,
+    "beadsOnLeftBottomRow": 0,
+    "pushesUsed": 0,
+    "pushesAllowed": 2,
+    "numberCard": 13
+   },
+   "proofScene": {
+    "beadsOnLeftTopRow": 10,
+    "beadsOnLeftBottomRow": 3,
+    "pushesUsed": 2,
+    "pushesAllowed": 2,
+    "numberCard": 13
+   },
+   "missScene": {
+    "beadsOnLeftTopRow": 1,
+    "beadsOnLeftBottomRow": 3,
+    "pushesUsed": 2,
+    "pushesAllowed": 2,
+    "numberCard": 13
+   }
+  },
+  {
+   "params": {
+    "target": 15,
+    "pushLimit": 2,
+    "start": [
+     8,
+     7
+    ],
+    "topTen": true,
+    "showCard": false
+   },
+   "ask": "Make the top row a full ten, and keep the same number of beads on the left in all. Use no more than two pushes.",
+   "goal": "Top row 10 and bottom row 5 (still 15 in all), in at most two pushes: two beads go back on the bottom and two more slide over on top. The miss fills the top row and leaves the bottom alone, making 17.",
+   "proof": [
+    {
+     "do": "click",
+     "target": "#bead-1-5"
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-9"
+    }
+   ],
+   "miss": [
+    {
+     "do": "click",
+     "target": "#bead-0-9"
+    }
+   ],
+   "scene": {
+    "beadsOnLeftTopRow": 8,
+    "beadsOnLeftBottomRow": 7,
+    "pushesUsed": 0,
+    "pushesAllowed": 2
+   },
+   "proofScene": {
+    "beadsOnLeftTopRow": 10,
+    "beadsOnLeftBottomRow": 5,
+    "pushesUsed": 2,
+    "pushesAllowed": 2
+   },
+   "missScene": {
+    "beadsOnLeftTopRow": 10,
+    "beadsOnLeftBottomRow": 7,
+    "pushesUsed": 1,
+    "pushesAllowed": 2
+   }
+  },
+  {
+   "params": {
+    "target": 13,
+    "pushLimit": 2,
+    "showCard": false,
+    "flashMs": 2500,
+    "flashRows": [
+     7,
+     6
+    ]
+   },
+   "ask": "Look at the card before it turns over. Then show the same number on your rack with no more than two pushes.",
+   "goal": "The card shows 7 on top and 6 below for 2.5 seconds, then turns over; the rack must show 13 in all in at most two pushes. The miss is one bead short on the bottom row (12), a miscount of the whites.",
+   "proof": [
+    {
+     "do": "wait",
+     "ms": 2800
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-6"
+    },
+    {
+     "do": "click",
+     "target": "#bead-1-5"
+    }
+   ],
+   "miss": [
+    {
+     "do": "wait",
+     "ms": 2800
+    },
+    {
+     "do": "click",
+     "target": "#bead-0-6"
+    },
+    {
+     "do": "click",
+     "target": "#bead-1-4"
+    }
+   ],
+   "scene": {
+    "beadsOnLeftTopRow": 0,
+    "beadsOnLeftBottomRow": 0,
+    "pushesUsed": 0,
+    "pushesAllowed": 2,
+    "picturedRackCard": "showing",
+    "cardTopRow": 7,
+    "cardBottomRow": 6
+   },
+   "proofScene": {
+    "beadsOnLeftTopRow": 7,
+    "beadsOnLeftBottomRow": 6,
+    "pushesUsed": 2,
+    "pushesAllowed": 2,
+    "picturedRackCard": "turned over"
+   },
+   "missScene": {
+    "beadsOnLeftTopRow": 7,
+    "beadsOnLeftBottomRow": 5,
+    "pushesUsed": 2,
+    "pushesAllowed": 2,
+    "picturedRackCard": "turned over"
+   }
+  }
+ ]
+}
