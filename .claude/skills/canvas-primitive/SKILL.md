@@ -141,6 +141,10 @@ Free, needs Chromium (`LUMINA_CHROME_PATH` or the default playwright build). It 
 (rest, proof, miss) plus one per `shot` step, and, when everything passes, `qa/canvas/<id>.json`. Read the screenshots against the bar before calling it done. A
 blocked check is fixed in the spec or the program, never by loosening the script.
 
+Then run `/canvas-eval <id>`: it adds the function and look probes (tap-all and random-play shortcuts, small or
+overlapping words, touch targets, a success colour only the proof shows), records your screenshot read, and puts the
+canvas on the contact sheet the user plays from.
+
 ### 6. The user plays it
 
 The dev panel "Canvas (agent)" saved list opens `<id>` as a lesson in the real host, with the live tutor and the

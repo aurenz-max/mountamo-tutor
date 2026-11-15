@@ -53,6 +53,8 @@ export interface PlayResult {
   restPng?: Buffer;
   /** Screenshots taken after steps that carry `shot`, in step order. */
   shots: Array<{ name: string; png: Buffer }>;
+  /** What `opts.inspect` returned after the last step (the canvas QA probes read layout here). */
+  inspected?: unknown;
 }
 
 /** Whether a program reports its goal at all. Both authors (the Gemini loop and `canvas-check`) refuse one that never does. */
@@ -88,7 +90,7 @@ export class CanvasStage {
   async close(): Promise<void> { const b = await this.browser; await b?.close(); this.browser = null; }
 
   /** Load the canvas fresh, do the steps, and report. Throws when the host has no browser. */
-  async play(html: string, steps: readonly PlayStep[] = [], opts: { restShot?: boolean } = {}): Promise<PlayResult> {
+  async play(html: string, steps: readonly PlayStep[] = [], opts: { restShot?: boolean; inspect?: (page: Page) => Promise<unknown> } = {}): Promise<PlayResult> {
     const browser = await this.open();
     if (!browser) throw new Error('no browser on this host: a canvas is authored where Chromium is installed (LUMINA_CHROME_PATH)');
     const context = await browser.newContext({ viewport: { width: STAGE_WIDTH, height: 900 }, deviceScaleFactor: 1 });
@@ -126,7 +128,8 @@ export class CanvasStage {
         return { id: el.id, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), w: Math.round(r.width), h: Math.round(r.height) };
       }));
       const png = await page.locator('#root').screenshot({ timeout: 5000 });
-      return { rest, after, stepErrors, boxes, png, shots, ...(restPng ? { restPng } : {}) };
+      const inspected = opts.inspect ? await opts.inspect(page) : undefined;
+      return { rest, after, stepErrors, boxes, png, shots, ...(restPng ? { restPng } : {}), ...(opts.inspect ? { inspected } : {}) };
     } finally {
       await context.close();
     }
