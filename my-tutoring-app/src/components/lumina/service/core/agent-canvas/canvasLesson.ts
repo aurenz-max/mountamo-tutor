@@ -4,6 +4,7 @@
  */
 import type { CanvasData, PlayRecord } from '../../agent-kit/canvas/canvasAuthor';
 import type { PlayStep } from '../../agent-kit/canvas/stage';
+import type { CanvasSpoken } from '../../agent-kit/canvas/canvasSpoken';
 import { compileDisplay } from '../../gen-display/compile';
 import { displayDocument } from '../../gen-display/document';
 import type { AgentCanvasData } from '../../../primitives/visual-primitives/core/agent-canvas/AgentCanvas';
@@ -20,6 +21,8 @@ export interface CanvasProblem {
   scene?: unknown;
   proofScene?: unknown;
   missScene?: unknown;
+  /** What the page reported with lumina.answer on this problem's params, when its ask can be said. */
+  spoken?: CanvasSpoken;
 }
 
 /** The wrong attempt a run saved before `miss` shipped keeps in its play log: the last clean one of the last version. */
@@ -47,7 +50,7 @@ export function canvasLesson(c: Omit<CanvasData, 'miss' | 'proofScene' | 'missSc
       page: displayDocument(compiled.js, { ...SHARED_PARAMS }),
       challenges: c.problems.map((p, i) => ({ id: `canvas-${i + 1}`, title: c.title, ask: p.ask ?? c.ask, goal: p.goal ?? c.goal,
         params: p.params ?? {}, proof: p.proof, miss: p.miss, scene: p.scene ?? null,
-        ...(p.proofScene != null ? { proofScene: p.proofScene } : {}), ...(p.missScene != null ? { missScene: p.missScene } : {}) })),
+        ...(p.proofScene != null ? { proofScene: p.proofScene } : {}), ...(p.missScene != null ? { missScene: p.missScene } : {}), ...(p.spoken ? { spoken: p.spoken } : {}) })),
       agentDebug: { ...debug, playLog: plays.map(({ png: _png, ...play }) => play) },
     });
   }
@@ -61,7 +64,7 @@ export function canvasLesson(c: Omit<CanvasData, 'miss' | 'proofScene' | 'missSc
   return validateAgentCanvasData({
     title: c.title, description: '', ...(opts.grade ? { gradeBand: opts.grade } : {}), challengeType: 'canvas',
     challenges: [{ id: 'canvas-1', title: c.title, ask: c.ask, goal: c.goal, html, proof: c.proof, miss: c.miss?.length ? c.miss : wrong?.steps ?? [],
-      scene: c.scene ?? null, ...(c.proofScene != null ? { proofScene: c.proofScene } : {}), ...(c.missScene != null ? { missScene: c.missScene } : {}) }],
+      scene: c.scene ?? null, ...(c.proofScene != null ? { proofScene: c.proofScene } : {}), ...(c.missScene != null ? { missScene: c.missScene } : {}), ...(c.spoken ? { spoken: c.spoken } : {}) }],
     // The author's screenshots stay in the tester's run record; a lesson payload carries the plays without them.
     agentDebug: { ...debug, playLog: plays.map(({ png: _png, ...play }) => play) },
   });

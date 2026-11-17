@@ -61,7 +61,7 @@ const safe = (js: string) => js.replace(/<\/script/gi, '<\\/script');
 
 export function displayDocument(js: string, params: Record<string, unknown>): string {
   const bootstrap = `
-window.__lumina = { errors: [], scene: null, goal: null, events: [], controls: {} };
+window.__lumina = { errors: [], scene: null, goal: null, answer: null, events: [], controls: {} };
 function __post(kind, data) {
   try { var s = JSON.stringify(data); if (s.length > 4000) return; parent.postMessage({ source: 'lumina-display', kind: kind, data: data }, '*'); } catch (e) {}
 }
@@ -69,6 +69,9 @@ window.addEventListener('error', function (e) { window.__lumina.errors.push(Stri
 var lumina = {
   scene: function (facts) { window.__lumina.scene = facts; __post('scene', facts); },
   goal: function (met) { window.__lumina.goal = !!met; __post('goal', !!met); },
+  // The one value a child can say to answer the ask (agent-kit/canvas/canvasSpoken.ts). Read by the author's stage
+  // only: it is never posted, so the key does not travel to the host at play time.
+  answer: function (value, misrules, choices) { window.__lumina.answer = { value: value, misrules: misrules || [], choices: choices || null }; },
   event: function (type, payload) { window.__lumina.events.push({ type: type, payload: payload }); __post('event', { type: type, payload: payload }); }
 };
 // What the child's hands did, for the host (its sounds and its record of the work): a tap on a named element or a
@@ -96,8 +99,20 @@ var lumina = {
     componentDidCatch(error) { var m = 'render: ' + String(error && error.message || error); window.__lumina.errors.push(m); __post('error', m); }
     render() { return this.state.error ? React.createElement('div', { className: 'lx-error' }, 'This display could not run.') : this.props.children; }
   }
-  var root = document.getElementById('root');
-  ReactDOM.createRoot(root).render(React.createElement(Boundary, null, React.createElement(Display, { params: ${JSON.stringify(params)}, lumina: lumina })));
+  var root = ReactDOM.createRoot(document.getElementById('root')), mounts = 0;
+  function show(p) {
+    mounts += 1;
+    root.render(React.createElement(Boundary, { key: mounts }, React.createElement(Display, { key: mounts, params: p, lumina: lumina })));
+  }
+  show(${JSON.stringify(params)});
+  // The next problem on the same program, or Start over (agent-kit/canvas/CanvasFrame.tsx 'lumina-host'): the host
+  // posts the params and the program mounts fresh with them, so nothing the last problem reported holds.
+  window.addEventListener('message', function (e) {
+    var m = e.data;
+    if (e.source !== window.parent || !m || m.source !== 'lumina-host' || m.kind !== 'params') return;
+    window.__lumina.scene = null; window.__lumina.goal = null; window.__lumina.answer = null; window.__lumina.events = [];
+    show(m.data && typeof m.data === 'object' ? m.data : {});
+  });
   new ResizeObserver(function () { __post('height', document.documentElement.scrollHeight); }).observe(document.body);
 })();`;
   return `<!doctype html><html><head><meta charset="utf-8">

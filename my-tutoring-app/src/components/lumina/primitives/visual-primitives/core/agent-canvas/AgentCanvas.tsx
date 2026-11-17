@@ -24,7 +24,7 @@ import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../../ho
 import PhaseSummaryPanel from '../../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../../utils/SoundManager';
 import { PipDock, PipWorkspace } from '../../../../pip/WorkspacePip';
-import { CanvasFrame, type CanvasAct } from '../../../../service/agent-kit/canvas/CanvasFrame';
+import { CanvasFrame, acceptsParams, type CanvasAct } from '../../../../service/agent-kit/canvas/CanvasFrame';
 import { canvasPage, canvasScene, describeCanvasWork, type CanvasChallenge, type CanvasTry } from './agentCanvasWorkspace';
 import { agentCanvasBoss } from './agentCanvas.boss';
 import { CanvasPilotVote } from './CanvasPilotVote';
@@ -96,7 +96,7 @@ const AgentCanvasSurface: React.FC<AgentCanvasProps> = ({ data, className, runti
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: agentCanvasBoss.assignment,
     // Try again keeps the child's work on the canvas (they change it). Opening an item never reloads its page: the
-    // child may already have worked on it, and a new item is a new frame by its key.
+    // child may already have worked on it. A new item is a new frame by its key, or on a shared page its params posted.
     onItemOpened: (_index, retry) => { setVerdict(null); setFeedback(null); if (!retry) setTries([]); },
     onFinished: result => finish.current(result),
   });
@@ -110,7 +110,13 @@ const AgentCanvasSurface: React.FC<AgentCanvasProps> = ({ data, className, runti
     shownId.current = current?.id;
     setGoal(null); setScene(null); setPageError(null); setActs(0);
   }, [current?.id]);
-  const html = useMemo(() => (current ? canvasPage(current, page) : ''), [current, page]);
+  // Several problems on one program keep one page: the next problem's params are posted to it (`CanvasFrame` swap),
+  // so DI's run of examples does not reload between items. The page is built once, with the first problem shown.
+  const swapPage = acceptsParams(page) && !!current && !current.html;
+  const baked = useRef<CanvasChallenge | null>(null);
+  if (swapPage && !baked.current) baked.current = current;
+  const pageFor = swapPage ? baked.current : current;
+  const html = useMemo(() => (pageFor ? canvasPage(pageFor, page) : ''), [pageFor, page]);
   const solved = verdict === 'correct';
   const locked = !current || progress.canAttempt === false || allChallengesComplete || verdict !== null;
 
@@ -202,7 +208,8 @@ const AgentCanvasSurface: React.FC<AgentCanvasProps> = ({ data, className, runti
         <PipWorkspace className="space-y-3">
           {current && !allChallengesComplete && (
             <>
-              <CanvasFrame key={current.id} html={html} title={current.title} run={run} locked={locked}
+              <CanvasFrame key={swapPage ? 'one-page' : current.id} html={html} title={current.title} run={run} locked={locked}
+                swap={swapPage && baked.current ? { id: current.id, params: current.params ?? {}, bakedId: baked.current.id } : undefined}
                 onGoal={setGoal} onScene={setScene} onAct={onAct} onError={setPageError} />
               {pageError && <p className="text-sm text-rose-300">The canvas reported an error. Press Start over.</p>}
               <div className="flex flex-wrap items-center gap-2">

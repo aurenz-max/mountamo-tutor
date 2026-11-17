@@ -128,13 +128,29 @@ export function decideDialogue(input: DialogueRequest, answers: any, ms: number,
  * DialogueObserver may commit this decision. Questions, model input and the 3 s budget
  * are unchanged from the standalone call this replaced.
  */
+/**
+ * The activity as the observer reads it. On an item that is said or shown, a workspace names the state of the shown
+ * path `shownWork` (the canvas as the learner left it). A spoken answer does not go through that path, so an untouched
+ * canvas beside a tutor's "That's correct" read as an unsolved task: 7 of 15 spoken credits on agent-canvas needed a
+ * second credit and 2 were refused, against 1 of 22 on the spoken-only primitives (November logs). With the fact left
+ * out, the five credits of session 41fe7eab76c4 scored 0.99-1.0 and both corrections still reopened (2026-11-15 probe).
+ */
+function observedActivity(input: DialogueRequest, spoken: boolean) {
+  if (!spoken || !input.activity || !('shownWork' in input.activity.facts)) return input.activity;
+  const { shownWork: _shownWork, ...facts } = input.activity.facts;
+  return { ...input.activity, facts };
+}
+
 export const assignmentOutcomeKind: ObservationKind<DialogueRequest, DialogueDecision> = {
   id: 'assignment_outcome', timeoutMs: 3000, questions: DIALOGUE_QUESTIONS,
-  state: input => ({ assignment: input.task, expectedAnswer: input.expectedAnswer, priorTutor: input.priorTutor,
-    tutor: input.tutor, activity: input.activity,
-    ...(input.pendingResponse && input.activity?.facts.response === 'speech'
-      ? { responseAuthority: 'tutor_feedback', learnerTurnPresent: true }
-      : { responseAuthority: 'activity_check', learner: input.learner, checkedResponse: input.lastResponse }) }),
+  state: input => {
+    const spoken = !!input.pendingResponse && input.activity?.facts.response === 'speech';
+    return { assignment: input.task, expectedAnswer: input.expectedAnswer, priorTutor: input.priorTutor,
+      tutor: input.tutor, activity: observedActivity(input, spoken),
+      ...(spoken
+        ? { responseAuthority: 'tutor_feedback', learnerTurnPresent: true }
+        : { responseAuthority: 'activity_check', learner: input.learner, checkedResponse: input.lastResponse }) };
+  },
   decide: decideDialogue, abstain,
 };
 

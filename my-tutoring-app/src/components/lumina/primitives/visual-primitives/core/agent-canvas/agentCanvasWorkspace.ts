@@ -5,6 +5,7 @@
  */
 import type { SceneOf } from '../../../../components/live-activity/bossLevers';
 import type { PlayStep } from '../../../../service/agent-kit/canvas/stage';
+import type { CanvasSpoken } from '../../../../service/agent-kit/canvas/canvasSpoken';
 
 /** One canvas: a program the child operates, with the author's own two playthroughs as its record. */
 export interface CanvasChallenge {
@@ -25,6 +26,9 @@ export interface CanvasChallenge {
   scene: unknown;
   proofScene?: unknown;
   missScene?: unknown;
+  /** What the page reported with `lumina.answer` when its author played it: the child may say it, or show it and press
+   *  Check. Absent on a canvas that is only shown. Never shown, and it reaches the tutor only as the judge's key. */
+  spoken?: CanvasSpoken;
 }
 
 /** Where a shared page takes its params: `displayDocument` writes this object as JSON, and the host swaps in each problem's. */
@@ -50,10 +54,13 @@ export const describeCanvasWork = (scene: unknown): string => `the canvas now: $
 
 export function canvasScene(item: CanvasChallenge, view: { scene: unknown; tries: readonly CanvasTry[]; solved: boolean }): SceneOf {
   return { objects: [], facts: {
-    task: 'operate the canvas (drag, place, set, run) until it does what the prompt asks, then press Check; more than one finished canvas can be right',
+    task: item.spoken
+      ? 'answer the prompt out loud, or show the answer on the canvas (drag, place, set, run) and press Check'
+      : 'operate the canvas (drag, place, set, run) until it does what the prompt asks, then press Check; more than one finished canvas can be right',
     prompt: item.ask,
     canvas: item.title,
-    now: sceneWords(view.scene ?? item.scene),
+    // `shownWork`, not `now`: the observer leaves the shown path's state out when the answer was said (observeDialogue.ts).
+    shownWork: sceneWords(view.scene ?? item.scene),
     step: view.solved ? 'it worked' : view.tries.length ? 'trying again' : 'not started',
     tries: view.tries.length ? view.tries.map((t, i) => `try ${i + 1}: ${t.work}`).join('; ').slice(0, 400) : 'none yet',
     constraints: 'Check judges the canvas. Say what the canvas shows and what changed when the learner acted; never say what to set, where to put a thing, or which values meet the goal.',

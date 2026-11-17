@@ -55,6 +55,31 @@ it('binds as a gesture with no key: the goal the program checks reaches neither 
   h.close();
 });
 
+it('a canvas whose page reported an answer is said or shown: the tutor gets the key and its misrules, the screen does not, and Check still credits', () => {
+  const said: CanvasChallenge = { ...canvas('canvas-1', 'How many parts are in each whole?'),
+    spoken: { answer: 4, misrules: [{ says: 2, because: 'counted the shaded parts, not the parts in each whole' }] } };
+  const data: AgentCanvasData = { ...DATA, challenges: [said, canvas('canvas-2', 'Use all 24 pavers.')] };
+  const h = mountWorkspace({ primitiveId: 'agent-canvas', evalMode: 'canvas', instanceId: 'agent-canvas', data: data as never });
+  h.settle(1000);
+  expect(demand(h).response).toBe('speech');
+  expect(agentCanvasBoss.assignment(said)).toMatchObject({ response: 'speech', acceptsGesture: true });
+  expect(h.state().task!.workspace!.expectedAnswer).toContain('four');
+  expect(agentCanvasBoss.assignment(said).misses?.map(m => m.id)).toEqual(['misrule_first']);
+  expect(h.view.container.textContent).not.toMatch(/\bfour\b|counted the shaded/);
+  // The shown path still judges it.
+  post(h, 'goal', true);
+  h.press('Check');
+  expect(last(h)).toMatchObject({ correct: true });
+  h.dispatch('advance'); h.confirmVisible();
+  // The next canvas reported no answer: shown only, no key.
+  expect(demand(h).response).toBe('gesture');
+  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  h.close();
+  // An ask that says the answer, or a report that cannot be said, never launches.
+  expect(() => validateAgentCanvasData({ ...data, challenges: [{ ...said, ask: 'Are there four parts?' }] })).toThrow(/says the answer/);
+  expect(() => validateAgentCanvasData({ ...data, challenges: [{ ...said, spoken: { answer: [] as never } }] })).toThrow(/one value a child can say/);
+});
+
 it('Check waits for the page to report, and only this frame\'s reports count', () => {
   const h = mount();
   expect(check(h).disabled).toBe(true);
@@ -62,6 +87,17 @@ it('Check waits for the page to report, and only this frame\'s reports count', (
   expect(check(h).disabled).toBe(true);
   post(h, 'goal', false);
   expect(check(h).disabled).toBe(false);
+  h.close();
+});
+
+it('a session answered only out loud still ends on the results screen', () => {
+  const said = (id: string, ask: string): CanvasChallenge => ({ ...canvas(id, ask), spoken: { answer: 4 } });
+  const data: AgentCanvasData = { ...DATA, challenges: [said('canvas-1', 'How many parts are in each whole?'), said('canvas-2', 'How many parts are in this whole?')] };
+  const h = mountWorkspace({ primitiveId: 'agent-canvas', evalMode: 'canvas', instanceId: 'agent-canvas', data: data as never });
+  h.settle(1000);
+  for (let i = 0; i < data.challenges.length; i++) { h.say('four'); h.feedback('correct', 'advance'); h.confirmVisible(); h.settle(); }
+  expect(h.state().status).toBe('completed');
+  expect(h.view.container.textContent).toContain('Canvas complete!');
   h.close();
 });
 

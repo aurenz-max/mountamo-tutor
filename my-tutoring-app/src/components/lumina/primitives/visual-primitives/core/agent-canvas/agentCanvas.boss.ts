@@ -1,10 +1,13 @@
 /**
- * agent-canvas's boss on the tap preset: the child operates the canvas and the program's own goal check judges it on
- * Check. This file validates a lesson and plays the harness. The canvas runs in a sandboxed frame the harness (jsdom)
- * cannot run, so a play delivers what the author's own recorded playthrough made the page report (`report`), then
- * presses Check: the right play is the author's proof, the wrong play its wrong attempt.
+ * agent-canvas's boss on the spoken preset (2026-11-15; the tap preset before). Every canvas is operated and the
+ * program's own goal check judges it on Check. A canvas whose page reported one sayable answer (`lumina.answer`,
+ * `service/agent-kit/canvas/canvasSpoken.ts`) is also answered out loud: the tutor judges the words against that key,
+ * and Check still counts. This file validates a lesson and plays the harness. The canvas runs in a sandboxed frame the
+ * harness (jsdom) cannot run, so a shown play delivers what the author's own recorded playthrough made the page report
+ * (`report`), then presses Check: the right play is the author's proof, the wrong play its wrong attempt.
  */
-import { hasText, tapBoss } from '../../../../components/live-activity/boss';
+import { hasText, spokenBoss } from '../../../../components/live-activity/boss';
+import { canvasSay, canvasSpokenKey, canvasSpokenMisses, readSpoken, spokenIssues } from '../../../../service/agent-kit/canvas/canvasSpoken';
 import { agentCanvasCard, type CanvasMiss } from './agentCanvas.card';
 import type { AgentCanvasData } from './AgentCanvas';
 import { canvasPage, type CanvasChallenge } from './agentCanvasWorkspace';
@@ -16,6 +19,7 @@ export function canvasItemError(c: CanvasChallenge, page?: string): string | nul
   if (!/lumina-display/.test(canvasPage(c, page))) return 'it has no canvas page';
   if (!Array.isArray(c.proof) || !c.proof.length) return 'its author never played it to the goal';
   if (!Array.isArray(c.miss) || !c.miss.length) return 'its author never showed a wrong attempt staying unmet';
+  if (c.spoken !== undefined) return spokenIssues(c.ask, c.spoken)[0] ?? null;
   return null;
 }
 
@@ -32,13 +36,19 @@ export function validateAgentCanvasData(value: unknown): AgentCanvasData {
   return d;
 }
 
-export const agentCanvasBoss = tapBoss<AgentCanvasData, CanvasChallenge, CanvasMiss>({
+const spokenOf = (c: CanvasChallenge) => (c.spoken ? readSpoken(c.spoken) : null);
+
+export const agentCanvasBoss = spokenBoss<AgentCanvasData, CanvasChallenge, CanvasMiss>({
   card: agentCanvasCard,
   validate: validateAgentCanvasData,
   items: d => d.challenges,
-  choice: {
+  speech: {
     ask: c => c.ask,
-    play: (right, item) => [
+    // A canvas with no reported answer has no key: it is shown, and the program's goal judges it.
+    key: c => { const s = spokenOf(c); return s ? canvasSpokenKey(s) : null; },
+    misses: c => { const s = spokenOf(c); return s ? canvasSpokenMisses(s) : []; },
+    say: c => { const s = spokenOf(c); return s ? canvasSay(s) : { correct: '', plainWrong: '' }; },
+    show: (right, item) => [
       { type: 'report', goal: right, scene: right ? item.proofScene ?? item.scene : item.missScene ?? item.scene },
       { type: 'choose', label: 'Check' },
     ],

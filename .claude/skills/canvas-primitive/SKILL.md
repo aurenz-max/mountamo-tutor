@@ -47,6 +47,7 @@ scope (`service/gen-display/sdkSource.ts` is the reference: `Panel`, `Stack`, `R
 | Read every value that varies from `params`, with a default | One program serves many problems; the gate fails a param the source never reads |
 | Call `lumina.goal(met)` in an effect on every state change | This is the only key. True for every way of succeeding, false otherwise |
 | Call `lumina.scene({...})` with plain facts of what is on screen | The tutor reads it. It never holds the verdict, the answer, or a value the child cannot see |
+| Call `lumina.answer(value, misrules)` from the first render when the ask has ONE value a child could say | Say and show (USER 11-15): the tutor judges the said answer against it, and Check still judges the canvas. `value` is a number or a few words computed from `params`, the same whatever the child does. `misrules` (0-3) are `{ says, because }`: the wrong value a child holding one wrong rule says, and that rule in a few words. Write a fraction as the text `'3/4'` and a decimal as a number: code knows how each is said (`spokenForms`). When the ask offers words to choose from, pass them third, `lumina.answer('second', misrules, ['first', 'second', 'same'])`: the answer and every misrule are among them and the ask says every one. Omit the call when many finished canvases are right or the answer is a placement: the canvas is then shown only. Never write the key in `spec.json`; the gate records what the page reported |
 | Give every element the child acts on an `id` | Plays address elements by CSS selector; the shell names taps and drops for sound |
 | Start with the goal unmet and never show whether the child is right | The host owns the verdict. No green line, no "Correct!", no colour that changes when the goal is met |
 | Compute every shown value from state | A literal result is a leak or a bug |
@@ -68,7 +69,9 @@ Two idioms that bite: draw repeated parts with render functions (`{pile(i)}`), n
 
 Code-checked by `canvas-check` (blocking): compiles; runs clean; goal false at rest; scene reported; the proof ends
 with the goal met; the miss ends with it unmet; every param key is read by the source; no two problems share a first
-screen; each problem has its own ask. Advisory: a scene key that reads as a verdict (`isGoalMet`, `correct`).
+screen; each problem has its own ask; a said answer (`lumina.answer`) is one sayable value, reported at rest, unchanged
+after the proof and the miss, not said by the ask, with well-formed misrules (`canvasSpoken.ts`, shared with the Gemini
+author). A spec with a `rule` (a DI canvas, `qa/canvas/DI_CANVAS_ROADMAP.md`) also needs 5 or more problems, a misrule on at least 3, and no answer three times in a row (`ruleIssues`). The check prints `said or shown: <value>` or `shown only` per problem. Advisory: a scene key that reads as a verdict (`isGoalMet`, `correct`).
 
 Read by the author from the screenshots in `specs/<id>/plays/` (not code-checkable, so do it every time):
 

@@ -634,7 +634,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       + 'that match its objectives. Pairs well with practice-studio in the same lesson: the learner builds the answer here and '
       + 'chooses or sorts there.',
     constraints: 'Only for an objective a canvas was matched to. At most one per objective. The manifest must NOT supply the canvas, its values or its goal.',
-    affordances: { representation: 'concrete', reader: 'emerging', answers: ['tap', 'manipulate'], role: ['apply'], minutes: 6 },
+    affordances: { representation: 'concrete', reader: 'emerging', answers: ['tap', 'manipulate', 'spoken'], role: ['apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'canvas',

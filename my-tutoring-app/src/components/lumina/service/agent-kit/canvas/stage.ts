@@ -37,6 +37,8 @@ export interface Snapshot {
   /** What the page last reported with lumina.goal; null when it never did. */
   goal: boolean | null;
   scene: unknown;
+  /** What the page last reported with lumina.answer (`canvasSpoken.ts`); null when it never did. */
+  answer?: unknown;
   text: string;
   errors: string[];
 }
@@ -82,7 +84,7 @@ export class CanvasStage {
       // Resolved at run time, never bundled: playwright-core is a dev dependency.
       const pkg = 'playwright-core';
       const { chromium } = await import(/* webpackIgnore: true */ /* @vite-ignore */ pkg) as typeof import('playwright-core');
-      return chromium.launch({ executablePath: exe, headless: true });
+      return chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: exe, headless: true });
     })();
     return this.browser;
   }
@@ -103,8 +105,8 @@ export class CanvasStage {
       await page.waitForTimeout(SETTLE_MS);
       const snap = async (): Promise<Snapshot> => {
         const s = await page.evaluate(() => {
-          const l = (window as unknown as { __lumina?: { errors: string[]; scene: unknown; goal: boolean | null } }).__lumina;
-          return { goal: l?.goal ?? null, scene: l?.scene ?? null, text: document.body.innerText, errors: l?.errors ?? ['the page did not start'] };
+          const l = (window as unknown as { __lumina?: { errors: string[]; scene: unknown; goal: boolean | null; answer?: unknown } }).__lumina;
+          return { goal: l?.goal ?? null, scene: l?.scene ?? null, answer: l?.answer ?? null, text: document.body.innerText, errors: l?.errors ?? ['the page did not start'] };
         });
         return { ...s, text: s.text.replace(/\s+/g, ' ').trim().slice(0, 700), errors: Array.from(new Set([...pageErrors, ...s.errors])).map(e => e.slice(0, 300)) };
       };

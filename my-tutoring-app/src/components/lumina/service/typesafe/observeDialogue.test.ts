@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { decideDialogue } from './observeDialogue';
+import { assignmentOutcomeKind, decideDialogue } from './observeDialogue';
 import { validDialogueRequest, type DialogueRequest } from '../../components/live-activity/runtime/dialogueContract';
 const input: DialogueRequest = { scope: { sessionEpoch: 's', instanceId: 'b', itemId: '1', revision: 2 },
   task: 'Count blocks', phase: 'checked', learner: 'three', tutor: 'Yes, three!', lastResponse: { response: '3', correct: true, assisted: false } };
@@ -191,4 +191,14 @@ it('marks a spoken reply that credits nothing, and only that (RP-2, 09-28)', () 
   // A gated verdict decides by itself.
   expect(read({ incorrect: .96, correct: 0, none: .04 })).toMatchObject({ accepted: true, verdict: 'incorrect' });
   expect(decideDialogue({ ...input }, answers('none', 'retry'), 200).creditsNothing).toBeUndefined();
+});
+it('leaves the shown path out of a spoken answer: an untouched canvas is not evidence about what the learner said', () => {
+  const activity = { responseSource: null, attemptNumber: 0, objects: [], demonstration: [],
+    facts: { response: 'speech', prompt: 'How many parts?', shownWork: 'yourSquareShadedParts 0' }, assistance: { level: 0, answerExposure: 'none' as const } };
+  const said = assignmentOutcomeKind.state({ ...input, phase: 'working', lastResponse: null, pendingResponse: { id: 't', text: 'one' }, activity }) as { activity: typeof activity };
+  expect(said.activity.facts).toEqual({ response: 'speech', prompt: 'How many parts?' });
+  // A checked canvas is judged from its work, so the fact stays; so does the request itself.
+  const shown = assignmentOutcomeKind.state({ ...input, activity: { ...activity, facts: { ...activity.facts, response: 'gesture' } } }) as { activity: typeof activity };
+  expect(shown.activity.facts.shownWork).toBe('yourSquareShadedParts 0');
+  expect(activity.facts.shownWork).toBe('yourSquareShadedParts 0');
 });

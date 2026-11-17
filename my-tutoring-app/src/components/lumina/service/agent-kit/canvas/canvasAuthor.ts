@@ -21,6 +21,8 @@ import { SDK_REFERENCE } from '../../gen-display/sdkSource';
 import { arr, num, runAuthor, str, type AgentAuthor, type Args, type AuthorDebug } from '../authorLoop';
 import { CANVAS_EXAMPLE, CANVAS_STYLE, styleNotes } from './canvasStyle';
 import { CanvasStage, STAGE_WIDTH, callsGoal, restIssues, type PlayStep, type Snapshot } from './stage';
+import { canvasSpokenKey, readSpoken, spokenIssues, type CanvasSpoken } from './canvasSpoken';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 
 export interface CanvasAsk { topic: string; grade: string; objective?: string }
 
@@ -62,6 +64,8 @@ export interface CanvasData {
   /** The scene facts the page reported after each of those two playthroughs. */
   proofScene: unknown;
   missScene: unknown;
+  /** What the page reported with lumina.answer: the child may say it, or show it. Absent on a canvas that is only shown. */
+  spoken?: CanvasSpoken;
   agentDebug: AuthorDebug;
 }
 
@@ -145,6 +149,15 @@ ${CANVAS_EXAMPLE}
 - lumina.goal(met): call it in an effect whenever state changes, true only while the child's work meets the goal. This is how the lesson knows the child succeeded, so check it as carefully as a test: true for every way of succeeding, false for everything else. When the idea allows many right answers, accept all of them.
 - lumina.scene({ ... }): call it in the same effect with plain facts of what is on screen now (what the child has placed, the values, what the world did). The tutor reads it to talk with the child. It never holds the answer, or a verdict the child has not seen yet (whether the bridge will hold before it is tested).
 
+## How the child answers: show it, or say it and show it
+Every canvas is shown: the child works the canvas and presses Check. Decide by the nature of the task whether the answer can also be said.
+- When the ask has ONE value a child could say out loud (how many parts are in each whole, which fraction is shaded, how long the side is), call lumina.answer(value, misrules) from the first render. value is a number or a few words, computed from params, never a literal and never read from the child's work: it is the answer to the ask for this problem, and it stays the same whatever the child does. The tutor then asks out loud, the child may just say it, and the tutor judges the words. The canvas still needs a way to show the same answer with the hands, and lumina.goal still judges that.
+- Write a fraction as the text 'a/b' ('3/4') and a decimal as a number or its text (0.35): code knows how each is said. Write other answers as the word a child would say.
+- When the ask offers words to choose from ("Which has more shaded: the first, the second, or are they the same?"), pass them as a third argument: lumina.answer('second', misrules, ['first', 'second', 'same']). The answer and every misrule are among them, and the ask says every one.
+- misrules (optional, at most 3): [{ says, because }], the wrong value a child holding one wrong rule would say, computed from params, and that wrong rule in a few words ("counted the shaded parts, not the parts in each whole"). List only wrong answers real children give.
+- When many finished canvases are right (build a bridge that holds, split five any way), or the answer is a placement or an arrangement, do not call lumina.answer: the canvas is shown only.
+- The value never appears on the screen, in the ask or in the scene.
+
 ## What the lesson adds around it
 The lesson shows your "ask" above the canvas and a Check button below it, and tells the child whether they are right. So:
 - The canvas starts in a state that does not meet the goal, and never says whether the child is right or what the answer is.
@@ -175,11 +188,12 @@ function readSteps(v: unknown): PlayStep[] {
 }
 
 /** What blocks one canvas from shipping, as sentences the author can act on. */
-export function canvasIssues(item: Pick<CanvasItem, 'rest' | 'proof' | 'miss'>): string[] {
+export function canvasIssues(item: Pick<CanvasItem, 'rest' | 'proof' | 'miss'> & { ask?: string }): string[] {
   const { rest } = item;
   if (!rest) return ['no one has run this canvas: call play'];
   const e = restIssues(rest);
   if (rest.errors.length) return e;
+  e.push(...spokenIssues(item.ask ?? '', rest.answer, [item.proof, item.miss].flatMap(p => (p ? [p.after.answer] : []))));
   if (!item.proof) e.push('no play has ended with the goal met: play the steps a child would do to succeed');
   if (!item.miss) e.push('no play has shown a wrong attempt: play what a child would plausibly get wrong, and see the goal stay unmet');
   return e;
@@ -227,6 +241,8 @@ function spec(ask: CanvasAsk): AgentAuthor<CanvasState, CanvasItem, CanvasData> 
           ...(steps.length ? { afterSteps: { goal: run.after.goal, scene: run.after.scene, errors: run.after.errors, text: run.after.text }, ...(run.stepErrors.length ? { stepErrors: run.stepErrors } : {}) } : { text: run.rest.text }),
           boxes: run.boxes,
           kept,
+          // The key in words, as the tutor will judge it (derived from what the page reported; never written here).
+          answeredBy: readSpoken(run.rest.answer) ? `said or shown; the tutor accepts: ${spokenKeyText(canvasSpokenKey(readSpoken(run.rest.answer)!))}` : 'shown only (the page reports no lumina.answer)',
           stillNeeded: canvasIssues(item),
         },
         images: [run.png],
@@ -242,12 +258,14 @@ function spec(ask: CanvasAsk): AgentAuthor<CanvasState, CanvasItem, CanvasData> 
       view: (_s, item) => ({
         ask: item.ask, html: item.html,
         words: `Text on the screen: ${item.rest?.text ?? ''}\nFacts the canvas reports: ${JSON.stringify(item.rest?.scene ?? null)}`,
-        design: 'This is an interactive canvas, shown before the child touches it. The child drags, taps and sets things in it, the picture responds, and a Check button under it (not shown) tells them whether they are right. A control or a Test button is part of the design, not a shortcut.',
+        design: 'This is an interactive canvas, shown before the child touches it. The child drags, taps and sets things in it, the picture responds, and a Check button under it (not shown) tells them whether they are right. A control or a Test button is part of the design, not a shortcut.'
+          + (readSpoken(item.rest?.answer) ? ' The child may also say the answer out loud, so a number or word printed on the first screen that IS the answer is a problem.' : ''),
       }) },
     salvage: (_s, items) => { const kept = items.filter(i => !canvasIssues(i).length).slice(-1); return kept.length ? { items: kept, note: 'salvaged: shipped the canvas that passes after the budget ran out' } : null; },
     ship: (s, items, { debug }) => {
       const c = items[items.length - 1];
-      return { title: c.title, ask: c.ask, goal: c.goal, html: c.html, source: c.source, params: c.params, proof: c.proof?.steps ?? [], miss: c.miss?.steps ?? [],
+      const spoken = readSpoken(c.rest?.answer);
+      return { ...(spoken ? { spoken } : {}), title: c.title, ask: c.ask, goal: c.goal, html: c.html, source: c.source, params: c.params, proof: c.proof?.steps ?? [], miss: c.miss?.steps ?? [],
         scene: c.rest?.scene ?? null, proofScene: c.proof?.after.scene ?? null, missScene: c.miss?.after.scene ?? null, agentDebug: { ...debug, plays: c.plays, versions: s.versions, plan: s.plan, playLog: s.playLog } };
     },
   };

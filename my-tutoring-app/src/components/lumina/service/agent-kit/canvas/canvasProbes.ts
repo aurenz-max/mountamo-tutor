@@ -125,12 +125,18 @@ export function readLayout(page: Page): Promise<Layout> {
       .filter(({ r }) => Math.min(r.width, r.height) < 43.5)
       .map(({ el, r }) => ({ id: el.id || el.tagName.toLowerCase(), w: Math.round(r.width), h: Math.round(r.height) }));
     const controlOverlaps: Array<[string, string]> = [];
+    // Boxes overlap by design in an isometric stack or a band inside a shape; a tap lands on what is drawn on top.
+    // So a pair counts only when one of the two cannot be hit at its own centre.
+    const hitAtCentre = (el: Element, r: DOMRect) => {
+      const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!t && (t === el || el.contains(t));
+    };
     for (let i = 0; i < interactiveEls.length; i++) for (let j = i + 1; j < interactiveEls.length; j++) {
       const A = interactiveEls[i], B = interactiveEls[j];
       if (A.contains(B) || B.contains(A)) continue;
       const a = A.getBoundingClientRect(), b = B.getBoundingClientRect();
       const w = Math.min(a.right, b.right) - Math.max(a.left, b.left), h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-      if (w > 0 && h > 0 && w * h > 0.3 * Math.min(a.width * a.height, b.width * b.height)) controlOverlaps.push([A.id || A.tagName.toLowerCase(), B.id || B.tagName.toLowerCase()]);
+      if (w > 0 && h > 0 && w * h > 0.3 * Math.min(a.width * a.height, b.width * b.height) && !(hitAtCentre(A, a) && hitAtCentre(B, b))) controlOverlaps.push([A.id || A.tagName.toLowerCase(), B.id || B.tagName.toLowerCase()]);
     }
     const colors = new Set<string>();
     for (const el of Array.from(root.querySelectorAll('svg *'))) {
@@ -190,9 +196,36 @@ function rng(seed: number) { let s = seed >>> 0 || 1; return () => ((s = (s * 16
 
 export interface ShortcutResult { tapAll: boolean | null; monkeyRuns: number; monkeyMet: number; errors: string[] }
 
+type Point = { x: number; y: number };
+
 /**
- * Shortcut probes on one problem's page. `tapAll`: tap every control once in page order. Monkey: `runs` random plays
- * of `len` taps and drags over the controls and named places.
+ * The centres of the things a child can act on now (the same rule as `readLayout`'s `interactive`), and of every named
+ * element. Read before each monkey step, so a control that appears or wakes up after a tap (a Run lit once its steps
+ * are set, a second truck, a Snap after a pick) joins the pool; a list taken at rest never presses them.
+ */
+function liveTargets(page: Page): Promise<{ controls: Point[]; named: Point[] }> {
+  return page.evaluate(() => {
+    const root = document.querySelector('#root');
+    if (!root) return { controls: [], named: [] };
+    const visible = (el: Element) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return (r.width > 0 || r.height > 0) && cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.05; };
+    const centre = (el: Element) => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; };
+    const controls = Array.from(root.querySelectorAll('*')).filter(el => {
+      if (!visible(el)) return false;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'button' || tag === 'input' || tag === 'select') return true;
+      const cur = getComputedStyle(el).cursor;
+      const parentCur = el.parentElement ? getComputedStyle(el.parentElement).cursor : '';
+      return /pointer|grab/.test(cur) && cur !== parentCur;
+    }).map(centre);
+    const named = Array.from(root.querySelectorAll('[id]')).filter(visible).slice(0, 60).map(centre);
+    return { controls, named };
+  });
+}
+
+/**
+ * Shortcut probes on one problem's page. `tapAll`: tap every control at rest once in page order. Monkey: `runs` random
+ * plays of `len` taps and drags, each step picked from the controls live at that moment (named places when none are),
+ * dragged onto a named place or by a random offset.
  */
 export async function shortcuts(stage: CanvasStage, html: string, interactive: string[], named: string[], len: number, runs = 8, seed = 7): Promise<ShortcutResult> {
   const sel = (id: string) => `[id="${id}"]`;
@@ -203,23 +236,46 @@ export async function shortcuts(stage: CanvasStage, html: string, interactive: s
     tapAll = r.after.goal === true;
     errors.push(...r.after.errors);
   }
-  const pool = interactive.length ? interactive : named;
+  const canPlay = interactive.length > 0 || named.length > 0;
   let met = 0;
-  if (pool.length) {
-    const plays = Array.from({ length: runs }, (_, k) => {
-      const rand = rng(seed + k * 101);
-      const pick = (a: string[]) => a[Math.floor(rand() * a.length)];
-      return Array.from({ length: len }, (): PlayStep => {
-        const t = pick(pool), roll = rand();
-        if (roll < 0.5) return { do: 'click', target: sel(t) };
-        if (roll < 0.8 && named.length) return { do: 'drag', target: sel(t), to: sel(pick(named)) };
-        return { do: 'drag', target: sel(t), dx: Math.round((rand() - 0.5) * 400), dy: Math.round((rand() - 0.5) * 300) };
-      });
+  if (canPlay) {
+    const monkey = (k: number) => stage.play(html, [], {
+      inspect: async (page: Page) => {
+        const rand = rng(seed + k * 101);
+        const pick = <T,>(a: T[]) => a[Math.floor(rand() * a.length)];
+        const pageErrors: string[] = [];
+        page.on('pageerror', e => pageErrors.push(e.message));
+        for (let s = 0; s < len; s++) {
+          const live = await liveTargets(page);
+          const pool = live.controls.length ? live.controls : live.named;
+          if (!pool.length) break;
+          const from = pick(pool), roll = rand();
+          if (roll < 0.5) await page.mouse.click(from.x, from.y);
+          else {
+            const to = roll < 0.8 && live.named.length ? pick(live.named) : { x: from.x + Math.round((rand() - 0.5) * 400), y: from.y + Math.round((rand() - 0.5) * 300) };
+            await page.mouse.move(from.x, from.y);
+            await page.mouse.down();
+            await page.mouse.move(to.x, to.y, { steps: 12 });
+            await page.mouse.up();
+          }
+          await page.waitForTimeout(80);
+        }
+        await page.waitForTimeout(300);
+        const after = await page.evaluate(() => {
+          const l = (window as unknown as { __lumina?: { goal: boolean | null; errors: string[] } }).__lumina;
+          return { goal: l?.goal ?? null, errors: l?.errors ?? [] };
+        });
+        return { met: after.goal === true, errors: [...pageErrors, ...after.errors] };
+      },
     });
-    const results = await Promise.all(plays.map(steps => stage.play(html, steps)));
-    for (const r of results) { if (r.after.goal === true) met++; errors.push(...r.after.errors); }
+    const results = await Promise.all(Array.from({ length: runs }, (_, k) => monkey(k)));
+    for (const r of results) {
+      const m = r.inspected as { met: boolean; errors: string[] } | undefined;
+      if (m?.met) met++;
+      errors.push(...r.after.errors, ...(m?.errors ?? []));
+    }
   }
-  return { tapAll, monkeyRuns: pool.length ? runs : 0, monkeyMet: met, errors: Array.from(new Set(errors)).slice(0, 4) };
+  return { tapAll, monkeyRuns: canPlay ? runs : 0, monkeyMet: met, errors: Array.from(new Set(errors)).slice(0, 4) };
 }
 
 export function shortcutFindings(s: ShortcutResult): Finding[] {

@@ -66,6 +66,8 @@ try {
   const { displayDocument } = await runner.import('/src/components/lumina/service/gen-display/document.ts');
   const { CanvasStage, callsGoal, restIssues } = await runner.import('/src/components/lumina/service/agent-kit/canvas/stage.ts');
   const { styleNotes } = await runner.import('/src/components/lumina/service/agent-kit/canvas/canvasStyle.ts');
+  const { readSpoken, spokenIssues, ruleIssues, canvasSpokenKey } = await runner.import('/src/components/lumina/service/agent-kit/canvas/canvasSpoken.ts');
+  const { spokenKeyText } = await runner.import('/src/components/lumina/components/live-activity/spokenKey.ts');
   const compiled = compileDisplay(source);
   if (!compiled.ok) throw new Error(`the program does not compile: ${compiled.errors.join('; ')}`);
 
@@ -104,22 +106,36 @@ try {
       else if (miss.stepErrors.length || miss.after.errors.length) issues.push(`the miss did not run: ${[...miss.stepErrors, ...miss.after.errors].slice(0, 2).join('; ')}`);
       else if (miss.after.goal !== false) issues.push('the wrong attempt meets the goal');
       if (!p.ask && spec.problems.length > 1) issues.push('each problem needs its own ask');
+      // Say and show: a problem whose page reports lumina.answer can be answered out loud (the Gemini author's rules).
+      issues.push(...spokenIssues(p.ask ?? spec.ask ?? '', rest.answer, [proof.after.answer, miss.after.answer]));
+      const spoken = readSpoken(rest.answer);
       // Two problems whose first screen and facts are the same are one problem.
+      // The facts alone miss a picture that differs only in geometry (a longer ribbon, a wider turn), so the rest
+      // pixels decide: same facts and same pixels blocks; same facts, different pixels is an advisory, since the
+      // tutor reads the scene and cannot tell the two apart (name what differs, never the count it gives away).
       const face = JSON.stringify([rest.text, rest.scene]);
-      if (restSeen.has(face)) issues.push(`its first screen is the same as problem ${restSeen.get(face)}: the params change nothing the child sees`);
-      else restSeen.set(face, n);
+      const seen = restSeen.get(face);
+      if (seen && Buffer.compare(seen.png, proof.restPng) === 0) issues.push(`its first screen is the same as problem ${seen.n}: the params change nothing the child sees`);
+      else if (seen) advisories.push(`problem ${n}: its picture differs from problem ${seen.n} but its text and scene are the same, so the tutor cannot tell them apart; name in the scene what differs (never the count it gives away)`);
+      else restSeen.set(face, { n, png: proof.restPng });
       // Advisory: the tutor reads the scene, so a verdict or an answer in it reaches the child through the tutor.
       const verdictKeys = Object.keys(rest.scene && typeof rest.scene === 'object' ? rest.scene : {}).filter(k => /goal|met$|correct|solved|answer|success/i.test(k));
       if (verdictKeys.length) advisories.push(`problem ${n}: the scene reports ${verdictKeys.join(', ')}; the scene must hold what is on screen, never the verdict`);
       const record = (kind, run, steps) => playLog.push({ version: n, steps, restGoal: run.rest.goal, afterGoal: run.after.goal, errors: run.after.errors, stepErrors: run.stepErrors, kept: `problem ${n} ${kind}` });
       record('proof', proof, p.proof ?? []); record('miss', miss, p.miss ?? []);
-      problems.push({ params: p.params ?? {}, ask: p.ask ?? spec.ask, goal: p.goal ?? spec.goal, proof: p.proof ?? [], miss: p.miss ?? [], scene: rest.scene, proofScene: proof.after.scene, missScene: miss.after.scene });
-      console.log(`problem ${n} ${JSON.stringify(p.params ?? {})}: ${issues.length ? 'FAIL' : 'pass'}${issues.map(s => `\n   - ${s}`).join('')}`);
+      problems.push({ params: p.params ?? {}, ask: p.ask ?? spec.ask, goal: p.goal ?? spec.goal, proof: p.proof ?? [], miss: p.miss ?? [], scene: rest.scene, proofScene: proof.after.scene, missScene: miss.after.scene, ...(spoken ? { spoken } : {}) });
+      console.log(`problem ${n} ${JSON.stringify(p.params ?? {})}: ${issues.length ? 'FAIL' : 'pass'}${spoken ? ` (said or shown: ${JSON.stringify(spoken.answer)}; the tutor accepts: ${spokenKeyText(canvasSpokenKey(spoken))})` : ' (shown only)'}${issues.map(s => `\n   - ${s}`).join('')}`);
       blocking.push(...issues.map(s => `problem ${n}: ${s}`));
     }
   } finally {
     await stage.close();
   }
+  // A spec that states a rule is a DI canvas: it also meets the range and misrule checks (canvasSpoken.ts).
+  // The workspace runs at most 6 challenges (validateAgentCanvasData), so a 7th problem can never reach a child.
+  // A DI spec's polish is where its design is read: which half carries the rule, where each misrule's number comes from.
+  if (typeof spec.rule === 'string' && spec.rule.trim() && !(Array.isArray(spec.polish) && spec.polish.some(s => typeof s === 'string' && s.trim()))) blocking.push('spec: a spec with a rule needs polish lines (which half carries the rule, the misrules and where their numbers come from, what the picture leaves out)');
+  if (problems.length > 6) blocking.push(`spec: ${problems.length} problems; a canvas lesson holds at most 6 (validateAgentCanvasData)`);
+  if (typeof spec.rule === 'string' && spec.rule.trim()) blocking.push(...ruleIssues(problems.map(p => p.spoken ?? null)).map(s => `rule: ${s}`));
   for (const a of advisories) console.log(`advisory: ${a}`);
   if (blocking.length) {
     failed = true;
@@ -129,7 +145,7 @@ try {
     const out = resolve(root, 'qa/canvas', `${id}.json`);
     writeFileSync(out, JSON.stringify({
       request: spec.request ?? {}, title: spec.title, ask: first.ask, goal: first.goal, html: displayDocument(compiled.js, first.params), source,
-      params: first.params, proof: first.proof, miss: first.miss, scene: first.scene, proofScene: first.proofScene, missScene: first.missScene, problems,
+      params: first.params, proof: first.proof, miss: first.miss, scene: first.scene, proofScene: first.proofScene, missScene: first.missScene, ...(first.spoken ? { spoken: first.spoken } : {}), problems,
       agentDebug: { spec: `qa/canvas/specs/${id}`, from: spec.from, advisories, plays: playLog.length, versions: problems.length, playLog },
     }, null, 2));
     console.log(`\nPASS: ${problems.length} problem(s), each played both ways. Wrote ${out}; open it in the dev panel "Canvas (agent)" saved list.\nscreenshots: ${plays}`);
