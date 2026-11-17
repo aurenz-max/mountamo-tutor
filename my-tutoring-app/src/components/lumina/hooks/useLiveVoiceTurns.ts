@@ -38,6 +38,7 @@ import {
   observeVoiceFloor,
   type VoiceCalibrationState,
 } from './voiceTurnCalibration';
+import { SoundManager } from '../utils/SoundManager';
 
 export interface VoiceFloors {
   ambientRms: number;
@@ -59,6 +60,11 @@ export interface LiveVoiceTurnTransport {
   isTutorAudible: boolean;
   sendActivityStart: () => void;
   sendActivityEnd: () => void;
+  /** Buffer outgoing mic audio while a turn over tutor audio is pending, then
+   *  send it after activityStart. Without these the pending frames go out
+   *  before the bracket. */
+  holdAudio?: () => void;
+  releaseAudio?: () => void;
 }
 
 export interface LiveVoiceTurnsOptions {
@@ -142,9 +148,12 @@ export function useLiveVoiceTurnsWithTransport(
     const base = baseConfigRef.current;
     const tutorAudible = transportRef.current.isTutorAudible;
     const now = performance.now();
+    const appAudible = SoundManager.isAudible(now);
 
-    if (!stateRef.current.active) {
-      calibrationRef.current = observeVoiceFloor(calibrationRef.current, level, tutorAudible);
+    // A pending turn's frames are candidate speech: they must not teach the floor.
+    if (!stateRef.current.active && !stateRef.current.pending) {
+      // A sound effect's frames describe neither regime's floor: learn from neither, and open only at the echo bar.
+      if (!appAudible) calibrationRef.current = observeVoiceFloor(calibrationRef.current, level, tutorAudible);
       const thresholds = deriveVoiceThresholds(calibrationRef.current, base);
       floorsRef.current = {
         ambientRms: calibrationRef.current.ambientFloor,
@@ -166,17 +175,36 @@ export function useLiveVoiceTurnsWithTransport(
     const step = stepVoiceTurn(stateRef.current, {
       level,
       tutorAudible,
+      appAudible,
       now,
     }, configRef.current);
     stateRef.current = step.state;
     if (!step.event) return;
+    if (step.event.kind === 'pending') {
+      transportRef.current.holdAudio?.();
+      return;
+    }
+    if (step.event.kind === 'discard') {
+      transportRef.current.releaseAudio?.();
+      return;
+    }
     if (step.event.kind === 'open') {
       lastTurnOpenAtRef.current = step.event.at;
       transportRef.current.sendActivityStart();
+      // After the bracket, so the held frames land inside the turn.
+      transportRef.current.releaseAudio?.();
       callbacksRef.current.onTurnOpen?.(step.event);
       return;
     }
     emitClose(step.event);
+  }, [emitClose]);
+
+  /** Stop, disable, unmount: end an open turn, drop a pending one. */
+  const forceClose = useCallback(() => {
+    if (stateRef.current.pending) transportRef.current.releaseAudio?.();
+    const closed = closeVoiceTurn(stateRef.current, configRef.current);
+    stateRef.current = closed.state;
+    if (closed.event) emitClose(closed.event);
   }, [emitClose]);
 
   useEffect(() => {
@@ -186,9 +214,7 @@ export function useLiveVoiceTurnsWithTransport(
 
   const reset = useCallback(() => {
     const base = baseConfigRef.current;
-    const closed = closeVoiceTurn(stateRef.current, configRef.current);
-    stateRef.current = closed.state;
-    if (closed.event) emitClose(closed.event);
+    forceClose();
     lastTurnOpenAtRef.current = null;
     calibrationRef.current = EMPTY_VOICE_CALIBRATION;
     floorsRef.current = {
@@ -199,20 +225,16 @@ export function useLiveVoiceTurnsWithTransport(
       ambientReady: false,
       echoReady: false,
     };
-  }, [emitClose]);
+  }, [forceClose]);
 
   useEffect(() => {
     if (enabled) return;
-    const closed = closeVoiceTurn(stateRef.current, configRef.current);
-    stateRef.current = closed.state;
-    if (closed.event) emitClose(closed.event);
-  }, [enabled, emitClose]);
+    forceClose();
+  }, [enabled, forceClose]);
 
   useEffect(() => () => {
-    const closed = closeVoiceTurn(stateRef.current, configRef.current);
-    stateRef.current = closed.state;
-    if (closed.event) emitClose(closed.event);
-  // Unmount only: emitClose uses ref-backed callbacks.
+    forceClose();
+  // Unmount only: forceClose uses ref-backed callbacks.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

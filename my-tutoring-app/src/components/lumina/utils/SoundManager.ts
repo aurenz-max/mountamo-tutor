@@ -284,6 +284,8 @@ class SoundManagerImpl {
   private enabled = true;
   private volume = 0.3; // 0–1 master
   private processingTimer: ReturnType<typeof setInterval> | null = null;
+  /** `performance.now()` until which a sound this manager started may still be heard from the speakers. */
+  private audibleUntil = 0;
 
   constructor() {
     this.loadPrefs();
@@ -391,6 +393,23 @@ class SoundManagerImpl {
     for (const note of spec.notes) {
       this.scheduleNote(ctx, note, now, spec.reverb ?? 0);
     }
+    this.markAudible(Math.max(...spec.notes.map(n => n.start + n.duration)), spec.reverb ?? 0);
+  }
+
+  /**
+   * True while a sound effect may still be heard from the speakers. The open-mic turn machine
+   * (`hooks/useLiveVoiceTurns.ts`) reads it: a tap sound picked up by the mic is not the learner speaking, and
+   * without this, a child tapping every half second kept a voice turn open for 27 s while the tutor waited.
+   */
+  isAudible(at = typeof performance === 'undefined' ? 0 : performance.now()): boolean {
+    return at < this.audibleUntil;
+  }
+
+  /** A sound of `seconds` just started; the tail covers the release, the reverb and the speaker-to-mic path. */
+  private markAudible(seconds: number, reverb = 0) {
+    if (typeof performance === 'undefined') return;
+    const tailMs = 150 + (reverb > 0 ? 400 : 0);
+    this.audibleUntil = Math.max(this.audibleUntil, performance.now() + seconds * 1000 + tailMs);
   }
 
   /** Play a single ad-hoc note (used by the Sound Lab's design-your-own panel). */
@@ -399,6 +418,7 @@ class SoundManagerImpl {
     const ctx = this.getContext();
     if (!ctx) return;
     this.scheduleNote(ctx, note, ctx.currentTime);
+    this.markAudible(note.start + note.duration);
   }
 
   /** Play by id — convenient for the Sound Lab buttons. */

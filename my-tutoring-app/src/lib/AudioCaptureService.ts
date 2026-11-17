@@ -36,6 +36,8 @@ class AudioCaptureService {
     private onStateChange: ((state: { isCapturing: boolean }) => void) | null = null;
     private onError: ((error: AudioCaptureError) => void) | null = null;
     private onAudioData: ((data: Float32Array) => void) | null = null;
+    private held: string[] | null = null;
+    private static readonly MAX_HELD_FRAMES = 24; // about 2 s at 85 ms a frame
 
     // Audio configuration
     private readonly TARGET_SAMPLE_RATE: number = 16000; // Required 16kHz for speech processing
@@ -57,6 +59,23 @@ class AudioCaptureService {
 
     setWebSocket(ws: WebSocket): void {
         this.ws = ws;
+    }
+
+    /**
+     * Keep outgoing frames here instead of sending them. The voice-turn machine
+     * holds while it decides whether a sound over tutor audio is speech, so the
+     * frames can follow activity_start and land inside the turn they belong to.
+     */
+    holdAudio(): void {
+        if (!this.held) this.held = [];
+    }
+
+    /** Send every held frame in order and resume live sending. Safe when not holding. */
+    releaseAudio(): void {
+        const held = this.held;
+        this.held = null;
+        if (!held || this.ws?.readyState !== WebSocket.OPEN) return;
+        for (const message of held) this.ws.send(message);
     }
 
     /**
@@ -161,7 +180,11 @@ class AudioCaptureService {
     
             // Send to the audible tutor and retain the processed frame locally
             // for microphone-level feedback.
-            if (this.ws?.readyState === WebSocket.OPEN) {
+            if (this.held) {
+                this.held.push(JSON.stringify(message));
+                // A hold lasts well under a second. Past that, send rather than grow.
+                if (this.held.length > AudioCaptureService.MAX_HELD_FRAMES) this.releaseAudio();
+            } else if (this.ws?.readyState === WebSocket.OPEN) {
                 this.ws.send(JSON.stringify(message));
             }
             this.onAudioData?.(downsampledData);
@@ -258,6 +281,7 @@ class AudioCaptureService {
 
     stopCapture(): void {
         this.isCapturing = false;
+        this.held = null;
 
         // Clean up processor node
         if (this.processorNode) {

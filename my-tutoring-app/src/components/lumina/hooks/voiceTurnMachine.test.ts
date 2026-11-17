@@ -10,7 +10,7 @@ import {
 const config = DEFAULT_VOICE_TURN_CONFIG; // 0.025 / ×2 / hold 0.6 / close 500ms / min 120ms
 
 const run = (
-  frames: Array<{ level: number; tutorAudible?: boolean; now: number }>,
+  frames: Array<{ level: number; tutorAudible?: boolean; appAudible?: boolean; now: number }>,
   initial: VoiceTurnState = IDLE_VOICE_TURN,
 ) => {
   let state = initial;
@@ -42,9 +42,10 @@ describe('voiceTurnMachine', () => {
     expect(echo.state.active).toBe(false);
     expect(echo.events).toEqual([]);
 
+    // Speech clears the bar but only starts a pending turn (deferred commit, below).
     const speech = run([{ level: 0.159, tutorAudible: true, now: 0 }]);
-    expect(speech.state.active).toBe(true);
-    expect(speech.events).toEqual([{ kind: 'open', at: 0, duringTutorAudio: true }]);
+    expect(speech.state).toMatchObject({ active: false, pending: true });
+    expect(speech.events).toEqual([{ kind: 'pending', at: 0 }]);
   });
 
   it('holds an open turn down to the hysteresis floor of its opening bar', () => {
@@ -63,9 +64,11 @@ describe('voiceTurnMachine', () => {
     // (floor 0.05*0.6=0.03) is not — even after the tutor goes quiet.
     const bargeIn = run([
       { level: 0.16, tutorAudible: true, now: 0 },
-      { level: 0.028, tutorAudible: false, now: 200 },
-      { level: 0.028, tutorAudible: false, now: 800 },
+      { level: 0.16, tutorAudible: true, now: 250 },
+      { level: 0.028, tutorAudible: false, now: 400 },
+      { level: 0.028, tutorAudible: false, now: 1000 },
     ]);
+    expect(bargeIn.events.map((event) => event.kind)).toEqual(['pending', 'open', 'close']);
     expect(bargeIn.state.active).toBe(false);
 
     const silenceOpened = run([
@@ -84,7 +87,8 @@ describe('voiceTurnMachine', () => {
       { level: 0.001, now: 950 },
     ]);
     expect(state).toEqual(IDLE_VOICE_TURN);
-    expect(events[1]).toEqual({
+    expect(events.map((event) => event.kind)).toEqual(['pending', 'open', 'close']);
+    expect(events[2]).toEqual({
       kind: 'close',
       startedAt: 0,
       durationMs: 300,
@@ -166,5 +170,79 @@ describe('voiceTurnMachine', () => {
     expect(closed.state).toEqual(IDLE_VOICE_TURN);
     expect(closed.event).toMatchObject({ kind: 'close', durationMs: 500, peak: 0.2 });
     expect(closeVoiceTurn(IDLE_VOICE_TURN, config)).toEqual({ state: IDLE_VOICE_TURN, event: null });
+  });
+});
+
+describe('app sound effects (agent-canvas, 2026-11-15: a turn held 27 s while the child tapped)', () => {
+  // Echo bar 0.05, its hold floor 0.03. A tap's echo at 0.028 clears the ambient bar (0.025) and hold (0.015).
+  const TAP = 0.028;
+
+  it('a tap heard by the mic opens no turn', () => {
+    expect(run([{ level: TAP, appAudible: true, now: 0 }]).events).toEqual([]);
+    expect(run([{ level: TAP, now: 0 }]).events).toMatchObject([{ kind: 'open' }]);
+  });
+
+  it('taps every half second do not hold an open turn: it closes after the learner stops', () => {
+    const frames: Array<{ level: number; appAudible?: boolean; now: number }> = [{ level: 0.1, now: 0 }];
+    for (let t = 100; t <= 3000; t += 100) frames.push({ level: t % 500 === 0 ? TAP : 0.005, appAudible: t % 500 === 0, now: t });
+    const { events } = run(frames);
+    expect(events.map(e => e.kind)).toEqual(['open', 'close']);
+    expect(events[1]).toMatchObject({ durationMs: 0 });
+    // Without the flag the same taps hold the turn to the end.
+    const held = run(frames.map(({ appAudible: _a, ...f }) => f));
+    expect(held.events.map(e => e.kind)).toEqual(['open']);
+  });
+
+  it('a voice above the echo bar still holds a turn over a sound effect', () => {
+    const { events, state } = run([{ level: 0.1, now: 0 }, { level: 0.06, appAudible: true, now: 400 }, { level: 0.06, appAudible: true, now: 800 }]);
+    expect(events.map(e => e.kind)).toEqual(['open']);
+    expect(state.lastAboveAt).toBe(800);
+  });
+});
+
+describe('deferred commit over tutor audio (2026-11-15: one loud frame cut the tutor off)', () => {
+  const FRAME = 85.3;
+  const cfg = { ...config, framePeriodMs: FRAME };
+  const drive = (frames: Array<{ level: number; tutorAudible?: boolean; now: number }>) => {
+    let state: VoiceTurnState = IDLE_VOICE_TURN;
+    const events = [];
+    for (const frame of frames) {
+      const step = stepVoiceTurn(state, { tutorAudible: true, ...frame }, cfg);
+      state = step.state;
+      if (step.event) events.push(step.event);
+    }
+    return { state, events };
+  };
+  const LOUD = 0.16;
+  const ECHO = 0.033; // above the barge-in hold floor (0.03), below its opening bar (0.05)
+
+  it('a one-frame noise over the tutor never opens a turn, even with echo after it', () => {
+    const frames = [{ level: LOUD, now: 0 }];
+    for (let i = 1; i <= 8; i++) frames.push({ level: ECHO, now: i * FRAME });
+    const { state, events } = drive(frames);
+    expect(events.map((event) => event.kind)).toEqual(['pending', 'discard']);
+    expect(state).toEqual(IDLE_VOICE_TURN);
+  });
+
+  it('speech over the tutor opens on its third frame, dated from its first', () => {
+    const { events } = drive([{ level: LOUD, now: 0 }, { level: LOUD, now: FRAME }, { level: LOUD, now: 2 * FRAME }]);
+    expect(events).toEqual([{ kind: 'pending', at: 0 }, { kind: 'open', at: 0, duringTutorAudio: true }]);
+  });
+
+  it('the tutor going quiet turns a pending turn into an immediate answer', () => {
+    const { events, state } = drive([{ level: LOUD, now: 0 }, { level: 0.03, tutorAudible: false, now: FRAME }]);
+    expect(events).toEqual([{ kind: 'pending', at: 0 }, { kind: 'open', at: 0, duringTutorAudio: false }]);
+    expect(state.openBar).toBe(cfg.silenceThreshold);
+  });
+
+  it('answering into silence still opens on one frame', () => {
+    expect(drive([{ level: 0.03, tutorAudible: false, now: 0 }]).events).toEqual([{ kind: 'open', at: 0, duringTutorAudio: false }]);
+  });
+
+  it('bargeInCommitMs 0 is the old behaviour, and force-close drops a pending turn silently', () => {
+    const step = stepVoiceTurn(IDLE_VOICE_TURN, { level: LOUD, tutorAudible: true, now: 0 }, { ...cfg, bargeInCommitMs: 0 });
+    expect(step.event).toEqual({ kind: 'open', at: 0, duringTutorAudio: true });
+    const pending = drive([{ level: LOUD, now: 0 }]).state;
+    expect(closeVoiceTurn(pending, cfg)).toEqual({ state: IDLE_VOICE_TURN, event: null });
   });
 });

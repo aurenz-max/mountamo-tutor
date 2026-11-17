@@ -64,10 +64,12 @@ function makeMicSource() {
 
 let now = 0;
 
-const setup = (opts: { enabled?: boolean } = {}) => {
+const setup = (opts: { enabled?: boolean; tutorAudible?: boolean } = {}) => {
   const mic = makeMicSource();
   const sendActivityStart = vi.fn();
   const sendActivityEnd = vi.fn();
+  const holdAudio = vi.fn();
+  const releaseAudio = vi.fn();
   const opens: Array<Extract<VoiceTurnEvent, { kind: 'open' }>> = [];
   const closes: Array<Extract<VoiceTurnEvent, { kind: 'close' }>> = [];
 
@@ -90,9 +92,11 @@ const setup = (opts: { enabled?: boolean } = {}) => {
         // the hook must not treat that as a reason to resubscribe.
         subscribeMicLevel: mic.subscribeMicLevel,
         micFramePeriodMs: FRAME_MS,
-        isTutorAudible: false,
+        isTutorAudible: opts.tutorAudible ?? false,
         sendActivityStart,
         sendActivityEnd,
+        holdAudio,
+        releaseAudio,
       },
     );
     return <span data-testid="renders">{n}</span>;
@@ -100,7 +104,7 @@ const setup = (opts: { enabled?: boolean } = {}) => {
 
   const view = render(<Harness />);
   return {
-    mic, opens, closes, sendActivityStart, sendActivityEnd, view,
+    mic, opens, closes, sendActivityStart, sendActivityEnd, holdAudio, releaseAudio, view,
     rerender: () => act(() => { rerender(); }),
     setEnabled: (value: boolean) => act(() => { setEnabled(value); }),
   };
@@ -177,5 +181,36 @@ describe('useLiveVoiceTurns · frames, not renders', () => {
     expect(t.mic.listenerCount).toBe(1);
     t.view.unmount();
     expect(t.mic.listenerCount).toBe(0);
+  });
+
+  it('over tutor audio: one loud frame sends no activityStart; sustained speech holds audio, then brackets, then releases', () => {
+    const t = setup({ tutorAudible: true });
+    t.mic.publish(QUIET, VOICE_CALIBRATION_MIN_SAMPLES);
+
+    // A cough: one frame over the bar, then quiet until the pending turn expires.
+    t.mic.publish(LOUD, 1);
+    expect(t.holdAudio).toHaveBeenCalledTimes(1);
+    t.mic.publish(QUIET, 5);
+    expect(t.sendActivityStart).not.toHaveBeenCalled();
+    expect(t.releaseAudio).toHaveBeenCalledTimes(1);
+    expect(t.opens).toHaveLength(0);
+
+    // Speech: the third frame commits. The bracket goes out before the held audio.
+    t.mic.publish(LOUD, 2);
+    expect(t.sendActivityStart).not.toHaveBeenCalled();
+    t.mic.publish(LOUD, 1);
+    expect(t.sendActivityStart).toHaveBeenCalledTimes(1);
+    expect(t.sendActivityStart.mock.invocationCallOrder[0]).toBeLessThan(t.releaseAudio.mock.invocationCallOrder[1]);
+    expect(t.opens).toHaveLength(1);
+  });
+
+  it('disabling while a turn is pending releases the held audio and sends no bracket', () => {
+    const t = setup({ tutorAudible: true });
+    t.mic.publish(QUIET, VOICE_CALIBRATION_MIN_SAMPLES);
+    t.mic.publish(LOUD, 1);
+    t.setEnabled(false);
+    expect(t.releaseAudio).toHaveBeenCalledTimes(1);
+    expect(t.sendActivityStart).not.toHaveBeenCalled();
+    expect(t.sendActivityEnd).not.toHaveBeenCalled();
   });
 });

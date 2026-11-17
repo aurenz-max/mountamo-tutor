@@ -450,6 +450,8 @@ export const LuminaAIProvider: React.FC<{
     isTutorAudible: isAudioPlaying,
     sendActivityStart,
     sendActivityEnd,
+    holdAudio: () => audioServiceRef.current?.holdAudio(),
+    releaseAudio: () => audioServiceRef.current?.releaseAudio(),
   });
 
   // Signature of the last context update actually forwarded to Gemini. Used to

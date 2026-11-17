@@ -19,10 +19,22 @@
  *   it OPENED at (a hum sitting at the threshold flaps micro-brackets
  *   otherwise). Anchoring to the opening bar keeps a barge-in turn's hold
  *   floor above echo even after the interrupted tutor goes quiet.
+ * - App sound effects (a tap, a chime) are output too (`appAudible`, 2026-11-15). While one may be heard, a
+ *   turn opens only at the barge-in bar and an open turn holds only at that bar's hold floor, so the echo of
+ *   a tap is never a learner turn and taps every half second never keep one open (agent-canvas: a turn held
+ *   27 s while the child shaded parts, and the tutor could not answer until it closed).
  * - A turn closes after `silenceCloseMs` below the hold floor. Turns with less
  *   than `minVoiceMs` of VOICED audio are flagged `belowMinVoice` — the activity
- *   brackets were already sent (the open had to be immediate to interrupt), but
- *   consumers should not anchor attempts on them.
+ *   brackets were already sent, but consumers should not anchor attempts on them.
+ * - Deferred commit (2026-11-15). Gemini cancels the tutor's sentence the moment
+ *   it receives activityStart, so a one-frame noise over the echo bar (a cough,
+ *   a chair) used to cut her off. While the tutor is audible a turn is now
+ *   PENDING until `bargeInCommitMs` of frames at or above the opening bar have
+ *   been heard; only then does `open` fire. Only frames at the opening bar
+ *   count, not the hold floor, because echo residual sits above the hold floor.
+ *   A pending turn with no such frame for `bargeInCommitMs` is discarded. If
+ *   the tutor goes quiet while a turn is pending, speech at the silence bar
+ *   opens it at once. Answering into silence is unchanged: one frame opens.
  *
  * ⚠ FRAME QUANTISATION (fixed 2026-07-26). The machine sees the mic level once
  * per capture frame — 85.3 ms at 48 kHz / 4096 — so it can only ever place an
@@ -58,9 +70,16 @@ export interface VoiceTurnConfig {
    * cannot tell us, not a silent stand-in for a typical device.
    */
   framePeriodMs: number;
+  /**
+   * Voiced audio required before a turn that starts over tutor audio opens.
+   * 0 opens on the first frame (the behaviour before 2026-11-15).
+   */
+  bargeInCommitMs: number;
 }
 
 export const DEFAULT_VOICE_TURN_CONFIG: VoiceTurnConfig = {
+  // Three 85.3 ms capture frames (256 ms): the third frame over the bar opens.
+  bargeInCommitMs: 250,
   silenceThreshold: 0.025,
   bargeInMultiplier: 2,
   hysteresisHoldRatio: 0.6,
@@ -73,6 +92,8 @@ export const DEFAULT_VOICE_TURN_CONFIG: VoiceTurnConfig = {
 
 export interface VoiceTurnState {
   active: boolean;
+  /** Sound over tutor audio that has not yet lasted `bargeInCommitMs`. Never true with `active`. */
+  pending: boolean;
   startedAt: number;
   lastAboveAt: number;
   peak: number;
@@ -84,6 +105,7 @@ export interface VoiceTurnState {
 
 export const IDLE_VOICE_TURN: VoiceTurnState = {
   active: false,
+  pending: false,
   startedAt: 0,
   lastAboveAt: 0,
   peak: 0,
@@ -96,11 +118,18 @@ export interface VoiceFrame {
   level: number;
   /** Tutor audio is currently audible from the speakers. */
   tutorAudible: boolean;
+  /** An app sound effect may currently be heard from the speakers (`SoundManager.isAudible`). */
+  appAudible?: boolean;
   /** Monotonic timestamp in ms (performance.now()). */
   now: number;
 }
 
 export type VoiceTurnEvent =
+  /** A turn may be starting over tutor audio. No activityStart yet: hold the outgoing audio. */
+  | { kind: 'pending'; at: number }
+  /** The pending sound was not speech. Release the held audio; no turn existed. */
+  | { kind: 'discard'; at: number }
+  /** `at` is when the speech began, which for a deferred turn is before this frame. */
   | { kind: 'open'; at: number; duringTutorAudio: boolean }
   | {
       kind: 'close';
@@ -144,26 +173,57 @@ export function stepVoiceTurn(
   config: VoiceTurnConfig,
 ): VoiceTurnStep {
   const { level, tutorAudible, now } = frame;
+  const echoBar = config.silenceThreshold * config.bargeInMultiplier;
+
+  if (state.pending) {
+    const peak = Math.max(state.peak, level);
+    // The tutor went quiet: this is now an answer into silence, which opens at once.
+    if (!tutorAudible && !frame.appAudible && level >= config.silenceThreshold) {
+      const next: VoiceTurnState = {
+        ...state, active: true, pending: false, lastAboveAt: now, peak,
+        duringTutorAudio: false, openBar: config.silenceThreshold,
+      };
+      return { state: next, event: { kind: 'open', at: state.startedAt, duringTutorAudio: false } };
+    }
+    if (level >= state.openBar) {
+      const voiced = now - state.startedAt + config.framePeriodMs;
+      if (voiced >= config.bargeInCommitMs) {
+        const next: VoiceTurnState = {
+          ...state, active: true, pending: false, lastAboveAt: now, peak, duringTutorAudio: tutorAudible,
+        };
+        return { state: next, event: { kind: 'open', at: state.startedAt, duringTutorAudio: tutorAudible } };
+      }
+      return { state: { ...state, lastAboveAt: now, peak }, event: null };
+    }
+    if (now - state.lastAboveAt > config.bargeInCommitMs) {
+      return { state: IDLE_VOICE_TURN, event: { kind: 'discard', at: now } };
+    }
+    return { state, event: null };
+  }
 
   if (!state.active) {
-    const openBar = tutorAudible
-      ? config.silenceThreshold * config.bargeInMultiplier
-      : config.silenceThreshold;
+    const openBar = tutorAudible || frame.appAudible ? echoBar : config.silenceThreshold;
     if (level >= openBar) {
       const next: VoiceTurnState = {
         active: true,
+        pending: false,
         startedAt: now,
         lastAboveAt: now,
         peak: level,
         duringTutorAudio: tutorAudible,
         openBar,
       };
+      // One frame already covers the commit window when the period is that long.
+      if (tutorAudible && config.framePeriodMs < config.bargeInCommitMs) {
+        return { state: { ...next, active: false, pending: true }, event: { kind: 'pending', at: now } };
+      }
       return { state: next, event: { kind: 'open', at: now, duringTutorAudio: tutorAudible } };
     }
     return { state, event: null };
   }
 
-  const holdFloor = state.openBar * config.hysteresisHoldRatio;
+  // Over a sound effect, only a voice above the echo bar holds the turn.
+  const holdFloor = (frame.appAudible ? Math.max(state.openBar, echoBar) : state.openBar) * config.hysteresisHoldRatio;
   if (level >= holdFloor) {
     return {
       state: {
@@ -188,8 +248,10 @@ export interface VoiceTurnCloseStep {
 }
 
 /** Force-close an active turn (stop, disable, unmount). Returns the close
- *  event the consumer should mirror with activityEnd, or null if idle. */
+ *  event the consumer should mirror with activityEnd, or null if idle. A
+ *  pending turn is dropped with no event: no activityStart was ever sent. */
 export function closeVoiceTurn(state: VoiceTurnState, config: VoiceTurnConfig): VoiceTurnCloseStep {
+  if (state.pending) return { state: IDLE_VOICE_TURN, event: null };
   if (!state.active) return { state, event: null };
   return { state: IDLE_VOICE_TURN, event: buildClose(state, config) };
 }

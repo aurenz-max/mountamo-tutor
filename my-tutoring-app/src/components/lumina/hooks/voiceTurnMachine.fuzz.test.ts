@@ -71,7 +71,10 @@ describe('voiceTurnMachine fuzz — structural invariants under random frame seq
           if (rand() < 0.02) {
             const wasActive = state.active;
             const forced = closeVoiceTurn(state, config);
-            if (!wasActive) {
+            if (state.pending) {
+              expect(forced.event, explain(seed, step, 'force-close on pending must emit nothing')).toBeNull();
+              expect(forced.state, explain(seed, step, 'force-close on pending must return IDLE')).toEqual(IDLE_VOICE_TURN);
+            } else if (!wasActive) {
               expect(forced.event, explain(seed, step, 'force-close on idle must be a no-op')).toBeNull();
               expect(forced.state, explain(seed, step, 'force-close on idle must not change state')).toBe(state);
             } else {
@@ -87,6 +90,16 @@ describe('voiceTurnMachine fuzz — structural invariants under random frame seq
           const wasActive = state.active;
           const { state: next, event } = stepVoiceTurn(state, frame, config);
 
+          expect(next.active && next.pending, explain(seed, step, 'a turn is both active and pending')).toBe(false);
+          if (event?.kind === 'pending') {
+            expect(wasActive || state.pending, explain(seed, step, 'pending emitted from a non-idle state')).toBe(false);
+            expect(frame.tutorAudible, explain(seed, step, 'pending without tutor audio')).toBe(true);
+            expect(next.pending, explain(seed, step, 'state not pending after pending')).toBe(true);
+          }
+          if (event?.kind === 'discard') {
+            expect(state.pending, explain(seed, step, 'discard with no pending turn')).toBe(true);
+            expect(next, explain(seed, step, 'post-discard state must be exactly IDLE')).toEqual(IDLE_VOICE_TURN);
+          }
           if (event?.kind === 'open') {
             expect(wasActive, explain(seed, step, 'open emitted while a turn was already open')).toBe(false);
             expect(next.active, explain(seed, step, 'state not active after open')).toBe(true);
