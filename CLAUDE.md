@@ -55,7 +55,7 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 
 ### Agent primitives (USER 11-07)
 
-An agent primitive's generator is a model in a tool loop under code checks (wonder-walk, life-lab, deep-dive, annotated-example). The lifecycle above is written for schema primitives, where each `/add-*` skill writes a per-primitive table in app code. For an agent primitive that is the bug: a lever menu, word list, respond menu or task menu in app code is rails one level down.
+An agent primitive's generator is a model in a tool loop under code checks (wonder-walk, deep-dive, annotated-example, practice-studio). The lifecycle above is written for schema primitives, where each `/add-*` skill writes a per-primitive table in app code. For an agent primitive that is the bug: a lever menu, word list, respond menu or task menu in app code is rails one level down.
 
 - **The agent authors; code checks.** The agent designs the item, how the child answers, and the item's help and simplify levers, in the primitive's own blocks. Code rebuilds what it wrote, derives every key, names the mode, scores difficulty, blocks shortcuts and refuses what does not fit. Invariants: `/agent-primitive` (`.claude/skills/agent-primitive/SKILL.md`).
 - **Capabilities are built once, in the kit.** `service/agent-kit/` holds the author loop (`runAuthor`) and the shared capabilities; a primitive supplies its blocks, its checks and its renderer. A new capability (levers, respond, a lookup into the word library) is added to the kit and every agent primitive gains it, never re-implemented inside one primitive.

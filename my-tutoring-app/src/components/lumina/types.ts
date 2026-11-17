@@ -1727,7 +1727,6 @@ export type ComponentId =
   | 'train-yard' // Interactive train yard: build a train of cars for each rail job
   | 'airplane-diorama' // 3D passenger jet: find and tap its parts, each part shows what it does
   | 'construction-site-diorama' // 3D excavator + dump truck: load the truck with the right number of scoops and send it
-  | 'life-lab' // Biology canvas: an agent-built living world (places, living things, rules); the child changes it until the goal holds (K-5)
   | 'body-workshop' // 2D row: tap body parts into the path oxygen takes from outside a real animal into its body or to a muscle (K-5)
   | 'machine-workshop' // 2D workbench: build the part of a real machine that turns spinning into up-and-down (crank, cam)
   | 'skid-steer-yard' // 3D skid steer: set the left and right wheel levers to turn it to face something
@@ -2444,7 +2443,6 @@ export type { TrainYardData } from './primitives/visual-primitives/engineering/T
 export type { AirplaneDioramaData } from './primitives/visual-primitives/engineering/AirplaneDiorama';
 export type { ConstructionSiteDioramaData } from './primitives/visual-primitives/engineering/ConstructionSiteDiorama';
 export type { BodyWorkshopData } from './primitives/visual-primitives/biology/BodyWorkshop';
-export type { LifeLabData } from './primitives/visual-primitives/biology/life-lab/LifeLab';
 export type { SkidSteerYardData } from './primitives/visual-primitives/engineering/SkidSteerYard';
 export type { MachineWorkshopData } from './primitives/visual-primitives/engineering/MachineWorkshop';
 export type { EcosystemDioramaData } from './primitives/visual-primitives/biology/EcosystemDiorama';

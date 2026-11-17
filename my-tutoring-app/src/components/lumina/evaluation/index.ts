@@ -70,7 +70,6 @@ export type {
   SkidSteerYardMetrics,
   MachineWorkshopMetrics,
   BodyWorkshopMetrics,
-  LifeLabMetrics,
   MapExplorerMetrics,
   EcosystemDioramaMetrics,
   // Creation metrics

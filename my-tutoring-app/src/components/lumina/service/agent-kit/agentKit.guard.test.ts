@@ -45,7 +45,7 @@ const NO_LOOK: Record<string, string> = {
  * topic or objective, builds what fits, and code names the skill afterwards as a label. A mode never refuses a world.
  */
 const MODE_INPUT: Record<string, string> = {
-  'service/core/wonder-walk/agent-wonder-walk.ts': 'moves after the life-lab pilot (WORKSTREAMS row 16)',
+  'service/core/wonder-walk/agent-wonder-walk.ts': 'moves onto the kit after the agent-primitive pilot (WORKSTREAMS row 16)',
 };
 
 function walk(dir: string, out: string[] = []): string[] {

@@ -84,7 +84,6 @@ built for one domain is a registry entry with a domain tag, so every primitive t
 |---|---|---|
 | `practice-studio` | `ALL_DISPLAYS` | item stimulus, option cards, help levers |
 | `deep-dive` | every domain, minus the ones a richer block already covers (chart, number line, table, timeline, process); a check takes those too | `write_figure`; `write_check` (a kit surface item as a graded block: board, stimulus, cards) |
-| `life-lab` | `science`, `biology` and `general`, no `text` | teach frames, item stimulus and cards, `world.show`, help levers |
 | `wonder-walk`, `annotated-example` | none yet: reasons are in `NO_DISPLAYS` in the guard test | |
 
 **Wiring a primitive (each step has one kit function):**
@@ -110,11 +109,11 @@ interactive template (`gen-display`, deep-dive only today) → a catalog drawer 
 The order is cost, and the agent chooses (USER 2026-11-09: no ban on drawing a real thing; a weak drawing is the
 reader's to send back). Drawings follow `DRAWING_GUIDE` in `displays.ts`, which is craft the author reads, never an
 enum. `lookAtDrawing` in `look.ts` is the reader that checks a
-drawing against the author's `shows` sentence. Deep-dive is the pilot; practice-studio and life-lab have not adopted it.
+drawing against the author's `shows` sentence. Deep-dive is the pilot; practice-studio has not adopted it.
 
 **Adding a display for a domain.** Same bar as any display (`DISPLAY_ROADMAP.md`: seen on more than one topic, measured
 before and after). Add a `DEFS` entry, its `DOMAINS` tag and its sample in `displays.test.ts`; the types fail until
-all three exist. Drawings already inside one primitive's component (life-lab's beaks, moths, feet and critters) are
+all three exist. Drawings already inside one primitive's component are
 candidates: port one to the registry when a second primitive needs it.
 
 ## The invariants

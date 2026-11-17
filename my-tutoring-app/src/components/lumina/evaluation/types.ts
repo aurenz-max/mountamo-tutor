@@ -3479,21 +3479,6 @@ export interface BodyWorkshopMetrics extends BasePrimitiveMetrics {
   breathsCount: number;
 }
 
-export interface LifeLabMetrics extends BasePrimitiveMetrics {
-  type: 'life-lab';
-  challengeType: 'where_it_lives' | 'what_it_needs' | 'part_for_the_job' | 'hide_from_the_hunter' | 'whose_baby'
-    | 'spread_the_seeds' | 'life_cycle' | 'follow_the_path' | 'survive_and_change' | 'fair_test' | 'choose' | 'categorize' | 'order';
-  totalChallenges: number;
-  correctCount: number;
-  attemptsCount: number;
-  firstTryCount: number;
-  hintsViewed: number;
-  overallAccuracy: number;
-  averageAttemptsPerChallenge: number;
-  /** Times the learner ran a world before committing: how much it tested. Recorded, never part of the score. */
-  runsCount: number;
-}
-
 export interface MachineWorkshopMetrics extends BasePrimitiveMetrics {
   type: 'machine-workshop';
   challengeType: 'spin_to_push';
@@ -4096,7 +4081,6 @@ export type PrimitiveMetrics =
   | SkidSteerYardMetrics
   | MachineWorkshopMetrics
   | BodyWorkshopMetrics
-  | LifeLabMetrics
   | MapExplorerMetrics
   | EcosystemDioramaMetrics
   // Creation
