@@ -170,6 +170,28 @@ def test_floor_starts_free():
     assert not FloorGate().busy
 
 
+def test_floor_is_held_while_a_reply_to_the_learner_is_expected(monkeypatch):
+    # Session fc652416367e (2026-11-15): the learner said the answer, the tutor began to
+    # credit it, and a state note sent 440ms into her reply cut her off, twice.
+    import app.api.endpoints.lumina_tutor as tutor
+    now = [100.0]
+    monkeypatch.setattr(tutor.time, "monotonic", lambda: now[0])
+    g = FloorGate()
+    g.expect_reply(3.0)
+    assert g.busy                 # activity_end: her reply is coming
+    now[0] += 3.1
+    assert not g.busy             # no reply came (a turn of noise): the gate does not wedge
+    g.expect_reply(3.0)
+    g.take()                      # her first audio frame
+    now[0] += 10
+    assert g.busy                 # a long reply still holds the floor
+    g.release()                   # turn end, or a barge-in
+    assert not g.busy
+    g.expect_reply(3.0)
+    g.release()                   # a turn end clears the expectation too
+    assert not g.busy
+
+
 def test_floor_is_taken_at_send_and_freed_at_turn_end():
     g = FloorGate()
     g.take()

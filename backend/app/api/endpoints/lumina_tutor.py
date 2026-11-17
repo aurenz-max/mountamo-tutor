@@ -256,6 +256,7 @@ class FloorGate:
     def __init__(self) -> None:
         self._quiet = asyncio.Event()
         self._quiet.set()
+        self._reply_until = 0.0
         self.yielded = 0      # batches that waited for the tutor to finish
         self.superseded = 0   # cues dropped because a newer one replaced them
         self.merged = 0       # cues folded into someone else's turn
@@ -268,12 +269,23 @@ class FloorGate:
         first audio frame is exactly the window the old code stampeded)."""
         self._quiet.clear()
 
+    def expect_reply(self, seconds: float) -> None:
+        """The learner just finished speaking (activity_end), so the model is
+        about to answer them. Until 2026-11-15 the floor was taken only when WE
+        sent text, so the tutor's reply to a spoken answer held no floor: a
+        state note queued in that second went out mid-sentence and cut her off
+        (session fc652416367e, 70.2s and 71.0s: two cuts, then 39s of silence).
+        Bounded, because a turn of noise gets no reply and must not wedge the
+        gate; the first model output turns it into a real take()."""
+        self._reply_until = time.monotonic() + seconds
+
     def release(self) -> None:
         self._quiet.set()
+        self._reply_until = 0.0
 
     @property
     def busy(self) -> bool:
-        return not self._quiet.is_set()
+        return not self._quiet.is_set() or time.monotonic() < self._reply_until
 
 
 # Opening line of the state note PrimitiveState.attach prepends. A
@@ -398,6 +410,10 @@ FLOOR_SETTLE_MAX_S = 2.5    # a steady drip of cues still has to ship eventually
 # read-alouds; an 8s ceiling there just delayed the interruption by 8s) and it
 # logs loudly when it fires.
 FLOOR_WATCHDOG_S = 90.0
+# How long the gate holds text after the learner stops speaking, waiting for the
+# model's reply to start. The reply's first audio came 0.8-1.3s after
+# activity_end in session fc652416367e.
+FLOOR_REPLY_EXPECT_S = 3.0
 
 
 def input_transcription_message(transcription):
@@ -1615,32 +1631,44 @@ async def lumina_tutor_session(websocket: WebSocket):
                     waited_ms = 0
                     wedged = False
                     interrupting = any(i.interrupt for i in batch)
-                    if floor.busy and not interrupting:
-                        started = time.monotonic()
-                        floor.yielded += 1
-                        deadline = started + FLOOR_WATCHDOG_S
-                        while floor.busy:
-                            remaining = deadline - time.monotonic()
-                            if remaining <= 0:
-                                wedged = True
-                                floor.wedged += 1
-                                logger.error(
-                                    f"Floor watchdog fired after {FLOOR_WATCHDOG_S}s — "
-                                    "a Gemini turn never reported an end. Sending "
-                                    "anyway; this is a bug, not backpressure."
-                                )
-                                break
-                            await _collect(batch, min(remaining, 0.2))
-                            interrupting = any(i.interrupt for i in batch)
-                            if interrupting:
-                                break
-                        waited_ms = round((time.monotonic() - started) * 1000)
+                    started: Optional[float] = None
+                    deadline = 0.0
+                    while True:
+                        if floor.busy and not interrupting:
+                            if started is None:
+                                started = time.monotonic()
+                                floor.yielded += 1
+                                deadline = started + FLOOR_WATCHDOG_S
+                            while floor.busy:
+                                remaining = deadline - time.monotonic()
+                                if remaining <= 0:
+                                    wedged = True
+                                    floor.wedged += 1
+                                    logger.error(
+                                        f"Floor watchdog fired after {FLOOR_WATCHDOG_S}s — "
+                                        "a Gemini turn never reported an end. Sending "
+                                        "anyway; this is a bug, not backpressure."
+                                    )
+                                    break
+                                await _collect(batch, min(remaining, 0.2))
+                                interrupting = any(i.interrupt for i in batch)
+                                if interrupting:
+                                    break
+                            waited_ms = round((time.monotonic() - started) * 1000)
 
-                    # 2. Trailing settle — bounded, so a steady drip of
-                    #    cues still ships instead of being held forever.
-                    settle_deadline = time.monotonic() + FLOOR_SETTLE_MAX_S
-                    while time.monotonic() < settle_deadline:
-                        if not await _collect(batch, FLOOR_SETTLE_S):
+                        # 2. Trailing settle — bounded, so a steady drip of
+                        #    cues still ships instead of being held forever.
+                        settle_deadline = time.monotonic() + FLOOR_SETTLE_MAX_S
+                        while time.monotonic() < settle_deadline:
+                            if not await _collect(batch, FLOOR_SETTLE_S):
+                                break
+
+                        # The tutor can take the floor DURING the settle: she
+                        # starts answering the learner's speech. Then this
+                        # batch waits for that reply too, instead of going out
+                        # half a second into it (2026-11-15).
+                        interrupting = any(i.interrupt for i in batch)
+                        if wedged or interrupting or not floor.busy:
                             break
 
                     # 3. Supersede — narrowly. Four taps are one switch.
@@ -1814,6 +1842,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                             await session.send_realtime_input(activity_start=types.ActivityStart())
                         else:
                             await session.send_realtime_input(activity_end=types.ActivityEnd())
+                            floor.expect_reply(FLOOR_REPLY_EXPECT_S)
                         logger.info(f"Sent {item['activity']} to Gemini")
                         ledger.write("activity-signal", signal=item["activity"])
                         continue
@@ -1997,6 +2026,9 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if getattr(part, 'inline_data', None):
                                     audio_data = getattr(part.inline_data, 'data', None)
                                     if audio_data:
+                                        # The tutor is speaking, whoever she is
+                                        # answering: text waits for her turn end.
+                                        floor.take()
                                         audio_frames += 1
                                         audio_bytes += len(audio_data)
                                         if not fault_muted():
