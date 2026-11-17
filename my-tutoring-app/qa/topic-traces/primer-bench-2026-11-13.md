@@ -98,6 +98,7 @@ Not to do: a per-lesson chat with three voice characters; prompts hand-cast per 
    the brief wrote `explain` itself, the manifest routed practice-studio into that block, and the author built 1 teach
    item of 4 (the three card items flagged "Use teach", $0.07). Look-stage renders: `primer-bench-2026-11-13/*.png`.
    Owed: EV-17 (component on the workspace), EV-18 (one spoken session, user).
+1b. **Downstream wiring (11-14):** the spec now rides every generator's intent, not only practice-studio's; the A/B bench is `scripts/evidence-wiring-bench.mjs`, blocked by Google's monthly cap after one case (EV-20).
 3. **Feedback stage: queued for a ruling** (EV-19).
 4. Manifest slot: after 3.
 5. phoneme-explorer /b/ leak: not yet routed.
