@@ -80,7 +80,7 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws',
    */
   const visible = async (receipt: ReturnType<LiveLessonRuntime['dispatch']>) => {
     if (receipt.status !== 'committed') return receipt.status;
-    const waiting = waitForVisible(runtime, receipt.state.revision);
+    const waiting = waitForVisible(runtime, receipt.state);
     // Short steps, each its own act, so React renders between timers as a browser would: one long act defers
     // every render to its end, after the wait's own 1 s timeout has fired.
     for (let ms = 0; ms < 1100; ms += 50) settle(50);

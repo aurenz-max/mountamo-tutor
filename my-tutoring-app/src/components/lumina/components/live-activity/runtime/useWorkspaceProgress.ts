@@ -109,8 +109,15 @@ export function useWorkspaceProgressFor(primitiveId: string) {
       onCorrectionRetry: () => latest.current.onItemOpened?.(run.currentIndex, true),
       // Back from a practice item: the surface opens blank, as on a fresh item; the attempt count stays the item's.
       onPracticeClosed: (_item, index) => latest.current.onItemOpened?.(index, false),
-      onAffirmed: item => latest.current.onSolved?.(latest.current.challenges
-        .findIndex(c => latest.current.getChallengeId(c) === item.id)),
+      onAffirmed: item => {
+        // A credited item has a result, however it was answered. A right Check records one in `commitCheck`; an answer
+        // the tutor credited out loud had none unless the primitive remembered to record it in `onSolved` (44 spoken
+        // primitives did, 4 did not, and agent-canvas finished a voice-only session on a blank results screen,
+        // 2026-11-15). The primitive's `onSolved` still runs after, and may merge its own score over this.
+        setResults(prev => prev.some(r => r.challengeId === item.id && r.correct) ? prev
+          : [...prev.filter(r => r.challengeId !== item.id), baseResult(item.id, Math.max(attemptCount.current, 1))]);
+        latest.current.onSolved?.(latest.current.challenges.findIndex(c => latest.current.getChallengeId(c) === item.id));
+      },
       onPracticeSolved: (practiceId, _response, source) => latest.current.onPracticeSolved?.(practiceId, source),
       onFinished: result => latest.current.onFinished?.(result),
     });

@@ -35,6 +35,17 @@ it('follows a later render of the same item and phase, and is superseded by a ne
   expect((await unmount).status).toBe('superseded');
 });
 
+it('keeps the committed scope when a republish lands before the wait starts', async () => {
+  const runtime = new LiveLessonRuntime('test');
+  const registration = runtime.register(createRuntimeFixture().mount);
+  const committed = runtime.getSnapshot();
+  registration.changed();
+  expect((await waitForVisible(runtime, committed.revision, { timeoutMs: 20 })).status).toBe('superseded');
+  const waiting = waitForVisible(runtime, committed);
+  runtime.acknowledgeVisible(runtime.getSnapshot().revision);
+  expect((await waiting).status).toBe('visible');
+});
+
 it('bounds waits and cleans up cancelled waits, including pre-aborted requests', async () => {
   vi.useFakeTimers();
   const runtime = new LiveLessonRuntime('test'); runtime.register(createRuntimeFixture().mount);

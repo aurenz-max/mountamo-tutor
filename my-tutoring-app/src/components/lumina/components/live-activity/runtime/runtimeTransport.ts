@@ -218,7 +218,7 @@ export class RuntimeTransport {
     const receipt = this.runtime.dispatch(input);
     onReceipt?.(receipt);
     const rendered = receipt.status === 'committed'
-      ? await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal }) : null;
+      ? await waitForVisible(this.runtime, receipt.state, { signal: abort.signal }) : null;
     if (command) this.pending.delete(command.commandId);
     if (this.closed || abort.signal.aborted) return;
     if (!observed) this.send({ type: 'runtime_result', commandId: receipt.commandId,
@@ -260,7 +260,7 @@ export class RuntimeTransport {
     }
     const receipt = this.runtime.openComposedMove(scope, move, imageUrl);
     if (receipt.status !== 'committed') return reply(receipt.status, receipt.reason);
-    const rendered = await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal });
+    const rendered = await waitForVisible(this.runtime, receipt.state, { signal: abort.signal });
     return reply(rendered.status, undefined, { elapsedMs: rendered.elapsedMs });
   }
   /**
@@ -292,7 +292,7 @@ export class RuntimeTransport {
       ? `${composed.refused} What the learner's answers show: ${composed.diagnosis}` : composed.refused);
     const receipt = this.runtime.openDemonstration(scope, composed.demonstration, composed.diagnosis);
     if (receipt.status !== 'committed') return reply(receipt.status, receipt.reason);
-    const rendered = await waitForVisible(this.runtime, receipt.state.revision, { signal: abort.signal });
+    const rendered = await waitForVisible(this.runtime, receipt.state, { signal: abort.signal });
     return reply(rendered.status, undefined, { elapsedMs: rendered.elapsedMs });
   }
   cancel(commandId: string) { this.pending.get(commandId)?.abort(); }

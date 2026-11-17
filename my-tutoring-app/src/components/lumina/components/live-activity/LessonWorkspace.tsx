@@ -157,7 +157,7 @@ function LessonWorkspaceBridge({ handler, progress }: {
       const state = host.runtime.getSnapshot();
       if (opened || state.instanceId !== instanceId || !state.task) return;
       opened = true;
-      const receipt = await waitForVisible(host.runtime, state.revision, { signal: abort.signal });
+      const receipt = await waitForVisible(host.runtime, state, { signal: abort.signal });
       if (abort.signal.aborted) return;
       if (receipt.status !== 'visible') { opened = false; return; }
       transport.current?.publish();

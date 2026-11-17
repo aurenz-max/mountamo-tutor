@@ -18,8 +18,12 @@ const scopeOf = (s: RuntimeSnapshot) => s.instanceId === null ? null
  * the commit) does not supersede the wait: the command's result is still what is on screen, so the wait
  * moves to that revision and resolves when the host renders it. Anything else, a new item, a checked
  * answer, completion or an unmount, supersedes it (handoff 19, slice 2).
+ *
+ * Pass the committed snapshot (a receipt's `state`), not only its revision: a republish can land before the
+ * wait starts (a canvas publishing its next problem's scene inside the commit), and the wait then still knows
+ * which item and phase the command left on screen. A bare revision has a scope only while it is current.
  */
-export function waitForVisible(runtime: LiveLessonRuntime, revision: number,
+export function waitForVisible(runtime: LiveLessonRuntime, at: number | RuntimeSnapshot,
   options: { timeoutMs?: number; signal?: AbortSignal } = {}): Promise<VisibilityReceipt> {
   const started = performance.now();
   const requestedTimeout = options.timeoutMs ?? 1000;
@@ -38,7 +42,8 @@ export function waitForVisible(runtime: LiveLessonRuntime, revision: number,
     };
     const cancelled = () => finish('cancelled');
     const initial = runtime.getSnapshot();
-    const scope = initial.revision === revision ? scopeOf(initial) : null;
+    const revision = typeof at === 'number' ? at : at.revision;
+    const scope = typeof at !== 'number' ? scopeOf(at) : initial.revision === revision ? scopeOf(initial) : null;
     let awaited = revision;
     const inspect = () => {
       const state = runtime.getSnapshot();
