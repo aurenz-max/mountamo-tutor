@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(process.env.PW_DIR + '/');
 const { chromium } = require('playwright-core');
-const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true, args: ['--disable-audio-output', '--disable-audio-input', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
 let sent = null;
 page.on('request', r => { if (r.url().includes('/api/lumina') && r.method() === 'POST') { try { sent = r.postData()?.slice(0, 600); } catch {} } });

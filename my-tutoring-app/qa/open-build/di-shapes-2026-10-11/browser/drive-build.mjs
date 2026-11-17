@@ -15,7 +15,7 @@ const WRONG = { triangle: P(1, 1, 5, 1, 5, 5, 1, 5), other: P(1, 4, 5, 4, 3, 1) 
 const checks = [];
 const ok = (name, pass, detail = '') => { checks.push({ name, pass, detail }); console.log(pass ? 'PASS' : 'FAIL', name, detail); };
 
-const browser = await chromium.launch({ executablePath: EXE, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: EXE, headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));

@@ -56,7 +56,7 @@ try {
   // The production path: the page inside a sandboxed iframe (opaque origin, no network), talking by postMessage.
   {
     const { chromium } = await import('playwright-core');
-    const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
+    const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
     const page = await browser.newPage();
     const sneaky = displayDocument(compileDisplay(`function Display({ params, lumina }) {
       const [r, setR] = useState('pending');

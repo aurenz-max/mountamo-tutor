@@ -25,7 +25,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
   server: { middlewareMode: true, hmr: false, ws: false, watch: null },
   resolve: { alias: { '@': resolve(root, 'src'), 'server-only': resolve(root, 'vitest.stubs/server-only.ts') } },
 });
-const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: CHROME, headless: true });
 // The component's own list (MoleculeConstructor.tsx WATCH_NEVER_SAY).
 const NEVER_SAY = ['water', 'methane', 'ethane', 'ethene', 'ethylene', 'ethyne', 'acetylene', 'propane', 'propene', 'ammonia', 'ethanol',
   'methanol', 'alcohol', 'formaldehyde', 'dioxide', 'ozone', 'cyanide', 'valence', 'open', 'free', 'full', 'lonely', 'alone', 'unattached',

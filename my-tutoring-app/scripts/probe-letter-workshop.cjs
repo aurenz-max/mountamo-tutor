@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const output = 'qa/eval-reports';
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], headless: true });
   let page;
   try {
     page = await browser.newPage({ viewport: { width: 1500, height: 1100 } });

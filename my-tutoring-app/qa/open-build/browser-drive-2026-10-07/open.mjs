@@ -4,7 +4,7 @@ export const OUT = new URL('./shots/', import.meta.url).pathname.replace(/^\/(\w
 const EXE = 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe';
 
 export async function open({ primitive, mode, grade }) {
-  const browser = await chromium.launch({ executablePath: EXE, headless: true });
+  const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: EXE, headless: true });
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));

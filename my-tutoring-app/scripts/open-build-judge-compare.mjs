@@ -65,7 +65,7 @@ async function judge(cond, c, png) {
   return { ms, out, checks };
 }
 
-const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe' });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe' });
 const page = await browser.newPage();
 const pngs = {};
 mkdirSync(new URL('../qa/open-build/renders/', import.meta.url), { recursive: true });

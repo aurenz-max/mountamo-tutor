@@ -42,7 +42,7 @@ const comps = (trace.components ?? []).filter(c => c.componentId === componentId
 if (!comps.length) throw new Error(`no ${componentId} component in ${tracePath}`);
 mkdirSync(out, { recursive: true });
 const { chromium } = createRequire(import.meta.url)(PW);
-const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: CHROME, headless: true });
 let n = 0;
 for (const comp of comps) {
   for (const item of comp.data?.challenges ?? []) {

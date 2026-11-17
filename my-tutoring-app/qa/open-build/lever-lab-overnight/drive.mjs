@@ -15,7 +15,7 @@ const NEVER = ['level', 'balance', 'balanced', 'tip', 'tips', 'tilt', 'heavy', '
 const checks = [], watcherLines = [];
 const ok = (name, pass, detail = '') => { checks.push({ name, pass, detail }); console.log(pass ? 'PASS' : 'FAIL', name, detail); };
 
-const browser = await chromium.launch({ executablePath: EXE, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: EXE, headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));

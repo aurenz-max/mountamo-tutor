@@ -23,7 +23,7 @@ const { evaluateDigitDrawing } = await runner.import('/src/components/lumina/ser
 
 const require = createRequire(join(SCRATCH, 'package.json'));
 const { chromium } = require('playwright-core');
-const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
 const page = await browser.newPage();
 await page.setContent('<canvas id="c" width="500" height="400"></canvas>');
 

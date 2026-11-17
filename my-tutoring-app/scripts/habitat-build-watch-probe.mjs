@@ -28,7 +28,7 @@ const server = await vite.createServer({ root, configFile: false, appType: 'cust
   resolve: { alias: { '@': resolve(root, 'src'), 'server-only': resolve(root, 'vitest.stubs/server-only.ts') } },
   esbuild: { jsx: 'automatic' },
 });
-const browser = await chromium.launch({ executablePath: EXE, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: EXE, headless: true });
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const React = (await import('react')).default;

@@ -224,7 +224,7 @@ const root = process.cwd();
 const server = await vite.createServer({ root, configFile: false, logLevel: 'error', appType: 'custom', server: { middlewareMode: true, hmr: false, ws: false, watch: null }, resolve: { alias: { '@': resolve(root, 'src'), 'server-only': resolve(root, 'vitest.stubs/server-only.ts') } } });
 const require = createRequire(import.meta.url);
 const { chromium } = require(PW);
-const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: CHROME, headless: true });
 try {
   const loader = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
   const { ai } = await loader.import('/src/components/lumina/service/geminiClient.ts');

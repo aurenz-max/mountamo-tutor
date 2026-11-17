@@ -6,7 +6,7 @@ const tier = process.argv[3];
 const suffix = tier ? `-${tier}` : '';
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], headless: true });
   const page = await browser.newPage({ viewport: { width: 1500, height: 1100 } });
   const errors = [], evaluations = [], generated = [];
   try {

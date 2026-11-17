@@ -3,7 +3,7 @@ const { chromium } = require(process.argv[2] || 'playwright');
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], headless: true });
   const page = await browser.newPage({ viewport: { width: 1500, height: 1050 } });
   const evaluations = [], errors = [], runs = [];
   try {

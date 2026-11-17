@@ -34,7 +34,7 @@ let browser: Promise<Browser> | undefined;
 async function getBrowser(): Promise<Browser> {
   // A variable specifier keeps bundlers from pulling playwright into app code.
   const name = 'playwright-core';
-  browser ??= import(/* @vite-ignore */ name).then((pw: typeof import('playwright-core')) => pw.chromium.launch({ executablePath: CHROME, headless: true }));
+  browser ??= import(/* @vite-ignore */ name).then((pw: typeof import('playwright-core')) => pw.chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: CHROME, headless: true }));
   return browser;
 }
 

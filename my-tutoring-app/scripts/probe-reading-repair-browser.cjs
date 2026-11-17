@@ -9,7 +9,7 @@ const supportProbe = process.argv.includes('--support');
 const artifact = name => path.join(root, `reading-repair-browser-${supportProbe ? 'l2-' : ''}${name}`);
 (async () => {
   const generated = JSON.parse(fs.readFileSync(path.join(root, 'reading-repair-generation-1.json'), 'utf8')).fullData;
-  const browser = await chromium.launch({ headless: true, args: ['--use-fake-ui-for-media-stream',
+  const browser = await chromium.launch({ headless: true, args: ['--disable-audio-output', '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${path.join(root, 'reading-repair-audio/generated-first.wav')}`] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1050 }, permissions: ['microphone'] });
   const errors = [], evaluations = [], judgments = [], writes = [], sounds = [];

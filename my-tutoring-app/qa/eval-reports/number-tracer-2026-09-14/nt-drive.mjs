@@ -50,7 +50,7 @@ function drawingFor(written, target, lo, hi, normalize, opts) {
 
 const require = createRequire(join(SCRATCH, 'package.json'));
 const { chromium } = require('playwright-core');
-const browser = await chromium.launch({ executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
+const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe', headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1300 } });
 const log = { run: RUN, mode: MODE, tier: TIER, generated: null, checks: [], consoleErrors: [] };
 page.on('console', m => { if (m.type() === 'error') log.consoleErrors.push(m.text().slice(0, 300)); });

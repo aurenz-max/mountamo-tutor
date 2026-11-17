@@ -75,7 +75,7 @@ export class Looker {
         // Resolved at run time, never bundled: playwright-core is a dev dependency and a host without it looks in words.
         const pkg = 'playwright-core';
         const { chromium } = await import(/* webpackIgnore: true */ pkg) as { chromium: { launch(o: object): Promise<unknown> } };
-        return (await chromium.launch({ executablePath: exe, headless: true })) as unknown as Browser;
+        return (await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], executablePath: exe, headless: true })) as unknown as Browser;
       } catch (e) {
         console.warn(`[look] no browser: ${(e as Error).message}`);
         return null;

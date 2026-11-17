@@ -55,7 +55,7 @@ async function probe(c) {
   }
 
   const { chromium } = require(process.argv[2] || 'playwright');
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ args: ['--disable-audio-output', '--disable-audio-input', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'], headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
   const writes = [], errors = [], evaluations = [], requests = [];
   try {

@@ -43,7 +43,7 @@ const silence = path.join(out, 'silence.wav');
 const browser = await chromium.launch({
   executablePath: process.env.PIP_CHROME ?? 'C:/Users/xbox3/AppData/Local/ms-playwright/chromium-1169/chrome-win/chrome.exe',
   headless: true,
-  args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${silence}`, '--autoplay-policy=no-user-gesture-required'],
+  args: ['--disable-audio-output', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${silence}`, '--autoplay-policy=no-user-gesture-required'],
 });
 // The helper sidebar is not responsive: generate at 1400, then shrink.
 const context = await browser.newContext({ viewport: { width: Math.max(width, 1400), height: 1000 }, permissions: ['microphone'] });
